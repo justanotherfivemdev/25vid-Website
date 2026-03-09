@@ -1,10 +1,12 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import shutil
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional
@@ -15,6 +17,10 @@ from passlib.context import CryptContext
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Upload directory - stored in frontend public so they're served as static files
+UPLOAD_DIR = ROOT_DIR.parent / 'frontend' / 'public' / 'uploads'
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -521,6 +527,40 @@ async def update_site_content(content: dict, current_user: dict = Depends(get_cu
     )
     
     return {"message": "Site content updated successfully"}
+
+# ============================================================================
+# FILE UPLOAD ENDPOINT
+# ============================================================================
+
+@api_router.post("/upload")
+async def upload_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'}
+    ext = Path(file.filename).suffix.lower()
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"File type {ext} not allowed. Use: {', '.join(allowed_extensions)}")
+
+    if file.size and file.size > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = UPLOAD_DIR / unique_name
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    file_url = f"/uploads/{unique_name}"
+    return {"url": file_url, "filename": unique_name}
+
+# ============================================================================
+# PUBLIC SITE CONTENT ENDPOINT
+# ============================================================================
+
+@api_router.get("/site-content")
+async def get_public_site_content():
+    content = await db.site_content.find_one({"id": "site_content"}, {"_id": 0})
+    if not content:
+        return None
+    return content
 
 # ============================================================================
 # ADMIN CRUD ENDPOINTS

@@ -9,6 +9,7 @@ import { Plus, Edit, Trash2, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import ImageUpload from '@/components/admin/ImageUpload';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -172,40 +173,15 @@ const OperationsManager = () => {
                   />
                 </div>
                 
-                {/* NEW: Operation Logo/Badge Field */}
+                {/* Operation Logo/Badge Field */}
                 <div className="space-y-2 border border-blue-700 p-4 rounded-lg bg-blue-900/10">
-                  <Label className="text-blue-400 font-semibold">
-                    🏷️ Operation Logo/Badge (Optional)
-                  </Label>
-                  <p className="text-xs text-gray-400">
-                    <strong>Location:</strong> Appears on operation card<br/>
-                    <strong>Purpose:</strong> Identifies country, faction, or region<br/>
-                    <strong>Recommended:</strong> 64x64px PNG with transparency<br/>
-                    <strong>Example:</strong> Country flag, faction emblem, unit badge
-                  </p>
-                  <Input
-                    type="url"
-                    value={formData.logo_url || ''}
-                    onChange={(e) => setFormData({...formData, logo_url: e.target.value})}
-                    className="bg-black border-gray-700"
-                    placeholder="https://your-image-url.com/badge.png"
+                  <ImageUpload
+                    value={formData.logo_url}
+                    onChange={(url) => setFormData({...formData, logo_url: url})}
+                    label="Operation Logo/Badge (Optional)"
+                    description="Appears on operation card. Identifies country, faction, or region. Recommended: 64x64px PNG with transparency."
+                    previewClass="w-12 h-12 object-contain"
                   />
-                  {formData.logo_url && (
-                    <div className="mt-2 p-2 bg-black rounded border border-gray-700 inline-block">
-                      <img 
-                        src={formData.logo_url} 
-                        alt="Logo preview" 
-                        className="w-12 h-12 object-contain"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'block';
-                        }}
-                      />
-                      <div style={{display: 'none'}} className="text-xs text-red-400">
-                        Invalid image URL
-                      </div>
-                    </div>
-                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
