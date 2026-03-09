@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Users, Shield, Target, Megaphone, Image as ImageIcon, Clock, MapPin } from 'lucide-react';
+import { SITE_CONTENT } from '@/config/siteContent';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -68,7 +69,7 @@ const HeroSection = () => {
     <section 
       className="hero-section relative min-h-screen flex items-center justify-center"
       style={{
-        backgroundImage: `url('https://images.unsplash.com/photo-1608396941316-ea89219bd56e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwxfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85')`,
+        backgroundImage: `url('${SITE_CONTENT.hero.backgroundImage}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
@@ -112,7 +113,7 @@ const HeroSection = () => {
           style={{ fontFamily: 'Rajdhani, sans-serif', letterSpacing: '0.1em' }}
           data-testid="hero-tagline"
         >
-          JOIN TODAY,<br/>SAVE TOMORROW.
+          {SITE_CONTENT.hero.tagline.line1}<br/>{SITE_CONTENT.hero.tagline.line2}
         </h1>
       </div>
     </section>
@@ -149,18 +150,18 @@ const AboutSection = () => {
           {/* Right side - Content */}
           <div className="space-y-6 text-lg leading-relaxed">
             <p data-testid="about-description-1">
-              Founded by former special operations veterans, Bishop and Smithson, the company of Azimuth Security; also known as Azimuth Operations Group was the brainchild of a new form of Direct and no string attached warfare: the teams consist of members of highly skilled and diverse specializations to take on any task that the highest bidder can request.
+              {SITE_CONTENT.about.paragraph1}
             </p>
             
             <p data-testid="about-description-2">
-              Azimuth Operations Group is a coordinated MilSim community where players train, deploy, and operate together in structured tactical missions. Whether on the ground or in support roles, every operator contributes to mission success.
+              {SITE_CONTENT.about.paragraph2}
             </p>
             
             {/* Quote Section */}
             <div 
               className="mt-12 relative"
               style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1611570266453-e1bf0d4001d2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwzfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85')`,
+                backgroundImage: `url('${SITE_CONTENT.about.quote.backgroundImage}')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 minHeight: '300px'
@@ -173,10 +174,10 @@ const AboutSection = () => {
                     className="text-2xl md:text-3xl italic text-red-500 mb-4"
                     data-testid="founder-quote"
                   >
-                    "Even in the harshest environments, professionalism and discipline remain our greatest force multipliers."
+                    {SITE_CONTENT.about.quote.text}
                   </p>
                   <p className="text-xl text-red-400" data-testid="founder-name">
-                    - B. Bishop (Azimuth CEO and Founder)
+                    {SITE_CONTENT.about.quote.author}
                   </p>
                 </div>
               </div>
@@ -192,12 +193,6 @@ const AboutSection = () => {
 // OPERATIONAL SUPERIORITY SECTION
 // ============================================================================
 const OperationalSuperioritySection = () => {
-  const images = [
-    'https://images.unsplash.com/photo-1762247789830-9d9e78843d60?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-    'https://images.unsplash.com/photo-1639069422496-03416b5daa28?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwzfHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-    'https://images.unsplash.com/photo-1763656445364-13646fd91212?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHw0fHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85'
-  ];
-  
   return (
     <section className="py-24 px-6 bg-black" data-testid="operational-superiority-section">
       <div className="container mx-auto max-w-7xl">
@@ -218,14 +213,14 @@ const OperationalSuperioritySection = () => {
           {/* Right side - Description */}
           <div>
             <p className="text-xl leading-relaxed" data-testid="ops-superiority-description">
-              From advisory roles to direct operational support, Azimuth Security delivers the experience, discipline, and force projection required to succeed in complex environments.
+              {SITE_CONTENT.operationalSuperiority.description}
             </p>
           </div>
         </div>
         
         {/* Image Grid */}
         <div className="grid md:grid-cols-3 gap-6 mt-16">
-          {images.map((img, idx) => (
+          {SITE_CONTENT.operationalSuperiority.images.map((img, idx) => (
             <div 
               key={idx} 
               className="aspect-[3/4] overflow-hidden rounded-lg border border-white/10"
@@ -272,7 +267,7 @@ const LethalitySection = () => {
               SUPPORT
             </h3>
             <p className="text-lg leading-relaxed text-gray-300" data-testid="logistics-description">
-              End-to-end logistical and operational support ensuring personnel, equipment, and missions remain coordinated, supplied, and ready to operate in any environment.
+              {SITE_CONTENT.lethality.logistics.description}
             </p>
             <button className="text-red-500 hover:text-red-400 underline" data-testid="logistics-learn-more">
               Learn more →
@@ -280,7 +275,7 @@ const LethalitySection = () => {
           </div>
           <div className="aspect-video overflow-hidden rounded-lg border border-white/10">
             <img 
-              src="https://images.unsplash.com/photo-1588450248442-1c8357368dba?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHw0fHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85"
+              src={SITE_CONTENT.lethality.logistics.image}
               alt="Logistics Support"
               className="w-full h-full object-cover"
             />
@@ -291,7 +286,7 @@ const LethalitySection = () => {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1 aspect-video overflow-hidden rounded-lg border border-white/10">
             <img 
-              src="https://images.unsplash.com/photo-1583872341575-610c859c7a57?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85"
+              src={SITE_CONTENT.lethality.training.image}
               alt="Training Programs"
               className="w-full h-full object-cover"
             />
@@ -305,7 +300,7 @@ const LethalitySection = () => {
               TRAINING PROGRAMS
             </h3>
             <p className="text-lg leading-relaxed text-gray-300" data-testid="training-description">
-              Professional training and strategic advisory services designed to develop tactical capability, leadership, and mission readiness in complex operational environments.
+              {SITE_CONTENT.lethality.training.description}
             </p>
             <button className="text-red-500 hover:text-red-400 underline" data-testid="training-view-details">
               View details →
@@ -510,15 +505,6 @@ const AnnouncementsSection = () => {
 // GALLERY SECTION
 // ============================================================================
 const GallerySection = () => {
-  const showcaseImages = [
-    'https://images.unsplash.com/photo-1762247789830-9d9e78843d60?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-    'https://images.unsplash.com/photo-1639069422496-03416b5daa28?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwzfHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-    'https://images.unsplash.com/photo-1763656445364-13646fd91212?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHw0fHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-    'https://images.unsplash.com/photo-1611570266453-e1bf0d4001d2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwzfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85',
-    'https://images.unsplash.com/photo-1588450248442-1c8357368dba?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHw0fHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85',
-    'https://images.unsplash.com/photo-1583872341575-610c859c7a57?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85'
-  ];
-  
   return (
     <section className="py-24 px-6 bg-gradient-to-b from-gray-900 to-black" data-testid="gallery-section">
       <div className="container mx-auto max-w-7xl">
@@ -534,7 +520,7 @@ const GallerySection = () => {
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {showcaseImages.map((img, idx) => (
+          {SITE_CONTENT.gallery.showcaseImages.map((img, idx) => (
             <div 
               key={idx} 
               className="aspect-square overflow-hidden rounded-lg border border-white/10 hover:border-red-700/50 transition-colors cursor-pointer group"
@@ -673,7 +659,7 @@ const Footer = () => {
               AZIMUTH OPERATIONS GROUP
             </h3>
             <p className="text-gray-400">
-              Professional MilSim operations since 2025
+              {SITE_CONTENT.footer.description}
             </p>
           </div>
           
@@ -694,8 +680,8 @@ const Footer = () => {
               CONNECT
             </h4>
             <p className="text-gray-400">
-              Discord: Coming Soon<br/>
-              Email: contact@azimuthops.com
+              Discord: {SITE_CONTENT.footer.contact.discord}<br/>
+              Email: {SITE_CONTENT.footer.contact.email}
             </p>
           </div>
         </div>
