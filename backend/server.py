@@ -86,6 +86,7 @@ class Operation(BaseModel):
     date: str
     time: str
     max_participants: Optional[int] = None
+    logo_url: Optional[str] = None  # Country/faction/region badge
     rsvp_list: List[str] = []  # user IDs
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -97,6 +98,7 @@ class OperationCreate(BaseModel):
     date: str
     time: str
     max_participants: Optional[int] = None
+    logo_url: Optional[str] = None  # Country/faction/region badge
 
 class RSVPRequest(BaseModel):
     operation_id: str
@@ -107,6 +109,7 @@ class Announcement(BaseModel):
     title: str
     content: str
     priority: str = "normal"  # "low", "normal", "high", "urgent"
+    badge_url: Optional[str] = None  # Bottom-right badge/logo
     author_id: str
     author_name: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -115,6 +118,7 @@ class AnnouncementCreate(BaseModel):
     title: str
     content: str
     priority: str = "normal"
+    badge_url: Optional[str] = None  # Bottom-right badge/logo
 
 class Discussion(BaseModel):
     model_config = ConfigDict(extra="ignore")

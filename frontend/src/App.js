@@ -13,6 +13,7 @@ import { SITE_CONTENT } from '@/config/siteContent';
 // Admin Pages
 import AdminDashboard from '@/pages/admin/Dashboard';
 import OperationsManager from '@/pages/admin/OperationsManager';
+import SiteContentManager from '@/pages/admin/SiteContentManager';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -1002,6 +1003,11 @@ function App() {
         <Route path="/admin/operations" element={
           <ProtectedRoute adminOnly={true}>
             <OperationsManager />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/site-content" element={
+          <ProtectedRoute adminOnly={true}>
+            <SiteContentManager />
           </ProtectedRoute>
         } />
       </Routes>
