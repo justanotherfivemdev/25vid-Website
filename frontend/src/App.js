@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import '@/App.css';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,51 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Users, Shield, Target, Megaphone, Image as ImageIcon, Clock, MapPin } from 'lucide-react';
 import { SITE_CONTENT } from '@/config/siteContent';
 
+// Admin Pages
+import AdminDashboard from '@/pages/admin/Dashboard';
+import OperationsManager from '@/pages/admin/OperationsManager';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// ============================================================================
+// PROTECTED ROUTE WRAPPER
+// ============================================================================
+const ProtectedRoute = ({ children, adminOnly = false }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      if (!token) {
+        setIsAuthenticated(false);
+        return;
+      }
+      
+      setIsAuthenticated(true);
+      setIsAdmin(user.role === 'admin');
+    };
+    
+    checkAuth();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (adminOnly && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
 
 // ============================================================================
 // NAVIGATION COMPONENT
@@ -752,9 +795,13 @@ const LoginPage = () => {
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      // Redirect to dashboard (to be built)
-      alert('Login successful! Member portal coming soon.');
-      navigate('/');
+      // Redirect based on role
+      if (response.data.user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        alert('Login successful! Member portal coming soon.');
+        navigate('/');
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'An error occurred');
     }
@@ -892,6 +939,18 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        
+        {/* Admin Routes - Protected */}
+        <Route path="/admin" element={
+          <ProtectedRoute adminOnly={true}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/operations" element={
+          <ProtectedRoute adminOnly={true}>
+            <OperationsManager />
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   );

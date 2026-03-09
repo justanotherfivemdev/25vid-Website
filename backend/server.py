@@ -473,6 +473,176 @@ async def create_training(training_data: TrainingCreate, current_user: dict = De
     return training_obj
 
 # ============================================================================
+# SITE CONTENT MANAGEMENT (ADMIN ONLY)
+# ============================================================================
+
+class SiteContent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default="site_content")
+    hero: dict
+    about: dict
+    operationalSuperiority: dict
+    lethality: dict
+    gallery: dict
+    footer: dict
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+@api_router.get("/admin/site-content")
+async def get_site_content(current_user: dict = Depends(get_current_admin)):
+    content = await db.site_content.find_one({"id": "site_content"}, {"_id": 0})
+    if not content:
+        # Return default content if none exists
+        return {
+            "id": "site_content",
+            "hero": {"backgroundImage": "", "tagline": {"line1": "JOIN TODAY,", "line2": "SAVE TOMORROW."}},
+            "about": {"paragraph1": "", "paragraph2": "", "quote": {"text": "", "author": "", "backgroundImage": ""}},
+            "operationalSuperiority": {"description": "", "images": []},
+            "lethality": {"logistics": {"description": "", "image": ""}, "training": {"description": "", "image": ""}},
+            "gallery": {"showcaseImages": []},
+            "footer": {"description": "", "contact": {"discord": "", "email": ""}}
+        }
+    if isinstance(content.get('updated_at'), str):
+        content['updated_at'] = datetime.fromisoformat(content['updated_at'])
+    return content
+
+@api_router.put("/admin/site-content")
+async def update_site_content(content: dict, current_user: dict = Depends(get_current_admin)):
+    content["id"] = "site_content"
+    content["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.site_content.update_one(
+        {"id": "site_content"},
+        {"$set": content},
+        upsert=True
+    )
+    
+    return {"message": "Site content updated successfully"}
+
+# ============================================================================
+# ADMIN CRUD ENDPOINTS
+# ============================================================================
+
+@api_router.delete("/admin/operations/{operation_id}")
+async def delete_operation(operation_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.operations.delete_one({"id": operation_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Operation not found")
+    return {"message": "Operation deleted successfully"}
+
+@api_router.put("/admin/operations/{operation_id}")
+async def update_operation(operation_id: str, operation_data: OperationCreate, current_user: dict = Depends(get_current_admin)):
+    result = await db.operations.update_one(
+        {"id": operation_id},
+        {"$set": operation_data.model_dump()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Operation not found")
+    return {"message": "Operation updated successfully"}
+
+@api_router.delete("/admin/announcements/{announcement_id}")
+async def delete_announcement(announcement_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.announcements.delete_one({"id": announcement_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return {"message": "Announcement deleted successfully"}
+
+@api_router.put("/admin/announcements/{announcement_id}")
+async def update_announcement(announcement_id: str, announcement_data: AnnouncementCreate, current_user: dict = Depends(get_current_admin)):
+    update_data = announcement_data.model_dump()
+    update_data["author_id"] = current_user["id"]
+    update_data["author_name"] = current_user["username"]
+    
+    result = await db.announcements.update_one(
+        {"id": announcement_id},
+        {"$set": update_data}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return {"message": "Announcement updated successfully"}
+
+@api_router.delete("/admin/discussions/{discussion_id}")
+async def delete_discussion(discussion_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.discussions.delete_one({"id": discussion_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Discussion not found")
+    return {"message": "Discussion deleted successfully"}
+
+@api_router.delete("/admin/gallery/{image_id}")
+async def delete_gallery_image(image_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.gallery.delete_one({"id": image_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return {"message": "Image deleted successfully"}
+
+@api_router.delete("/admin/training/{training_id}")
+async def delete_training(training_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.training.delete_one({"id": training_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Training not found")
+    return {"message": "Training deleted successfully"}
+
+@api_router.put("/admin/training/{training_id}")
+async def update_training(training_id: str, training_data: TrainingCreate, current_user: dict = Depends(get_current_admin)):
+    result = await db.training.update_one(
+        {"id": training_id},
+        {"$set": training_data.model_dump()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Training not found")
+    return {"message": "Training updated successfully"}
+
+# ============================================================================
+# USER MANAGEMENT (ADMIN ONLY)
+# ============================================================================
+
+@api_router.get("/admin/users", response_model=List[UserResponse])
+async def get_all_users(current_user: dict = Depends(get_current_admin)):
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    return [UserResponse(
+        id=u["id"],
+        email=u["email"],
+        username=u["username"],
+        role=u["role"],
+        rank=u.get("rank"),
+        specialization=u.get("specialization"),
+        join_date=datetime.fromisoformat(u["join_date"]) if isinstance(u["join_date"], str) else u["join_date"]
+    ) for u in users]
+
+class UserUpdate(BaseModel):
+    role: Optional[str] = None
+    rank: Optional[str] = None
+    specialization: Optional[str] = None
+    is_active: Optional[bool] = None
+
+@api_router.put("/admin/users/{user_id}")
+async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = Depends(get_current_admin)):
+    update_dict = {k: v for k, v in user_data.model_dump().items() if v is not None}
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User updated successfully"}
+
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(get_current_admin)):
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User deleted successfully"}
+
+# ============================================================================
 # MISC ENDPOINTS
 # ============================================================================
 
