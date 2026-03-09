@@ -82,14 +82,6 @@ const Navigation = ({ scrollToSection }) => {
             >
               OPERATIONS
             </button>
-            <Link to="/login">
-              <Button 
-                className="bg-red-700 hover:bg-red-800 text-white px-6 tactical-button"
-                data-testid="nav-join-button"
-              >
-                JOIN
-              </Button>
-            </Link>
             <button 
               onClick={() => scrollToSection('training')} 
               className="hover:text-red-600 transition-colors tracking-wide"
@@ -97,6 +89,17 @@ const Navigation = ({ scrollToSection }) => {
             >
               TRAINING
             </button>
+            {/* Separator for visual distinction */}
+            <div className="h-6 w-px bg-red-700/50"></div>
+            {/* JOIN button - Primary CTA, far right */}
+            <Link to="/login">
+              <Button 
+                className="bg-red-700 hover:bg-red-800 text-white px-8 py-2 tactical-button font-bold text-lg"
+                data-testid="nav-join-button"
+              >
+                JOIN NOW
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -168,7 +171,10 @@ const HeroSection = () => {
 // ============================================================================
 const AboutSection = () => {
   return (
-    <section id="about" className="py-24 px-6 bg-black" data-testid="about-section">
+    <section id="about" className="py-32 px-6 bg-gradient-to-b from-black via-gray-900 to-black relative" data-testid="about-section">
+      {/* Decorative top border */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-700 to-transparent"></div>
+      
       <div className="container mx-auto max-w-6xl">
         <div className="grid md:grid-cols-[300px,1fr] gap-12 items-start">
           {/* Left side - Title and Button */}
@@ -182,7 +188,7 @@ const AboutSection = () => {
             </h2>
             <Link to="/login">
               <Button 
-                className="bg-red-700 hover:bg-red-800 text-white px-12 py-6 text-xl tactical-button"
+                className="bg-red-700 hover:bg-red-800 text-white px-12 py-6 text-xl tactical-button shadow-lg shadow-red-900/50"
                 data-testid="about-join-button"
               >
                 JOIN NOW
@@ -191,18 +197,20 @@ const AboutSection = () => {
           </div>
           
           {/* Right side - Content */}
-          <div className="space-y-6 text-lg leading-relaxed">
-            <p data-testid="about-description-1">
+          <div className="space-y-8 text-lg leading-relaxed">
+            <p className="text-gray-300" data-testid="about-description-1">
               {SITE_CONTENT.about.paragraph1}
             </p>
             
-            <p data-testid="about-description-2">
+            <div className="h-px bg-gradient-to-r from-transparent via-red-700/30 to-transparent my-8"></div>
+            
+            <p className="text-gray-300" data-testid="about-description-2">
               {SITE_CONTENT.about.paragraph2}
             </p>
             
             {/* Quote Section */}
             <div 
-              className="mt-12 relative"
+              className="mt-16 relative rounded-lg overflow-hidden"
               style={{
                 backgroundImage: `url('${SITE_CONTENT.about.quote.backgroundImage}')`,
                 backgroundSize: 'cover',
@@ -210,16 +218,16 @@ const AboutSection = () => {
                 minHeight: '300px'
               }}
             >
-              <div className="absolute inset-0 bg-black/70"></div>
-              <div className="relative z-10 p-8 flex items-center justify-center min-h-[300px]">
-                <div className="text-center">
+              <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-red-900/40"></div>
+              <div className="relative z-10 p-12 flex items-center justify-center min-h-[300px]">
+                <div className="text-center border-l-4 border-red-700 pl-8">
                   <p 
-                    className="text-2xl md:text-3xl italic text-red-500 mb-4"
+                    className="text-2xl md:text-3xl italic text-red-400 mb-6 font-light"
                     data-testid="founder-quote"
                   >
                     {SITE_CONTENT.about.quote.text}
                   </p>
-                  <p className="text-xl text-red-400" data-testid="founder-name">
+                  <p className="text-xl text-red-300 font-bold" data-testid="founder-name">
                     {SITE_CONTENT.about.quote.author}
                   </p>
                 </div>
@@ -228,6 +236,9 @@ const AboutSection = () => {
           </div>
         </div>
       </div>
+      
+      {/* Decorative bottom border */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-700 to-transparent"></div>
     </section>
   );
 };
@@ -237,13 +248,16 @@ const AboutSection = () => {
 // ============================================================================
 const OperationalSuperioritySection = () => {
   return (
-    <section className="py-24 px-6 bg-black" data-testid="operational-superiority-section">
+    <section className="py-32 px-6 bg-black relative" data-testid="operational-superiority-section">
+      {/* Decorative top border */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-700 to-transparent"></div>
+      
       <div className="container mx-auto max-w-7xl">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
           {/* Left side - Title */}
           <div>
             <h2 
-              className="text-6xl md:text-7xl font-bold leading-tight" 
+              className="text-6xl md:text-8xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-300 to-red-500" 
               style={{ fontFamily: 'Rajdhani, sans-serif' }}
               data-testid="ops-superiority-heading"
             >
@@ -254,30 +268,37 @@ const OperationalSuperioritySection = () => {
           </div>
           
           {/* Right side - Description */}
-          <div>
-            <p className="text-xl leading-relaxed" data-testid="ops-superiority-description">
+          <div className="relative">
+            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-red-700 to-transparent"></div>
+            <p className="text-xl leading-relaxed text-gray-300 pl-8" data-testid="ops-superiority-description">
               {SITE_CONTENT.operationalSuperiority.description}
             </p>
           </div>
         </div>
         
+        {/* Divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-red-700/50 to-transparent mb-20"></div>
+        
         {/* Image Grid */}
-        <div className="grid md:grid-cols-3 gap-6 mt-16">
+        <div className="grid md:grid-cols-3 gap-8">
           {SITE_CONTENT.operationalSuperiority.images.map((img, idx) => (
             <div 
               key={idx} 
-              className="aspect-[3/4] overflow-hidden rounded-lg border border-white/10"
+              className="aspect-[3/4] overflow-hidden rounded-lg border-2 border-white/10 hover:border-red-700/50 transition-all duration-300 shadow-2xl shadow-red-900/20 group"
               data-testid={`ops-image-${idx + 1}`}
             >
               <img 
                 src={img} 
                 alt={`Tactical Operation ${idx + 1}`}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
           ))}
         </div>
       </div>
+      
+      {/* Decorative bottom border */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-700 to-transparent"></div>
     </section>
   );
 };
@@ -787,9 +808,20 @@ const LoginPage = () => {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
       const payload = isLogin 
         ? { email: formData.email, password: formData.password }
-        : formData;
+        : {
+            email: formData.email,
+            username: formData.username,
+            password: formData.password,
+            rank: formData.rank || undefined,
+            specialization: formData.specialization || undefined
+          };
+      
+      console.log('Submitting to:', `${API}${endpoint}`);
+      console.log('Payload:', payload);
       
       const response = await axios.post(`${API}${endpoint}`, payload);
+      
+      console.log('Response:', response.data);
       
       // Store token and user data
       localStorage.setItem('token', response.data.access_token);
@@ -799,11 +831,14 @@ const LoginPage = () => {
       if (response.data.user.role === 'admin') {
         navigate('/admin');
       } else {
-        alert('Login successful! Member portal coming soon.');
+        alert('Registration successful! Welcome to Azimuth Operations Group.');
         navigate('/');
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'An error occurred');
+      console.error('Auth error:', err);
+      console.error('Error response:', err.response);
+      const errorMsg = err.response?.data?.detail || err.message || 'An error occurred during authentication';
+      setError(errorMsg);
     }
   };
   

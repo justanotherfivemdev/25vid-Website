@@ -10,8 +10,8 @@ export const SITE_CONTENT = {
   // HERO SECTION
   // ============================================================================
   hero: {
-    // Background image for hero section
-    backgroundImage: 'https://images.unsplash.com/photo-1608396941316-ea89219bd56e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwxfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85',
+    // Background image for hero section - Updated with Azimuth tactical helicopter scene
+    backgroundImage: 'https://customer-assets.emergentagent.com/job_mission-central-8/artifacts/6isgocjk_AzimuthPromo2-Edited2.png',
     
     // Main tagline
     tagline: {
@@ -24,8 +24,8 @@ export const SITE_CONTENT = {
   // LOGIN PAGE
   // ============================================================================
   login: {
-    // Background image for login page
-    backgroundImage: 'https://images.unsplash.com/photo-1608396941316-ea89219bd56e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwxfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85',
+    // Background image for login page - Updated with Azimuth logo collage
+    backgroundImage: 'https://customer-assets.emergentagent.com/job_mission-central-8/artifacts/3owufngk_Hero%20%282%29.png',
     
     // Whether to show background image (can disable for solid color)
     showBackground: true,
