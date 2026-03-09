@@ -807,9 +807,27 @@ const LoginPage = () => {
     }
   };
   
+  const loginBgStyle = SITE_CONTENT.login.showBackground ? {
+    backgroundImage: `url('${SITE_CONTENT.login.backgroundImage}')`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundAttachment: 'fixed'
+  } : {};
+  
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-6">
-      <div className="w-full max-w-md">
+    <div 
+      className="min-h-screen flex items-center justify-center px-6 relative"
+      style={loginBgStyle}
+    >
+      {/* Background overlay */}
+      {SITE_CONTENT.login.showBackground && (
+        <div 
+          className="absolute inset-0 bg-black"
+          style={{ opacity: SITE_CONTENT.login.overlayOpacity || 0.85 }}
+        ></div>
+      )}
+      
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <h1 
             className="text-5xl font-bold mb-2" 

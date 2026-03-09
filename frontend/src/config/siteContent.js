@@ -21,6 +21,20 @@ export const SITE_CONTENT = {
   },
 
   // ============================================================================
+  // LOGIN PAGE
+  // ============================================================================
+  login: {
+    // Background image for login page
+    backgroundImage: 'https://images.unsplash.com/photo-1608396941316-ea89219bd56e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwxfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85',
+    
+    // Whether to show background image (can disable for solid color)
+    showBackground: true,
+    
+    // Optional overlay opacity (0-1, where 1 is completely opaque)
+    overlayOpacity: 0.85
+  },
+
+  // ============================================================================
   // ABOUT SECTION
   // ============================================================================
   about: {

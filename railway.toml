@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "supervisord -c /app/supervisord.conf"
+healthcheckPath = "/api/"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
