@@ -907,12 +907,13 @@ async def get_site_content(current_user: dict = Depends(get_current_admin)):
         # Return default content if none exists
         return {
             "id": "site_content",
-            "hero": {"backgroundImage": "", "tagline": {"line1": "JOIN TODAY,", "line2": "SAVE TOMORROW."}},
+            "hero": {"backgroundImage": "", "tagline": "TROPIC LIGHTNING", "subtitle": "Ready to Strike — Anywhere, Anytime"},
+            "nav": {"brandName": "25TH INFANTRY DIVISION", "buttonText": "ENLIST NOW"},
             "about": {"paragraph1": "", "paragraph2": "", "quote": {"text": "", "author": "", "backgroundImage": ""}},
             "operationalSuperiority": {"description": "", "images": []},
             "lethality": {"logistics": {"description": "", "image": ""}, "training": {"description": "", "image": ""}},
             "gallery": {"showcaseImages": []},
-            "footer": {"description": "", "contact": {"discord": "", "email": ""}}
+            "footer": {"description": "Tropic Lightning — Ready to Strike", "contact": {"discord": "", "email": ""}, "disclaimer": "This is a fictional Arma Reforger milsim unit. We are NOT in any way tied to the Department of War or the United States Department of Defense."}
         }
     if isinstance(content.get('updated_at'), str):
         content['updated_at'] = datetime.fromisoformat(content['updated_at'])

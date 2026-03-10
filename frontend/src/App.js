@@ -150,36 +150,39 @@ const HeroSection = ({ content }) => (
 // ============================================================================
 // ABOUT SECTION
 // ============================================================================
-const AboutSection = ({ content }) => (
-  <section id="about" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="about-section">
-    <div className="container mx-auto max-w-6xl">
-      <div className="grid md:grid-cols-[280px,1fr] gap-16 items-start">
-        <div className="space-y-8">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold section-underline tracking-wider" data-testid="about-heading">ABOUT</h2>
-          {content.about.logoImage && (
-            <img src={resolveImg(content.about.logoImage)} alt="Unit Emblem" className="w-48 h-48 object-contain opacity-80 mt-6" data-testid="about-logo" />
-          )}
-          <Link to="/login"><Button className="bg-amber-700 hover:bg-amber-800 text-white px-10 py-5 text-lg tactical-button shadow-lg shadow-amber-900/40 tracking-wider" data-testid="about-join-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
-        </div>
-        <div className="space-y-8 text-base md:text-lg leading-relaxed">
-          <p className="text-gray-300" data-testid="about-description-1">{content.about.paragraph1}</p>
-          <div className="h-px bg-gradient-to-r from-transparent via-amber-800/40 to-transparent"></div>
-          <p className="text-gray-300" data-testid="about-description-2">{content.about.paragraph2}</p>
-          {/* Quote block */}
-          <div className="mt-12 relative rounded-lg overflow-hidden" style={{ backgroundImage: `url('${resolveImg(content.about.quote.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '280px' }}>
-            <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/75 to-amber-900/30"></div>
-            <div className="relative z-10 p-10 md:p-14 flex items-center justify-center min-h-[280px]">
-              <div className="border-l-4 border-amber-700 pl-8 max-w-xl">
-                <p className="text-xl md:text-2xl italic text-gray-200 mb-5 font-light leading-relaxed" data-testid="founder-quote">{content.about.quote.text}</p>
-                <p className="text-base text-amber-400 font-bold tracking-wide" data-testid="founder-name">{content.about.quote.author}</p>
+const AboutSection = ({ content }) => {
+  const quote = typeof content.about?.quote === 'object' ? content.about.quote : { text: content.about?.quote || '', author: '', backgroundImage: '' };
+  return (
+    <section id="about" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="about-section">
+      <div className="container mx-auto max-w-6xl">
+        <div className="grid md:grid-cols-[280px,1fr] gap-16 items-start">
+          <div className="space-y-8">
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold section-underline tracking-wider" data-testid="about-heading">ABOUT</h2>
+            {content.about?.logoImage && (
+              <img src={resolveImg(content.about.logoImage)} alt="Unit Emblem" className="w-48 h-48 object-contain opacity-80 mt-6" data-testid="about-logo" />
+            )}
+            <Link to="/login"><Button className="bg-amber-700 hover:bg-amber-800 text-white px-10 py-5 text-lg tactical-button shadow-lg shadow-amber-900/40 tracking-wider" data-testid="about-join-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
+          </div>
+          <div className="space-y-8 text-base md:text-lg leading-relaxed">
+            <p className="text-gray-300" data-testid="about-description-1">{content.about?.paragraph1}</p>
+            <div className="h-px bg-gradient-to-r from-transparent via-amber-800/40 to-transparent"></div>
+            <p className="text-gray-300" data-testid="about-description-2">{content.about?.paragraph2}</p>
+            {/* Quote block */}
+            <div className="mt-12 relative rounded-lg overflow-hidden" style={{ backgroundImage: `url('${resolveImg(quote.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '280px' }}>
+              <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/75 to-amber-900/30"></div>
+              <div className="relative z-10 p-10 md:p-14 flex items-center justify-center min-h-[280px]">
+                <div className="border-l-4 border-amber-700 pl-8 max-w-xl">
+                  <p className="text-xl md:text-2xl italic text-gray-200 mb-5 font-light leading-relaxed" data-testid="founder-quote">{quote.text}</p>
+                  <p className="text-base text-amber-400 font-bold tracking-wide" data-testid="founder-name">{quote.author}</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // ============================================================================
 // OPERATIONAL SUPERIORITY SECTION
@@ -196,12 +199,12 @@ const OperationalSuperioritySection = ({ content }) => {
           </h2>
           <div className="relative">
             <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-700 via-amber-700/40 to-transparent"></div>
-            <p className="text-lg leading-relaxed text-gray-300 pl-8" data-testid="ops-superiority-description">{content.operationalSuperiority.description}</p>
+            <p className="text-lg leading-relaxed text-gray-300 pl-8" data-testid="ops-superiority-description">{content.operationalSuperiority?.description}</p>
           </div>
         </div>
         <div className="h-px bg-gradient-to-r from-transparent via-amber-800/40 to-transparent mb-16"></div>
         <div className="grid md:grid-cols-3 gap-6">
-          {content.operationalSuperiority.images.map((img, idx) => (
+          {(content.operationalSuperiority?.images || []).map((img, idx) => (
             <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-white/10 hover:border-amber-700/40 transition-all duration-500 shadow-2xl shadow-black/40 group" data-testid={`ops-image-${idx + 1}`}>
               <img src={resolveImg(img)} alt={`Tactical ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
@@ -226,21 +229,21 @@ const LethalitySection = ({ content }) => {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h3 className="text-3xl font-bold tracking-wide" data-testid="logistics-heading">LOGISTICS & OPERATIONAL SUPPORT</h3>
-            <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="logistics-description">{content.lethality.logistics.description}</p>
+            <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="logistics-description">{content.lethality?.logistics?.description}</p>
           </div>
           <div className="aspect-video overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/40 group">
-            <img src={resolveImg(content.lethality.logistics.image)} alt="Logistics" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            <img src={resolveImg(content.lethality?.logistics?.image)} alt="Logistics" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
         </div>
         <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
         {/* Training */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1 aspect-video overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/40 group">
-            <img src={resolveImg(content.lethality.training.image)} alt="Training" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            <img src={resolveImg(content.lethality?.training?.image)} alt="Training" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
           <div className="order-1 md:order-2 space-y-6">
             <h3 className="text-3xl font-bold tracking-wide" data-testid="training-heading">TRAINING PROGRAMS</h3>
-            <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="training-description">{content.lethality.training.description}</p>
+            <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="training-description">{content.lethality?.training?.description}</p>
           </div>
         </div>
       </div>
@@ -387,7 +390,7 @@ const GallerySection = ({ content }) => {
           <p className="text-base md:text-lg">{sh.subtext || 'Moments from the field'}</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {content.gallery.showcaseImages.map((img, idx) => (
+          {(content.gallery?.showcaseImages || []).map((img, idx) => (
             <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-white/5 hover:border-amber-700/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30" data-testid={`gallery-image-${idx}`}>
               <img src={resolveImg(img)} alt={`Mission ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
             </div>

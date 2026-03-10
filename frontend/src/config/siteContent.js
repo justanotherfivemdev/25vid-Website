@@ -11,21 +11,47 @@ export const defaultSiteContent = {
   },
   nav: {
     title: '25TH INFANTRY DIVISION',
+    brandName: '25TH INFANTRY DIVISION',
     buttonText: 'ENLIST NOW',
     hubLabel: 'MEMBER HUB'
   },
   about: {
     sectionTitle: 'ABOUT THE 25TH',
     sectionSubtitle: 'History, Honor, and the Taro Leaf',
-    logoUrl: `${BACKEND_URL}/api/uploads/25th_id_patch.png`,
-    paragraphs: [
-      'The 25th Infantry Division — known as "Tropic Lightning" — is one of the most storied divisions in U.S. military history. Activated on October 1, 1941, at Schofield Barracks, Hawaii, the division earned its nickname from its distinctive taro leaf shoulder patch and the lightning bolt that symbolizes the speed and power of its operations.',
-      'From the jungles of Guadalcanal and the Philippines in World War II, through the frozen terrain of Korea, the dense forests of Vietnam, and the mountains of Afghanistan, the 25th has served with distinction in every major American conflict. Its soldiers have earned a legacy of rapid deployment capability, jungle warfare expertise, and unwavering combat readiness.',
-      'Now in Arma Reforger, the 25th Infantry Division carries that same legacy forward — a tight-knit unit of dedicated operators committed to tactical excellence, realistic combined arms operations, and the brotherhood that defines the Tropic Lightning spirit.'
-    ],
-    quote: '"Ready to Strike" — 25th Infantry Division',
+    logoImage: `${BACKEND_URL}/api/uploads/25th_id_patch.png`,
+    paragraph1: 'The 25th Infantry Division — known as "Tropic Lightning" — is one of the most storied divisions in U.S. military history. Activated on October 1, 1941, at Schofield Barracks, Hawaii, the division earned its nickname from its distinctive taro leaf shoulder patch and the lightning bolt that symbolizes the speed and power of its operations.',
+    paragraph2: 'From the jungles of Guadalcanal and the Philippines in World War II, through the frozen terrain of Korea, the dense forests of Vietnam, and the mountains of Afghanistan, the 25th has served with distinction in every major American conflict. Now in Arma Reforger, the 25th Infantry Division carries that same legacy forward — a tight-knit unit of dedicated operators committed to tactical excellence, realistic combined arms operations, and the brotherhood that defines the Tropic Lightning spirit.',
+    quote: {
+      text: '"Ready to Strike — Anywhere, Anytime"',
+      author: '25th Infantry Division Motto',
+      backgroundImage: ''
+    },
     missionTitle: 'OUR MISSION',
     missionText: 'To maintain a combat-ready force capable of rapid deployment and sustained operations, embodying the Tropic Lightning tradition of speed, discipline, and lethal proficiency in every engagement.'
+  },
+  sectionHeadings: {
+    operationalSuperiority: {
+      heading: 'OPERATIONAL SUPERIORITY'
+    },
+    lethality: {
+      heading: 'LETHALITY ON DEMAND'
+    },
+    operations: {
+      heading: 'UPCOMING OPERATIONS',
+      subtext: 'Join the next tactical mission'
+    },
+    intel: {
+      heading: 'LATEST INTEL',
+      subtext: 'Stay informed with our latest updates'
+    },
+    gallery: {
+      heading: 'MISSION GALLERY',
+      subtext: 'Tropic Lightning in Action'
+    },
+    enlist: {
+      heading: 'JOIN THE 25TH',
+      subtext: 'Become part of the Tropic Lightning legacy'
+    }
   },
   operations: {
     sectionTitle: 'OPERATIONAL SUPERIORITY',
@@ -44,7 +70,8 @@ export const defaultSiteContent = {
   },
   gallery: {
     sectionTitle: 'UNIT GALLERY',
-    sectionSubtitle: 'Tropic Lightning in Action'
+    sectionSubtitle: 'Tropic Lightning in Action',
+    showcaseImages: []
   },
   operationalSuperiority: {
     description: 'The 25th Infantry Division maintains operational superiority through combined arms mastery, rapid deployment capability, and relentless combat readiness. From jungle warfare to urban operations, Tropic Lightning soldiers train to dominate across the full spectrum of conflict.',
