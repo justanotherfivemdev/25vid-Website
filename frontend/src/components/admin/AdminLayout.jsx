@@ -26,16 +26,16 @@ const AdminLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Top Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-red-900/30">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-amber-700/30">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-              AZIMUTH ADMIN
+              25TH ID ADMIN
             </h1>
           </div>
           <div className="flex items-center space-x-4">
             <Link to="/">
-              <Button variant="outline" size="sm" className="border-red-700 text-red-500 hover:bg-red-700/10">
+              <Button variant="outline" size="sm" className="border-amber-700 text-amber-500 hover:bg-amber-700/10">
                 <Home className="w-4 h-4 mr-2" />
                 View Site
               </Button>
@@ -44,7 +44,7 @@ const AdminLayout = ({ children }) => {
               onClick={handleLogout}
               variant="outline" 
               size="sm"
-              className="border-red-700 text-red-500 hover:bg-red-700/10"
+              className="border-amber-700 text-amber-500 hover:bg-amber-700/10"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -55,7 +55,7 @@ const AdminLayout = ({ children }) => {
       
       <div className="flex pt-16">
         {/* Sidebar */}
-        <div className="fixed left-0 top-16 bottom-0 w-64 bg-gray-900 border-r border-red-900/30 overflow-y-auto">
+        <div className="fixed left-0 top-16 bottom-0 w-64 bg-gray-900 border-r border-amber-700/30 overflow-y-auto">
           <nav className="p-4 space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -66,7 +66,7 @@ const AdminLayout = ({ children }) => {
                   <div
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-red-700 text-white'
+                        ? 'bg-amber-700 text-white'
                         : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                     }`}
                   >

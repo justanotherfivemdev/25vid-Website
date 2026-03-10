@@ -1,6 +1,6 @@
-# Azimuth Operations Group
+# 25th Infantry Division — Tropic Lightning
 
-A full-stack tactical operations platform for MilSim unit management, featuring a public recruitment site, member operations hub, and admin command center with live content editing.
+A full-stack tactical operations platform for the 25th Infantry Division MilSim unit, featuring a public recruitment site, member operations hub, and admin command center with live content editing.
 
 ## Features
 

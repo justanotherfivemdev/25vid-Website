@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Azimuth Operations Group - Admin Bootstrap Script
+25th Infantry Division - Admin Bootstrap Script
 
 Creates or upserts the admin (Bishop) user for production deployment.
 Run this once after deploying to create your admin account.
@@ -40,7 +40,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 async def create_admin_user():
     print("=" * 60)
-    print("AZIMUTH OPERATIONS GROUP - ADMIN BOOTSTRAP")
+    print("25TH INFANTRY DIVISION - ADMIN BOOTSTRAP")
     print("=" * 60)
     print()
 

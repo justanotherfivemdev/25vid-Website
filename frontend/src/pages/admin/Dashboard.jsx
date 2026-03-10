@@ -63,7 +63,7 @@ const AdminDashboard = () => {
           <h1 className="text-4xl font-bold mb-2" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
             DASHBOARD
           </h1>
-          <p className="text-gray-400">Welcome to the Azimuth Operations Group Admin Panel</p>
+          <p className="text-gray-400">Welcome to the 25th Infantry Division Admin Panel</p>
         </div>
         
         {loading ? (
@@ -98,7 +98,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <a href="/admin/operations" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
-              <Calendar className="w-8 h-8 mx-auto mb-2 text-red-500" />
+              <Calendar className="w-8 h-8 mx-auto mb-2 text-amber-500" />
               <div className="font-medium">Manage Operations</div>
             </a>
             <a href="/admin/announcements" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">

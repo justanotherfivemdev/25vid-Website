@@ -11,7 +11,7 @@ import { Trash2, Search, ChevronRight } from 'lucide-react';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
-const STATUS_COLORS = { recruit: 'bg-yellow-700', active: 'bg-green-700', reserve: 'bg-blue-700', staff: 'bg-purple-700', command: 'bg-red-700', inactive: 'bg-gray-700' };
+const STATUS_COLORS = { recruit: 'bg-yellow-700', active: 'bg-green-700', reserve: 'bg-blue-700', staff: 'bg-purple-700', command: 'bg-amber-700', inactive: 'bg-gray-700' };
 
 const UsersManager = () => {
   const [users, setUsers] = useState([]);
@@ -62,7 +62,7 @@ const UsersManager = () => {
           <div className="grid gap-2">
             {filtered.map((u) => (
               <Link to={`/admin/users/${u.id}`} key={u.id}>
-                <Card className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors group" data-testid={`user-card-${u.id}`}>
+                <Card className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors group" data-testid={`user-card-${u.id}`}>
                   <CardContent className="py-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -72,16 +72,16 @@ const UsersManager = () => {
                           <div className="w-9 h-9 rounded-lg bg-gray-800 flex items-center justify-center text-sm font-bold text-gray-500 border border-gray-700">{u.username[0]?.toUpperCase()}</div>
                         )}
                         <div>
-                          <div className="font-bold text-sm tracking-wide group-hover:text-red-400 transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{u.username}</div>
+                          <div className="font-bold text-sm tracking-wide group-hover:text-amber-400 transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{u.username}</div>
                           <div className="text-xs text-gray-500">{u.email}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {u.rank && <span className="text-xs text-gray-400 hidden sm:block">{u.rank}</span>}
                         <Badge className={`${STATUS_COLORS[u.status] || 'bg-gray-700'} text-white text-[10px] px-2`}>{(u.status || 'recruit').toUpperCase()}</Badge>
-                        {u.role === 'admin' && <Badge className="bg-red-900/50 text-red-400 text-[10px]">ADMIN</Badge>}
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteUser(u.id); }} className="text-red-500 hover:bg-red-700/10 shrink-0" data-testid={`delete-user-${u.id}`}><Trash2 className="w-3 h-3" /></Button>
-                        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-red-500 transition-colors" />
+                        {u.role === 'admin' && <Badge className="bg-amber-900/50 text-amber-400 text-[10px]">ADMIN</Badge>}
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteUser(u.id); }} className="text-amber-500 hover:bg-amber-700/10 shrink-0" data-testid={`delete-user-${u.id}`}><Trash2 className="w-3 h-3" /></Button>
+                        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-amber-500 transition-colors" />
                       </div>
                     </div>
                   </CardContent>

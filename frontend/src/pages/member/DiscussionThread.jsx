@@ -61,21 +61,21 @@ const DiscussionThread = () => {
     navigate('/');
   };
 
-  const getCatColor = (c) => ({ general: 'border-gray-500 text-gray-400', operations: 'border-red-500 text-red-400', training: 'border-blue-500 text-blue-400', feedback: 'border-green-500 text-green-400' }[c] || 'border-gray-500 text-gray-400');
+  const getCatColor = (c) => ({ general: 'border-gray-500 text-gray-400', operations: 'border-amber-500 text-amber-400', training: 'border-blue-500 text-blue-400', feedback: 'border-green-500 text-green-400' }[c] || 'border-gray-500 text-gray-400');
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
   if (!discussion) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Discussion not found</div>;
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-red-900/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub/discussions"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Forum</Button></Link>
             <h1 className="text-xl font-bold tracking-wider truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{discussion.title}</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-red-700 text-red-500 hover:bg-red-700/10"><Shield className="w-4 h-4" /></Button></Link>}
+            {user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-amber-700 text-amber-500 hover:bg-amber-700/10"><Shield className="w-4 h-4" /></Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -92,7 +92,7 @@ const DiscussionThread = () => {
                 <span className="text-sm text-gray-500">{new Date(discussion.created_at).toLocaleString()}</span>
               </div>
               <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{discussion.title}</CardTitle>
-              <div className="text-sm text-gray-400 mt-1">Posted by <span className="text-red-400 font-medium">{discussion.author_name}</span></div>
+              <div className="text-sm text-gray-400 mt-1">Posted by <span className="text-amber-400 font-medium">{discussion.author_name}</span></div>
             </CardHeader>
             <CardContent>
               <p className="text-gray-300 whitespace-pre-wrap">{discussion.content}</p>
@@ -102,7 +102,7 @@ const DiscussionThread = () => {
           {/* Replies */}
           <div className="space-y-1">
             <h3 className="text-lg font-bold flex items-center gap-2" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-              <MessageSquare className="w-5 h-5 text-red-500" /> REPLIES ({discussion.replies?.length || 0})
+              <MessageSquare className="w-5 h-5 text-amber-500" /> REPLIES ({discussion.replies?.length || 0})
             </h3>
           </div>
 
@@ -116,13 +116,13 @@ const DiscussionThread = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <span className="text-sm font-medium text-red-400">{r.author_name}</span>
+                          <span className="text-sm font-medium text-amber-400">{r.author_name}</span>
                           <span className="text-xs text-gray-500">{new Date(r.created_at).toLocaleString()}</span>
                         </div>
                         <p className="text-gray-300 whitespace-pre-wrap">{r.content}</p>
                       </div>
                       {user?.role === 'admin' && (
-                        <Button size="sm" variant="ghost" onClick={() => handleDeleteReply(r.id)} className="text-red-500 hover:bg-red-700/10 shrink-0 ml-2" data-testid={`delete-reply-${r.id || idx}`}>
+                        <Button size="sm" variant="ghost" onClick={() => handleDeleteReply(r.id)} className="text-amber-500 hover:bg-amber-700/10 shrink-0 ml-2" data-testid={`delete-reply-${r.id || idx}`}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       )}
@@ -147,7 +147,7 @@ const DiscussionThread = () => {
                   data-testid="reply-input"
                 />
                 <div className="flex justify-end">
-                  <Button type="submit" disabled={submitting} className="bg-red-700 hover:bg-red-800" data-testid="reply-submit-btn">
+                  <Button type="submit" disabled={submitting} className="bg-amber-700 hover:bg-amber-800" data-testid="reply-submit-btn">
                     <Send className="w-4 h-4 mr-2" />{submitting ? 'Posting...' : 'Post Reply'}
                   </Button>
                 </div>

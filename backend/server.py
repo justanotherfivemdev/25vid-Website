@@ -1246,7 +1246,7 @@ async def search_content(q: str, current_user: dict = Depends(get_current_user))
 
 @api_router.get("/")
 async def root():
-    return {"message": "Azimuth Operations Group API", "status": "operational"}
+    return {"message": "25th Infantry Division API", "status": "operational"}
 
 # Include the router in the main app
 app.include_router(api_router)

@@ -9,7 +9,7 @@ import { ArrowLeft, Shield, Home, LogOut, Calendar, Clock, Award, Target, MapPin
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
-const STATUS_COLORS = { recruit: 'bg-yellow-700', active: 'bg-green-700', reserve: 'bg-blue-700', staff: 'bg-purple-700', command: 'bg-red-700', inactive: 'bg-gray-700' };
+const STATUS_COLORS = { recruit: 'bg-yellow-700', active: 'bg-green-700', reserve: 'bg-blue-700', staff: 'bg-purple-700', command: 'bg-amber-700', inactive: 'bg-gray-700' };
 
 const MemberProfile = () => {
   const { id } = useParams();
@@ -35,7 +35,7 @@ const MemberProfile = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-red-900/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Roster</Button></Link>
@@ -43,7 +43,7 @@ const MemberProfile = () => {
           </div>
           <div className="flex items-center space-x-3">
             {isOwnProfile && <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-blue-700 text-blue-400 hover:bg-blue-700/10">Edit Profile</Button></Link>}
-            {user?.role === 'admin' && <Link to={`/admin/users/${profile.id}`}><Button size="sm" variant="outline" className="border-red-700 text-red-400 hover:bg-red-700/10"><Shield className="w-4 h-4 mr-1" />Admin Edit</Button></Link>}
+            {user?.role === 'admin' && <Link to={`/admin/users/${profile.id}`}><Button size="sm" variant="outline" className="border-amber-700 text-amber-400 hover:bg-amber-700/10"><Shield className="w-4 h-4 mr-1" />Admin Edit</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -54,7 +54,7 @@ const MemberProfile = () => {
         <div className="container mx-auto max-w-4xl space-y-6">
           {/* Header card */}
           <Card className="bg-gray-900/80 border-gray-800 overflow-hidden" data-testid="profile-header">
-            <div className="h-24 bg-gradient-to-r from-red-900/40 via-gray-900 to-gray-900"></div>
+            <div className="h-24 bg-gradient-to-r from-amber-900/40 via-gray-900 to-gray-900"></div>
             <CardContent className="px-6 pb-6 -mt-10">
               <div className="flex items-end gap-5">
                 {profile.avatar_url ? (
@@ -67,7 +67,7 @@ const MemberProfile = () => {
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {profile.rank && <span className="text-sm text-gray-400">{profile.rank}</span>}
                     <Badge className={`${STATUS_COLORS[profile.status] || 'bg-gray-700'} text-white text-xs`}>{(profile.status || 'recruit').toUpperCase()}</Badge>
-                    {profile.role === 'admin' && <Badge className="bg-red-900/60 text-red-400 text-xs">ADMIN</Badge>}
+                    {profile.role === 'admin' && <Badge className="bg-amber-900/60 text-amber-400 text-xs">ADMIN</Badge>}
                     {profile.discord_linked && <Badge className="bg-[#5865F2]/20 text-[#5865F2] text-xs border border-[#5865F2]/30">{profile.discord_username || 'Discord'}</Badge>}
                   </div>
                 </div>
@@ -82,7 +82,7 @@ const MemberProfile = () => {
                 <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">JOINED</div><div className="text-sm font-medium flex items-center gap-1"><Calendar className="w-3 h-3 text-gray-500" />{new Date(profile.join_date).toLocaleDateString()}</div></div>
               </div>
 
-              {profile.bio && <p className="mt-6 text-gray-300 text-sm leading-relaxed border-l-2 border-red-800/40 pl-4" data-testid="profile-bio">{profile.bio}</p>}
+              {profile.bio && <p className="mt-6 text-gray-300 text-sm leading-relaxed border-l-2 border-amber-800/40 pl-4" data-testid="profile-bio">{profile.bio}</p>}
             </CardContent>
           </Card>
 
@@ -107,7 +107,7 @@ const MemberProfile = () => {
           {/* Mission History */}
           {profile.mission_history?.length > 0 && (
             <Card className="bg-gray-900/80 border-gray-800" data-testid="profile-missions">
-              <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider flex items-center gap-2"><Target className="w-5 h-5 text-red-500" /> MISSION HISTORY</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider flex items-center gap-2"><Target className="w-5 h-5 text-amber-500" /> MISSION HISTORY</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {profile.mission_history.map((m, i) => (
@@ -116,7 +116,7 @@ const MemberProfile = () => {
                         <div className="font-bold text-sm tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{m.operation_name}</div>
                         <div className="text-xs text-gray-500 flex items-center gap-1"><Calendar className="w-3 h-3" />{m.date}</div>
                       </div>
-                      <div className="text-xs text-red-400 mb-1">Role: {m.role_performed}</div>
+                      <div className="text-xs text-amber-400 mb-1">Role: {m.role_performed}</div>
                       {m.notes && <div className="text-xs text-gray-500">{m.notes}</div>}
                     </div>
                   ))}

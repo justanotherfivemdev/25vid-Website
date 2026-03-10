@@ -113,7 +113,7 @@ const OperationsManager = () => {
 
   const getTypeColor = (type) => {
     const colors = {
-      combat: 'bg-red-700',
+      combat: 'bg-amber-700',
       training: 'bg-blue-600',
       recon: 'bg-green-600',
       support: 'bg-yellow-600'
@@ -137,7 +137,7 @@ const OperationsManager = () => {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button className="bg-red-700 hover:bg-red-800">
+              <Button className="bg-amber-700 hover:bg-amber-800">
                 <Plus className="w-4 h-4 mr-2" />
                 New Operation
               </Button>
@@ -248,7 +248,7 @@ const OperationsManager = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-red-700 hover:bg-red-800">
+                  <Button type="submit" className="bg-amber-700 hover:bg-amber-800">
                     {editingOp ? 'Update' : 'Create'} Operation
                   </Button>
                 </div>
@@ -306,7 +306,7 @@ const OperationsManager = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleDelete(op.id)}
-                        className="border-red-700 text-red-500 hover:bg-red-700/10"
+                        className="border-amber-700 text-amber-500 hover:bg-amber-700/10"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

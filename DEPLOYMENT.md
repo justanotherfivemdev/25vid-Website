@@ -1,4 +1,4 @@
-# Azimuth Operations Group — Production Deployment Guide
+# 25th Infantry Division — Production Deployment Guide
 
 ## Prerequisites
 
@@ -57,7 +57,7 @@ pip install -r requirements.txt
 
 ```env
 MONGO_URL=mongodb://localhost:27017
-DB_NAME=azimuth_operations
+DB_NAME=25th_infantry_division
 JWT_SECRET=<GENERATE_A_STRONG_RANDOM_SECRET>
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
@@ -98,7 +98,7 @@ Create `/etc/systemd/system/azimuth-backend.service`:
 
 ```ini
 [Unit]
-Description=Azimuth Operations Backend
+Description=25th Infantry Division Backend
 After=network.target mongod.service
 
 [Service]

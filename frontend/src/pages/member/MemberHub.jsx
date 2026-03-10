@@ -71,25 +71,25 @@ const MemberHub = () => {
     navigate('/');
   };
 
-  const getTypeColor = (t) => ({ combat: 'bg-red-700', training: 'bg-blue-600', recon: 'bg-green-600', support: 'bg-yellow-600' }[t] || 'bg-gray-600');
-  const getPriorityColor = (p) => ({ urgent: 'text-red-500 border-red-500', high: 'text-orange-500 border-orange-500', normal: 'text-blue-400 border-blue-400', low: 'text-gray-400 border-gray-400' }[p] || 'text-gray-400 border-gray-400');
+  const getTypeColor = (t) => ({ combat: 'bg-amber-700', training: 'bg-blue-600', recon: 'bg-green-600', support: 'bg-yellow-600' }[t] || 'bg-gray-600');
+  const getPriorityColor = (p) => ({ urgent: 'text-amber-500 border-amber-500', high: 'text-orange-500 border-orange-500', normal: 'text-blue-400 border-blue-400', low: 'text-gray-400 border-gray-400' }[p] || 'text-gray-400 border-gray-400');
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Top bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-red-900/30" data-testid="member-nav">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30" data-testid="member-nav">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>AZIMUTH OPS HUB</h1>
+            <h1 className="text-xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH ID HUB</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-400 hidden sm:block">Welcome, <span className="text-red-400 font-bold">{user?.username}</span></span>
+            <span className="text-sm text-gray-400 hidden sm:block">Welcome, <span className="text-amber-400 font-bold">{user?.username}</span></span>
             <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
             <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
             {user?.role === 'admin' && (
-              <Link to="/admin"><Button size="sm" variant="outline" className="border-red-700 text-red-500 hover:bg-red-700/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
+              <Link to="/admin"><Button size="sm" variant="outline" className="border-amber-700 text-amber-500 hover:bg-amber-700/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
             )}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4 mr-1" />Home</Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700" data-testid="member-logout-btn"><LogOut className="w-4 h-4" /></Button>
@@ -100,7 +100,7 @@ const MemberHub = () => {
       <div className="pt-20 pb-12 px-6">
         <div className="container mx-auto max-w-7xl space-y-8">
           {/* Welcome banner with search */}
-          <div className="bg-gradient-to-r from-red-900/30 to-gray-900 border border-red-900/30 rounded-lg p-6" data-testid="member-welcome-banner">
+          <div className="bg-gradient-to-r from-amber-900/30 to-gray-900 border border-amber-700/30 rounded-lg p-6" data-testid="member-welcome-banner">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>OPERATIONS HUB</h2>
@@ -117,7 +117,7 @@ const MemberHub = () => {
                     data-testid="hub-search-input"
                   />
                 </div>
-                <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-red-700 hover:bg-red-800" data-testid="hub-search-btn">
+                <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-amber-700 hover:bg-amber-800" data-testid="hub-search-btn">
                   {searching ? '...' : 'Search'}
                 </Button>
                 {searchResults && <Button type="button" variant="outline" onClick={clearSearch} className="border-gray-700" data-testid="hub-search-clear">Clear</Button>}
@@ -135,7 +135,7 @@ const MemberHub = () => {
                   <div className="grid md:grid-cols-2 gap-3">
                     {searchResults.operations.map(op => (
                       <Link to={`/hub/operations/${op.id}`} key={op.id}>
-                        <Card className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors" data-testid={`search-op-${op.id}`}>
+                        <Card className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors" data-testid={`search-op-${op.id}`}>
                           <CardContent className="py-3">
                             <div className="flex items-center gap-2 mb-1">
                               <Badge className={`${getTypeColor(op.operation_type)} text-white text-xs`}>{op.operation_type?.toUpperCase()}</Badge>
@@ -155,7 +155,7 @@ const MemberHub = () => {
                   <div className="space-y-2">
                     {searchResults.discussions.map(d => (
                       <Link to={`/hub/discussions/${d.id}`} key={d.id}>
-                        <Card className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors" data-testid={`search-disc-${d.id}`}>
+                        <Card className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors" data-testid={`search-disc-${d.id}`}>
                           <CardContent className="py-3 flex items-center gap-3">
                             {d.pinned && <Pin className="w-3 h-3 text-yellow-500 shrink-0" />}
                             <Badge variant="outline" className="text-xs border-gray-700">{d.category}</Badge>
@@ -188,8 +188,8 @@ const MemberHub = () => {
               <div className="space-y-2" data-testid="op-reminders">
                 {upcoming.map(op => (
                   <Link to={`/hub/operations/${op.id}`} key={op.id} className="block">
-                    <div className="bg-red-900/20 border border-red-700/40 rounded-lg p-4 flex items-center gap-4 hover:bg-red-900/30 transition-colors">
-                      <Bell className="w-5 h-5 text-red-400 shrink-0 animate-pulse" />
+                    <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg p-4 flex items-center gap-4 hover:bg-amber-900/30 transition-colors">
+                      <Bell className="w-5 h-5 text-amber-400 shrink-0 animate-pulse" />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">{op.title}</div>
                         <div className="text-xs text-gray-400 flex items-center gap-3 mt-0.5">
@@ -216,7 +216,7 @@ const MemberHub = () => {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {mySchedule.map(op => (
                   <Link to={`/hub/operations/${op.id}`} key={op.id}>
-                    <Card className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors h-full" data-testid={`schedule-op-${op.id}`}>
+                    <Card className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors h-full" data-testid={`schedule-op-${op.id}`}>
                       <CardContent className="py-3 space-y-2">
                         <div className="flex items-center justify-between">
                           <Badge className={`${getTypeColor(op.operation_type)} text-white text-xs`}>{op.operation_type?.toUpperCase()}</Badge>
@@ -239,19 +239,19 @@ const MemberHub = () => {
 
           {/* Quick nav */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Link to="/hub/discussions" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-red-700/50 transition-colors text-center" data-testid="hub-nav-discussions">
-              <MessageSquare className="w-8 h-8 mx-auto mb-2 text-red-500" /><span className="font-medium text-sm">Discussions</span>
+            <Link to="/hub/discussions" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center" data-testid="hub-nav-discussions">
+              <MessageSquare className="w-8 h-8 mx-auto mb-2 text-amber-500" /><span className="font-medium text-sm">Discussions</span>
             </Link>
-            <a href="#ops" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-red-700/50 transition-colors text-center">
+            <a href="#ops" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center">
               <Calendar className="w-8 h-8 mx-auto mb-2 text-blue-500" /><span className="font-medium text-sm">Operations</span>
             </a>
-            <a href="#training" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-red-700/50 transition-colors text-center">
+            <a href="#training" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center">
               <BookOpen className="w-8 h-8 mx-auto mb-2 text-green-500" /><span className="font-medium text-sm">Training</span>
             </a>
-            <a href="#intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-red-700/50 transition-colors text-center">
+            <a href="#intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center">
               <Megaphone className="w-8 h-8 mx-auto mb-2 text-yellow-500" /><span className="font-medium text-sm">Intel</span>
             </a>
-            <Link to="/roster" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-red-700/50 transition-colors text-center" data-testid="hub-nav-roster">
+            <Link to="/roster" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center" data-testid="hub-nav-roster">
               <Users className="w-8 h-8 mx-auto mb-2 text-purple-500" /><span className="font-medium text-sm">Roster</span>
             </Link>
           </div>
@@ -291,7 +291,7 @@ const MemberHub = () => {
                   const tentative = op.rsvps?.filter(r => r.status === 'tentative').length || 0;
                   const waitlisted = op.rsvps?.filter(r => r.status === 'waitlisted').length || 0;
                   return (
-                    <Card key={op.id} className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors" data-testid={`hub-operation-${op.id}`}>
+                    <Card key={op.id} className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors" data-testid={`hub-operation-${op.id}`}>
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <Badge className={`${getTypeColor(op.operation_type)} text-white`}>{op.operation_type.toUpperCase()}</Badge>
@@ -311,7 +311,7 @@ const MemberHub = () => {
                           {waitlisted > 0 && <span className="text-orange-400">{waitlisted} waitlisted</span>}
                         </div>
                         <Link to={`/hub/operations/${op.id}`}>
-                          <Button size="sm" className="bg-red-700 hover:bg-red-800 w-full" data-testid={`hub-rsvp-${op.id}`}>VIEW & RSVP <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                          <Button size="sm" className="bg-amber-700 hover:bg-amber-800 w-full" data-testid={`hub-rsvp-${op.id}`}>VIEW & RSVP <ChevronRight className="w-4 h-4 ml-1" /></Button>
                         </Link>
                       </CardContent>
                     </Card>
@@ -357,7 +357,7 @@ const MemberHub = () => {
               <div className="space-y-2">
                 {discussions.map((d) => (
                   <Link to={`/hub/discussions/${d.id}`} key={d.id} className="block">
-                    <Card className={`bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors ${d.pinned ? 'border-l-2 border-l-yellow-600' : ''}`} data-testid={`hub-discussion-${d.id}`}>
+                    <Card className={`bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors ${d.pinned ? 'border-l-2 border-l-yellow-600' : ''}`} data-testid={`hub-discussion-${d.id}`}>
                       <CardContent className="py-3 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {d.pinned && <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}

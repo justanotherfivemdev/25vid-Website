@@ -12,7 +12,7 @@ const API = `${BACKEND_URL}/api`;
 
 const STATUS_ICON = { attending: CheckCircle, tentative: HelpCircle, waitlisted: Clock };
 const STATUS_COLOR = { attending: 'text-green-400', tentative: 'text-yellow-400', waitlisted: 'text-orange-400' };
-const TYPE_CFG = { combat: 'bg-red-800/80', training: 'bg-blue-700/80', recon: 'bg-emerald-700/80', support: 'bg-amber-700/80' };
+const TYPE_CFG = { combat: 'bg-amber-800/80', training: 'bg-blue-700/80', recon: 'bg-emerald-700/80', support: 'bg-amber-700/80' };
 
 const OperationDetail = () => {
   const { id } = useParams();
@@ -89,14 +89,14 @@ const OperationDetail = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-red-900/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-widest truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin/operations"><Button size="sm" variant="outline" className="border-red-700 text-red-500"><Shield className="w-4 h-4" /></Button></Link>}
+            {user?.role === 'admin' && <Link to="/admin/operations"><Button size="sm" variant="outline" className="border-amber-700 text-amber-500"><Shield className="w-4 h-4" /></Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -112,8 +112,8 @@ const OperationDetail = () => {
               <div className="flex items-center gap-3 flex-wrap">
                 <Badge className={`${TYPE_CFG[operation.operation_type] || 'bg-gray-600'} text-white tracking-wider`}>{operation.operation_type.toUpperCase()}</Badge>
                 <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-1 text-red-600" />{operation.date}</span>
-                  <span className="flex items-center"><Clock className="w-4 h-4 mr-1 text-red-600" />{operation.time}</span>
+                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-1 text-amber-600" />{operation.date}</span>
+                  <span className="flex items-center"><Clock className="w-4 h-4 mr-1 text-amber-600" />{operation.time}</span>
                 </div>
               </div>
               <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h2>
@@ -145,7 +145,7 @@ const OperationDetail = () => {
               <div className="flex flex-wrap gap-3">
                 <Button onClick={() => handleRSVP('attending')} disabled={submitting} className={`${currentStatus === 'attending' ? 'bg-green-700 ring-2 ring-green-500' : 'bg-green-800/60 hover:bg-green-700'}`} data-testid="rsvp-attending"><CheckCircle className="w-4 h-4 mr-2" />Attending</Button>
                 <Button onClick={() => handleRSVP('tentative')} disabled={submitting} className={`${currentStatus === 'tentative' ? 'bg-yellow-700 ring-2 ring-yellow-500' : 'bg-yellow-800/60 hover:bg-yellow-700'}`} data-testid="rsvp-tentative"><HelpCircle className="w-4 h-4 mr-2" />Tentative</Button>
-                {currentStatus && <Button onClick={handleCancel} disabled={submitting} variant="outline" className="border-red-700 text-red-500 hover:bg-red-700/10" data-testid="rsvp-cancel"><XCircle className="w-4 h-4 mr-2" />Cancel RSVP</Button>}
+                {currentStatus && <Button onClick={handleCancel} disabled={submitting} variant="outline" className="border-amber-700 text-amber-500 hover:bg-amber-700/10" data-testid="rsvp-cancel"><XCircle className="w-4 h-4 mr-2" />Cancel RSVP</Button>}
               </div>
             </CardContent>
           </Card>
@@ -169,7 +169,7 @@ const OperationDetail = () => {
                       {group.list.map((r, i) => (
                         <div key={r.user_id || i} className="flex items-center justify-between py-2 px-3 bg-black/20 rounded border border-gray-800/30" data-testid={`rsvp-entry-${r.user_id}`}>
                           <div className="flex items-center gap-3">
-                            <Link to={`/roster/${r.user_id}`} className="font-medium text-sm hover:text-red-400 transition-colors">{r.username}</Link>
+                            <Link to={`/roster/${r.user_id}`} className="font-medium text-sm hover:text-amber-400 transition-colors">{r.username}</Link>
                             {r.role_notes && <span className="text-xs text-gray-500 border border-gray-800 px-1.5 py-0.5 rounded">{r.role_notes}</span>}
                           </div>
                           <div className="flex items-center gap-2">

@@ -93,7 +93,7 @@ const AnnouncementsManager = () => {
   };
 
   const getPriorityColor = (p) => {
-    const c = { urgent: 'bg-red-700', high: 'bg-orange-600', normal: 'bg-blue-600', low: 'bg-gray-600' };
+    const c = { urgent: 'bg-amber-700', high: 'bg-orange-600', normal: 'bg-blue-600', low: 'bg-gray-600' };
     return c[p] || 'bg-gray-600';
   };
 
@@ -110,7 +110,7 @@ const AnnouncementsManager = () => {
 
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-red-700 hover:bg-red-800" data-testid="new-announcement-btn">
+              <Button className="bg-amber-700 hover:bg-amber-800" data-testid="new-announcement-btn">
                 <Plus className="w-4 h-4 mr-2" />
                 New Announcement
               </Button>
@@ -180,7 +180,7 @@ const AnnouncementsManager = () => {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-700">
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-red-700 hover:bg-red-800" data-testid="announcement-submit-btn">
+                  <Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="announcement-submit-btn">
                     {editingAnn ? 'Update' : 'Create'} Announcement
                   </Button>
                 </div>
@@ -229,7 +229,7 @@ const AnnouncementsManager = () => {
                       <Button size="sm" variant="outline" onClick={() => handleEdit(ann)} className="border-gray-700" data-testid={`edit-announcement-${ann.id}`}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(ann.id)} className="border-red-700 text-red-500 hover:bg-red-700/10" data-testid={`delete-announcement-${ann.id}`}>
+                      <Button size="sm" variant="outline" onClick={() => handleDelete(ann.id)} className="border-amber-700 text-amber-500 hover:bg-amber-700/10" data-testid={`delete-announcement-${ann.id}`}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

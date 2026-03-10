@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Users, Shield, Megaphone, Clock, ChevronRight } from 'lucide-react';
-import { SITE_CONTENT } from '@/config/siteContent';
+import { defaultSiteContent } from '@/config/siteContent';
 
 import AdminDashboard from '@/pages/admin/Dashboard';
 import OperationsManager from '@/pages/admin/OperationsManager';
@@ -54,13 +54,13 @@ const deepMerge = (defaults, overrides) => {
 // DYNAMIC CONTENT HOOK
 // ============================================================================
 const useSiteContent = () => {
-  const [content, setContent] = useState(SITE_CONTENT);
+  const [content, setContent] = useState(defaultSiteContent);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     axios.get(`${API}/site-content`).then(res => {
       if (res.data) {
-        const merged = deepMerge(SITE_CONTENT, res.data);
+        const merged = deepMerge(defaultSiteContent, res.data);
         // Arrays need special handling — only override if non-empty
         if (res.data.operationalSuperiority?.images?.length) merged.operationalSuperiority.images = res.data.operationalSuperiority.images;
         if (res.data.gallery?.showcaseImages?.length) merged.gallery.showcaseImages = res.data.gallery.showcaseImages;
@@ -96,7 +96,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 // ============================================================================
 const Navigation = ({ scrollToSection, content }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const brandName = content.nav?.brandName || 'AZIMUTH OPERATIONS GROUP';
+  const brandName = content.nav?.brandName || '25TH INFANTRY DIVISION';
   const btnText = content.nav?.buttonText || 'JOIN NOW';
 
   return (
@@ -110,13 +110,13 @@ const Navigation = ({ scrollToSection, content }) => {
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} /></svg>
           </button>
           <div className={`${menuOpen ? 'flex flex-col absolute top-full left-0 right-0 bg-black/95 p-6 space-y-4 border-b border-white/10' : 'hidden'} md:flex md:flex-row md:static md:bg-transparent md:p-0 md:space-y-0 md:border-0 items-center md:space-x-8`}>
-            <button onClick={() => { scrollToSection('about'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-red-500 transition-colors" data-testid="nav-about">ABOUT</button>
-            <button onClick={() => { scrollToSection('operations'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-red-500 transition-colors" data-testid="nav-operations">OPERATIONS</button>
-            <button onClick={() => { scrollToSection('training'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-red-500 transition-colors" data-testid="nav-training">TRAINING</button>
-            <button onClick={() => { scrollToSection('intel'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-red-500 transition-colors" data-testid="nav-intel">INTEL</button>
-            <div className="hidden md:block h-5 w-px bg-red-800/60"></div>
+            <button onClick={() => { scrollToSection('about'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-amber-500 transition-colors" data-testid="nav-about">ABOUT</button>
+            <button onClick={() => { scrollToSection('operations'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-amber-500 transition-colors" data-testid="nav-operations">OPERATIONS</button>
+            <button onClick={() => { scrollToSection('training'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-amber-500 transition-colors" data-testid="nav-training">TRAINING</button>
+            <button onClick={() => { scrollToSection('intel'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-amber-500 transition-colors" data-testid="nav-intel">INTEL</button>
+            <div className="hidden md:block h-5 w-px bg-amber-800/60"></div>
             <Link to="/login" onClick={() => setMenuOpen(false)}>
-              <Button className="bg-red-700 hover:bg-red-800 text-white px-6 py-2 tactical-button font-bold tracking-wider" data-testid="nav-join-button">{btnText}</Button>
+              <Button className="bg-amber-700 hover:bg-amber-800 text-white px-6 py-2 tactical-button font-bold tracking-wider" data-testid="nav-join-button">{btnText}</Button>
             </Link>
           </div>
         </div>
@@ -132,27 +132,15 @@ const HeroSection = ({ content }) => (
   <section className="hero-section relative min-h-screen flex items-center justify-center" style={{ backgroundImage: `url('${resolveImg(content.hero.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }} data-testid="hero-section">
     <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/75 to-black"></div>
     <div className="relative z-10 text-center px-6">
-      <div className="mb-10 compass-logo" data-testid="azimuth-logo">
-        <div className="relative inline-block">
-          <svg width="260" height="260" viewBox="0 0 300 300" className="mx-auto opacity-90">
-            <circle cx="150" cy="150" r="140" stroke="#a00d0d" strokeWidth="2.5" fill="none" opacity="0.7"/>
-            <circle cx="150" cy="150" r="120" stroke="#a00d0d" strokeWidth="1.5" fill="none" opacity="0.4"/>
-            <path d="M 150 30 L 160 140 L 150 150 L 140 140 Z" fill="#a00d0d"/>
-            <path d="M 150 270 L 160 160 L 150 150 L 140 160 Z" fill="#555"/>
-            <circle cx="150" cy="150" r="7" fill="#a00d0d"/>
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center flex-col">
-            <div className="text-4xl font-bold tracking-[0.2em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>AZIMUTH</div>
-            <div className="text-2xl text-gray-400 mt-1 tracking-[0.25em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>SECURITY</div>
-          </div>
-        </div>
+      <div className="mb-10 compass-logo" data-testid="unit-logo">
+        <img src={`${process.env.REACT_APP_BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th Infantry Division" className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain drop-shadow-[0_0_30px_rgba(212,160,23,0.4)]" />
       </div>
       <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-[0.08em] leading-tight" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="hero-tagline">
-        <span className="block">{content.hero.tagline.line1}</span>
-        <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">{content.hero.tagline.line2}</span>
+        <span className="block">{typeof content.hero.tagline === 'string' ? content.hero.tagline : content.hero.tagline?.line1 || 'TROPIC LIGHTNING'}</span>
+        {content.hero.subtitle && <span className="block text-lg sm:text-xl lg:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200 mt-4 tracking-[0.15em]">{content.hero.subtitle}</span>}
       </h1>
       <div className="mt-10">
-        <Link to="/login"><Button className="bg-red-700 hover:bg-red-800 text-white px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
+        <Link to="/login"><Button className="bg-amber-700 hover:bg-amber-800 text-white px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">{content.nav?.buttonText || 'ENLIST NOW'}</Button></Link>
       </div>
     </div>
     <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>
@@ -171,19 +159,19 @@ const AboutSection = ({ content }) => (
           {content.about.logoImage && (
             <img src={resolveImg(content.about.logoImage)} alt="Unit Emblem" className="w-48 h-48 object-contain opacity-80 mt-6" data-testid="about-logo" />
           )}
-          <Link to="/login"><Button className="bg-red-700 hover:bg-red-800 text-white px-10 py-5 text-lg tactical-button shadow-lg shadow-red-900/40 tracking-wider" data-testid="about-join-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
+          <Link to="/login"><Button className="bg-amber-700 hover:bg-amber-800 text-white px-10 py-5 text-lg tactical-button shadow-lg shadow-amber-900/40 tracking-wider" data-testid="about-join-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
         </div>
         <div className="space-y-8 text-base md:text-lg leading-relaxed">
           <p className="text-gray-300" data-testid="about-description-1">{content.about.paragraph1}</p>
-          <div className="h-px bg-gradient-to-r from-transparent via-red-800/40 to-transparent"></div>
+          <div className="h-px bg-gradient-to-r from-transparent via-amber-800/40 to-transparent"></div>
           <p className="text-gray-300" data-testid="about-description-2">{content.about.paragraph2}</p>
           {/* Quote block */}
           <div className="mt-12 relative rounded-lg overflow-hidden" style={{ backgroundImage: `url('${resolveImg(content.about.quote.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '280px' }}>
-            <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/75 to-red-900/30"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/75 to-amber-900/30"></div>
             <div className="relative z-10 p-10 md:p-14 flex items-center justify-center min-h-[280px]">
-              <div className="border-l-4 border-red-700 pl-8 max-w-xl">
+              <div className="border-l-4 border-amber-700 pl-8 max-w-xl">
                 <p className="text-xl md:text-2xl italic text-gray-200 mb-5 font-light leading-relaxed" data-testid="founder-quote">{content.about.quote.text}</p>
-                <p className="text-base text-red-400 font-bold tracking-wide" data-testid="founder-name">{content.about.quote.author}</p>
+                <p className="text-base text-amber-400 font-bold tracking-wide" data-testid="founder-name">{content.about.quote.author}</p>
               </div>
             </div>
           </div>
@@ -203,18 +191,18 @@ const OperationalSuperioritySection = ({ content }) => {
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-7xl">
         <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
-          <h2 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-300 to-red-600" data-testid="ops-superiority-heading">
+          <h2 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-300 to-amber-500" data-testid="ops-superiority-heading">
             {(sh.heading || 'OPERATIONAL SUPERIORITY').split(' ').map((w, i) => <span key={i} className="block">{w}</span>)}
           </h2>
           <div className="relative">
-            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-red-700 via-red-700/40 to-transparent"></div>
+            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-700 via-amber-700/40 to-transparent"></div>
             <p className="text-lg leading-relaxed text-gray-300 pl-8" data-testid="ops-superiority-description">{content.operationalSuperiority.description}</p>
           </div>
         </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-red-800/40 to-transparent mb-16"></div>
+        <div className="h-px bg-gradient-to-r from-transparent via-amber-800/40 to-transparent mb-16"></div>
         <div className="grid md:grid-cols-3 gap-6">
           {content.operationalSuperiority.images.map((img, idx) => (
-            <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-white/10 hover:border-red-700/40 transition-all duration-500 shadow-2xl shadow-black/40 group" data-testid={`ops-image-${idx + 1}`}>
+            <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-white/10 hover:border-amber-700/40 transition-all duration-500 shadow-2xl shadow-black/40 group" data-testid={`ops-image-${idx + 1}`}>
               <img src={resolveImg(img)} alt={`Tactical ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
@@ -273,7 +261,7 @@ const UpcomingOperationsSection = ({ content }) => {
   }, []);
 
   const typeConfig = {
-    combat:   { bg: 'bg-red-800/80', border: 'border-red-800/30', glow: 'shadow-red-900/20' },
+    combat:   { bg: 'bg-amber-800/80', border: 'border-amber-800/30', glow: 'shadow-amber-900/20' },
     training: { bg: 'bg-blue-700/80', border: 'border-blue-800/30', glow: 'shadow-blue-900/20' },
     recon:    { bg: 'bg-emerald-700/80', border: 'border-emerald-800/30', glow: 'shadow-emerald-900/20' },
     support:  { bg: 'bg-amber-700/80', border: 'border-amber-800/30', glow: 'shadow-amber-900/20' },
@@ -306,11 +294,11 @@ const UpcomingOperationsSection = ({ content }) => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2 text-sm mb-4">
-                      <div className="flex items-center text-gray-300"><Calendar className="w-4 h-4 mr-2 text-red-600 shrink-0"/>{op.date}</div>
-                      <div className="flex items-center text-gray-300"><Clock className="w-4 h-4 mr-2 text-red-600 shrink-0"/>{op.time}</div>
-                      {op.max_participants && <div className="flex items-center text-gray-400"><Users className="w-4 h-4 mr-2 text-red-600 shrink-0"/><span>{op.rsvp_list?.length || 0} / {op.max_participants} operators</span></div>}
+                      <div className="flex items-center text-gray-300"><Calendar className="w-4 h-4 mr-2 text-amber-600 shrink-0"/>{op.date}</div>
+                      <div className="flex items-center text-gray-300"><Clock className="w-4 h-4 mr-2 text-amber-600 shrink-0"/>{op.time}</div>
+                      {op.max_participants && <div className="flex items-center text-gray-400"><Users className="w-4 h-4 mr-2 text-amber-600 shrink-0"/><span>{op.rsvp_list?.length || 0} / {op.max_participants} operators</span></div>}
                     </div>
-                    <Link to="/login"><Button className="w-full bg-red-700/90 hover:bg-red-700 text-sm tracking-wider" data-testid={`operation-rsvp-${idx}`}>RSVP NOW <ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
+                    <Link to="/login"><Button className="w-full bg-amber-700/90 hover:bg-amber-700 text-sm tracking-wider" data-testid={`operation-rsvp-${idx}`}>RSVP NOW <ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
                   </CardContent>
                 </Card>
               );
@@ -335,7 +323,7 @@ const AnnouncementsSection = ({ content }) => {
   }, []);
 
   const priorityConfig = {
-    urgent: { class: 'intel-urgent', badge: 'bg-red-800 text-red-200', dot: 'bg-red-500' },
+    urgent: { class: 'intel-urgent', badge: 'bg-amber-800 text-amber-200', dot: 'bg-amber-500' },
     high:   { class: 'intel-high',   badge: 'bg-orange-800 text-orange-200', dot: 'bg-orange-500' },
     normal: { class: 'intel-normal', badge: 'bg-blue-800/60 text-blue-200', dot: 'bg-blue-500' },
     low:    { class: 'intel-low',    badge: 'bg-gray-800 text-gray-300', dot: 'bg-gray-500' },
@@ -400,7 +388,7 @@ const GallerySection = ({ content }) => {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {content.gallery.showcaseImages.map((img, idx) => (
-            <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-white/5 hover:border-red-700/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30" data-testid={`gallery-image-${idx}`}>
+            <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-white/5 hover:border-amber-700/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30" data-testid={`gallery-image-${idx}`}>
               <img src={resolveImg(img)} alt={`Mission ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
             </div>
           ))}
@@ -427,17 +415,17 @@ const JoinUsSection = ({ content }) => {
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-3xl">
         <div className="section-label">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold" data-testid="join-heading">{sh.heading || 'ENLIST TODAY'}</h2>
-          <p className="text-base md:text-lg">{sh.subtext || 'Join the most professional MilSim unit'}</p>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold" data-testid="join-heading">{sh.heading || 'JOIN THE 25TH'}</h2>
+          <p className="text-base md:text-lg">{sh.subtext || 'Become part of the Tropic Lightning legacy'}</p>
         </div>
         <Card className="glass-card shadow-2xl shadow-black/40">
           <CardContent className="p-8 md:p-10">
             <form onSubmit={handleSubmit} className="space-y-5" data-testid="join-form">
-              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Name</label><Input type="text" required className="bg-black/50 border-white/10 focus:border-red-700/50" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} data-testid="join-name-input" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Email</label><Input type="email" required className="bg-black/50 border-white/10 focus:border-red-700/50" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} data-testid="join-email-input" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Specialization</label><Input type="text" placeholder="e.g., Assault, Recon, Support, Medic" className="bg-black/50 border-white/10 focus:border-red-700/50" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} data-testid="join-specialization-input" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Why do you want to join?</label><Textarea rows={4} className="bg-black/50 border-white/10 focus:border-red-700/50" value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} data-testid="join-message-input" /></div>
-              <Button type="submit" className="w-full bg-red-700 hover:bg-red-800 py-5 text-lg tactical-button tracking-wider" data-testid="join-submit-button"><Shield className="mr-2 w-5 h-5"/>SUBMIT APPLICATION</Button>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Name</label><Input type="text" required className="bg-black/50 border-white/10 focus:border-amber-700/50" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} data-testid="join-name-input" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Email</label><Input type="email" required className="bg-black/50 border-white/10 focus:border-amber-700/50" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} data-testid="join-email-input" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Specialization</label><Input type="text" placeholder="e.g., Assault, Recon, Support, Medic" className="bg-black/50 border-white/10 focus:border-amber-700/50" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} data-testid="join-specialization-input" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Why do you want to join?</label><Textarea rows={4} className="bg-black/50 border-white/10 focus:border-amber-700/50" value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} data-testid="join-message-input" /></div>
+              <Button type="submit" className="w-full bg-amber-700 hover:bg-amber-800 py-5 text-lg tactical-button tracking-wider" data-testid="join-submit-button"><Shield className="mr-2 w-5 h-5"/>SUBMIT APPLICATION</Button>
             </form>
           </CardContent>
         </Card>
@@ -454,27 +442,30 @@ const Footer = ({ content }) => (
     <div className="container mx-auto max-w-7xl">
       <div className="grid md:grid-cols-3 gap-10 mb-10">
         <div>
-          <h3 className="text-xl font-bold mb-3 tracking-wider">{content.nav?.brandName || 'AZIMUTH OPERATIONS GROUP'}</h3>
-          <p className="text-sm text-gray-500 leading-relaxed">{content.footer.description}</p>
+          <h3 className="text-xl font-bold mb-3 tracking-wider">{content.nav?.brandName || '25TH INFANTRY DIVISION'}</h3>
+          <p className="text-sm text-gray-500 leading-relaxed">{content.footer?.tagline || 'Tropic Lightning — Ready to Strike'}</p>
         </div>
         <div>
           <h4 className="text-sm font-bold mb-3 tracking-[0.15em] text-gray-400">QUICK LINKS</h4>
           <ul className="space-y-2 text-sm text-gray-500">
-            <li><a href="#about" className="hover:text-red-500 transition-colors">About</a></li>
-            <li><a href="#operations" className="hover:text-red-500 transition-colors">Operations</a></li>
-            <li><a href="#training" className="hover:text-red-500 transition-colors">Training</a></li>
-            <li><Link to="/login" className="hover:text-red-500 transition-colors">Member Portal</Link></li>
+            <li><a href="#about" className="hover:text-amber-500 transition-colors">About</a></li>
+            <li><a href="#operations" className="hover:text-amber-500 transition-colors">Operations</a></li>
+            <li><a href="#training" className="hover:text-amber-500 transition-colors">Training</a></li>
+            <li><Link to="/login" className="hover:text-amber-500 transition-colors">Member Portal</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="text-sm font-bold mb-3 tracking-[0.15em] text-gray-400">CONNECT</h4>
           <div className="space-y-2 text-sm text-gray-500">
-            <p>Discord: {content.footer.contact.discord}</p>
-            <p>Email: {content.footer.contact.email}</p>
+            {content.footer?.discord && <p><a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition-colors">Discord Server</a></p>}
+            {(content.footer?.contact?.email || content.footer?.email) && <p>Email: {content.footer?.contact?.email || content.footer?.email}</p>}
           </div>
         </div>
       </div>
-      <div className="border-t border-white/5 pt-8 text-center text-xs text-gray-600 tracking-wider">&copy; 2025 Azimuth Operations Group. All rights reserved.</div>
+      <div className="border-t border-white/5 pt-8 space-y-3 text-center">
+        <p className="text-xs text-gray-600 tracking-wider">&copy; {new Date().getFullYear()} 25th Infantry Division — Tropic Lightning</p>
+        <p className="text-[10px] text-gray-700 max-w-2xl mx-auto leading-relaxed">{content.footer?.disclaimer || 'This is a fictional Arma Reforger milsim unit. We are NOT in any way tied to the Department of War or the United States Department of Defense.'}</p>
+      </div>
     </div>
   </footer>
 );
@@ -597,7 +588,7 @@ const LoginPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-red-700 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-2 border-amber-700 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400 tracking-wider">Authenticating with Discord...</p>
         </div>
       </div>
@@ -609,8 +600,8 @@ const LoginPage = () => {
       {content.login?.showBackground && <div className="absolute inset-0 bg-black" style={{ opacity: content.login.overlayOpacity || 0.85 }}></div>}
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-2 tracking-wider">AZIMUTH OPERATIONS</h1>
-          <p className="text-gray-400 text-sm tracking-wide">Member Access Portal</p>
+          <h1 className="text-4xl sm:text-5xl font-bold mb-2 tracking-wider">25TH INFANTRY DIVISION</h1>
+          <p className="text-gray-400 text-sm tracking-wide">Tropic Lightning — Member Access</p>
         </div>
         <Card className="glass-card">
           <CardHeader><CardTitle className="text-2xl text-center tracking-wider">{isLogin ? 'MEMBER LOGIN' : 'NEW RECRUIT'}</CardTitle></CardHeader>
@@ -623,8 +614,8 @@ const LoginPage = () => {
                 <div><label className="block text-sm font-medium mb-2">Rank (Optional)</label><Input type="text" className="bg-black/50 border-white/20" value={formData.rank} onChange={(e) => setFormData({...formData, rank: e.target.value})} data-testid="auth-rank-input" /></div>
                 <div><label className="block text-sm font-medium mb-2">Specialization (Optional)</label><Input type="text" placeholder="e.g., Assault, Recon, Support" className="bg-black/50 border-white/20" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} data-testid="auth-specialization-input" /></div>
               </>}
-              {error && <div className="text-red-500 text-sm text-center" data-testid="auth-error">{error}</div>}
-              <Button type="submit" disabled={submitting} className="w-full bg-red-700 hover:bg-red-800 py-5 tactical-button tracking-wider" data-testid="auth-submit-button">{submitting ? 'Please wait...' : isLogin ? 'LOGIN' : 'REGISTER'}</Button>
+              {error && <div className="text-amber-500 text-sm text-center" data-testid="auth-error">{error}</div>}
+              <Button type="submit" disabled={submitting} className="w-full bg-amber-700 hover:bg-amber-800 py-5 tactical-button tracking-wider" data-testid="auth-submit-button">{submitting ? 'Please wait...' : isLogin ? 'LOGIN' : 'REGISTER'}</Button>
             </form>
             {/* Discord OAuth — only shown when backend has Discord configured */}
             {discordAvailable && (
@@ -646,11 +637,11 @@ const LoginPage = () => {
               </div>
             )}
             <div className="mt-6 text-center">
-              <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-sm text-gray-400 hover:text-red-500 transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
+              <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-sm text-gray-400 hover:text-amber-500 transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
             </div>
           </CardContent>
         </Card>
-        <div className="mt-6 text-center"><Link to="/" className="text-sm text-gray-500 hover:text-red-500 transition-colors">&larr; Back to Home</Link></div>
+        <div className="mt-6 text-center"><Link to="/" className="text-sm text-gray-500 hover:text-amber-500 transition-colors">&larr; Back to Home</Link></div>
       </div>
     </div>
   );

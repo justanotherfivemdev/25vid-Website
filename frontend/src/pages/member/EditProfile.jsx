@@ -129,7 +129,7 @@ const EditProfile = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-red-900/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
@@ -145,7 +145,7 @@ const EditProfile = () => {
       <div className="pt-20 pb-12 px-6">
         <div className="container mx-auto max-w-2xl space-y-6">
           {message.text && (
-            <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-red-900/20 border-red-700'}>
+            <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-amber-900/20 border-red-700'}>
               {message.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
               <AlertDescription>{message.text}</AlertDescription>
             </Alert>
@@ -196,7 +196,7 @@ const EditProfile = () => {
                 </div>
               </div>
               <div className="flex justify-end pt-4">
-                <Button onClick={handleSave} disabled={saving} className="bg-red-700 hover:bg-red-800 px-8" data-testid="profile-save-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>
+                <Button onClick={handleSave} disabled={saving} className="bg-amber-700 hover:bg-amber-800 px-8" data-testid="profile-save-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>
               </div>
             </CardContent>
           </Card>
@@ -227,7 +227,7 @@ const EditProfile = () => {
                     onClick={handleUnlinkDiscord}
                     disabled={unlinking}
                     variant="outline"
-                    className="border-red-700 text-red-500 hover:bg-red-700/10"
+                    className="border-amber-700 text-amber-500 hover:bg-amber-700/10"
                     data-testid="discord-unlink-btn"
                   >
                     <Unlink className="w-4 h-4 mr-2" />{unlinking ? 'Unlinking...' : 'Unlink Discord'}

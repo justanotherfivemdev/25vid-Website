@@ -1,70 +1,78 @@
-/**
- * AZIMUTH OPERATIONS GROUP - DEFAULT CONTENT
- * These are fallback values when no database content exists.
- * ALL of this content can be edited live via Admin > Site Content.
- */
-export const SITE_CONTENT = {
-  nav: {
-    brandName: 'AZIMUTH OPERATIONS GROUP',
-    buttonText: 'JOIN NOW'
-  },
+// Default site content — fallback values when no database content exists yet.
+// All values here can be overridden live via Admin > Command Center.
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+export const defaultSiteContent = {
   hero: {
-    backgroundImage: 'https://customer-assets.emergentagent.com/job_mission-central-8/artifacts/6isgocjk_AzimuthPromo2-Edited2.png',
-    tagline: { line1: 'JOIN TODAY,', line2: 'SAVE TOMORROW.' }
+    backgroundImage: '',
+    tagline: 'TROPIC LIGHTNING',
+    subtitle: 'Ready to Strike — Anywhere, Anytime',
   },
-  login: {
-    backgroundImage: 'https://customer-assets.emergentagent.com/job_mission-central-8/artifacts/3owufngk_Hero%20%282%29.png',
-    showBackground: true,
-    overlayOpacity: 0.85
+  nav: {
+    title: '25TH INFANTRY DIVISION',
+    buttonText: 'ENLIST NOW',
+    hubLabel: 'MEMBER HUB'
   },
   about: {
-    logoImage: 'https://customer-assets.emergentagent.com/job_mission-central-8/artifacts/kkum6291_image2.png',
-    paragraph1: 'Founded by former special operations veterans, Bishop and Smithson, the company of Azimuth Security; also known as Azimuth Operations Group was the brainchild of a new form of Direct and no string attached warfare: the teams consist of members of highly skilled and diverse specializations to take on any task that the highest bidder can request.',
-    paragraph2: 'Azimuth Operations Group is a coordinated MilSim community where players train, deploy, and operate together in structured tactical missions. Whether on the ground or in support roles, every operator contributes to mission success.',
-    quote: {
-      text: '"Even in the harshest environments, professionalism and discipline remain our greatest force multipliers."',
-      author: '- B. Bishop (Azimuth CEO and Founder)',
-      backgroundImage: 'https://customer-assets.emergentagent.com/job_mission-central-8/artifacts/eqbm9r6j_editdigi1.png'
-    }
+    sectionTitle: 'ABOUT THE 25TH',
+    sectionSubtitle: 'History, Honor, and the Taro Leaf',
+    logoUrl: `${BACKEND_URL}/api/uploads/25th_id_patch.png`,
+    paragraphs: [
+      'The 25th Infantry Division — known as "Tropic Lightning" — is one of the most storied divisions in U.S. military history. Activated on October 1, 1941, at Schofield Barracks, Hawaii, the division earned its nickname from its distinctive taro leaf shoulder patch and the lightning bolt that symbolizes the speed and power of its operations.',
+      'From the jungles of Guadalcanal and the Philippines in World War II, through the frozen terrain of Korea, the dense forests of Vietnam, and the mountains of Afghanistan, the 25th has served with distinction in every major American conflict. Its soldiers have earned a legacy of rapid deployment capability, jungle warfare expertise, and unwavering combat readiness.',
+      'Now in Arma Reforger, the 25th Infantry Division carries that same legacy forward — a tight-knit unit of dedicated operators committed to tactical excellence, realistic combined arms operations, and the brotherhood that defines the Tropic Lightning spirit.'
+    ],
+    quote: '"Ready to Strike" — 25th Infantry Division',
+    missionTitle: 'OUR MISSION',
+    missionText: 'To maintain a combat-ready force capable of rapid deployment and sustained operations, embodying the Tropic Lightning tradition of speed, discipline, and lethal proficiency in every engagement.'
+  },
+  operations: {
+    sectionTitle: 'OPERATIONAL SUPERIORITY',
+    sectionSubtitle: 'Combined Arms. Rapid Deployment. Decisive Action.'
+  },
+  training: {
+    sectionTitle: 'TRAINING & READINESS',
+    sectionSubtitle: 'Forged in Discipline',
+    imageUrl: '',
+    description: 'Our training pipeline builds combat-effective soldiers through progressive skill development — from basic infantry tactics to advanced combined arms operations, ensuring every member of the 25th is mission-ready.'
+  },
+  logistics: {
+    sectionTitle: 'LOGISTICS & SUPPORT',
+    imageUrl: '',
+    description: 'The backbone of sustained operations. Our logistics section ensures equipment readiness, supply chain coordination, and operational support across all theaters of deployment.'
+  },
+  gallery: {
+    sectionTitle: 'UNIT GALLERY',
+    sectionSubtitle: 'Tropic Lightning in Action'
   },
   operationalSuperiority: {
-    description: 'From advisory roles to direct operational support, Azimuth Security delivers the experience, discipline, and force projection required to succeed in complex environments.',
-    images: [
-      'https://images.unsplash.com/photo-1762247789830-9d9e78843d60?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-      'https://images.unsplash.com/photo-1639069422496-03416b5daa28?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwzfHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-      'https://images.unsplash.com/photo-1763656445364-13646fd91212?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHw0fHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85'
-    ]
+    description: 'The 25th Infantry Division maintains operational superiority through combined arms mastery, rapid deployment capability, and relentless combat readiness. From jungle warfare to urban operations, Tropic Lightning soldiers train to dominate across the full spectrum of conflict.',
+    images: []
   },
   lethality: {
     logistics: {
-      description: 'End-to-end logistical and operational support ensuring personnel, equipment, and missions remain coordinated, supplied, and ready to operate in any environment.',
-      image: 'https://images.unsplash.com/photo-1588450248442-1c8357368dba?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHw0fHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85'
+      description: 'Sustained operations demand robust logistical support. The 25th maintains a complete supply chain, vehicle maintenance, and medical support infrastructure — ensuring every element stays mission-capable in any theater.',
+      image: ''
     },
     training: {
-      description: 'Professional training and strategic advisory services designed to develop tactical capability, leadership, and mission readiness in complex operational environments.',
-      image: 'https://images.unsplash.com/photo-1583872341575-610c859c7a57?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85'
+      description: 'Our training pipeline is built on progressive skill development. From basic infantry tactics to advanced combined arms integration, every soldier in the 25th earns their place through demonstrated proficiency and unwavering discipline.',
+      image: ''
     }
   },
-  gallery: {
-    showcaseImages: [
-      'https://images.unsplash.com/photo-1762247789830-9d9e78843d60?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-      'https://images.unsplash.com/photo-1639069422496-03416b5daa28?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwzfHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-      'https://images.unsplash.com/photo-1763656445364-13646fd91212?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHw0fHxtaWxpdGFyeSUyMHRhY3RpY2FsfGVufDB8fHx8MTc3MzA3Nzk1N3ww&ixlib=rb-4.1.0&q=85',
-      'https://images.unsplash.com/photo-1611570266453-e1bf0d4001d2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwzfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85',
-      'https://images.unsplash.com/photo-1588450248442-1c8357368dba?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHw0fHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85',
-      'https://images.unsplash.com/photo-1583872341575-610c859c7a57?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxzb2xkaWVyc3xlbnwwfHx8fDE3NzMwNzc5NjB8MA&ixlib=rb-4.1.0&q=85'
-    ]
+  join: {
+    sectionTitle: 'JOIN THE 25TH',
+    sectionSubtitle: 'Become Part of the Tropic Lightning Legacy'
   },
-  sectionHeadings: {
-    operations: { heading: 'UPCOMING OPERATIONS', subtext: 'Join the next tactical mission' },
-    intel: { heading: 'LATEST INTEL', subtext: 'Stay informed with our latest updates' },
-    gallery: { heading: 'MISSION GALLERY', subtext: 'Moments from the field' },
-    enlist: { heading: 'ENLIST TODAY', subtext: 'Join the most professional MilSim unit' },
-    lethality: { heading: 'LETHALITY ON DEMAND' },
-    operationalSuperiority: { heading: 'OPERATIONAL SUPERIORITY' }
+  login: {
+    showBackground: true,
+    overlayOpacity: 0.85
   },
   footer: {
-    description: 'Professional MilSim operations since 2025',
-    contact: { discord: 'Coming Soon', email: 'contact@azimuthops.com' }
+    unitName: '25th Infantry Division — Tropic Lightning',
+    tagline: 'Ready to Strike',
+    email: 'delta@25thvid.com',
+    discord: 'https://discord.gg/3CJH2ZspsU',
+    disclaimer: 'This is a fictional Arma Reforger milsim unit. We are NOT in any way tied to the Department of War or the United States Department of Defense.'
   }
 };

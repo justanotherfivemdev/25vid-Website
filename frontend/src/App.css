@@ -5,16 +5,16 @@
 }
 
 .compass-logo {
-  filter: drop-shadow(0 0 20px rgba(160, 13, 13, 0.5));
+  filter: drop-shadow(0 0 20px rgba(180, 130, 20, 0.5));
 }
 
 .tactical-button {
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(160, 13, 13, 0.3);
+  box-shadow: 0 4px 15px rgba(180, 130, 20, 0.3);
 }
 .tactical-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(160, 13, 13, 0.5);
+  box-shadow: 0 6px 25px rgba(180, 130, 20, 0.5);
 }
 
 /* ============ OPERATION CARDS ============ */
@@ -29,7 +29,7 @@
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, transparent 60%, rgba(160, 13, 13, 0.3));
+  background: linear-gradient(135deg, transparent 60%, rgba(180, 130, 20, 0.3));
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
@@ -40,7 +40,7 @@
 .op-card:hover::before { opacity: 1; }
 .op-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(160, 13, 13, 0.15), 0 0 0 1px rgba(160, 13, 13, 0.2);
+  box-shadow: 0 12px 40px rgba(180, 130, 20, 0.15), 0 0 0 1px rgba(180, 130, 20, 0.2);
 }
 
 /* ============ INTEL/ANNOUNCEMENT CARDS ============ */
@@ -53,7 +53,7 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
-.intel-urgent { border-left: 3px solid #a00d0d; }
+.intel-urgent { border-left: 3px solid #D4A017; }
 .intel-high { border-left: 3px solid #ff6b35; }
 .intel-normal { border-left: 3px solid #4a90e2; }
 .intel-low { border-left: 3px solid #555; }
@@ -72,7 +72,7 @@
   transform: translate(-50%, -50%);
   width: 60%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(160, 13, 13, 0.6), transparent);
+  background: linear-gradient(90deg, transparent, rgba(180, 130, 20, 0.6), transparent);
 }
 
 /* ============ SECTION LABEL ============ */
@@ -91,7 +91,7 @@
   display: block;
   width: 60px;
   height: 2px;
-  background: #a00d0d;
+  background: #D4A017;
   margin: 12px auto 0;
 }
 .section-label p {
@@ -119,7 +119,7 @@
   left: 0;
   width: 80px;
   height: 3px;
-  background: #a00d0d;
+  background: #D4A017;
 }
 
 /* ============ TACTICAL GRID ============ */
@@ -130,9 +130,9 @@
 }
 
 /* keep backwards compat */
-.announcement-urgent { border-left: 4px solid #a00d0d; }
+.announcement-urgent { border-left: 4px solid #D4A017; }
 .announcement-high { border-left: 4px solid #ff6b35; }
 .announcement-normal { border-left: 4px solid #4a90e2; }
 .announcement-low { border-left: 4px solid #888888; }
 .operation-card { transition: all 0.3s ease; }
-.operation-card:hover { transform: scale(1.02); border-color: rgba(160,13,13,0.5); }
+.operation-card:hover { transform: scale(1.02); border-color: rgba(180,130,20,0.5); }
