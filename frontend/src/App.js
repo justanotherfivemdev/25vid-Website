@@ -25,6 +25,7 @@ import UnitRoster from '@/pages/member/UnitRoster';
 import MemberProfile from '@/pages/member/MemberProfile';
 import EditProfile from '@/pages/member/EditProfile';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
+import HistoryManager from '@/pages/admin/HistoryManager';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -180,6 +181,80 @@ const AboutSection = ({ content }) => {
           </div>
         </div>
       </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// UNIT HISTORY TIMELINE SECTION
+// ============================================================================
+const UnitHistorySection = () => {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get(`${API}/unit-history`).then(r => setEntries(r.data)).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const typeAccent = (t) => ({
+    campaign: 'border-amber-700 bg-amber-700',
+    operation: 'border-blue-600 bg-blue-600',
+    milestone: 'border-emerald-600 bg-emerald-600',
+  }[t] || 'border-amber-700 bg-amber-700');
+
+  if (loading || entries.length === 0) return null;
+
+  return (
+    <section id="history" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #080806 50%, #000 100%)' }} data-testid="unit-history-section">
+      <div className="section-divider absolute top-0 left-0 right-0"></div>
+      <div className="container mx-auto max-w-5xl">
+        <div className="section-label mb-16">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold" data-testid="unit-history-heading">UNIT HISTORY</h2>
+          <p className="text-base md:text-lg">Over 80 years of service, sacrifice, and the Tropic Lightning legacy</p>
+        </div>
+
+        {/* Timeline */}
+        <div className="relative">
+          {/* Center line */}
+          <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-amber-700/60 via-amber-700/30 to-transparent" aria-hidden="true"></div>
+
+          <div className="space-y-12 md:space-y-16">
+            {entries.map((entry, idx) => {
+              const accent = typeAccent(entry.campaign_type);
+              const isLeft = idx % 2 === 0;
+
+              return (
+                <div key={entry.id} className="relative" data-testid={`history-timeline-${idx}`}>
+                  {/* Dot on the line */}
+                  <div className={`absolute left-6 md:left-1/2 w-4 h-4 rounded-full ${accent.split(' ')[1]} border-2 border-black -translate-x-1/2 z-10 shadow-lg shadow-amber-900/30`}></div>
+
+                  {/* Content card */}
+                  <div className={`ml-14 md:ml-0 md:w-[calc(50%-2.5rem)] ${isLeft ? 'md:mr-auto md:pr-0' : 'md:ml-auto md:pl-0'}`}>
+                    <div className={`group relative rounded-lg border ${accent.split(' ')[0]}/30 bg-black/60 backdrop-blur p-6 hover:border-amber-700/60 transition-all duration-500`}>
+                      {/* Year badge */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="text-amber-500 font-bold text-lg tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.year}</span>
+                        <span className={`text-[10px] tracking-widest px-2 py-0.5 rounded ${accent.split(' ')[1]} text-white/90`}>{entry.campaign_type.toUpperCase()}</span>
+                      </div>
+
+                      <h3 className="text-xl md:text-2xl font-bold tracking-wide mb-3" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.title}</h3>
+
+                      {entry.image_url && (
+                        <div className="mb-4 overflow-hidden rounded border border-white/10">
+                          <img src={entry.image_url.startsWith('http') ? entry.image_url : `${BACKEND_URL}/api${entry.image_url}`} alt={entry.title} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-700" />
+                        </div>
+                      )}
+
+                      <p className="text-gray-400 text-sm leading-relaxed">{entry.description}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <div className="section-divider absolute bottom-0 left-0 right-0"></div>
     </section>
   );
 };
@@ -485,6 +560,7 @@ const LandingPage = () => {
       <Navigation scrollToSection={scrollToSection} content={content} />
       <HeroSection content={content} />
       <AboutSection content={content} />
+      <UnitHistorySection />
       <OperationalSuperioritySection content={content} />
       <LethalitySection content={content} />
       <UpcomingOperationsSection content={content} />
@@ -666,6 +742,7 @@ function App() {
         <Route path="/admin/users" element={<ProtectedRoute adminOnly><UsersManager /></ProtectedRoute>} />
         <Route path="/admin/training" element={<ProtectedRoute adminOnly><TrainingManager /></ProtectedRoute>} />
         <Route path="/admin/gallery" element={<ProtectedRoute adminOnly><GalleryManager /></ProtectedRoute>} />
+        <Route path="/admin/history" element={<ProtectedRoute adminOnly><HistoryManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
         <Route path="/hub/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />

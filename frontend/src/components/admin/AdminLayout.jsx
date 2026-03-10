@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home } from 'lucide-react';
+import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen } from 'lucide-react';
 
 const AdminLayout = ({ children }) => {
   const location = useLocation();
@@ -19,6 +19,7 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/operations', icon: Calendar, label: 'Operations' },
     { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
     { path: '/admin/gallery', icon: Image, label: 'Gallery' },
+    { path: '/admin/history', icon: BookOpen, label: 'Unit History' },
     { path: '/admin/training', icon: FileText, label: 'Training' },
     { path: '/admin/users', icon: Users, label: 'Members' }
   ];

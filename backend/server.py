@@ -262,6 +262,25 @@ class AwardEntry(BaseModel):
     date: Optional[str] = None
     description: Optional[str] = None
 
+class HistoryEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    year: str
+    description: str
+    image_url: Optional[str] = None
+    campaign_type: str = "campaign"  # campaign, operation, milestone
+    sort_order: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class HistoryEntryCreate(BaseModel):
+    title: str
+    year: str
+    description: str
+    image_url: Optional[str] = None
+    campaign_type: str = "campaign"
+    sort_order: int = 0
+
 # ============================================================================
 # AUTH UTILITIES
 # ============================================================================
@@ -1240,6 +1259,43 @@ async def search_content(q: str, current_user: dict = Depends(get_current_user))
         {"$or": [{"title": regex}, {"content": regex}]}, {"_id": 0}
     ).sort("created_at", -1).to_list(20)
     return {"operations": ops, "discussions": discs}
+
+# ============================================================================
+# UNIT HISTORY ENDPOINTS
+# ============================================================================
+
+@api_router.get("/unit-history")
+async def get_unit_history():
+    entries = await db.unit_history.find({}, {"_id": 0}).sort("sort_order", 1).to_list(100)
+    return entries
+
+@api_router.post("/admin/unit-history")
+async def create_history_entry(entry_data: HistoryEntryCreate, current_user: dict = Depends(get_current_admin)):
+    entry = HistoryEntry(
+        **entry_data.model_dump()
+    )
+    await db.unit_history.insert_one(entry.model_dump())
+    result = entry.model_dump()
+    result.pop("_id", None)
+    return result
+
+@api_router.put("/admin/unit-history/{entry_id}")
+async def update_history_entry(entry_id: str, entry_data: HistoryEntryCreate, current_user: dict = Depends(get_current_admin)):
+    update_dict = entry_data.model_dump()
+    result = await db.unit_history.update_one(
+        {"id": entry_id},
+        {"$set": update_dict}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="History entry not found")
+    return {"message": "History entry updated successfully"}
+
+@api_router.delete("/admin/unit-history/{entry_id}")
+async def delete_history_entry(entry_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.unit_history.delete_one({"id": entry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="History entry not found")
+    return {"message": "History entry deleted successfully"}
 
 # ============================================================================
 # MISC ENDPOINTS
