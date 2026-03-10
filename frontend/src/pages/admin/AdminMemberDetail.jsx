@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Save, Plus, Trash2, CheckCircle, AlertCircle, ArrowLeft, Target, Award, Calendar } from 'lucide-react';
+import { Save, Plus, Trash2, CheckCircle, AlertCircle, ArrowLeft, Target, Award, Calendar, Link2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ImageUpload from '@/components/admin/ImageUpload';
@@ -54,7 +54,9 @@ const AdminMemberDetail = () => {
         username: member.username, role: member.role, rank: member.rank,
         specialization: member.specialization, status: member.status,
         squad: member.squad, avatar_url: member.avatar_url, bio: member.bio,
-        timezone: member.timezone, favorite_role: member.favorite_role
+        timezone: member.timezone, favorite_role: member.favorite_role,
+        discord_id: member.discord_id || undefined,
+        discord_username: member.discord_username || undefined
       }, config);
       setMessage({ type: 'success', text: 'Profile saved.' });
     } catch (e) {
@@ -159,6 +161,44 @@ const AdminMemberDetail = () => {
             </div>
             <div><Label>Preferred Role / Loadout</Label><Input value={member.favorite_role || ''} onChange={e => setMember({ ...member, favorite_role: e.target.value })} className="bg-black border-gray-700" /></div>
             <div><Label>Bio</Label><Textarea value={member.bio || ''} onChange={e => setMember({ ...member, bio: e.target.value })} rows={3} className="bg-black border-gray-700" /></div>
+          </CardContent>
+        </Card>
+
+        {/* Discord Integration Prep */}
+        <Card className="bg-gray-900 border-gray-800" data-testid="admin-discord-fields">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg tracking-wider flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-indigo-500" /> DISCORD INTEGRATION PREP
+            </CardTitle>
+            <p className="text-xs text-gray-500 mt-1">These fields prepare the account for future Discord OAuth linking. They are not active OAuth controls — values here will be overwritten when Discord linking goes live.</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Discord ID</Label>
+                <Input value={member.discord_id || ''} onChange={e => setMember({ ...member, discord_id: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., 123456789012345678" data-testid="discord-id-input" />
+              </div>
+              <div>
+                <Label>Discord Username</Label>
+                <Input value={member.discord_username || ''} onChange={e => setMember({ ...member, discord_username: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., operator#1234" data-testid="discord-username-input" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Discord Avatar URL</Label>
+                <Input value={member.discord_avatar || ''} disabled className="bg-black/40 border-gray-800 text-gray-500 cursor-not-allowed" placeholder="Auto-populated by Discord OAuth" data-testid="discord-avatar-input" />
+                <p className="text-[10px] text-gray-600 mt-1">Read-only — set automatically during Discord linking</p>
+              </div>
+              <div>
+                <Label>Discord Linked</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge className={`${member.discord_linked ? 'bg-green-700' : 'bg-gray-700'} text-white`} data-testid="discord-linked-badge">
+                    {member.discord_linked ? 'LINKED' : 'NOT LINKED'}
+                  </Badge>
+                  <p className="text-[10px] text-gray-600">Status managed by the OAuth flow</p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

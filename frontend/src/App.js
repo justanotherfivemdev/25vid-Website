@@ -20,6 +20,7 @@ import GalleryManager from '@/pages/admin/GalleryManager';
 import MemberHub from '@/pages/member/MemberHub';
 import DiscussionForum from '@/pages/member/DiscussionForum';
 import DiscussionThread from '@/pages/member/DiscussionThread';
+import OperationDetail from '@/pages/member/OperationDetail';
 import UnitRoster from '@/pages/member/UnitRoster';
 import MemberProfile from '@/pages/member/MemberProfile';
 import EditProfile from '@/pages/member/EditProfile';
@@ -590,6 +591,7 @@ function App() {
         <Route path="/hub/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />
         <Route path="/hub/discussions/:id" element={<ProtectedRoute><DiscussionThread /></ProtectedRoute>} />
+        <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
       </Routes>

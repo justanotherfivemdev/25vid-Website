@@ -4,7 +4,8 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,6 +17,9 @@ const MemberHub = () => {
   const [training, setTraining] = useState([]);
   const [discussions, setDiscussions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searching, setSearching] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,15 +44,21 @@ const MemberHub = () => {
     finally { setLoading(false); }
   };
 
-  const handleRSVP = async (opId) => {
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchQuery || searchQuery.length < 2) return;
+    setSearching(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(`${API}/operations/${opId}/rsvp`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      alert(res.data.message);
-      fetchAll();
-    } catch (err) {
-      alert(err.response?.data?.detail || 'RSVP failed');
-    }
+      const res = await axios.get(`${API}/search?q=${encodeURIComponent(searchQuery)}`, { headers: { Authorization: `Bearer ${token}` } });
+      setSearchResults(res.data);
+    } catch (err) { console.error(err); }
+    finally { setSearching(false); }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults(null);
   };
 
   const handleLogout = () => {
@@ -85,11 +95,80 @@ const MemberHub = () => {
 
       <div className="pt-20 pb-12 px-6">
         <div className="container mx-auto max-w-7xl space-y-8">
-          {/* Welcome banner */}
+          {/* Welcome banner with search */}
           <div className="bg-gradient-to-r from-red-900/30 to-gray-900 border border-red-900/30 rounded-lg p-6" data-testid="member-welcome-banner">
-            <h2 className="text-3xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>OPERATIONS HUB</h2>
-            <p className="text-gray-400 mt-1">Your tactical command overview — stay informed, stay ready.</p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h2 className="text-3xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>OPERATIONS HUB</h2>
+                <p className="text-gray-400 mt-1">Your tactical command overview — stay informed, stay ready.</p>
+              </div>
+              <form onSubmit={handleSearch} className="flex gap-2 w-full md:w-auto">
+                <div className="relative flex-1 md:w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Input
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search operations & discussions..."
+                    className="bg-black/50 border-gray-700 pl-10"
+                    data-testid="hub-search-input"
+                  />
+                </div>
+                <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-red-700 hover:bg-red-800" data-testid="hub-search-btn">
+                  {searching ? '...' : 'Search'}
+                </Button>
+                {searchResults && <Button type="button" variant="outline" onClick={clearSearch} className="border-gray-700" data-testid="hub-search-clear">Clear</Button>}
+              </form>
+            </div>
           </div>
+
+          {/* Search Results */}
+          {searchResults && (
+            <div className="space-y-4" data-testid="hub-search-results">
+              <h3 className="text-xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>SEARCH RESULTS</h3>
+              {searchResults.operations?.length > 0 && (
+                <div>
+                  <h4 className="text-sm tracking-wider text-gray-400 mb-2">OPERATIONS ({searchResults.operations.length})</h4>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {searchResults.operations.map(op => (
+                      <Link to={`/hub/operations/${op.id}`} key={op.id}>
+                        <Card className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors" data-testid={`search-op-${op.id}`}>
+                          <CardContent className="py-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge className={`${getTypeColor(op.operation_type)} text-white text-xs`}>{op.operation_type?.toUpperCase()}</Badge>
+                              <span className="text-xs text-gray-500">{op.date}</span>
+                            </div>
+                            <div className="font-medium">{op.title}</div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {searchResults.discussions?.length > 0 && (
+                <div>
+                  <h4 className="text-sm tracking-wider text-gray-400 mb-2">DISCUSSIONS ({searchResults.discussions.length})</h4>
+                  <div className="space-y-2">
+                    {searchResults.discussions.map(d => (
+                      <Link to={`/hub/discussions/${d.id}`} key={d.id}>
+                        <Card className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors" data-testid={`search-disc-${d.id}`}>
+                          <CardContent className="py-3 flex items-center gap-3">
+                            {d.pinned && <Pin className="w-3 h-3 text-yellow-500 shrink-0" />}
+                            <Badge variant="outline" className="text-xs border-gray-700">{d.category}</Badge>
+                            <span className="font-medium">{d.title}</span>
+                            <span className="text-xs text-gray-500 ml-auto">by {d.author_name}</span>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(!searchResults.operations?.length && !searchResults.discussions?.length) && (
+                <p className="text-gray-500 text-sm">No results found for "{searchQuery}".</p>
+              )}
+            </div>
+          )}
 
           {/* Quick nav */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -140,25 +219,37 @@ const MemberHub = () => {
             </div>
             {operations.length === 0 ? <p className="text-gray-500">No upcoming operations.</p> : (
               <div className="grid md:grid-cols-2 gap-4">
-                {operations.map((op) => (
-                  <Card key={op.id} className="bg-gray-900 border-gray-800" data-testid={`hub-operation-${op.id}`}>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <Badge className={`${getTypeColor(op.operation_type)} text-white`}>{op.operation_type.toUpperCase()}</Badge>
-                        {op.max_participants && <span className="text-xs text-gray-400"><Users className="inline w-3 h-3 mr-1" />{op.rsvp_list?.length || 0}/{op.max_participants}</span>}
-                      </div>
-                      <CardTitle className="text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{op.title}</CardTitle>
-                      <CardDescription className="text-gray-500">{op.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
-                        <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" />{op.date}</span>
-                        <span className="flex items-center"><Clock className="w-3 h-3 mr-1" />{op.time}</span>
-                      </div>
-                      <Button size="sm" className="bg-red-700 hover:bg-red-800 w-full" onClick={() => handleRSVP(op.id)} data-testid={`hub-rsvp-${op.id}`}>RSVP</Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                {operations.map((op) => {
+                  const attending = op.rsvps?.filter(r => r.status === 'attending').length || 0;
+                  const tentative = op.rsvps?.filter(r => r.status === 'tentative').length || 0;
+                  const waitlisted = op.rsvps?.filter(r => r.status === 'waitlisted').length || 0;
+                  return (
+                    <Card key={op.id} className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors" data-testid={`hub-operation-${op.id}`}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <Badge className={`${getTypeColor(op.operation_type)} text-white`}>{op.operation_type.toUpperCase()}</Badge>
+                          {op.max_participants && <span className="text-xs text-gray-400"><Users className="inline w-3 h-3 mr-1" />{attending}/{op.max_participants}</span>}
+                        </div>
+                        <CardTitle className="text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{op.title}</CardTitle>
+                        <CardDescription className="text-gray-500 line-clamp-2">{op.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
+                          <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" />{op.date}</span>
+                          <span className="flex items-center"><Clock className="w-3 h-3 mr-1" />{op.time}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
+                          <span className="text-green-400">{attending} attending</span>
+                          {tentative > 0 && <span className="text-yellow-400">{tentative} tentative</span>}
+                          {waitlisted > 0 && <span className="text-orange-400">{waitlisted} waitlisted</span>}
+                        </div>
+                        <Link to={`/hub/operations/${op.id}`}>
+                          <Button size="sm" className="bg-red-700 hover:bg-red-800 w-full" data-testid={`hub-rsvp-${op.id}`}>VIEW & RSVP <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -199,9 +290,10 @@ const MemberHub = () => {
               <div className="space-y-2">
                 {discussions.map((d) => (
                   <Link to={`/hub/discussions/${d.id}`} key={d.id} className="block">
-                    <Card className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors" data-testid={`hub-discussion-${d.id}`}>
+                    <Card className={`bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors ${d.pinned ? 'border-l-2 border-l-yellow-600' : ''}`} data-testid={`hub-discussion-${d.id}`}>
                       <CardContent className="py-3 flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          {d.pinned && <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
                           <Badge variant="outline" className="text-xs border-gray-700">{d.category}</Badge>
                           <span className="font-medium">{d.title}</span>
                           <span className="text-xs text-gray-500">by {d.author_name}</span>

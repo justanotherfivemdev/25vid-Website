@@ -71,12 +71,12 @@ For gallery images that you want stored in the database:
 
 ```bash
 # Login first to get your token
-curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/auth/login" \
+curl -X POST "https://azimuth-team.preview.emergentagent.com/api/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"email":"your@email.com","password":"yourpassword"}'
 
 # Upload image to gallery
-curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/gallery" \
+curl -X POST "https://azimuth-team.preview.emergentagent.com/api/gallery" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
   -d '{
@@ -170,7 +170,7 @@ gallery: {
 1. Edit `/app/frontend/src/config/siteContent.js`
 2. Save the file
 3. Wait ~3 seconds for hot reload
-4. Refresh your browser at: https://tactical-hub-21.preview.emergentagent.com
+4. Refresh your browser at: https://azimuth-team.preview.emergentagent.com
 5. Your changes should appear immediately!
 
 ---
@@ -220,7 +220,7 @@ These are managed via the API and database. To add content:
 
 ### **Add Operation:**
 ```bash
-curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/operations" \
+curl -X POST "https://azimuth-team.preview.emergentagent.com/api/operations" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -235,7 +235,7 @@ curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/operations" 
 
 ### **Add Announcement:**
 ```bash
-curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/announcements" \
+curl -X POST "https://azimuth-team.preview.emergentagent.com/api/announcements" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{

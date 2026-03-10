@@ -2,9 +2,9 @@
 
 ## 🔐 Access Information
 
-**Website:** https://tactical-hub-21.preview.emergentagent.com  
-**Admin Panel:** https://tactical-hub-21.preview.emergentagent.com/admin  
-**Login Page:** https://tactical-hub-21.preview.emergentagent.com/login  
+**Website:** https://azimuth-team.preview.emergentagent.com  
+**Admin Panel:** https://azimuth-team.preview.emergentagent.com/admin  
+**Login Page:** https://azimuth-team.preview.emergentagent.com/login  
 
 **Admin Credentials:**
 - Email: `bishop@azimuth.ops`

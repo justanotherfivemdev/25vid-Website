@@ -51,7 +51,7 @@ hero: {
 
 After logging in, upload to the database:
 ```bash
-curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/gallery" \
+curl -X POST "https://azimuth-team.preview.emergentagent.com/api/gallery" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title":"Operation Name","image_url":"URL","category":"operation"}'
@@ -106,7 +106,7 @@ about: {
 
 ### Add Operation:
 ```bash
-curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/operations" \
+curl -X POST "https://azimuth-team.preview.emergentagent.com/api/operations" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -121,7 +121,7 @@ curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/operations" 
 
 ### Add Announcement:
 ```bash
-curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/announcements" \
+curl -X POST "https://azimuth-team.preview.emergentagent.com/api/announcements" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -143,7 +143,7 @@ curl -X POST "https://tactical-hub-21.preview.emergentagent.com/api/announcement
 
 ## 🚀 Your Live Website
 
-**URL**: https://tactical-hub-21.preview.emergentagent.com
+**URL**: https://azimuth-team.preview.emergentagent.com
 
 **Test Account**:
 - Email: `bishop@azimuth.ops`

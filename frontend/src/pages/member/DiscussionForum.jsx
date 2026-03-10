@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MessageSquare, ArrowLeft, Shield, Home, LogOut } from 'lucide-react';
+import { Plus, MessageSquare, ArrowLeft, Shield, Home, LogOut, Pin, PinOff, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -27,8 +27,13 @@ const DiscussionForum = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('all');
   const [form, setForm] = useState({ category: 'general', title: '', content: '' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searching, setSearching] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token');
+  const config = { headers: { Authorization: `Bearer ${token}` } };
 
   useEffect(() => { fetchDiscussions(); }, []);
 
@@ -43,8 +48,7 @@ const DiscussionForum = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API}/discussions`, form, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/discussions`, form, config);
       await fetchDiscussions();
       setForm({ category: 'general', title: '', content: '' });
       setIsOpen(false);
@@ -56,10 +60,32 @@ const DiscussionForum = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this discussion?')) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API}/admin/discussions/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${API}/admin/discussions/${id}`, config);
       await fetchDiscussions();
     } catch (err) { alert('Error deleting'); }
+  };
+
+  const handleTogglePin = async (id) => {
+    try {
+      await axios.put(`${API}/admin/discussions/${id}/pin`, {}, config);
+      await fetchDiscussions();
+    } catch (err) { alert(err.response?.data?.detail || 'Error toggling pin'); }
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchQuery || searchQuery.length < 2) return;
+    setSearching(true);
+    try {
+      const res = await axios.get(`${API}/search?q=${encodeURIComponent(searchQuery)}`, config);
+      setSearchResults(res.data.discussions || []);
+    } catch (err) { console.error(err); }
+    finally { setSearching(false); }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults(null);
   };
 
   const handleLogout = () => {
@@ -90,7 +116,7 @@ const DiscussionForum = () => {
 
       <div className="pt-20 pb-12 px-6">
         <div className="container mx-auto max-w-5xl space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-3xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="discussion-forum-title">UNIT DISCUSSIONS</h2>
               <p className="text-gray-400 mt-1">Share intel, feedback, and coordinate with your unit</p>
@@ -121,6 +147,24 @@ const DiscussionForum = () => {
             </Dialog>
           </div>
 
+          {/* Search bar */}
+          <form onSubmit={handleSearch} className="flex gap-2" data-testid="discussion-search-form">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search discussions..."
+                className="bg-gray-900 border-gray-700 pl-10"
+                data-testid="discussion-search-input"
+              />
+            </div>
+            <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-red-700 hover:bg-red-800" data-testid="discussion-search-btn">
+              {searching ? '...' : 'Search'}
+            </Button>
+            {searchResults && <Button type="button" variant="outline" onClick={clearSearch} className="border-gray-700" data-testid="discussion-search-clear">Clear</Button>}
+          </form>
+
           {/* Category filter */}
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} className={filter === 'all' ? 'bg-red-700' : 'border-gray-700'} data-testid="disc-filter-all">All</Button>
@@ -129,18 +173,48 @@ const DiscussionForum = () => {
             ))}
           </div>
 
-          {loading ? <div className="text-center py-12">Loading...</div> : filtered.length === 0 ? (
+          {/* Search results */}
+          {searchResults ? (
+            searchResults.length === 0 ? (
+              <Card className="bg-gray-900 border-gray-800"><CardContent className="py-8 text-center text-gray-400">No discussions found for "{searchQuery}".</CardContent></Card>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-500">{searchResults.length} result(s) found</p>
+                {searchResults.map((d) => (
+                  <div key={d.id} className="flex items-center gap-2">
+                    <Link to={`/hub/discussions/${d.id}`} className="flex-1">
+                      <Card className={`bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors ${d.pinned ? 'border-l-2 border-l-yellow-600' : ''}`} data-testid={`search-discussion-${d.id}`}>
+                        <CardContent className="py-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {d.pinned && <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
+                            <Badge variant="outline" className={`text-xs ${getCatColor(d.category)}`}>{d.category}</Badge>
+                            <span className="font-medium">{d.title}</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span className="hidden sm:inline">by {d.author_name}</span>
+                            <span className="flex items-center"><MessageSquare className="w-3 h-3 mr-1" />{d.replies?.length || 0}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : loading ? <div className="text-center py-12">Loading...</div> : filtered.length === 0 ? (
             <Card className="bg-gray-900 border-gray-800"><CardContent className="py-12 text-center text-gray-400">No discussions yet. Start one!</CardContent></Card>
           ) : (
             <div className="space-y-3">
               {filtered.map((d) => (
                 <div key={d.id} className="flex items-center gap-2">
                   <Link to={`/hub/discussions/${d.id}`} className="flex-1">
-                    <Card className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors" data-testid={`discussion-item-${d.id}`}>
+                    <Card className={`bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors ${d.pinned ? 'border-l-2 border-l-yellow-600 bg-gray-900/90' : ''}`} data-testid={`discussion-item-${d.id}`}>
                       <CardContent className="py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          {d.pinned && <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
                           <Badge variant="outline" className={`text-xs ${getCatColor(d.category)}`}>{d.category}</Badge>
                           <span className="font-medium">{d.title}</span>
+                          {d.pinned && <Badge className="bg-yellow-700/30 text-yellow-400 text-[10px] px-1.5">PINNED</Badge>}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <span className="hidden sm:inline">by {d.author_name}</span>
@@ -151,7 +225,12 @@ const DiscussionForum = () => {
                     </Card>
                   </Link>
                   {user?.role === 'admin' && (
-                    <Button size="sm" variant="outline" onClick={() => handleDelete(d.id)} className="border-red-700 text-red-500 hover:bg-red-700/10 shrink-0" data-testid={`delete-discussion-${d.id}`}>Delete</Button>
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <Button size="sm" variant="outline" onClick={() => handleTogglePin(d.id)} className={`${d.pinned ? 'border-yellow-700 text-yellow-500 hover:bg-yellow-700/10' : 'border-gray-700 text-gray-400 hover:bg-gray-700/10'}`} title={d.pinned ? 'Unpin thread' : 'Pin thread'} data-testid={`pin-discussion-${d.id}`}>
+                        {d.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDelete(d.id)} className="border-red-700 text-red-500 hover:bg-red-700/10" data-testid={`delete-discussion-${d.id}`}>Del</Button>
+                    </div>
                   )}
                 </div>
               ))}

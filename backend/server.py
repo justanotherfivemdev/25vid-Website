@@ -67,6 +67,11 @@ class User(BaseModel):
     awards: List[dict] = []           # [{id, name, date, description}]
     mission_history: List[dict] = []  # [{id, operation_name, date, role_performed, notes}]
     training_history: List[dict] = [] # [{id, course_name, completion_date, instructor, notes}]
+    # Phase 5: Discord integration prep
+    discord_id: Optional[str] = None
+    discord_username: Optional[str] = None
+    discord_avatar: Optional[str] = None
+    discord_linked: bool = False
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -96,6 +101,10 @@ class UserResponse(BaseModel):
     awards: List[dict] = []
     mission_history: List[dict] = []
     training_history: List[dict] = []
+    discord_id: Optional[str] = None
+    discord_username: Optional[str] = None
+    discord_avatar: Optional[str] = None
+    discord_linked: bool = False
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -111,8 +120,9 @@ class Operation(BaseModel):
     date: str
     time: str
     max_participants: Optional[int] = None
-    logo_url: Optional[str] = None  # Country/faction/region badge
-    rsvp_list: List[str] = []  # user IDs
+    logo_url: Optional[str] = None
+    rsvp_list: List[str] = []  # legacy compat
+    rsvps: List[dict] = []  # [{user_id, username, status, role_notes, rsvp_time}]
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -125,8 +135,9 @@ class OperationCreate(BaseModel):
     max_participants: Optional[int] = None
     logo_url: Optional[str] = None  # Country/faction/region badge
 
-class RSVPRequest(BaseModel):
-    operation_id: str
+class RSVPSubmit(BaseModel):
+    status: str = "attending"  # attending, tentative, not_attending
+    role_notes: Optional[str] = None
 
 class Announcement(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -148,12 +159,13 @@ class AnnouncementCreate(BaseModel):
 class Discussion(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    category: str  # "general", "operations", "training", "feedback"
+    category: str
     title: str
     content: str
     author_id: str
     author_name: str
     replies: List[dict] = []
+    pinned: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DiscussionCreate(BaseModel):
@@ -218,6 +230,8 @@ class AdminProfileUpdate(BaseModel):
     bio: Optional[str] = None
     timezone: Optional[str] = None
     favorite_role: Optional[str] = None
+    discord_id: Optional[str] = None
+    discord_username: Optional[str] = None
 
 class MissionHistoryEntry(BaseModel):
     operation_name: str
@@ -288,7 +302,9 @@ def user_to_response(u: dict) -> UserResponse:
         avatar_url=u.get("avatar_url"), bio=u.get("bio"), status=u.get("status", "recruit"),
         timezone=u.get("timezone"), squad=u.get("squad"), favorite_role=u.get("favorite_role"),
         awards=u.get("awards", []), mission_history=u.get("mission_history", []),
-        training_history=u.get("training_history", [])
+        training_history=u.get("training_history", []),
+        discord_id=u.get("discord_id"), discord_username=u.get("discord_username"),
+        discord_avatar=u.get("discord_avatar"), discord_linked=u.get("discord_linked", False)
     )
 
 # ============================================================================
@@ -382,29 +398,95 @@ async def create_operation(operation_data: OperationCreate, current_user: dict =
     return operation_obj
 
 @api_router.post("/operations/{operation_id}/rsvp")
-async def rsvp_operation(operation_id: str, current_user: dict = Depends(get_current_user)):
-    operation = await db.operations.find_one({"id": operation_id})
+async def rsvp_operation(operation_id: str, rsvp_data: RSVPSubmit, current_user: dict = Depends(get_current_user)):
+    operation = await db.operations.find_one({"id": operation_id}, {"_id": 0})
     if not operation:
         raise HTTPException(status_code=404, detail="Operation not found")
-    
+
     user_id = current_user["id"]
-    rsvp_list = operation.get("rsvp_list", [])
-    
-    if user_id in rsvp_list:
-        # Remove RSVP
-        rsvp_list.remove(user_id)
-        message = "RSVP removed"
-    else:
-        # Add RSVP
-        max_participants = operation.get("max_participants")
-        if max_participants and len(rsvp_list) >= max_participants:
-            raise HTTPException(status_code=400, detail="Operation is full")
-        rsvp_list.append(user_id)
-        message = "RSVP confirmed"
-    
-    await db.operations.update_one({"id": operation_id}, {"$set": {"rsvp_list": rsvp_list}})
-    
-    return {"message": message, "rsvp_count": len(rsvp_list)}
+    rsvps = operation.get("rsvps", [])
+    max_p = operation.get("max_participants")
+
+    # Remove existing RSVP for this user
+    rsvps = [r for r in rsvps if r["user_id"] != user_id]
+
+    if rsvp_data.status == "not_attending":
+        # Just remove — promote first waitlisted if capacity was full
+        await db.operations.update_one({"id": operation_id}, {"$set": {"rsvps": rsvps}})
+        # Auto-promote first waitlisted
+        if max_p:
+            attending = [r for r in rsvps if r["status"] == "attending"]
+            waitlisted = [r for r in rsvps if r["status"] == "waitlisted"]
+            if len(attending) < max_p and waitlisted:
+                waitlisted[0]["status"] = "attending"
+                await db.operations.update_one({"id": operation_id}, {"$set": {"rsvps": rsvps}})
+        return {"message": "RSVP removed", "rsvps": rsvps}
+
+    # Determine status
+    assigned_status = rsvp_data.status
+    if assigned_status == "attending" and max_p:
+        current_attending = len([r for r in rsvps if r["status"] == "attending"])
+        if current_attending >= max_p:
+            assigned_status = "waitlisted"
+
+    entry = {
+        "user_id": user_id,
+        "username": current_user["username"],
+        "status": assigned_status,
+        "role_notes": rsvp_data.role_notes or "",
+        "rsvp_time": datetime.now(timezone.utc).isoformat()
+    }
+    rsvps.append(entry)
+
+    await db.operations.update_one({"id": operation_id}, {"$set": {"rsvps": rsvps}})
+    msg = "Waitlisted — operation at capacity" if assigned_status == "waitlisted" else f"RSVP set to {assigned_status}"
+    return {"message": msg, "your_status": assigned_status, "rsvps": rsvps}
+
+@api_router.delete("/operations/{operation_id}/rsvp")
+async def cancel_rsvp(operation_id: str, current_user: dict = Depends(get_current_user)):
+    operation = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+    if not operation:
+        raise HTTPException(status_code=404, detail="Operation not found")
+    rsvps = [r for r in operation.get("rsvps", []) if r["user_id"] != current_user["id"]]
+    # Auto-promote waitlisted
+    max_p = operation.get("max_participants")
+    if max_p:
+        attending = [r for r in rsvps if r["status"] == "attending"]
+        waitlisted = [r for r in rsvps if r["status"] == "waitlisted"]
+        if len(attending) < max_p and waitlisted:
+            waitlisted[0]["status"] = "attending"
+    await db.operations.update_one({"id": operation_id}, {"$set": {"rsvps": rsvps}})
+    return {"message": "RSVP cancelled", "rsvps": rsvps}
+
+@api_router.get("/operations/{operation_id}/rsvp")
+async def get_operation_rsvps(operation_id: str, current_user: dict = Depends(get_current_user)):
+    operation = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+    if not operation:
+        raise HTTPException(status_code=404, detail="Operation not found")
+    rsvps = operation.get("rsvps", [])
+    attending = [r for r in rsvps if r["status"] == "attending"]
+    tentative = [r for r in rsvps if r["status"] == "tentative"]
+    waitlisted = [r for r in rsvps if r["status"] == "waitlisted"]
+    return {"attending": attending, "tentative": tentative, "waitlisted": waitlisted,
+            "counts": {"attending": len(attending), "tentative": len(tentative), "waitlisted": len(waitlisted)},
+            "max_participants": operation.get("max_participants")}
+
+@api_router.put("/admin/operations/{operation_id}/rsvp/{user_id}/promote")
+async def promote_from_waitlist(operation_id: str, user_id: str, current_user: dict = Depends(get_current_admin)):
+    operation = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+    if not operation:
+        raise HTTPException(status_code=404, detail="Operation not found")
+    rsvps = operation.get("rsvps", [])
+    found = False
+    for r in rsvps:
+        if r["user_id"] == user_id and r["status"] == "waitlisted":
+            r["status"] = "attending"
+            found = True
+            break
+    if not found:
+        raise HTTPException(status_code=404, detail="Waitlisted user not found")
+    await db.operations.update_one({"id": operation_id}, {"$set": {"rsvps": rsvps}})
+    return {"message": "User promoted to attending", "rsvps": rsvps}
 
 # ============================================================================
 # ANNOUNCEMENTS ENDPOINTS
@@ -438,7 +520,8 @@ async def create_announcement(announcement_data: AnnouncementCreate, current_use
 @api_router.get("/discussions", response_model=List[Discussion])
 async def get_discussions(category: Optional[str] = None):
     query = {"category": category} if category else {}
-    discussions = await db.discussions.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    # Sort: pinned first, then by created_at descending
+    discussions = await db.discussions.find(query, {"_id": 0}).sort([("pinned", -1), ("created_at", -1)]).to_list(100)
     for disc in discussions:
         if isinstance(disc['created_at'], str):
             disc['created_at'] = datetime.fromisoformat(disc['created_at'])
@@ -663,6 +746,15 @@ async def delete_discussion(discussion_id: str, current_user: dict = Depends(get
         raise HTTPException(status_code=404, detail="Discussion not found")
     return {"message": "Discussion deleted successfully"}
 
+@api_router.put("/admin/discussions/{discussion_id}/pin")
+async def toggle_pin_discussion(discussion_id: str, current_user: dict = Depends(get_current_admin)):
+    disc = await db.discussions.find_one({"id": discussion_id}, {"_id": 0})
+    if not disc:
+        raise HTTPException(status_code=404, detail="Discussion not found")
+    new_pinned = not disc.get("pinned", False)
+    await db.discussions.update_one({"id": discussion_id}, {"$set": {"pinned": new_pinned}})
+    return {"message": f"Discussion {'pinned' if new_pinned else 'unpinned'}", "pinned": new_pinned}
+
 @api_router.delete("/admin/gallery/{image_id}")
 async def delete_gallery_image(image_id: str, current_user: dict = Depends(get_current_admin)):
     result = await db.gallery.delete_one({"id": image_id})
@@ -861,6 +953,24 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_current_adm
         raise HTTPException(status_code=404, detail="User not found")
     
     return {"message": "User deleted successfully"}
+
+# ============================================================================
+# SEARCH ENDPOINTS
+# ============================================================================
+
+@api_router.get("/search")
+async def search_content(q: str, current_user: dict = Depends(get_current_user)):
+    """Search operations and discussions by title/content."""
+    if not q or len(q) < 2:
+        raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
+    regex = {"$regex": q, "$options": "i"}
+    ops = await db.operations.find(
+        {"$or": [{"title": regex}, {"description": regex}]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(20)
+    discs = await db.discussions.find(
+        {"$or": [{"title": regex}, {"content": regex}]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(20)
+    return {"operations": ops, "discussions": discs}
 
 # ============================================================================
 # MISC ENDPOINTS
