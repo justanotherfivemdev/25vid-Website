@@ -13,124 +13,122 @@ Build a professional, immersive website for the Milsim Unit "Azimuth Operations 
 ```
 /app/
 ├── backend/
-│   ├── server.py              # All API endpoints
-│   ├── uploads/               # Persistent file storage (served via StaticFiles)
+│   ├── server.py
+│   ├── uploads/                     # Persistent file storage
 │   ├── tests/
-│   │   ├── test_api.py        # Phase 1 backend tests
-│   │   └── test_phase2_api.py # Phase 2 backend tests
-│   └── .env                   # MONGO_URL, JWT_SECRET, etc.
+│   │   ├── test_api.py
+│   │   ├── test_phase2_api.py
+│   │   └── test_phase3_api.py
+│   └── .env
 ├── frontend/
 │   ├── src/
-│   │   ├── App.js             # Routes + all public page components
-│   │   ├── config/siteContent.js  # Static fallback content
+│   │   ├── App.js                   # Routes + polished public components
+│   │   ├── App.css                  # Tactical styles, section dividers, card styles
+│   │   ├── config/siteContent.js    # Static fallbacks (nav, sectionHeadings, images)
 │   │   ├── components/
 │   │   │   ├── admin/
-│   │   │   │   ├── AdminLayout.jsx
-│   │   │   │   └── ImageUpload.jsx    # Reusable file upload component
-│   │   │   └── ui/            # Shadcn components
+│   │   │   │   ├── AdminLayout.jsx  # Sidebar with Command Center link
+│   │   │   │   └── ImageUpload.jsx  # File upload + URL paste component
+│   │   │   └── ui/
 │   │   └── pages/
 │   │       ├── admin/
 │   │       │   ├── Dashboard.jsx
+│   │       │   ├── SiteContentManager.jsx  # 9-section Command Center
 │   │       │   ├── OperationsManager.jsx
 │   │       │   ├── AnnouncementsManager.jsx
-│   │       │   ├── UsersManager.jsx
-│   │       │   ├── SiteContentManager.jsx
-│   │       │   ├── TrainingManager.jsx    # Phase 2
-│   │       │   └── GalleryManager.jsx     # Phase 2
+│   │       │   ├── TrainingManager.jsx
+│   │       │   ├── GalleryManager.jsx
+│   │       │   └── UsersManager.jsx
 │   │       └── member/
-│   │           ├── MemberHub.jsx          # Phase 2
-│   │           ├── DiscussionForum.jsx    # Phase 2
-│   │           └── DiscussionThread.jsx   # Phase 2
+│   │           ├── MemberHub.jsx
+│   │           ├── DiscussionForum.jsx
+│   │           └── DiscussionThread.jsx
 │   └── .env
 ├── scripts/
 │   └── create_admin.py
 └── test_reports/
-    ├── iteration_1.json       # Phase 1 (100% pass)
-    └── iteration_2.json       # Phase 2 (100% pass)
+    ├── iteration_1.json    # Phase 1 (100%)
+    ├── iteration_2.json    # Phase 2 (100%)
+    └── iteration_3.json    # Phase 3 (100%)
 ```
 
-## What's Been Implemented
+## Implemented Features
 
-### Phase 1 (Complete, Tested 100%)
-- Public-facing site with dynamic content from DB (fallback to static defaults)
-- JWT auth (register/login) with role-based routing
-- Admin Command Center: Dashboard, Operations, Announcements, Users, Site Content
-- File upload with both URL paste and direct file upload
+### Phase 1 — Foundation (Complete)
+- Public landing page with tactical design
+- JWT auth (register/login)
+- Admin dashboard with CRUD for operations, announcements, users
+- Basic site content management
+- File upload (URL paste + direct upload)
 
-### Phase 2 (Complete, Tested 100%)
+### Phase 2 — Feature Expansion (Complete)
+- Training CRUD admin page
+- Gallery CRUD admin page with category filters
+- Member Hub post-login dashboard
+- Discussion Forum with threads, replies, admin moderation
+- File uploads moved to persistent backend storage at /api/uploads/
+- Role-based routing: admin→/admin, member→/hub
 
-#### Training Admin Management
-- Full CRUD: create, edit, delete training programs
-- Fields: title, description, instructor, schedule, duration, image (file upload)
-- Route: /admin/training
+### Phase 3 — CMS Command Center + Visual Polish (Complete)
+**Command Center (Admin > Site Content):**
+- 9 numbered sections with icons and clear labeling:
+  01. Navigation Bar (brand name, CTA button text)
+  02. Hero Banner (background image, tagline lines 1 & 2)
+  03. About Section (emblem, paragraphs, quote block with bg image/text/author)
+  04. Operational Superiority (description, 3 portrait images)
+  05. Lethality on Demand (logistics block, training block — each with desc + image)
+  06. Section Headings & Subtexts (operations, intel, gallery, enlist, lethality, ops superiority)
+  07. Mission Gallery Showcase (6 featured images)
+  08. Login Page Background (background image)
+  09. Footer (tagline, discord, email)
+- Every field labeled with "Appears on:", "Purpose:", "Recommended:"
+- Image upload + URL paste for all image fields with preview
 
-#### Gallery Admin Management
-- Full CRUD: create, edit, delete gallery images
-- Category filter: All, Operation, Training, Team, Equipment
-- Grid layout with hover overlay for edit/delete
-- File upload support for images
-- Route: /admin/gallery
+**Dynamic Content System:**
+- Public site fetches content from GET /api/site-content
+- Deep-merges DB content over static fallbacks (siteContent.js)
+- All section headings, subtexts, nav text, images, body text are live-editable
+- Changes take effect on next page load — no rebuild needed
 
-#### Member Discussion Forum
-- Thread listing with category filters (General, Operations, Training, Feedback)
-- Create new discussion threads
-- View threads with full post + replies
-- Post replies to threads
-- Admin moderation: delete threads, delete individual replies
-- Routes: /hub/discussions, /hub/discussions/:id
+**Visual Polish:**
+- Operation cards: type-based colors (combat=red, training=blue, recon=green, support=amber), logo badges, operator counts, hover elevation with glow
+- Intel cards: priority-based left borders (urgent/high/normal/low), badge_url in bottom-right, colored priority dots
+- Section dividers: gradient lines between all homepage sections
+- Section headings: centered with red underline decoration
+- Alternating dark backgrounds for depth
+- Consistent spacing (py-28), better typography hierarchy
+- Nav bar: added INTEL link, lighter text, wider tracking
 
-#### Member Hub (Post-Login Experience)
-- Welcome banner with operations overview
-- Quick navigation: Discussions, Operations, Training, Intel
-- Latest Intel section (announcements)
-- Upcoming Operations with RSVP buttons
-- Training Programs overview
-- Recent Discussions preview
-- Route: /hub
+**What can be edited live through admin (no rebuild needed):**
+- All homepage images (hero, about, quote, operational superiority, lethality, gallery)
+- All homepage text (taglines, paragraphs, quote, descriptions)
+- All section headings and subtexts
+- Navigation brand name and CTA button text
+- Login page background
+- Footer description and contact info
+- Per-operation logo badges
+- Per-announcement badges
+- Training images
+- Gallery images with categories
 
-#### Production-Hardened File Upload
-- Uploads stored in /app/backend/uploads/ (persistent, outside frontend)
-- Served via FastAPI StaticFiles at /api/uploads/
-- Survives frontend rebuilds, git pulls, and Linux redeploys
-- Backwards compatible with old /uploads/ paths
+**What still requires a frontend rebuild:**
+- Component layout/structure changes
+- New page routes
+- CSS class modifications
+- Adding new sections to the homepage
 
-#### Role-Based Access & Route Protection
-- Admin login -> /admin, Member login -> /hub
-- /admin/* routes: admin-only (non-admin redirected to /)
-- /hub/* routes: authenticated users only (unauthenticated redirected to /login)
-- Member navigation bar with Admin link (only for admin role)
-
-### Key API Endpoints
-- Auth: POST /api/auth/register, POST /api/auth/login, GET /api/auth/me
-- Operations: GET/POST /api/operations, POST /api/operations/:id/rsvp
-- Announcements: GET/POST /api/announcements
-- Training: GET/POST /api/training
-- Gallery: GET/POST /api/gallery
-- Discussions: GET/POST /api/discussions, GET /api/discussions/:id, POST /api/discussions/:id/reply
-- Upload: POST /api/upload
-- Site Content: GET /api/site-content, GET/PUT /api/admin/site-content
-- Admin CRUD: PUT/DELETE /api/admin/{operations|announcements|training|gallery|discussions|users}/*
+### No new env vars added in Phase 3.
 
 ### Test Credentials
 - Admin: bishop@azimuth.ops / Admin123!
 
-## Storage & Deployment Notes
-- **File uploads** stored at `/app/backend/uploads/` — must be preserved during deploys
-- **No new env vars** added in Phase 2
-- **Linux redeploy steps:**
-  1. Pull latest code
-  2. pip install -r backend/requirements.txt
-  3. cd frontend && yarn install && yarn build
-  4. Ensure /app/backend/uploads/ directory exists and persists
-  5. Restart backend (uvicorn) and serve frontend (nginx)
-  6. Run bootstrap_admin.py if fresh install
-
 ## Prioritized Backlog
 
-### P2 - Future
-- Visual polish refinements (spacing, dividers, alternating section treatments)
-- Production deployment guide for custom domain with Cloudflare
-- Email notifications for new operations/announcements
+### P2 — Future
+- Email notifications for operations/announcements
 - Member profiles and bios
-- Search across operations and announcements
+- Search across content
 - Event/operation reminders
+- Advanced RSVP management
+- Forum pinned threads
+- Production deployment guide for Cloudflare domain
