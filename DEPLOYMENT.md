@@ -43,8 +43,8 @@ npm install -g yarn
 ```bash
 # Clone repository
 cd /opt
-git clone <your-repo-url> azimuth
-cd azimuth
+git clone <your-repo-url> 25th-id
+cd 25th-id
 
 # Backend setup
 cd backend
@@ -84,17 +84,17 @@ REACT_APP_BACKEND_URL=https://yourdomain.com
 ## 3. Build Frontend
 
 ```bash
-cd /opt/azimuth/frontend
+cd /opt/25th-id/frontend
 yarn install
 yarn build
-# Output: /opt/azimuth/frontend/build/
+# Output: /opt/25th-id/frontend/build/
 ```
 
 ---
 
 ## 4. Backend Service (systemd)
 
-Create `/etc/systemd/system/azimuth-backend.service`:
+Create `/etc/systemd/system/25th-id-backend.service`:
 
 ```ini
 [Unit]
@@ -104,9 +104,9 @@ After=network.target mongod.service
 [Service]
 User=www-data
 Group=www-data
-WorkingDirectory=/opt/azimuth/backend
-Environment="PATH=/opt/azimuth/backend/venv/bin"
-ExecStart=/opt/azimuth/backend/venv/bin/uvicorn server:app --host 127.0.0.1 --port 8001 --workers 2
+WorkingDirectory=/opt/25th-id/backend
+Environment="PATH=/opt/25th-id/backend/venv/bin"
+ExecStart=/opt/25th-id/backend/venv/bin/uvicorn server:app --host 127.0.0.1 --port 8001 --workers 2
 Restart=always
 RestartSec=5
 
@@ -116,16 +116,16 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable azimuth-backend
-sudo systemctl start azimuth-backend
-sudo systemctl status azimuth-backend
+sudo systemctl enable 25th-id-backend
+sudo systemctl start 25th-id-backend
+sudo systemctl status 25th-id-backend
 ```
 
 ---
 
 ## 5. Nginx Configuration
 
-Create `/etc/nginx/sites-available/azimuth`:
+Create `/etc/nginx/sites-available/25th-id`:
 
 ```nginx
 server {
@@ -133,7 +133,7 @@ server {
     server_name yourdomain.com;
 
     # Frontend — serve static build
-    root /opt/azimuth/frontend/build;
+    root /opt/25th-id/frontend/build;
     index index.html;
 
     # Backend API proxy
@@ -159,7 +159,7 @@ server {
 ```
 
 ```bash
-sudo ln -sf /etc/nginx/sites-available/azimuth /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/25th-id /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
@@ -220,14 +220,14 @@ server {
 2. Select your application > OAuth2
 3. Add redirect URI: `https://yourdomain.com/api/auth/discord/callback`
 4. Update `DISCORD_REDIRECT_URI` in backend `.env` to match
-5. Restart backend: `sudo systemctl restart azimuth-backend`
+5. Restart backend: `sudo systemctl restart 25th-id-backend`
 
 ---
 
 ## 8. Bootstrap Admin (Bishop)
 
 ```bash
-cd /opt/azimuth
+cd /opt/25th-id
 source backend/venv/bin/activate
 python3 scripts/create_admin.py
 ```
@@ -246,7 +246,7 @@ python3 scripts/create_admin.py
 # Enable MongoDB authentication
 mongosh
 > use admin
-> db.createUser({ user: "azimuth_admin", pwd: "<strong_password>", roles: [{ role: "readWrite", db: "azimuth_operations" }] })
+> db.createUser({ user: "tropic_admin", pwd: "<strong_password>", roles: [{ role: "readWrite", db: "25th_infantry_division" }] })
 > exit
 
 # Enable auth in /etc/mongod.conf:
@@ -258,7 +258,7 @@ sudo systemctl restart mongod
 
 Update `MONGO_URL` in backend `.env`:
 ```
-MONGO_URL=mongodb://azimuth_admin:<password>@localhost:27017/azimuth_operations?authSource=admin
+MONGO_URL=mongodb://tropic_admin:<password>@localhost:27017/25th_infantry_division?authSource=admin
 ```
 
 ---
@@ -267,10 +267,10 @@ MONGO_URL=mongodb://azimuth_admin:<password>@localhost:27017/azimuth_operations?
 
 ```bash
 # Daily MongoDB backup (add to crontab)
-0 3 * * * mongodump --db azimuth_operations --out /opt/backups/mongo/$(date +\%Y\%m\%d) --gzip
+0 3 * * * mongodump --db 25th_infantry_division --out /opt/backups/mongo/$(date +\%Y\%m\%d) --gzip
 
 # Backup uploads directory
-0 3 * * * tar -czf /opt/backups/uploads/$(date +\%Y\%m\%d).tar.gz /opt/azimuth/backend/uploads/
+0 3 * * * tar -czf /opt/backups/uploads/$(date +\%Y\%m\%d).tar.gz /opt/25th-id/backend/uploads/
 
 # Keep 30 days of backups
 0 4 * * * find /opt/backups -mtime +30 -delete
@@ -281,7 +281,7 @@ MONGO_URL=mongodb://azimuth_admin:<password>@localhost:27017/azimuth_operations?
 ## 11. Update / Redeploy
 
 ```bash
-cd /opt/azimuth
+cd /opt/25th-id
 git pull
 
 # Rebuild frontend
@@ -293,7 +293,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Restart backend
-sudo systemctl restart azimuth-backend
+sudo systemctl restart 25th-id-backend
 
 # Nginx only needs reload if config changed
 sudo systemctl reload nginx
@@ -305,12 +305,12 @@ sudo systemctl reload nginx
 
 | Action | Command |
 |--------|---------|
-| Start backend | `sudo systemctl start azimuth-backend` |
-| Stop backend | `sudo systemctl stop azimuth-backend` |
-| View backend logs | `sudo journalctl -u azimuth-backend -f` |
+| Start backend | `sudo systemctl start 25th-id-backend` |
+| Stop backend | `sudo systemctl stop 25th-id-backend` |
+| View backend logs | `sudo journalctl -u 25th-id-backend -f` |
 | Restart Nginx | `sudo systemctl reload nginx` |
 | Create admin | `python3 scripts/create_admin.py` |
-| MongoDB backup | `mongodump --db azimuth_operations --gzip` |
+| MongoDB backup | `mongodump --db 25th_infantry_division --gzip` |
 | Build frontend | `cd frontend && yarn build` |
 
 ---

@@ -5,6 +5,7 @@ A full-stack tactical operations platform for the 25th Infantry Division MilSim 
 ## Features
 
 - **Public Landing Page** — Tactical recruitment site with dynamic, admin-editable content
+- **Unit History Timeline** — Chronological showcase of campaigns from WWII to present, fully editable by admins
 - **Command Center (CMS)** — Admin panel for live-editing all homepage content, images, and text without code changes
 - **Operations Management** — Create, manage, and track tactical operations with advanced RSVP (attending / tentative / waitlist / capacity)
 - **Discussion Forum** — Categorized threads with pinning, replies, and full-text search
@@ -50,7 +51,7 @@ yarn start
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `MONGO_URL` | Yes | MongoDB connection string |
-| `DB_NAME` | Yes | Database name (e.g., `azimuth_operations`) |
+| `DB_NAME` | Yes | Database name (e.g., `25th_infantry`) |
 | `JWT_SECRET` | Yes | Strong random secret for JWT signing |
 | `JWT_ALGORITHM` | Yes | `HS256` |
 | `JWT_EXPIRATION_HOURS` | Yes | Token lifetime in hours (recommended: `24`) |
@@ -84,6 +85,7 @@ All homepage content is editable live through the **Admin > Command Center** pan
 - Operations section heading and descriptions
 - Gallery showcase images
 - Training/logistics images and text
+- Unit History timeline entries
 - Section headings and footer
 
 Default fallback values are in `frontend/src/config/siteContent.js` and are only used when no database content exists yet.
