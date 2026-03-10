@@ -7,27 +7,30 @@ Build a professional, immersive website for the Milsim Unit "Azimuth Operations 
 - **Frontend:** React.js, Tailwind CSS, Shadcn/UI
 - **Backend:** FastAPI (Python)
 - **Database:** MongoDB (motor async driver)
-- **Auth:** JWT with bcrypt password hashing
+- **Auth:** JWT + Discord OAuth2 (dual auth)
+- **File Storage:** Backend-served persistent uploads
 
 ## Architecture
 ```
 /app/
 ├── backend/
-│   ├── server.py
-│   ├── uploads/
-│   └── .env
+│   ├── server.py          # All API logic, auth, Discord OAuth
+│   ├── uploads/           # Persistent file storage
+│   ├── tests/             # pytest test files
+│   └── .env               # MONGO_URL, DB_NAME, JWT_*, DISCORD_*
 ├── frontend/
 │   ├── src/
-│   │   ├── App.js
-│   │   ├── App.css
+│   │   ├── App.js         # Routing, LoginPage, HomePage, all public pages
+│   │   ├── App.css        # Custom CSS
+│   │   ├── index.css      # Tailwind + fonts
 │   │   ├── config/siteContent.js
-│   │   ├── components/admin/
-│   │   │   ├── AdminLayout.jsx
-│   │   │   └── ImageUpload.jsx
+│   │   ├── components/
+│   │   │   ├── admin/AdminLayout.jsx
+│   │   │   └── admin/ImageUpload.jsx
 │   │   └── pages/
 │   │       ├── admin/
 │   │       │   ├── Dashboard.jsx
-│   │       │   ├── SiteContentManager.jsx
+│   │       │   ├── SiteContentManager.jsx  # Command Center
 │   │       │   ├── OperationsManager.jsx
 │   │       │   ├── AnnouncementsManager.jsx
 │   │       │   ├── TrainingManager.jsx
@@ -43,15 +46,15 @@ Build a professional, immersive website for the Milsim Unit "Azimuth Operations 
 │   │           ├── MemberProfile.jsx
 │   │           └── EditProfile.jsx
 │   └── .env
+├── scripts/
+│   └── create_admin.py    # Production admin bootstrap
 └── test_reports/
-    ├── iteration_1.json  # Phase 1 (100%)
-    ├── iteration_2.json  # Phase 2 (100%)
-    ├── iteration_3.json  # Phase 3 (100%)
-    ├── iteration_4.json  # Phase 4 (100%)
-    └── iteration_5.json  # Phase 5 (100%)
+    ├── iteration_1-4.json # Phase 1-4 (100%)
+    ├── iteration_5.json   # Phase 5 (100%)
+    └── iteration_6.json   # Phase 6 - Discord + finalization (100%)
 ```
 
-## Implemented Features (All Phases)
+## Implemented Features (All Phases Complete)
 
 ### Phase 1 — Foundation
 - Public landing page, JWT auth, admin CRUD, file upload
@@ -63,103 +66,127 @@ Build a professional, immersive website for the Milsim Unit "Azimuth Operations 
 - 9-section Command Center, dynamic DB content, section headings, polished cards
 
 ### Phase 4 — Member Profile & Roster System
-- Full member profiles (avatar, rank, specialization, status, bio, awards, mission/training history)
-- Profile editing with role separation (member vs admin editable fields)
-- Searchable/filterable unit roster at /roster
-- Admin member management with history CRUD
+- Full profiles, searchable/filterable roster, admin member management
 
 ### Phase 5 — Advanced RSVP, Pinned Threads, Discord Prep, Search
-**Advanced RSVP System:**
-- Operation detail page at /hub/operations/:id with full RSVP management
-- Attending / Tentative / Not Attending status options with one-click buttons
-- Role/slot notes input for each RSVP
-- Capacity tracking with automatic waitlisting when max_participants reached
-- Auto-promote from waitlist when spots open
-- Admin promote-from-waitlist button
-- Attendee lists grouped by status (attending, tentative, waitlisted)
-- Attendance summary counts displayed prominently
-- Hub operation cards link to detail page with VIEW & RSVP button
+- Advanced RSVP system with capacity, waitlist, status tracking
+- Pinned forum threads with admin controls
+- Search integration (operations + discussions)
+- Discord user model preparation
 
-**Pinned Forum Threads:**
-- Pinned discussions appear at top of forum with pin icon, PINNED badge, and yellow left border
-- Admin pin/unpin toggle buttons on each discussion thread
-- Pin status persists via backend toggle endpoint
-- Pinned indicators also shown in MemberHub discussions preview
+### Phase 6 — Discord OAuth + Visual Finalization (CURRENT)
+**Discord OAuth2 Integration:**
+- "Continue with Discord" button on login page (Discord brand color #5865F2)
+- Server-side authorization code flow (client secret never exposed to frontend)
+- CSRF protection via signed JWT state parameter (10-min expiry)
+- Discord `identify email` scopes
+- Three flows:
+  1. **Login**: Existing users with linked Discord → auto-login
+  2. **Register**: New Discord users → auto-create account (random password set)
+  3. **Link**: Logged-in users link Discord from profile page
+- Email-based auto-linking: if Discord email matches existing account, auto-link
+- Duplicate conflict handling: prevents one Discord from linking to multiple accounts
+- Unlink safety: blocks unlink if Discord is the only auth method
+- Discord state shown in member profile, edit profile, and admin member detail
+- Discord avatar URL auto-populated from Discord CDN
+- Placeholder email for Discord-only users: `discord_{id}@azimuth.local`
 
-**Search Integration:**
-- Global search bar on MemberHub banner searching operations and discussions
-- Dedicated search bar on Discussion Forum page
-- Results categorized by type (Operations/Discussions)
-- Clear button to dismiss search results
-- Minimum 2-character query requirement
+**Visual Consistency Pass:**
+- Audited all ~20 pages for unified styling
+- Fixed emoji → Lucide icons in OperationsManager
+- Fixed stale rsvp_list field reference in OperationsManager
+- Verified consistent: color palette, cards (bg-gray-900/border-gray-800), buttons (bg-red-700), inputs (bg-black/border-gray-700), headings (Rajdhani), borders, hover states, spacing
 
-**Discord Integration Prep:**
-- User model extended with discord_id, discord_username, discord_avatar, discord_linked fields
-- Admin member editor shows Discord Integration Prep section
-- Discord ID and Username editable by admin
-- Discord Avatar URL read-only (future OAuth population)
-- Discord Linked badge shows current link status
-- Labeled as prep fields, not active OAuth controls
-- Future-ready for server-side OAuth2 authorization code flow
+**Production Bootstrap:**
+- Updated `/app/scripts/create_admin.py` with:
+  - `getpass` for secure password input (hidden characters)
+  - Upsert support (promote existing user to admin)
+  - Password confirmation
+  - Discord field initialization
+  - No hardcoded credentials
 
 ### Key Routes
 | Route | Access | Purpose |
 |-------|--------|---------|
 | `/` | Public | Landing page |
-| `/login` | Public | Login/Register |
+| `/login` | Public | Login/Register + Discord OAuth |
 | `/admin` | Admin | Dashboard |
-| `/admin/site-content` | Admin | Command Center |
+| `/admin/site-content` | Admin | Command Center CMS |
 | `/admin/operations` | Admin | Operations CRUD |
 | `/admin/announcements` | Admin | Announcements CRUD |
 | `/admin/training` | Admin | Training CRUD |
 | `/admin/gallery` | Admin | Gallery CRUD |
 | `/admin/users` | Admin | Member list |
-| `/admin/users/:id` | Admin | Member detail editor |
-| `/hub` | Auth | Member hub |
-| `/hub/profile` | Auth | Edit own profile |
-| `/hub/discussions` | Auth | Discussion forum |
+| `/admin/users/:id` | Admin | Member detail editor + Discord fields |
+| `/hub` | Auth | Member hub + search |
+| `/hub/profile` | Auth | Edit own profile + Discord link/unlink |
+| `/hub/discussions` | Auth | Discussion forum + search + pinning |
 | `/hub/discussions/:id` | Auth | Discussion thread |
 | `/hub/operations/:id` | Auth | Operation detail + RSVP |
 | `/roster` | Auth | Unit roster |
-| `/roster/:id` | Auth | Member profile |
+| `/roster/:id` | Auth | Member profile view |
 
 ### Key API Endpoints
 | Method | Endpoint | Auth | Purpose |
 |--------|----------|------|---------|
+| GET | /api/auth/discord | None | Initiate Discord OAuth login |
+| GET | /api/auth/discord/link | User | Initiate Discord account linking |
+| GET | /api/auth/discord/callback | None | Discord OAuth callback handler |
+| DELETE | /api/auth/discord/unlink | User | Unlink Discord from account |
 | POST | /api/operations/:id/rsvp | User | Set RSVP status |
 | DELETE | /api/operations/:id/rsvp | User | Cancel RSVP |
-| GET | /api/operations/:id/rsvp | User | Get RSVP breakdown |
-| PUT | /api/admin/operations/:id/rsvp/:uid/promote | Admin | Promote from waitlist |
 | PUT | /api/admin/discussions/:id/pin | Admin | Toggle pin status |
 | GET | /api/search?q= | User | Search ops & discussions |
 
-### No new env vars added.
-### Admin credentials: bishop@azimuth.ops / Admin123!
+### Environment Variables
+**Backend (.env):**
+- `MONGO_URL` - MongoDB connection string
+- `DB_NAME` - Database name
+- `JWT_SECRET` - JWT signing secret
+- `JWT_ALGORITHM` - JWT algorithm (HS256)
+- `JWT_EXPIRATION_HOURS` - Token expiry
+- `DISCORD_CLIENT_ID` - Discord OAuth app client ID
+- `DISCORD_CLIENT_SECRET` - Discord OAuth app client secret
+- `DISCORD_REDIRECT_URI` - Discord OAuth redirect URI
+
+**Frontend (.env):**
+- `REACT_APP_BACKEND_URL` - Backend API base URL
+
+### Discord OAuth Flow Explanation
+1. User clicks "Continue with Discord" → frontend calls `GET /api/auth/discord`
+2. Backend generates signed state JWT, returns Discord OAuth URL
+3. Browser redirects to Discord → user authorizes → Discord redirects to `/api/auth/discord/callback?code=xxx&state=xxx`
+4. Backend validates state JWT, exchanges code for Discord access token
+5. Backend fetches Discord user identity (id, username, avatar, email)
+6. Logic branches:
+   - Discord ID found → login existing user
+   - Discord email matches existing user → auto-link and login
+   - No match → create new user
+7. Backend redirects to `/login?discord_token=<jwt>` (or `?discord_error=<msg>`)
+8. Frontend reads token, calls `/api/auth/me`, stores session, redirects to hub/admin
+
+### Bishop Admin Bootstrap
+```bash
+cd /app && python3 scripts/create_admin.py
+```
+- Interactive: accepts email, username, password at runtime
+- Uses `getpass` for hidden password input
+- Supports upsert: if email exists, promotes to admin + resets password
+- No credentials stored in source control
+- Compatible with any Linux + MongoDB deployment
 
 ## Prioritized Backlog
-
-### P1 — Upcoming
-- Full Discord Integration (OAuth2 flow for account linking)
-  - Server-side authorization code flow
-  - State parameter for CSRF protection
-  - identify scope baseline
-  - Account linking (not just social login)
-  - Duplicate-account conflict handling
-  - Compatible with existing JWT auth
 
 ### P2 — Future
 - Email notifications for operations/announcements
 - Event/operation reminders
-- Production deployment guide for Cloudflare domain
+- Production deployment guide for custom domain
+- "Set password" flow for Discord-only users who want to add email/password auth
 
-## Discord OAuth Future Design Notes
-When implementing full Discord integration:
-- Use server-side authorization code flow (NOT implicit)
-- Never expose client_secret in frontend
-- Use and validate secure random `state` parameter for CSRF
-- Use `identify` scope as baseline
-- Redirect URI handling via backend callback route
-- Support both: linking existing account AND creating new account via Discord
-- Keep Discord optional — existing email/password auth must remain
-- Store DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET as backend env vars
-- DISCORD_REDIRECT_URI for the callback endpoint
+## Notes for Production Deployment
+- Change `JWT_SECRET` to a strong random value
+- Set `DISCORD_REDIRECT_URI` to match your production domain
+- Update Discord Developer Portal redirect URI to match
+- Run `create_admin.py` once after first deploy
+- Ensure MongoDB is secured with authentication
+- Configure reverse proxy (Nginx) to serve frontend + proxy `/api` to backend
