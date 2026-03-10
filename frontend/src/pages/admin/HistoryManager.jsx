@@ -50,13 +50,11 @@ const HistoryManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
-    const config = { headers: { Authorization: `Bearer ${token}` } };
     try {
       if (editing) {
-        await axios.put(`${API}/admin/unit-history/${editing.id}`, form, config);
+        await axios.put(`${API}/admin/unit-history/${editing.id}`, form);
       } else {
-        await axios.post(`${API}/admin/unit-history`, form, config);
+        await axios.post(`${API}/admin/unit-history`, form);
       }
       await fetchEntries();
       resetForm();
@@ -78,9 +76,8 @@ const HistoryManager = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this history entry?')) return;
-    const token = localStorage.getItem('token');
     try {
-      await axios.delete(`${API}/admin/unit-history/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${API}/admin/unit-history/${id}`);
       await fetchEntries();
     } catch (err) { alert('Error deleting'); }
   };

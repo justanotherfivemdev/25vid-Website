@@ -31,13 +31,12 @@ const MemberHub = () => {
 
   const fetchAll = async () => {
     try {
-      const token = localStorage.getItem('token');
       const [ops, ann, train, disc, sched] = await Promise.all([
         axios.get(`${API}/operations`),
         axios.get(`${API}/announcements`),
         axios.get(`${API}/training`),
         axios.get(`${API}/discussions`),
-        axios.get(`${API}/my-schedule`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
+        axios.get(`${API}/my-schedule`).catch(() => ({ data: [] })),
       ]);
       setOperations(ops.data.slice(0, 4));
       setAnnouncements(ann.data.slice(0, 4));
@@ -53,8 +52,7 @@ const MemberHub = () => {
     if (!searchQuery || searchQuery.length < 2) return;
     setSearching(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/search?q=${encodeURIComponent(searchQuery)}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.get(`${API}/search?q=${encodeURIComponent(searchQuery)}`);
       setSearchResults(res.data);
     } catch (err) { console.error(err); }
     finally { setSearching(false); }
@@ -66,7 +64,6 @@ const MemberHub = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/');
   };

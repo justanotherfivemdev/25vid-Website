@@ -23,15 +23,13 @@ const AdminDashboard = () => {
   
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
       
       const [ops, ann, disc, gal, users] = await Promise.all([
         axios.get(`${API}/operations`),
         axios.get(`${API}/announcements`),
         axios.get(`${API}/discussions`),
         axios.get(`${API}/gallery`),
-        axios.get(`${API}/admin/users`, config)
+        axios.get(`${API}/admin/users`)
       ]);
       
       setStats({

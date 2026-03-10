@@ -26,8 +26,7 @@ const UnitRoster = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    axios.get(`${API}/roster`, { headers: { Authorization: `Bearer ${token}` } })
+    axios.get(`${API}/roster`)
       .then(r => setMembers(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -47,7 +46,7 @@ const UnitRoster = () => {
     return true;
   });
 
-  const handleLogout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/'); };
+  const handleLogout = () => { axios.post(`${API}/auth/logout`).catch(() => {}); localStorage.removeItem('user'); navigate('/'); };
 
   return (
     <div className="min-h-screen bg-black text-white">

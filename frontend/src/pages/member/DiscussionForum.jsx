@@ -32,8 +32,6 @@ const DiscussionForum = () => {
   const [searching, setSearching] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const token = localStorage.getItem('token');
-  const config = { headers: { Authorization: `Bearer ${token}` } };
 
   useEffect(() => { fetchDiscussions(); }, []);
 
@@ -48,7 +46,7 @@ const DiscussionForum = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/discussions`, form, config);
+      await axios.post(`${API}/discussions`, form);
       await fetchDiscussions();
       setForm({ category: 'general', title: '', content: '' });
       setIsOpen(false);
@@ -60,14 +58,14 @@ const DiscussionForum = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this discussion?')) return;
     try {
-      await axios.delete(`${API}/admin/discussions/${id}`, config);
+      await axios.delete(`${API}/admin/discussions/${id}`);
       await fetchDiscussions();
     } catch (err) { alert('Error deleting'); }
   };
 
   const handleTogglePin = async (id) => {
     try {
-      await axios.put(`${API}/admin/discussions/${id}/pin`, {}, config);
+      await axios.put(`${API}/admin/discussions/${id}/pin`, {});
       await fetchDiscussions();
     } catch (err) { alert(err.response?.data?.detail || 'Error toggling pin'); }
   };
@@ -77,7 +75,7 @@ const DiscussionForum = () => {
     if (!searchQuery || searchQuery.length < 2) return;
     setSearching(true);
     try {
-      const res = await axios.get(`${API}/search?q=${encodeURIComponent(searchQuery)}`, config);
+      const res = await axios.get(`${API}/search?q=${encodeURIComponent(searchQuery)}`);
       setSearchResults(res.data.discussions || []);
     } catch (err) { console.error(err); }
     finally { setSearching(false); }
@@ -89,7 +87,6 @@ const DiscussionForum = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/');
   };

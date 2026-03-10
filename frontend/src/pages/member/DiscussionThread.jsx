@@ -37,8 +37,7 @@ const DiscussionThread = () => {
     if (!reply.trim()) return;
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API}/discussions/${id}/reply`, { content: reply }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/discussions/${id}/reply`, { content: reply });
       setReply('');
       await fetchDiscussion();
     } catch (err) {
@@ -49,14 +48,12 @@ const DiscussionThread = () => {
   const handleDeleteReply = async (replyId) => {
     if (!window.confirm('Delete this reply?')) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API}/admin/discussions/${id}/reply/${replyId}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${API}/admin/discussions/${id}/reply/${replyId}`);
       await fetchDiscussion();
     } catch (err) { alert('Error deleting reply'); }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/');
   };

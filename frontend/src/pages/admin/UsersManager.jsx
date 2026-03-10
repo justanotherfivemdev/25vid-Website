@@ -22,8 +22,7 @@ const UsersManager = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.get(`${API}/admin/users`);
       setUsers(response.data);
     } catch (error) { console.error(error); }
     finally { setLoading(false); }
@@ -32,8 +31,7 @@ const UsersManager = () => {
   const handleDeleteUser = async (id) => {
     if (!window.confirm('Delete this user permanently?')) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API}/admin/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${API}/admin/users/${id}`);
       await fetchUsers();
     } catch (error) { alert(error.response?.data?.detail || 'Error'); }
   };

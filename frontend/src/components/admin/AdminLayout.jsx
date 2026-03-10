@@ -8,8 +8,8 @@ const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
   
   const handleLogout = () => {
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
+    axios.post(`${API}/auth/logout`).catch(() => {});
     navigate('/');
   };
   

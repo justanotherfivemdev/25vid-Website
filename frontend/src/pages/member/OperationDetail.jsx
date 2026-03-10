@@ -23,8 +23,6 @@ const OperationDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const token = localStorage.getItem('token');
-  const config = { headers: { Authorization: `Bearer ${token}` } };
 
   useEffect(() => { fetchData(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -32,7 +30,7 @@ const OperationDetail = () => {
     try {
       const [opRes, rsvpRes] = await Promise.all([
         axios.get(`${API}/operations`),
-        axios.get(`${API}/operations/${id}/rsvp`, config)
+        axios.get(`${API}/operations/${id}/rsvp`)
       ]);
       const op = opRes.data.find(o => o.id === id);
       if (!op) { navigate('/hub'); return; }
@@ -55,7 +53,7 @@ const OperationDetail = () => {
   const handleRSVP = async (status) => {
     setSubmitting(true);
     try {
-      await axios.post(`${API}/operations/${id}/rsvp`, { status, role_notes: roleNotes }, config);
+      await axios.post(`${API}/operations/${id}/rsvp`, { status, role_notes: roleNotes });
       await fetchData();
     } catch (e) { alert(e.response?.data?.detail || 'RSVP failed'); }
     finally { setSubmitting(false); }
@@ -64,7 +62,7 @@ const OperationDetail = () => {
   const handleCancel = async () => {
     setSubmitting(true);
     try {
-      await axios.delete(`${API}/operations/${id}/rsvp`, config);
+      await axios.delete(`${API}/operations/${id}/rsvp`);
       setRoleNotes('');
       await fetchData();
     } catch (e) { alert('Cancel failed'); }
@@ -73,12 +71,12 @@ const OperationDetail = () => {
 
   const handlePromote = async (userId) => {
     try {
-      await axios.put(`${API}/admin/operations/${id}/rsvp/${userId}/promote`, {}, config);
+      await axios.put(`${API}/admin/operations/${id}/rsvp/${userId}/promote`, {});
       await fetchData();
     } catch (e) { alert(e.response?.data?.detail || 'Promote failed'); }
   };
 
-  const handleLogout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/'); };
+  const handleLogout = () => { axios.post(`${API}/auth/logout`).catch(() => {}); localStorage.removeItem('user'); navigate('/'); };
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
   if (!operation) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Operation not found</div>;

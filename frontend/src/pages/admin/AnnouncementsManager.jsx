@@ -45,13 +45,11 @@ const AnnouncementsManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
 
       if (editingAnn) {
-        await axios.put(`${API}/admin/announcements/${editingAnn.id}`, formData, config);
+        await axios.put(`${API}/admin/announcements/${editingAnn.id}`, formData);
       } else {
-        await axios.post(`${API}/announcements`, formData, config);
+        await axios.post(`${API}/announcements`, formData);
       }
 
       await fetchAnnouncements();
@@ -77,9 +75,7 @@ const AnnouncementsManager = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this announcement?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.delete(`${API}/admin/announcements/${id}`, config);
+      await axios.delete(`${API}/admin/announcements/${id}`);
       await fetchAnnouncements();
     } catch (error) {
       console.error('Error deleting announcement:', error);

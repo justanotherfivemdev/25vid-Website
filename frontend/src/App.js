@@ -30,6 +30,21 @@ import HistoryManager from '@/pages/admin/HistoryManager';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Configure axios for HttpOnly cookie auth
+axios.defaults.withCredentials = true;
+
+// Intercept 401s — clear stale session
+axios.interceptors.response.use(
+  res => res,
+  err => {
+    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/')) {
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(err);
+  }
+);
+
 const resolveImg = (url) => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
@@ -80,10 +95,16 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   const [authState, setAuthState] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!token) { setAuthState('none'); return; }
-    setAuthState(user.role === 'admin' ? 'admin' : 'member');
+    // Verify session via cookie — no token in localStorage
+    axios.get(`${API}/auth/me`)
+      .then(res => {
+        localStorage.setItem('user', JSON.stringify(res.data));
+        setAuthState(res.data.role === 'admin' ? 'admin' : 'member');
+      })
+      .catch(() => {
+        localStorage.removeItem('user');
+        setAuthState('none');
+      });
   }, []);
 
   if (authState === null) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
@@ -374,7 +395,7 @@ const UpcomingOperationsSection = ({ content }) => {
                     <div className="space-y-2 text-sm mb-4">
                       <div className="flex items-center text-gray-300"><Calendar className="w-4 h-4 mr-2 text-amber-600 shrink-0"/>{op.date}</div>
                       <div className="flex items-center text-gray-300"><Clock className="w-4 h-4 mr-2 text-amber-600 shrink-0"/>{op.time}</div>
-                      {op.max_participants && <div className="flex items-center text-gray-400"><Users className="w-4 h-4 mr-2 text-amber-600 shrink-0"/><span>{op.rsvp_list?.length || 0} / {op.max_participants} operators</span></div>}
+                      {op.max_participants && <div className="flex items-center text-gray-400"><Users className="w-4 h-4 mr-2 text-amber-600 shrink-0"/><span>{op.rsvps?.length || 0} / {op.max_participants} operators</span></div>}
                     </div>
                     <Link to="/login"><Button className="w-full bg-amber-700/90 hover:bg-amber-700 text-sm tracking-wider" data-testid={`operation-rsvp-${idx}`}>RSVP NOW <ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
                   </CardContent>
@@ -481,30 +502,36 @@ const GallerySection = ({ content }) => {
 // ============================================================================
 const JoinUsSection = ({ content }) => {
   const sh = content.sectionHeadings?.enlist || {};
-  const [formData, setFormData] = useState({ name: '', email: '', specialization: '', message: '' });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    window.location.href = '/login';
-  };
 
   return (
     <section className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="join-section">
       <div className="section-divider absolute top-0 left-0 right-0"></div>
-      <div className="container mx-auto max-w-3xl">
+      <div className="container mx-auto max-w-3xl text-center">
         <div className="section-label">
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold" data-testid="join-heading">{sh.heading || 'JOIN THE 25TH'}</h2>
           <p className="text-base md:text-lg">{sh.subtext || 'Become part of the Tropic Lightning legacy'}</p>
         </div>
         <Card className="glass-card shadow-2xl shadow-black/40">
-          <CardContent className="p-8 md:p-10">
-            <form onSubmit={handleSubmit} className="space-y-5" data-testid="join-form">
-              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Name</label><Input type="text" required className="bg-black/50 border-white/10 focus:border-amber-700/50" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} data-testid="join-name-input" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Email</label><Input type="email" required className="bg-black/50 border-white/10 focus:border-amber-700/50" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} data-testid="join-email-input" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Specialization</label><Input type="text" placeholder="e.g., Assault, Recon, Support, Medic" className="bg-black/50 border-white/10 focus:border-amber-700/50" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} data-testid="join-specialization-input" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300 tracking-wide">Why do you want to join?</label><Textarea rows={4} className="bg-black/50 border-white/10 focus:border-amber-700/50" value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} data-testid="join-message-input" /></div>
-              <Button type="submit" className="w-full bg-amber-700 hover:bg-amber-800 py-5 text-lg tactical-button tracking-wider" data-testid="join-submit-button"><Shield className="mr-2 w-5 h-5"/>SUBMIT APPLICATION</Button>
-            </form>
+          <CardContent className="p-8 md:p-12 space-y-6">
+            <p className="text-gray-300 text-lg leading-relaxed">
+              The 25th Infantry Division is always looking for dedicated operators ready to commit to tactical excellence,
+              teamwork, and the Tropic Lightning tradition. Create an account to access the Member Hub, view upcoming
+              operations, and begin your journey with the unit.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <Link to="/login">
+                <Button className="bg-amber-700 hover:bg-amber-800 px-10 py-5 text-lg tactical-button tracking-wider w-full sm:w-auto" data-testid="join-register-button">
+                  <Shield className="mr-2 w-5 h-5"/>CREATE ACCOUNT
+                </Button>
+              </Link>
+              {content.footer?.discord && (
+                <a href={content.footer.discord} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" className="border-amber-700/50 text-amber-400 hover:bg-amber-900/20 px-10 py-5 text-lg tracking-wider w-full sm:w-auto" data-testid="join-discord-button">
+                    JOIN OUR DISCORD
+                  </Button>
+                </a>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -590,25 +617,22 @@ const LoginPage = () => {
     axios.get(`${API}/auth/discord`).then(() => setDiscordAvailable(true)).catch(() => {});
   }, []);
 
-  // Handle Discord OAuth callback
+  // Handle Discord OAuth callback — cookie is set by backend redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const discordToken = params.get('discord_token');
+    const discordSuccess = params.get('discord_success');
     const discordError = params.get('discord_error');
 
-    if (discordToken) {
-      // Discord login success — exchange token for user data
+    if (discordSuccess) {
+      // Cookie was set by backend — fetch user data
       setDiscordLoading(true);
-      localStorage.setItem('token', discordToken);
-      axios.get(`${API}/auth/me`, { headers: { Authorization: `Bearer ${discordToken}` } })
+      axios.get(`${API}/auth/me`)
         .then(res => {
           localStorage.setItem('user', JSON.stringify(res.data));
-          // Clear URL params
           window.history.replaceState({}, '', '/login');
           navigate(res.data.role === 'admin' ? '/admin' : '/hub');
         })
         .catch(() => {
-          localStorage.removeItem('token');
           setError('Discord login failed. Please try again.');
           setDiscordLoading(false);
           window.history.replaceState({}, '', '/login');
@@ -637,7 +661,7 @@ const LoginPage = () => {
         ? { email: formData.email, password: formData.password }
         : { email: formData.email, username: formData.username, password: formData.password, rank: formData.rank || undefined, specialization: formData.specialization || undefined };
       const response = await axios.post(`${API}${endpoint}`, payload);
-      localStorage.setItem('token', response.data.access_token);
+      // Cookie is set by backend — just store user data for UI
       localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate(response.data.user.role === 'admin' ? '/admin' : '/hub');
     } catch (err) {

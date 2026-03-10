@@ -25,8 +25,7 @@ const EditProfile = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    axios.get(`${API}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+    axios.get(`${API}/auth/me`)
       .then(r => setProfile(r.data))
       .catch(() => navigate('/login'))
       .finally(() => setLoading(false));
@@ -53,15 +52,13 @@ const EditProfile = () => {
     setSaving(true);
     setMessage({ type: '', text: '' });
     try {
-      const token = localStorage.getItem('token');
       const payload = {
         avatar_url: profile.avatar_url || null,
         bio: profile.bio || null,
         timezone: profile.timezone || null,
         favorite_role: profile.favorite_role || null
       };
-      const res = await axios.put(`${API}/profile`, payload, { headers: { Authorization: `Bearer ${token}` } });
-      // Update local storage with new profile data
+      const res = await axios.put(`${API}/profile`, payload);
       const stored = JSON.parse(localStorage.getItem('user') || '{}');
       localStorage.setItem('user', JSON.stringify({ ...stored, ...res.data }));
       setMessage({ type: 'success', text: 'Profile updated successfully.' });
@@ -70,12 +67,11 @@ const EditProfile = () => {
     } finally { setSaving(false); }
   };
 
-  const handleLogout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/'); };
+  const handleLogout = () => { axios.post(`${API}/auth/logout`).catch(() => {}); localStorage.removeItem('user'); navigate('/'); };
 
   const handleLinkDiscord = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/auth/discord/link`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.get(`${API}/auth/discord/link`);
       window.location.href = res.data.url;
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.detail || 'Could not start Discord linking.' });
@@ -86,8 +82,7 @@ const EditProfile = () => {
     if (!window.confirm('Unlink your Discord account? You can re-link it later.')) return;
     setUnlinking(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API}/auth/discord/unlink`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${API}/auth/discord/unlink`);
       setProfile({ ...profile, discord_linked: false, discord_id: null, discord_username: null, discord_avatar: null });
       setMessage({ type: 'success', text: 'Discord account unlinked.' });
     } catch (err) {
@@ -108,13 +103,11 @@ const EditProfile = () => {
     setSettingPassword(true);
     setMessage({ type: '', text: '' });
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.post(`${API}/auth/set-password`, {
         email: passwordForm.email,
         password: passwordForm.password
-      }, { headers: { Authorization: `Bearer ${token}` } });
-      // Update token and profile with new email
-      localStorage.setItem('token', res.data.access_token);
+      });
+      // Cookie is set by backend — update profile
       setProfile({ ...profile, email: passwordForm.email });
       const stored = JSON.parse(localStorage.getItem('user') || '{}');
       localStorage.setItem('user', JSON.stringify({ ...stored, email: passwordForm.email }));

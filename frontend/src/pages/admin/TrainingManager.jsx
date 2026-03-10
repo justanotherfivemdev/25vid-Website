@@ -32,13 +32,11 @@ const TrainingManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
-    const config = { headers: { Authorization: `Bearer ${token}` } };
     try {
       if (editing) {
-        await axios.put(`${API}/admin/training/${editing.id}`, form, config);
+        await axios.put(`${API}/admin/training/${editing.id}`, form);
       } else {
-        await axios.post(`${API}/training`, form, config);
+        await axios.post(`${API}/training`, form);
       }
       await fetchItems();
       resetForm();
@@ -56,9 +54,8 @@ const TrainingManager = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this training program?')) return;
-    const token = localStorage.getItem('token');
     try {
-      await axios.delete(`${API}/admin/training/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${API}/admin/training/${id}`);
       await fetchItems();
     } catch (err) { alert('Error deleting'); }
   };

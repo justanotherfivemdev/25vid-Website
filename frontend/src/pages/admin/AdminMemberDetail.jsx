@@ -33,14 +33,11 @@ const AdminMemberDetail = () => {
   const [trainingDialogOpen, setTrainingDialogOpen] = useState(false);
   const [awardDialogOpen, setAwardDialogOpen] = useState(false);
 
-  const token = localStorage.getItem('token');
-  const config = { headers: { Authorization: `Bearer ${token}` } };
-
   useEffect(() => { fetchMember(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchMember = async () => {
     try {
-      const res = await axios.get(`${API}/roster/${id}`, config);
+      const res = await axios.get(`${API}/roster/${id}`);
       setMember(res.data);
     } catch (e) { navigate('/admin/users'); }
     finally { setLoading(false); }
@@ -57,7 +54,7 @@ const AdminMemberDetail = () => {
         timezone: member.timezone, favorite_role: member.favorite_role,
         discord_id: member.discord_id || undefined,
         discord_username: member.discord_username || undefined
-      }, config);
+      });
       setMessage({ type: 'success', text: 'Profile saved.' });
     } catch (e) {
       setMessage({ type: 'error', text: e.response?.data?.detail || 'Save failed.' });
@@ -67,7 +64,7 @@ const AdminMemberDetail = () => {
   const addMission = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/admin/users/${id}/mission-history`, missionForm, config);
+      await axios.post(`${API}/admin/users/${id}/mission-history`, missionForm);
       setMissionForm({ operation_name: '', date: '', role_performed: '', notes: '' });
       setMissionDialogOpen(false);
       await fetchMember();
@@ -76,14 +73,14 @@ const AdminMemberDetail = () => {
 
   const removeMission = async (entryId) => {
     if (!window.confirm('Remove this mission record?')) return;
-    await axios.delete(`${API}/admin/users/${id}/mission-history/${entryId}`, config);
+    await axios.delete(`${API}/admin/users/${id}/mission-history/${entryId}`);
     await fetchMember();
   };
 
   const addTraining = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/admin/users/${id}/training-history`, trainingForm, config);
+      await axios.post(`${API}/admin/users/${id}/training-history`, trainingForm);
       setTrainingForm({ course_name: '', completion_date: '', instructor: '', notes: '' });
       setTrainingDialogOpen(false);
       await fetchMember();
@@ -92,14 +89,14 @@ const AdminMemberDetail = () => {
 
   const removeTraining = async (entryId) => {
     if (!window.confirm('Remove this training record?')) return;
-    await axios.delete(`${API}/admin/users/${id}/training-history/${entryId}`, config);
+    await axios.delete(`${API}/admin/users/${id}/training-history/${entryId}`);
     await fetchMember();
   };
 
   const addAward = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/admin/users/${id}/awards`, awardForm, config);
+      await axios.post(`${API}/admin/users/${id}/awards`, awardForm);
       setAwardForm({ name: '', date: '', description: '' });
       setAwardDialogOpen(false);
       await fetchMember();
@@ -108,7 +105,7 @@ const AdminMemberDetail = () => {
 
   const removeAward = async (entryId) => {
     if (!window.confirm('Remove this award?')) return;
-    await axios.delete(`${API}/admin/users/${id}/awards/${entryId}`, config);
+    await axios.delete(`${API}/admin/users/${id}/awards/${entryId}`);
     await fetchMember();
   };
 

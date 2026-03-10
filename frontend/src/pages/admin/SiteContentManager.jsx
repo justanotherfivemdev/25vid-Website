@@ -50,8 +50,7 @@ const SiteContentManager = () => {
 
   const fetchContent = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/admin/site-content`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.get(`${API}/admin/site-content`);
       setContent(res.data || {});
     } catch (e) {
       setMessage({ type: 'error', text: 'Failed to load site content' });
@@ -62,8 +61,7 @@ const SiteContentManager = () => {
     setSaving(true);
     setMessage({ type: '', text: '' });
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`${API}/admin/site-content`, content, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`${API}/admin/site-content`, content);
       setMessage({ type: 'success', text: 'All changes saved. Refresh the public site to see updates.' });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {

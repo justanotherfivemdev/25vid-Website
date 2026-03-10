@@ -19,14 +19,13 @@ const MemberProfile = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    axios.get(`${API}/roster/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+    axios.get(`${API}/roster/${id}`)
       .then(r => setProfile(r.data))
       .catch(e => { if (e.response?.status === 404) navigate('/roster'); })
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
-  const handleLogout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/'); };
+  const handleLogout = () => { axios.post(`${API}/auth/logout`).catch(() => {}); localStorage.removeItem('user'); navigate('/'); };
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading profile...</div>;
   if (!profile) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Profile not found</div>;

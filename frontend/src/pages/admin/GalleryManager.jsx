@@ -48,13 +48,11 @@ const GalleryManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
-    const config = { headers: { Authorization: `Bearer ${token}` } };
     try {
       if (editing) {
-        await axios.put(`${API}/admin/gallery/${editing.id}`, form, config);
+        await axios.put(`${API}/admin/gallery/${editing.id}`, form);
       } else {
-        await axios.post(`${API}/gallery`, form, config);
+        await axios.post(`${API}/gallery`, form);
       }
       await fetchImages();
       resetForm();
@@ -72,9 +70,8 @@ const GalleryManager = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this gallery image?')) return;
-    const token = localStorage.getItem('token');
     try {
-      await axios.delete(`${API}/admin/gallery/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${API}/admin/gallery/${id}`);
       await fetchImages();
     } catch (err) { alert('Error deleting'); }
   };

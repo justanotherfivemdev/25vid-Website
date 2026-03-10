@@ -47,8 +47,6 @@ const OperationsManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
       
       const payload = {
         ...formData,
@@ -56,9 +54,9 @@ const OperationsManager = () => {
       };
 
       if (editingOp) {
-        await axios.put(`${API}/admin/operations/${editingOp.id}`, payload, config);
+        await axios.put(`${API}/admin/operations/${editingOp.id}`, payload);
       } else {
-        await axios.post(`${API}/operations`, payload, config);
+        await axios.post(`${API}/operations`, payload);
       }
 
       await fetchOperations();
@@ -88,9 +86,7 @@ const OperationsManager = () => {
     if (!window.confirm('Are you sure you want to delete this operation?')) return;
     
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.delete(`${API}/admin/operations/${id}`, config);
+      await axios.delete(`${API}/admin/operations/${id}`);
       await fetchOperations();
     } catch (error) {
       console.error('Error deleting operation:', error);

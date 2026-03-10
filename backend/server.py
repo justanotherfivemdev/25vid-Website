@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse
@@ -10,6 +10,7 @@ import logging
 import shutil
 import secrets
 import json
+import re
 import urllib.parse
 import httpx
 from pathlib import Path
@@ -39,7 +40,22 @@ JWT_EXPIRATION_HOURS = int(os.environ.get('JWT_EXPIRATION_HOURS', 24))
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
+
+# Auth cookie settings
+COOKIE_NAME = "auth_token"
+COOKIE_MAX_AGE = JWT_EXPIRATION_HOURS * 3600
+COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "true").lower() == "true"
+
+def set_auth_cookie(response, token: str):
+    response.set_cookie(
+        key=COOKIE_NAME, value=token,
+        httponly=True, secure=COOKIE_SECURE,
+        samesite="lax", max_age=COOKIE_MAX_AGE, path="/"
+    )
+
+def clear_auth_cookie(response):
+    response.delete_cookie(key=COOKIE_NAME, path="/")
 
 # Discord OAuth2 configuration
 DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID')
@@ -88,7 +104,7 @@ class User(BaseModel):
 class UserRegister(BaseModel):
     email: EmailStr
     username: str
-    password: str
+    password: str = Field(min_length=8)
     rank: Optional[str] = None
     specialization: Optional[str] = None
 
@@ -133,7 +149,6 @@ class Operation(BaseModel):
     time: str
     max_participants: Optional[int] = None
     logo_url: Optional[str] = None
-    rsvp_list: List[str] = []  # legacy compat
     rsvps: List[dict] = []  # [{user_id, username, status, role_notes, rsvp_time}]
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -298,14 +313,21 @@ def create_access_token(data: dict) -> str:
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+async def get_current_user(request: Request) -> dict:
+    # 1. Try HttpOnly cookie
+    token = request.cookies.get(COOKIE_NAME)
+    # 2. Fall back to Authorization header
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     try:
-        token = credentials.credentials
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-        
         user = await db.users.find_one({"id": user_id}, {"_id": 0})
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
@@ -367,7 +389,7 @@ def user_to_response(u: dict) -> UserResponse:
 # ============================================================================
 
 @api_router.post("/auth/register", response_model=TokenResponse)
-async def register(user_data: UserRegister):
+async def register(user_data: UserRegister, response: Response):
     # Check if user exists
     existing_user = await db.users.find_one({"email": user_data.email})
     if existing_user:
@@ -384,6 +406,7 @@ async def register(user_data: UserRegister):
     
     # Create token
     access_token = create_access_token({"sub": user_obj.id, "email": user_obj.email})
+    set_auth_cookie(response, access_token)
     
     user_response = user_to_response(user_obj.model_dump())
     
@@ -394,7 +417,7 @@ async def register(user_data: UserRegister):
     )
 
 @api_router.post("/auth/login", response_model=TokenResponse)
-async def login(credentials: UserLogin):
+async def login(credentials: UserLogin, response: Response):
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -406,6 +429,7 @@ async def login(credentials: UserLogin):
         raise HTTPException(status_code=401, detail="Account is inactive")
     
     access_token = create_access_token({"sub": user["id"], "email": user["email"]})
+    set_auth_cookie(response, access_token)
     
     user_response = user_to_response(user)
     
@@ -414,6 +438,11 @@ async def login(credentials: UserLogin):
         token_type="bearer",
         user=user_response
     )
+
+@api_router.post("/auth/logout")
+async def logout(response: Response):
+    clear_auth_cookie(response)
+    return {"message": "Logged out successfully"}
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
@@ -540,7 +569,9 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
         if not existing_by_discord.get("is_active", True):
             return RedirectResponse(f"{frontend_base}/login?discord_error=account_inactive")
         jwt_token = create_access_token({"sub": existing_by_discord["id"], "email": existing_by_discord["email"]})
-        return RedirectResponse(f"{frontend_base}/login?discord_token={jwt_token}")
+        redirect = RedirectResponse(f"{frontend_base}/login?discord_success=true")
+        set_auth_cookie(redirect, jwt_token)
+        return redirect
 
     # 2. Check if Discord email matches an existing account — auto-link
     if discord_email:
@@ -558,7 +589,9 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
                 }}
             )
             jwt_token = create_access_token({"sub": existing_by_email["id"], "email": existing_by_email["email"]})
-            return RedirectResponse(f"{frontend_base}/login?discord_token={jwt_token}")
+            redirect = RedirectResponse(f"{frontend_base}/login?discord_success=true")
+            set_auth_cookie(redirect, jwt_token)
+            return redirect
 
     # 3. Create new user from Discord
     email_for_user = discord_email or f"discord_{discord_id}@azimuth.local"
@@ -576,7 +609,9 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     await db.users.insert_one(doc)
 
     jwt_token = create_access_token({"sub": new_user.id, "email": new_user.email})
-    return RedirectResponse(f"{frontend_base}/login?discord_token={jwt_token}")
+    redirect = RedirectResponse(f"{frontend_base}/login?discord_success=true")
+    set_auth_cookie(redirect, jwt_token)
+    return redirect
 
 @api_router.delete("/auth/discord/unlink")
 async def discord_unlink(current_user: dict = Depends(get_current_user)):
@@ -605,7 +640,7 @@ class SetPasswordRequest(BaseModel):
     password: str = Field(min_length=8)
 
 @api_router.post("/auth/set-password")
-async def set_password(data: SetPasswordRequest, current_user: dict = Depends(get_current_user)):
+async def set_password(data: SetPasswordRequest, response: Response, current_user: dict = Depends(get_current_user)):
     """Allow Discord-only users to set a real email and password."""
     current_email = current_user.get("email", "")
     # Only allow if user currently has a placeholder email
@@ -621,6 +656,7 @@ async def set_password(data: SetPasswordRequest, current_user: dict = Depends(ge
     )
     # Return new token with updated email
     new_token = create_access_token({"sub": current_user["id"], "email": data.email})
+    set_auth_cookie(response, new_token)
     return {"message": "Email and password set successfully. You can now log in with email/password.", "access_token": new_token}
 
 # ============================================================================
@@ -1251,7 +1287,8 @@ async def search_content(q: str, current_user: dict = Depends(get_current_user))
     """Search operations and discussions by title/content."""
     if not q or len(q) < 2:
         raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
-    regex = {"$regex": q, "$options": "i"}
+    escaped = re.escape(q)
+    regex = {"$regex": escaped, "$options": "i"}
     ops = await db.operations.find(
         {"$or": [{"title": regex}, {"description": regex}]}, {"_id": 0}
     ).sort("created_at", -1).to_list(20)
@@ -1311,10 +1348,13 @@ app.include_router(api_router)
 # Serve uploaded files at /api/uploads/
 app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
+cors_origins_raw = os.environ.get('CORS_ORIGINS', '')
+cors_origins = [o.strip() for o in cors_origins_raw.split(',') if o.strip() and o.strip() != '*']
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=cors_origins if cors_origins else ["http://localhost:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

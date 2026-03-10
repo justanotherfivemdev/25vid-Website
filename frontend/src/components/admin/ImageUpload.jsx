@@ -29,13 +29,12 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('file', file);
 
       const res = await fetch(`${API}/upload`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
         body: formData,
       });
 
