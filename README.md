@@ -1,202 +1,131 @@
-# 🎖️ Azimuth Operations Group Website
+# Azimuth Operations Group
 
-## Quick Start - Customizing Your Content
+A full-stack tactical operations platform for MilSim unit management, featuring a public recruitment site, member operations hub, and admin command center with live content editing.
 
-### 🖼️ **The Easiest Way: Edit One File**
+## Features
 
-**All your images and text are in ONE place:**
+- **Public Landing Page** — Tactical recruitment site with dynamic, admin-editable content
+- **Command Center (CMS)** — Admin panel for live-editing all homepage content, images, and text without code changes
+- **Operations Management** — Create, manage, and track tactical operations with advanced RSVP (attending / tentative / waitlist / capacity)
+- **Discussion Forum** — Categorized threads with pinning, replies, and full-text search
+- **Member Hub** — Personal dashboard with schedule, reminders, search, and quick navigation
+- **Unit Roster** — Searchable, filterable member directory with full profiles
+- **Member Profiles** — Rank, specialization, bio, mission history, training history, awards, Discord status
+- **JWT Authentication** — Email/password login and registration
+- **Discord OAuth2** — Optional "Continue with Discord" login, account linking/unlinking
+- **Admin Member Editor** — Full profile management with Discord prep fields
+- **File Uploads** — Persistent image uploads served via the API
+- **Gallery & Training** — Admin-managed media gallery and training program pages
 
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React, Tailwind CSS, Shadcn/UI |
+| Backend | FastAPI (Python) |
+| Database | MongoDB |
+| Auth | JWT + optional Discord OAuth2 |
+| File Storage | Backend-served uploads |
+
+## Quick Start (Development)
+
+```bash
+# Backend
+cd backend
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # Edit with your values
+uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+
+# Frontend
+cd frontend
+yarn install
+yarn start
 ```
-/app/frontend/src/config/siteContent.js
+
+## Environment Variables
+
+### Backend (`backend/.env`)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MONGO_URL` | Yes | MongoDB connection string |
+| `DB_NAME` | Yes | Database name (e.g., `azimuth_operations`) |
+| `JWT_SECRET` | Yes | Strong random secret for JWT signing |
+| `JWT_ALGORITHM` | Yes | `HS256` |
+| `JWT_EXPIRATION_HOURS` | Yes | Token lifetime in hours (recommended: `24`) |
+| `DISCORD_CLIENT_ID` | No | Discord OAuth app client ID (optional) |
+| `DISCORD_CLIENT_SECRET` | No | Discord OAuth app client secret (optional) |
+| `DISCORD_REDIRECT_URI` | No | Discord callback URL (optional) |
+
+### Frontend (`frontend/.env`)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `REACT_APP_BACKEND_URL` | Yes | Backend base URL (e.g., `https://yourdomain.com`) |
+
+## Admin Bootstrap
+
+Create your admin account after first deploy:
+
+```bash
+cd /path/to/project
+source backend/venv/bin/activate
+python3 scripts/create_admin.py
 ```
 
-Open this file and you'll see everything organized by section:
-- Hero background image
-- About section text and images
-- Operational Superiority photos
-- Training/Logistics images
+The script accepts email, username, and password at runtime via interactive prompts. Password input is hidden. If the email already exists, the user is promoted to admin. No credentials are stored in source control.
+
+## Content Management
+
+All homepage content is editable live through the **Admin > Command Center** panel:
+- Hero section (background image, tagline)
+- About section (logo, paragraphs, quote)
+- Operations section heading and descriptions
 - Gallery showcase images
-- Footer contact info
+- Training/logistics images and text
+- Section headings and footer
 
-**Just replace the URLs with your own images and save!** The site auto-reloads in ~3 seconds.
+Default fallback values are in `frontend/src/config/siteContent.js` and are only used when no database content exists yet.
 
----
+## Discord Integration (Optional)
 
-## 📸 Three Ways to Add Your Images
+Discord OAuth2 is fully implemented but optional. To enable:
 
-### **Option 1: Direct Image URLs (Easiest)**
+1. Create a Discord application at https://discord.com/developers/applications
+2. Under OAuth2, add your redirect URI: `https://yourdomain.com/api/auth/discord/callback`
+3. Set `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, and `DISCORD_REDIRECT_URI` in `backend/.env`
+4. Restart the backend
 
-1. Upload your images to:
-   - [Imgur](https://imgur.com) - Free, no account
-   - [ImgBB](https://imgbb.com) - Free
-   - [Cloudinary](https://cloudinary.com) - Professional
-   - Your own hosting
+When enabled, users see a "Continue with Discord" button on the login page and can link/unlink Discord from their profile. Discord is never required — email/password auth always works.
 
-2. Copy the direct URL (must end in .jpg, .png, .webp)
+## Production Deployment
 
-3. Paste into `/app/frontend/src/config/siteContent.js`:
-```javascript
-hero: {
-  backgroundImage: 'https://i.imgur.com/YourImage.jpg'
-}
-```
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete self-hosting instructions covering:
+- Server setup (Ubuntu, Python, Node, MongoDB, Nginx)
+- Environment configuration
+- Frontend build and backend service
+- Nginx reverse proxy with Cloudflare SSL
+- MongoDB security and backup strategy
 
-### **Option 2: Local Images**
-
-1. Create folder: `/app/frontend/public/images/`
-2. Place your images there
-3. Reference them: `backgroundImage: '/images/my-photo.jpg'`
-
-### **Option 3: Upload via API (for gallery)**
-
-After logging in, upload to the database:
-```bash
-curl -X POST "https://azimuth-team.preview.emergentagent.com/api/gallery" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Operation Name","image_url":"URL","category":"operation"}'
-```
-
----
-
-## 🎨 Quick Image Size Guide
-
-| Section | Best Size | Orientation |
-|---------|-----------|-------------|
-| Hero Background | 1920x1080px+ | Landscape |
-| About Quote BG | 1200x600px | Landscape |
-| Ops Superiority | 400x600px | Vertical/Portrait (3) |
-| Logistics/Training | 800x450px | Landscape (16:9) |
-| Gallery Showcase | 600x600px | Square (6) |
-
----
-
-## 🛠️ **Quick Content Manager Script**
-
-Run this helper script:
-```bash
-/app/scripts/manage-content.sh
-```
-
-It provides menu options to:
-- Open config file for editing
-- Create images directory
-- View current configuration
-- Get help
-
----
-
-## 📝 Updating Text Content
-
-Everything is in `/app/frontend/src/config/siteContent.js`:
-
-```javascript
-about: {
-  paragraph1: 'Your custom text here...',
-  quote: {
-    text: '"Your quote"',
-    author: '- Your Name'
-  }
-}
-```
-
----
-
-## 🔧 Advanced: Adding Dynamic Content
-
-### Add Operation:
-```bash
-curl -X POST "https://azimuth-team.preview.emergentagent.com/api/operations" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Operation Night Storm",
-    "description": "Urban combat simulation",
-    "operation_type": "combat",
-    "date": "2026-03-25",
-    "time": "20:00 UTC",
-    "max_participants": 20
-  }'
-```
-
-### Add Announcement:
-```bash
-curl -X POST "https://azimuth-team.preview.emergentagent.com/api/announcements" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Training This Weekend",
-    "content": "All members report for CQB training.",
-    "priority": "high"
-  }'
-```
-
----
-
-## 📚 Documentation Files
-
-- **Quick Guide**: `/app/CUSTOMIZATION_GUIDE.md` (detailed walkthrough)
-- **Config File**: `/app/frontend/src/config/siteContent.js` (edit your content)
-- **This README**: `/app/README.md`
-
----
-
-## 🚀 Your Live Website
-
-**URL**: https://azimuth-team.preview.emergentagent.com
-
-**Test Account**:
-- Email: `bishop@azimuth.ops`
-- Password: `AzimuthOps2025!`
-
----
-
-## 🎯 What's Built
-
-✅ Professional landing page matching your WordPress design
-✅ JWT authentication system
-✅ Operations calendar with RSVP
-✅ Announcements system
-✅ Discussion forum APIs
-✅ Photo gallery
-✅ Training programs
-✅ Fully responsive design
-✅ Dark tactical theme with red accents
-
----
-
-## 📞 Need Help?
-
-1. Check browser console (F12 → Console) for errors
-2. Verify image URLs are direct links
-3. Try hard refresh (Ctrl+Shift+R)
-4. Read the detailed guide: `/app/CUSTOMIZATION_GUIDE.md`
-
----
-
-## 🎖️ File Structure
+## Project Structure
 
 ```
-/app/
+├── backend/
+│   ├── server.py              # All API logic
+│   ├── uploads/               # Persistent file storage
+│   ├── requirements.txt       # Python dependencies
+│   └── .env                   # Backend configuration
 ├── frontend/
 │   ├── src/
-│   │   ├── config/
-│   │   │   └── siteContent.js    ← EDIT THIS!
-│   │   ├── App.js
-│   │   ├── App.css
-│   │   └── index.css
-│   └── public/
-│       └── images/               ← Put local images here
-├── backend/
-│   └── server.py                 ← API backend
+│   │   ├── App.js             # Routing, pages, layouts
+│   │   ├── config/siteContent.js  # Default fallback content
+│   │   ├── components/        # Shared components
+│   │   └── pages/             # Admin + Member pages
+│   ├── package.json
+│   └── .env                   # Frontend configuration
 ├── scripts/
-│   └── manage-content.sh         ← Helper script
-├── CUSTOMIZATION_GUIDE.md        ← Detailed guide
-└── README.md                     ← This file
+│   └── create_admin.py        # Production admin bootstrap
+├── DEPLOYMENT.md              # Self-hosting guide
+└── README.md
 ```
-
----
-
-**Remember**: After editing `/app/frontend/src/config/siteContent.js`, just save and wait ~3 seconds for auto-reload!
-
-🎖️ **Azimuth Operations Group - Mission Ready**

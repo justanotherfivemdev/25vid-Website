@@ -21,6 +21,7 @@ const EditProfile = () => {
   const [unlinking, setUnlinking] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ email: '', password: '', confirm: '' });
   const [settingPassword, setSettingPassword] = useState(false);
+  const [discordAvailable, setDiscordAvailable] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +30,9 @@ const EditProfile = () => {
       .then(r => setProfile(r.data))
       .catch(() => navigate('/login'))
       .finally(() => setLoading(false));
+
+    // Check if Discord OAuth is enabled on the backend
+    axios.get(`${API}/auth/discord`).then(() => setDiscordAvailable(true)).catch(() => {});
 
     // Check for Discord link callback
     const params = new URLSearchParams(window.location.search);
@@ -197,7 +201,8 @@ const EditProfile = () => {
             </CardContent>
           </Card>
 
-          {/* Discord Integration */}
+          {/* Discord Integration — only shown when backend has Discord configured */}
+          {discordAvailable && (
           <Card className="bg-gray-900/80 border-gray-800" data-testid="discord-section">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg tracking-wider flex items-center gap-2">
@@ -242,6 +247,7 @@ const EditProfile = () => {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Set Password — for Discord-only users */}
           {profile.email?.endsWith('@azimuth.local') && (

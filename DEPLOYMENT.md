@@ -53,7 +53,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Backend Environment Variables (`/opt/azimuth/backend/.env`)
+### Backend Environment Variables (`backend/.env`)
 
 ```env
 MONGO_URL=mongodb://localhost:27017
@@ -61,9 +61,11 @@ DB_NAME=azimuth_operations
 JWT_SECRET=<GENERATE_A_STRONG_RANDOM_SECRET>
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
-DISCORD_CLIENT_ID=<YOUR_DISCORD_APP_CLIENT_ID>
-DISCORD_CLIENT_SECRET=<YOUR_DISCORD_APP_CLIENT_SECRET>
-DISCORD_REDIRECT_URI=https://yourdomain.com/api/auth/discord/callback
+
+# Optional — Discord OAuth2 (omit all three to disable Discord login)
+# DISCORD_CLIENT_ID=<YOUR_DISCORD_APP_CLIENT_ID>
+# DISCORD_CLIENT_SECRET=<YOUR_DISCORD_APP_CLIENT_SECRET>
+# DISCORD_REDIRECT_URI=https://yourdomain.com/api/auth/discord/callback
 ```
 
 **Generate a strong JWT secret:**
@@ -71,7 +73,7 @@ DISCORD_REDIRECT_URI=https://yourdomain.com/api/auth/discord/callback
 python3 -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
-### Frontend Environment Variables (`/opt/azimuth/frontend/.env`)
+### Frontend Environment Variables (`frontend/.env`)
 
 ```env
 REACT_APP_BACKEND_URL=https://yourdomain.com
@@ -322,7 +324,9 @@ sudo systemctl reload nginx
 | `JWT_SECRET` | backend/.env | Yes | Strong random secret for JWT signing |
 | `JWT_ALGORITHM` | backend/.env | Yes | `HS256` |
 | `JWT_EXPIRATION_HOURS` | backend/.env | Yes | Token lifetime (24 recommended) |
-| `DISCORD_CLIENT_ID` | backend/.env | Yes | Discord OAuth app ID |
-| `DISCORD_CLIENT_SECRET` | backend/.env | Yes | Discord OAuth app secret |
-| `DISCORD_REDIRECT_URI` | backend/.env | Yes | Must match Discord portal + domain |
+| `DISCORD_CLIENT_ID` | backend/.env | Optional | Discord OAuth app ID (omit to disable Discord) |
+| `DISCORD_CLIENT_SECRET` | backend/.env | Optional | Discord OAuth app secret |
+| `DISCORD_REDIRECT_URI` | backend/.env | Optional | Must match Discord portal + your domain |
 | `REACT_APP_BACKEND_URL` | frontend/.env | Yes | Your production domain (https://...) |
+
+> **Note:** Discord integration is optional. If the three `DISCORD_*` variables are not set, the site operates normally with email/password authentication only. The "Continue with Discord" button will not appear on the login page.
