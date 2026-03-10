@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Save, CheckCircle, AlertCircle, Home, LogOut, Link2, Unlink } from 'lucide-react';
+import { ArrowLeft, Save, CheckCircle, AlertCircle, Home, LogOut, Link2, Unlink, Lock } from 'lucide-react';
 import ImageUpload from '@/components/admin/ImageUpload';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -19,6 +19,8 @@ const EditProfile = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [unlinking, setUnlinking] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ email: '', password: '', confirm: '' });
+  const [settingPassword, setSettingPassword] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -87,6 +89,36 @@ const EditProfile = () => {
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to unlink Discord.' });
     } finally { setUnlinking(false); }
+  };
+
+  const handleSetPassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.password !== passwordForm.confirm) {
+      setMessage({ type: 'error', text: 'Passwords do not match.' });
+      return;
+    }
+    if (passwordForm.password.length < 8) {
+      setMessage({ type: 'error', text: 'Password must be at least 8 characters.' });
+      return;
+    }
+    setSettingPassword(true);
+    setMessage({ type: '', text: '' });
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API}/auth/set-password`, {
+        email: passwordForm.email,
+        password: passwordForm.password
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      // Update token and profile with new email
+      localStorage.setItem('token', res.data.access_token);
+      setProfile({ ...profile, email: passwordForm.email });
+      const stored = JSON.parse(localStorage.getItem('user') || '{}');
+      localStorage.setItem('user', JSON.stringify({ ...stored, email: passwordForm.email }));
+      setPasswordForm({ email: '', password: '', confirm: '' });
+      setMessage({ type: 'success', text: res.data.message });
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to set password.' });
+    } finally { setSettingPassword(false); }
   };
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
@@ -210,6 +242,64 @@ const EditProfile = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Set Password — for Discord-only users */}
+          {profile.email?.endsWith('@azimuth.local') && (
+            <Card className="bg-gray-900/80 border-yellow-700/40" data-testid="set-password-section">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg tracking-wider flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-yellow-500" /> SET EMAIL & PASSWORD
+                </CardTitle>
+                <p className="text-xs text-gray-500 mt-1">Your account was created via Discord. Add an email and password to enable password-based login and allow Discord unlinking.</p>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSetPassword} className="space-y-4">
+                  <div>
+                    <Label>Email Address</Label>
+                    <Input
+                      type="email"
+                      required
+                      value={passwordForm.email}
+                      onChange={e => setPasswordForm({ ...passwordForm, email: e.target.value })}
+                      className="bg-black border-gray-700"
+                      placeholder="your.real@email.com"
+                      data-testid="set-email-input"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Password</Label>
+                      <Input
+                        type="password"
+                        required
+                        minLength={8}
+                        value={passwordForm.password}
+                        onChange={e => setPasswordForm({ ...passwordForm, password: e.target.value })}
+                        className="bg-black border-gray-700"
+                        placeholder="Min 8 characters"
+                        data-testid="set-password-input"
+                      />
+                    </div>
+                    <div>
+                      <Label>Confirm Password</Label>
+                      <Input
+                        type="password"
+                        required
+                        value={passwordForm.confirm}
+                        onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                        className="bg-black border-gray-700"
+                        placeholder="Confirm"
+                        data-testid="set-password-confirm"
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" disabled={settingPassword} className="bg-yellow-700 hover:bg-yellow-800 text-white" data-testid="set-password-btn">
+                    <Lock className="w-4 h-4 mr-2" />{settingPassword ? 'Setting...' : 'Set Email & Password'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -578,6 +578,61 @@ async def discord_unlink(current_user: dict = Depends(get_current_user)):
     return {"message": "Discord account unlinked successfully"}
 
 # ============================================================================
+# SET PASSWORD (for Discord-only users)
+# ============================================================================
+
+class SetPasswordRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+
+@api_router.post("/auth/set-password")
+async def set_password(data: SetPasswordRequest, current_user: dict = Depends(get_current_user)):
+    """Allow Discord-only users to set a real email and password."""
+    current_email = current_user.get("email", "")
+    # Only allow if user currently has a placeholder email
+    if not current_email.endswith("@azimuth.local"):
+        raise HTTPException(status_code=400, detail="You already have an email and password set.")
+    # Check if new email is taken by another user
+    existing = await db.users.find_one({"email": data.email, "id": {"$ne": current_user["id"]}}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="This email is already registered to another account.")
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"email": data.email, "password_hash": pwd_context.hash(data.password)}}
+    )
+    # Return new token with updated email
+    new_token = create_access_token({"sub": current_user["id"], "email": data.email})
+    return {"message": "Email and password set successfully. You can now log in with email/password.", "access_token": new_token}
+
+# ============================================================================
+# MY SCHEDULE (operations user has RSVP'd to)
+# ============================================================================
+
+@api_router.get("/my-schedule")
+async def get_my_schedule(current_user: dict = Depends(get_current_user)):
+    """Get all operations the current user has RSVP'd to, sorted by date."""
+    user_id = current_user["id"]
+    all_ops = await db.operations.find({"rsvps.user_id": user_id}, {"_id": 0}).to_list(500)
+    result = []
+    for op in all_ops:
+        my_rsvp = next((r for r in op.get("rsvps", []) if r["user_id"] == user_id), None)
+        if my_rsvp:
+            result.append({
+                "id": op["id"],
+                "title": op["title"],
+                "date": op.get("date", ""),
+                "time": op.get("time", ""),
+                "operation_type": op.get("operation_type", "combat"),
+                "my_status": my_rsvp["status"],
+                "my_role_notes": my_rsvp.get("role_notes", ""),
+                "attending_count": len([r for r in op.get("rsvps", []) if r["status"] == "attending"]),
+                "max_participants": op.get("max_participants"),
+            })
+    # Sort by date (upcoming first)
+    result.sort(key=lambda x: x["date"])
+    return result
+
+# ============================================================================
 # OPERATIONS ENDPOINTS
 # ============================================================================
 

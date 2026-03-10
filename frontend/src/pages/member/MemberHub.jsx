@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -20,6 +20,7 @@ const MemberHub = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [mySchedule, setMySchedule] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,16 +31,19 @@ const MemberHub = () => {
 
   const fetchAll = async () => {
     try {
-      const [ops, ann, train, disc] = await Promise.all([
+      const token = localStorage.getItem('token');
+      const [ops, ann, train, disc, sched] = await Promise.all([
         axios.get(`${API}/operations`),
         axios.get(`${API}/announcements`),
         axios.get(`${API}/training`),
         axios.get(`${API}/discussions`),
+        axios.get(`${API}/my-schedule`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
       ]);
       setOperations(ops.data.slice(0, 4));
       setAnnouncements(ann.data.slice(0, 4));
       setTraining(train.data.slice(0, 3));
       setDiscussions(disc.data.slice(0, 5));
+      setMySchedule(sched.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -168,6 +172,69 @@ const MemberHub = () => {
                 <p className="text-gray-500 text-sm">No results found for "{searchQuery}".</p>
               )}
             </div>
+          )}
+
+          {/* Upcoming operation reminders */}
+          {(() => {
+            const now = new Date();
+            const upcoming = mySchedule.filter(op => {
+              if (!op.date) return false;
+              const opDate = new Date(op.date + 'T' + (op.time?.replace(' UTC', ':00Z') || '00:00:00Z'));
+              const diff = opDate - now;
+              return diff > 0 && diff < 48 * 60 * 60 * 1000;
+            });
+            if (upcoming.length === 0) return null;
+            return (
+              <div className="space-y-2" data-testid="op-reminders">
+                {upcoming.map(op => (
+                  <Link to={`/hub/operations/${op.id}`} key={op.id} className="block">
+                    <div className="bg-red-900/20 border border-red-700/40 rounded-lg p-4 flex items-center gap-4 hover:bg-red-900/30 transition-colors">
+                      <Bell className="w-5 h-5 text-red-400 shrink-0 animate-pulse" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm">{op.title}</div>
+                        <div className="text-xs text-gray-400 flex items-center gap-3 mt-0.5">
+                          <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" />{op.date}</span>
+                          <span className="flex items-center"><Clock className="w-3 h-3 mr-1" />{op.time}</span>
+                        </div>
+                      </div>
+                      <Badge className={`text-xs ${op.my_status === 'attending' ? 'bg-green-700' : op.my_status === 'tentative' ? 'bg-yellow-700' : 'bg-orange-700'} text-white`}>{op.my_status?.toUpperCase()}</Badge>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* My Schedule */}
+          {mySchedule.length > 0 && (
+            <section data-testid="my-schedule-section">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-bold flex items-center gap-2" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                  <CalendarCheck className="w-6 h-6 text-green-500" /> MY SCHEDULE
+                </h3>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {mySchedule.map(op => (
+                  <Link to={`/hub/operations/${op.id}`} key={op.id}>
+                    <Card className="bg-gray-900 border-gray-800 hover:border-red-700/30 transition-colors h-full" data-testid={`schedule-op-${op.id}`}>
+                      <CardContent className="py-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Badge className={`${getTypeColor(op.operation_type)} text-white text-xs`}>{op.operation_type?.toUpperCase()}</Badge>
+                          <Badge className={`text-xs ${op.my_status === 'attending' ? 'bg-green-700' : op.my_status === 'tentative' ? 'bg-yellow-700' : 'bg-orange-700'} text-white`}>{op.my_status?.toUpperCase()}</Badge>
+                        </div>
+                        <div className="font-medium text-sm">{op.title}</div>
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" />{op.date}</span>
+                          <span className="flex items-center"><Clock className="w-3 h-3 mr-1" />{op.time}</span>
+                          {op.max_participants && <span><Users className="inline w-3 h-3 mr-1" />{op.attending_count}/{op.max_participants}</span>}
+                        </div>
+                        {op.my_role_notes && <div className="text-xs text-gray-600">Role: {op.my_role_notes}</div>}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </section>
           )}
 
           {/* Quick nav */}
