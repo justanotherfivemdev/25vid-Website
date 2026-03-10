@@ -12,33 +12,127 @@
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(160, 13, 13, 0.3);
 }
-
 .tactical-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 25px rgba(160, 13, 13, 0.5);
 }
 
-.operation-card {
+/* ============ OPERATION CARDS ============ */
+.op-card {
+  position: relative;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+.op-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent 60%, rgba(160, 13, 13, 0.3));
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.op-card:hover::before { opacity: 1; }
+.op-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(160, 13, 13, 0.15), 0 0 0 1px rgba(160, 13, 13, 0.2);
+}
+
+/* ============ INTEL/ANNOUNCEMENT CARDS ============ */
+.intel-card {
+  position: relative;
   transition: all 0.3s ease;
+  overflow: hidden;
+}
+.intel-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+.intel-urgent { border-left: 3px solid #a00d0d; }
+.intel-high { border-left: 3px solid #ff6b35; }
+.intel-normal { border-left: 3px solid #4a90e2; }
+.intel-low { border-left: 3px solid #555; }
+
+/* ============ SECTION DIVIDERS ============ */
+.section-divider {
+  position: relative;
+  height: 1px;
+  width: 100%;
+}
+.section-divider::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(160, 13, 13, 0.6), transparent);
 }
 
-.operation-card:hover {
-  transform: scale(1.02);
-  border-color: rgba(160, 13, 13, 0.5);
+/* ============ SECTION LABEL ============ */
+.section-label {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+.section-label h2 {
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 0.08em;
+  position: relative;
+  display: inline-block;
+}
+.section-label h2::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 2px;
+  background: #a00d0d;
+  margin: 12px auto 0;
+}
+.section-label p {
+  color: #888;
+  margin-top: 8px;
 }
 
-.announcement-urgent {
-  border-left: 4px solid #a00d0d;
+/* ============ GLASS CARD ============ */
+.glass-card {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.announcement-high {
-  border-left: 4px solid #ff6b35;
+/* ============ SECTION UNDERLINE ============ */
+.section-underline {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+.section-underline::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 80px;
+  height: 3px;
+  background: #a00d0d;
 }
 
-.announcement-normal {
-  border-left: 4px solid #4a90e2;
+/* ============ TACTICAL GRID ============ */
+.tactical-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
 }
 
-.announcement-low {
-  border-left: 4px solid #888888;
-}
+/* keep backwards compat */
+.announcement-urgent { border-left: 4px solid #a00d0d; }
+.announcement-high { border-left: 4px solid #ff6b35; }
+.announcement-normal { border-left: 4px solid #4a90e2; }
+.announcement-low { border-left: 4px solid #888888; }
+.operation-card { transition: all 0.3s ease; }
+.operation-card:hover { transform: scale(1.02); border-color: rgba(160,13,13,0.5); }

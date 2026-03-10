@@ -15,10 +15,9 @@ const AdminLayout = ({ children }) => {
   
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/admin/site-content', icon: Settings, label: 'Site Content' },
+    { path: '/admin/site-content', icon: Settings, label: 'Command Center' },
     { path: '/admin/operations', icon: Calendar, label: 'Operations' },
     { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
-    { path: '/admin/discussions', icon: MessageSquare, label: 'Discussions' },
     { path: '/admin/gallery', icon: Image, label: 'Gallery' },
     { path: '/admin/training', icon: FileText, label: 'Training' },
     { path: '/admin/users', icon: Users, label: 'Members' }

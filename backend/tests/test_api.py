@@ -265,7 +265,7 @@ class TestFileUpload:
         data = response.json()
         assert "url" in data
         assert "filename" in data
-        assert data["url"].startswith("/uploads/")
+        assert data["url"].startswith("/api/uploads/")
         print(f"File uploaded successfully: {data['url']}")
     
     def test_upload_file_unauthenticated(self):
