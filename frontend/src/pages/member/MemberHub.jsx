@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -72,6 +72,8 @@ const MemberHub = () => {
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-400 hidden sm:block">Welcome, <span className="text-red-400 font-bold">{user?.username}</span></span>
+            <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
+            <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
             {user?.role === 'admin' && (
               <Link to="/admin"><Button size="sm" variant="outline" className="border-red-700 text-red-500 hover:bg-red-700/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
             )}
@@ -90,7 +92,7 @@ const MemberHub = () => {
           </div>
 
           {/* Quick nav */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Link to="/hub/discussions" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-red-700/50 transition-colors text-center" data-testid="hub-nav-discussions">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 text-red-500" /><span className="font-medium text-sm">Discussions</span>
             </Link>
@@ -103,6 +105,9 @@ const MemberHub = () => {
             <a href="#intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-red-700/50 transition-colors text-center">
               <Megaphone className="w-8 h-8 mx-auto mb-2 text-yellow-500" /><span className="font-medium text-sm">Intel</span>
             </a>
+            <Link to="/roster" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-red-700/50 transition-colors text-center" data-testid="hub-nav-roster">
+              <Users className="w-8 h-8 mx-auto mb-2 text-purple-500" /><span className="font-medium text-sm">Roster</span>
+            </Link>
           </div>
 
           {/* Announcements */}

@@ -57,6 +57,16 @@ class User(BaseModel):
     specialization: Optional[str] = None
     join_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = True
+    # Phase 4 profile fields
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    status: str = "recruit"  # recruit, active, reserve, staff, command, inactive
+    timezone: Optional[str] = None
+    squad: Optional[str] = None
+    favorite_role: Optional[str] = None
+    awards: List[dict] = []           # [{id, name, date, description}]
+    mission_history: List[dict] = []  # [{id, operation_name, date, role_performed, notes}]
+    training_history: List[dict] = [] # [{id, course_name, completion_date, instructor, notes}]
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -74,9 +84,18 @@ class UserResponse(BaseModel):
     email: str
     username: str
     role: str
-    rank: Optional[str]
-    specialization: Optional[str]
+    rank: Optional[str] = None
+    specialization: Optional[str] = None
     join_date: datetime
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    status: str = "recruit"
+    timezone: Optional[str] = None
+    squad: Optional[str] = None
+    favorite_role: Optional[str] = None
+    awards: List[dict] = []
+    mission_history: List[dict] = []
+    training_history: List[dict] = []
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -178,6 +197,45 @@ class TrainingCreate(BaseModel):
     duration: str
     image_url: Optional[str] = None
 
+# Phase 4: Profile & History models
+class ProfileSelfUpdate(BaseModel):
+    """Fields a member can edit on their own profile"""
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    timezone: Optional[str] = None
+    favorite_role: Optional[str] = None
+
+class AdminProfileUpdate(BaseModel):
+    """Fields only an admin can edit on any member's profile"""
+    username: Optional[str] = None
+    role: Optional[str] = None
+    rank: Optional[str] = None
+    specialization: Optional[str] = None
+    status: Optional[str] = None
+    squad: Optional[str] = None
+    is_active: Optional[bool] = None
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    timezone: Optional[str] = None
+    favorite_role: Optional[str] = None
+
+class MissionHistoryEntry(BaseModel):
+    operation_name: str
+    date: str
+    role_performed: str
+    notes: Optional[str] = None
+
+class TrainingHistoryEntry(BaseModel):
+    course_name: str
+    completion_date: str
+    instructor: Optional[str] = None
+    notes: Optional[str] = None
+
+class AwardEntry(BaseModel):
+    name: str
+    date: Optional[str] = None
+    description: Optional[str] = None
+
 # ============================================================================
 # AUTH UTILITIES
 # ============================================================================
@@ -217,6 +275,22 @@ async def get_current_admin(current_user: dict = Depends(get_current_user)) -> d
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
+def user_to_response(u: dict) -> UserResponse:
+    """Build a UserResponse from a raw MongoDB user document."""
+    jd = u.get("join_date")
+    if isinstance(jd, str):
+        jd = datetime.fromisoformat(jd)
+    elif jd is None:
+        jd = datetime.now(timezone.utc)
+    return UserResponse(
+        id=u["id"], email=u["email"], username=u["username"], role=u.get("role", "member"),
+        rank=u.get("rank"), specialization=u.get("specialization"), join_date=jd,
+        avatar_url=u.get("avatar_url"), bio=u.get("bio"), status=u.get("status", "recruit"),
+        timezone=u.get("timezone"), squad=u.get("squad"), favorite_role=u.get("favorite_role"),
+        awards=u.get("awards", []), mission_history=u.get("mission_history", []),
+        training_history=u.get("training_history", [])
+    )
+
 # ============================================================================
 # AUTH ENDPOINTS
 # ============================================================================
@@ -240,15 +314,7 @@ async def register(user_data: UserRegister):
     # Create token
     access_token = create_access_token({"sub": user_obj.id, "email": user_obj.email})
     
-    user_response = UserResponse(
-        id=user_obj.id,
-        email=user_obj.email,
-        username=user_obj.username,
-        role=user_obj.role,
-        rank=user_obj.rank,
-        specialization=user_obj.specialization,
-        join_date=user_obj.join_date
-    )
+    user_response = user_to_response(user_obj.model_dump())
     
     return TokenResponse(
         access_token=access_token,
@@ -270,15 +336,7 @@ async def login(credentials: UserLogin):
     
     access_token = create_access_token({"sub": user["id"], "email": user["email"]})
     
-    user_response = UserResponse(
-        id=user["id"],
-        email=user["email"],
-        username=user["username"],
-        role=user["role"],
-        rank=user.get("rank"),
-        specialization=user.get("specialization"),
-        join_date=datetime.fromisoformat(user["join_date"]) if isinstance(user["join_date"], str) else user["join_date"]
-    )
+    user_response = user_to_response(user)
     
     return TokenResponse(
         access_token=access_token,
@@ -288,15 +346,7 @@ async def login(credentials: UserLogin):
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
-    return UserResponse(
-        id=current_user["id"],
-        email=current_user["email"],
-        username=current_user["username"],
-        role=current_user["role"],
-        rank=current_user.get("rank"),
-        specialization=current_user.get("specialization"),
-        join_date=datetime.fromisoformat(current_user["join_date"]) if isinstance(current_user["join_date"], str) else current_user["join_date"]
-    )
+    return user_to_response(current_user)
 
 # ============================================================================
 # OPERATIONS ENDPOINTS
@@ -658,27 +708,131 @@ async def update_training(training_id: str, training_data: TrainingCreate, curre
     return {"message": "Training updated successfully"}
 
 # ============================================================================
+# ROSTER & PROFILE ENDPOINTS
+# ============================================================================
+
+@api_router.get("/roster")
+async def get_roster(current_user: dict = Depends(get_current_user)):
+    """Get all active members for the roster directory."""
+    users = await db.users.find(
+        {"is_active": {"$ne": False}},
+        {"_id": 0, "password_hash": 0, "email": 0}
+    ).sort("username", 1).to_list(1000)
+    roster = []
+    for u in users:
+        jd = u.get("join_date")
+        if isinstance(jd, str):
+            jd = datetime.fromisoformat(jd).isoformat()
+        elif hasattr(jd, 'isoformat'):
+            jd = jd.isoformat()
+        roster.append({
+            "id": u["id"], "username": u["username"], "role": u.get("role", "member"),
+            "rank": u.get("rank"), "specialization": u.get("specialization"),
+            "status": u.get("status", "recruit"), "squad": u.get("squad"),
+            "avatar_url": u.get("avatar_url"), "join_date": jd
+        })
+    return roster
+
+@api_router.get("/roster/{user_id}")
+async def get_member_profile(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a member's full public profile."""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Member not found")
+    # Sanitize: hide email from non-admins viewing other profiles
+    if current_user["id"] != user_id and current_user.get("role") != "admin":
+        user.pop("email", None)
+    return user_to_response(user)
+
+@api_router.put("/profile")
+async def update_own_profile(profile_data: ProfileSelfUpdate, current_user: dict = Depends(get_current_user)):
+    """Member edits their own profile (limited fields)."""
+    update_dict = {k: v for k, v in profile_data.model_dump().items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    await db.users.update_one({"id": current_user["id"]}, {"$set": update_dict})
+    updated = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
+    return user_to_response(updated)
+
+# ============================================================================
+# ADMIN PROFILE & HISTORY MANAGEMENT
+# ============================================================================
+
+@api_router.put("/admin/users/{user_id}/profile")
+async def admin_update_profile(user_id: str, profile_data: AdminProfileUpdate, current_user: dict = Depends(get_current_admin)):
+    """Admin edits any member's full profile."""
+    update_dict = {k: v for k, v in profile_data.model_dump().items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    result = await db.users.update_one({"id": user_id}, {"$set": update_dict})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "Profile updated successfully"}
+
+@api_router.post("/admin/users/{user_id}/mission-history")
+async def add_mission_history(user_id: str, entry: MissionHistoryEntry, current_user: dict = Depends(get_current_admin)):
+    entry_dict = entry.model_dump()
+    entry_dict["id"] = str(uuid.uuid4())
+    result = await db.users.update_one({"id": user_id}, {"$push": {"mission_history": entry_dict}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "Mission history added", "entry": entry_dict}
+
+@api_router.delete("/admin/users/{user_id}/mission-history/{entry_id}")
+async def delete_mission_history(user_id: str, entry_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.users.update_one({"id": user_id}, {"$pull": {"mission_history": {"id": entry_id}}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"message": "Mission history entry removed"}
+
+@api_router.post("/admin/users/{user_id}/training-history")
+async def add_training_history(user_id: str, entry: TrainingHistoryEntry, current_user: dict = Depends(get_current_admin)):
+    entry_dict = entry.model_dump()
+    entry_dict["id"] = str(uuid.uuid4())
+    result = await db.users.update_one({"id": user_id}, {"$push": {"training_history": entry_dict}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "Training history added", "entry": entry_dict}
+
+@api_router.delete("/admin/users/{user_id}/training-history/{entry_id}")
+async def delete_training_history(user_id: str, entry_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.users.update_one({"id": user_id}, {"$pull": {"training_history": {"id": entry_id}}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"message": "Training history entry removed"}
+
+@api_router.post("/admin/users/{user_id}/awards")
+async def add_award(user_id: str, entry: AwardEntry, current_user: dict = Depends(get_current_admin)):
+    entry_dict = entry.model_dump()
+    entry_dict["id"] = str(uuid.uuid4())
+    result = await db.users.update_one({"id": user_id}, {"$push": {"awards": entry_dict}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "Award added", "entry": entry_dict}
+
+@api_router.delete("/admin/users/{user_id}/awards/{entry_id}")
+async def delete_award(user_id: str, entry_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.users.update_one({"id": user_id}, {"$pull": {"awards": {"id": entry_id}}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"message": "Award removed"}
+
+# ============================================================================
 # USER MANAGEMENT (ADMIN ONLY)
 # ============================================================================
 
-@api_router.get("/admin/users", response_model=List[UserResponse])
+@api_router.get("/admin/users")
 async def get_all_users(current_user: dict = Depends(get_current_admin)):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
-    return [UserResponse(
-        id=u["id"],
-        email=u["email"],
-        username=u["username"],
-        role=u["role"],
-        rank=u.get("rank"),
-        specialization=u.get("specialization"),
-        join_date=datetime.fromisoformat(u["join_date"]) if isinstance(u["join_date"], str) else u["join_date"]
-    ) for u in users]
+    return [user_to_response(u) for u in users]
 
 class UserUpdate(BaseModel):
     role: Optional[str] = None
     rank: Optional[str] = None
     specialization: Optional[str] = None
     is_active: Optional[bool] = None
+    status: Optional[str] = None
+    squad: Optional[str] = None
 
 @api_router.put("/admin/users/{user_id}")
 async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = Depends(get_current_admin)):

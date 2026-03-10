@@ -20,6 +20,10 @@ import GalleryManager from '@/pages/admin/GalleryManager';
 import MemberHub from '@/pages/member/MemberHub';
 import DiscussionForum from '@/pages/member/DiscussionForum';
 import DiscussionThread from '@/pages/member/DiscussionThread';
+import UnitRoster from '@/pages/member/UnitRoster';
+import MemberProfile from '@/pages/member/MemberProfile';
+import EditProfile from '@/pages/member/EditProfile';
+import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -581,9 +585,13 @@ function App() {
         <Route path="/admin/users" element={<ProtectedRoute adminOnly><UsersManager /></ProtectedRoute>} />
         <Route path="/admin/training" element={<ProtectedRoute adminOnly><TrainingManager /></ProtectedRoute>} />
         <Route path="/admin/gallery" element={<ProtectedRoute adminOnly><GalleryManager /></ProtectedRoute>} />
+        <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
+        <Route path="/hub/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />
         <Route path="/hub/discussions/:id" element={<ProtectedRoute><DiscussionThread /></ProtectedRoute>} />
+        <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
+        <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );
