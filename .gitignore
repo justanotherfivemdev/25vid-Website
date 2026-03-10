@@ -48,3 +48,7 @@ Thumbs.db
 # Test artifacts
 test_reports/
 .pytest_cache/
+-e 
+# Environment files
+*.env
+*.env.*
