@@ -1,12 +1,17 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import shutil
+import secrets
+import json
+import urllib.parse
+import httpx
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional
@@ -35,6 +40,13 @@ JWT_EXPIRATION_HOURS = int(os.environ.get('JWT_EXPIRATION_HOURS', 24))
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
+
+# Discord OAuth2 configuration
+DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID')
+DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
+DISCORD_REDIRECT_URI = os.environ.get('DISCORD_REDIRECT_URI')
+DISCORD_API_URL = "https://discord.com/api/v10"
+DISCORD_SCOPES = "identify email"
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -281,13 +293,37 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.JWTError:
+    except jwt.exceptions.PyJWTError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+    except Exception:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
 async def get_current_admin(current_user: dict = Depends(get_current_user)) -> dict:
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
+
+def create_discord_state(flow: str, user_id: str = None) -> str:
+    """Create a signed JWT state parameter for Discord CSRF protection."""
+    payload = {
+        "nonce": secrets.token_urlsafe(16),
+        "flow": flow,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=10)
+    }
+    if user_id:
+        payload["user_id"] = user_id
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def validate_discord_state(state: str) -> dict:
+    """Validate and decode a Discord OAuth state parameter."""
+    try:
+        return jwt.decode(state, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.exceptions.PyJWTError:
+        return None
+    except Exception:
+        return None
 
 def user_to_response(u: dict) -> UserResponse:
     """Build a UserResponse from a raw MongoDB user document."""
@@ -297,7 +333,7 @@ def user_to_response(u: dict) -> UserResponse:
     elif jd is None:
         jd = datetime.now(timezone.utc)
     return UserResponse(
-        id=u["id"], email=u["email"], username=u["username"], role=u.get("role", "member"),
+        id=u["id"], email=u.get("email", ""), username=u["username"], role=u.get("role", "member"),
         rank=u.get("rank"), specialization=u.get("specialization"), join_date=jd,
         avatar_url=u.get("avatar_url"), bio=u.get("bio"), status=u.get("status", "recruit"),
         timezone=u.get("timezone"), squad=u.get("squad"), favorite_role=u.get("favorite_role"),
@@ -363,6 +399,183 @@ async def login(credentials: UserLogin):
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
     return user_to_response(current_user)
+
+# ============================================================================
+# DISCORD OAUTH2 ENDPOINTS
+# ============================================================================
+
+@api_router.get("/auth/discord")
+async def discord_login_redirect():
+    """Initiate Discord OAuth2 login/signup flow."""
+    if not DISCORD_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Discord integration not configured")
+    state = create_discord_state("login")
+    params = {
+        "client_id": DISCORD_CLIENT_ID,
+        "redirect_uri": DISCORD_REDIRECT_URI,
+        "response_type": "code",
+        "scope": DISCORD_SCOPES,
+        "state": state
+    }
+    return {"url": f"https://discord.com/oauth2/authorize?{urllib.parse.urlencode(params)}"}
+
+@api_router.get("/auth/discord/link")
+async def discord_link_redirect(current_user: dict = Depends(get_current_user)):
+    """Initiate Discord OAuth2 account linking flow for logged-in user."""
+    if not DISCORD_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Discord integration not configured")
+    if current_user.get("discord_linked"):
+        raise HTTPException(status_code=400, detail="Discord already linked. Unlink first.")
+    state = create_discord_state("link", current_user["id"])
+    params = {
+        "client_id": DISCORD_CLIENT_ID,
+        "redirect_uri": DISCORD_REDIRECT_URI,
+        "response_type": "code",
+        "scope": DISCORD_SCOPES,
+        "state": state
+    }
+    return {"url": f"https://discord.com/oauth2/authorize?{urllib.parse.urlencode(params)}"}
+
+@api_router.get("/auth/discord/callback")
+async def discord_callback(code: str = None, state: str = None, error: str = None):
+    """Handle Discord OAuth2 callback — exchanges code, creates/links/logs in user."""
+    frontend_base = DISCORD_REDIRECT_URI.rsplit("/api/", 1)[0]
+
+    if error or not code or not state:
+        return RedirectResponse(f"{frontend_base}/login?discord_error=authorization_denied")
+
+    state_data = validate_discord_state(state)
+    if not state_data:
+        return RedirectResponse(f"{frontend_base}/login?discord_error=invalid_state")
+
+    flow = state_data.get("flow", "login")
+
+    # Exchange code for access token
+    try:
+        async with httpx.AsyncClient() as http:
+            token_res = await http.post(
+                f"{DISCORD_API_URL}/oauth2/token",
+                data={
+                    "client_id": DISCORD_CLIENT_ID,
+                    "client_secret": DISCORD_CLIENT_SECRET,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": DISCORD_REDIRECT_URI,
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            )
+            if token_res.status_code != 200:
+                logger.error(f"Discord token exchange failed: {token_res.text}")
+                return RedirectResponse(f"{frontend_base}/login?discord_error=token_exchange_failed")
+
+            access_token = token_res.json()["access_token"]
+
+            # Fetch Discord user identity
+            user_res = await http.get(
+                f"{DISCORD_API_URL}/users/@me",
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
+            if user_res.status_code != 200:
+                return RedirectResponse(f"{frontend_base}/login?discord_error=user_fetch_failed")
+
+            discord_user = user_res.json()
+    except Exception as e:
+        logger.error(f"Discord API error: {e}")
+        return RedirectResponse(f"{frontend_base}/login?discord_error=api_error")
+
+    discord_id = discord_user["id"]
+    discord_username = discord_user.get("username", "")
+    discord_avatar_hash = discord_user.get("avatar")
+    discord_email = discord_user.get("email")
+    discord_avatar_url = (
+        f"https://cdn.discordapp.com/avatars/{discord_id}/{discord_avatar_hash}.png"
+        if discord_avatar_hash else None
+    )
+
+    # === LINK FLOW ===
+    if flow == "link":
+        user_id = state_data.get("user_id")
+        if not user_id:
+            return RedirectResponse(f"{frontend_base}/hub/profile?discord_error=invalid_link_state")
+
+        # Check if this Discord account is already linked to someone else
+        conflict = await db.users.find_one({"discord_id": discord_id, "id": {"$ne": user_id}}, {"_id": 0})
+        if conflict:
+            return RedirectResponse(f"{frontend_base}/hub/profile?discord_error=discord_already_linked_to_another_account")
+
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {
+                "discord_id": discord_id,
+                "discord_username": discord_username,
+                "discord_avatar": discord_avatar_url,
+                "discord_linked": True
+            }}
+        )
+        return RedirectResponse(f"{frontend_base}/hub/profile?discord_linked=true")
+
+    # === LOGIN / REGISTER FLOW ===
+    # 1. Check if Discord ID is already linked to an account
+    existing_by_discord = await db.users.find_one({"discord_id": discord_id}, {"_id": 0})
+    if existing_by_discord:
+        if not existing_by_discord.get("is_active", True):
+            return RedirectResponse(f"{frontend_base}/login?discord_error=account_inactive")
+        jwt_token = create_access_token({"sub": existing_by_discord["id"], "email": existing_by_discord["email"]})
+        return RedirectResponse(f"{frontend_base}/login?discord_token={jwt_token}")
+
+    # 2. Check if Discord email matches an existing account — auto-link
+    if discord_email:
+        existing_by_email = await db.users.find_one({"email": discord_email}, {"_id": 0})
+        if existing_by_email:
+            if not existing_by_email.get("is_active", True):
+                return RedirectResponse(f"{frontend_base}/login?discord_error=account_inactive")
+            await db.users.update_one(
+                {"id": existing_by_email["id"]},
+                {"$set": {
+                    "discord_id": discord_id,
+                    "discord_username": discord_username,
+                    "discord_avatar": discord_avatar_url,
+                    "discord_linked": True
+                }}
+            )
+            jwt_token = create_access_token({"sub": existing_by_email["id"], "email": existing_by_email["email"]})
+            return RedirectResponse(f"{frontend_base}/login?discord_token={jwt_token}")
+
+    # 3. Create new user from Discord
+    email_for_user = discord_email or f"discord_{discord_id}@azimuth.local"
+    new_user = User(
+        email=email_for_user,
+        username=discord_username or f"Operator_{discord_id[:8]}",
+        password_hash=pwd_context.hash(secrets.token_urlsafe(32)),
+        discord_id=discord_id,
+        discord_username=discord_username,
+        discord_avatar=discord_avatar_url,
+        discord_linked=True
+    )
+    doc = new_user.model_dump()
+    doc['join_date'] = doc['join_date'].isoformat()
+    await db.users.insert_one(doc)
+
+    jwt_token = create_access_token({"sub": new_user.id, "email": new_user.email})
+    return RedirectResponse(f"{frontend_base}/login?discord_token={jwt_token}")
+
+@api_router.delete("/auth/discord/unlink")
+async def discord_unlink(current_user: dict = Depends(get_current_user)):
+    """Unlink Discord from current user's account."""
+    if not current_user.get("discord_linked"):
+        raise HTTPException(status_code=400, detail="No Discord account linked")
+    # Safety: prevent unlink if Discord is the only auth method
+    email = current_user.get("email", "")
+    if email.endswith("@azimuth.local"):
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot unlink Discord — it is your only login method. Set an email and password first."
+        )
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"discord_id": None, "discord_username": None, "discord_avatar": None, "discord_linked": False}}
+    )
+    return {"message": "Discord account unlinked successfully"}
 
 # ============================================================================
 # OPERATIONS ENDPOINTS

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Save, CheckCircle, AlertCircle, Home, LogOut } from 'lucide-react';
+import { ArrowLeft, Save, CheckCircle, AlertCircle, Home, LogOut, Link2, Unlink } from 'lucide-react';
 import ImageUpload from '@/components/admin/ImageUpload';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -18,6 +18,7 @@ const EditProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [unlinking, setUnlinking] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,6 +27,20 @@ const EditProfile = () => {
       .then(r => setProfile(r.data))
       .catch(() => navigate('/login'))
       .finally(() => setLoading(false));
+
+    // Check for Discord link callback
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('discord_linked') === 'true') {
+      setMessage({ type: 'success', text: 'Discord account linked successfully!' });
+      window.history.replaceState({}, '', '/hub/profile');
+    } else if (params.get('discord_error')) {
+      const errorMap = {
+        discord_already_linked_to_another_account: 'This Discord account is already linked to another member.',
+        invalid_link_state: 'Link session expired. Please try again.',
+      };
+      setMessage({ type: 'error', text: errorMap[params.get('discord_error')] || `Discord error: ${params.get('discord_error')}` });
+      window.history.replaceState({}, '', '/hub/profile');
+    }
   }, [navigate]);
 
   const handleSave = async () => {
@@ -50,6 +65,29 @@ const EditProfile = () => {
   };
 
   const handleLogout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/'); };
+
+  const handleLinkDiscord = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/auth/discord/link`, { headers: { Authorization: `Bearer ${token}` } });
+      window.location.href = res.data.url;
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Could not start Discord linking.' });
+    }
+  };
+
+  const handleUnlinkDiscord = async () => {
+    if (!window.confirm('Unlink your Discord account? You can re-link it later.')) return;
+    setUnlinking(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/auth/discord/unlink`, { headers: { Authorization: `Bearer ${token}` } });
+      setProfile({ ...profile, discord_linked: false, discord_id: null, discord_username: null, discord_avatar: null });
+      setMessage({ type: 'success', text: 'Discord account unlinked.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to unlink Discord.' });
+    } finally { setUnlinking(false); }
+  };
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 
@@ -124,6 +162,52 @@ const EditProfile = () => {
               <div className="flex justify-end pt-4">
                 <Button onClick={handleSave} disabled={saving} className="bg-red-700 hover:bg-red-800 px-8" data-testid="profile-save-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Discord Integration */}
+          <Card className="bg-gray-900/80 border-gray-800" data-testid="discord-section">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg tracking-wider flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/></svg>
+                DISCORD
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profile.discord_linked ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 bg-black/30 rounded-lg p-4 border border-[#5865F2]/30">
+                    {profile.discord_avatar && (
+                      <img src={profile.discord_avatar} alt="Discord avatar" className="w-12 h-12 rounded-full border-2 border-[#5865F2]/50" />
+                    )}
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-white">{profile.discord_username}</div>
+                      <div className="text-xs text-gray-500">ID: {profile.discord_id}</div>
+                    </div>
+                    <span className="text-xs bg-[#5865F2]/20 text-[#5865F2] border border-[#5865F2]/30 px-2 py-1 rounded">LINKED</span>
+                  </div>
+                  <Button
+                    onClick={handleUnlinkDiscord}
+                    disabled={unlinking}
+                    variant="outline"
+                    className="border-red-700 text-red-500 hover:bg-red-700/10"
+                    data-testid="discord-unlink-btn"
+                  >
+                    <Unlink className="w-4 h-4 mr-2" />{unlinking ? 'Unlinking...' : 'Unlink Discord'}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-400">Link your Discord account for quick login and unit identification.</p>
+                  <Button
+                    onClick={handleLinkDiscord}
+                    className="bg-[#5865F2] hover:bg-[#4752C4] text-white"
+                    data-testid="discord-link-btn"
+                  >
+                    <Link2 className="w-4 h-4 mr-2" />Link Discord Account
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

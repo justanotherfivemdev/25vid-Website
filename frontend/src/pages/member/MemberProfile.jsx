@@ -68,6 +68,7 @@ const MemberProfile = () => {
                     {profile.rank && <span className="text-sm text-gray-400">{profile.rank}</span>}
                     <Badge className={`${STATUS_COLORS[profile.status] || 'bg-gray-700'} text-white text-xs`}>{(profile.status || 'recruit').toUpperCase()}</Badge>
                     {profile.role === 'admin' && <Badge className="bg-red-900/60 text-red-400 text-xs">ADMIN</Badge>}
+                    {profile.discord_linked && <Badge className="bg-[#5865F2]/20 text-[#5865F2] text-xs border border-[#5865F2]/30">{profile.discord_username || 'Discord'}</Badge>}
                   </div>
                 </div>
               </div>

@@ -511,7 +511,45 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '', username: '', rank: '', specialization: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [discordLoading, setDiscordLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Handle Discord OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const discordToken = params.get('discord_token');
+    const discordError = params.get('discord_error');
+
+    if (discordToken) {
+      // Discord login success — exchange token for user data
+      setDiscordLoading(true);
+      localStorage.setItem('token', discordToken);
+      axios.get(`${API}/auth/me`, { headers: { Authorization: `Bearer ${discordToken}` } })
+        .then(res => {
+          localStorage.setItem('user', JSON.stringify(res.data));
+          // Clear URL params
+          window.history.replaceState({}, '', '/login');
+          navigate(res.data.role === 'admin' ? '/admin' : '/hub');
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          setError('Discord login failed. Please try again.');
+          setDiscordLoading(false);
+          window.history.replaceState({}, '', '/login');
+        });
+    } else if (discordError) {
+      const errorMessages = {
+        authorization_denied: 'Discord authorization was denied.',
+        invalid_state: 'Security validation failed. Please try again.',
+        token_exchange_failed: 'Failed to connect with Discord. Please try again.',
+        user_fetch_failed: 'Could not retrieve your Discord profile.',
+        account_inactive: 'Your account has been deactivated. Contact an admin.',
+        api_error: 'Discord API error. Please try again later.',
+      };
+      setError(errorMessages[discordError] || `Discord error: ${discordError}`);
+      window.history.replaceState({}, '', '/login');
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -532,10 +570,33 @@ const LoginPage = () => {
     } finally { setSubmitting(false); }
   };
 
+  const handleDiscordLogin = async () => {
+    setError('');
+    setDiscordLoading(true);
+    try {
+      const res = await axios.get(`${API}/auth/discord`);
+      window.location.href = res.data.url;
+    } catch (err) {
+      setError('Could not initiate Discord login. Please try again.');
+      setDiscordLoading(false);
+    }
+  };
+
   const loginBg = content.login?.showBackground ? {
     backgroundImage: `url('${resolveImg(content.login.backgroundImage)}')`,
     backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed'
   } : {};
+
+  if (discordLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-red-700 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400 tracking-wider">Authenticating with Discord...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 relative" style={loginBg}>
@@ -559,6 +620,23 @@ const LoginPage = () => {
               {error && <div className="text-red-500 text-sm text-center" data-testid="auth-error">{error}</div>}
               <Button type="submit" disabled={submitting} className="w-full bg-red-700 hover:bg-red-800 py-5 tactical-button tracking-wider" data-testid="auth-submit-button">{submitting ? 'Please wait...' : isLogin ? 'LOGIN' : 'REGISTER'}</Button>
             </form>
+            {/* Discord OAuth */}
+            <div className="mt-4">
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-black/60 px-3 text-gray-500 tracking-wider">OR</span></div>
+              </div>
+              <Button
+                type="button"
+                onClick={handleDiscordLogin}
+                disabled={discordLoading}
+                className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-5 tracking-wider transition-all"
+                data-testid="discord-login-button"
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/></svg>
+                CONTINUE WITH DISCORD
+              </Button>
+            </div>
             <div className="mt-6 text-center">
               <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-sm text-gray-400 hover:text-red-500 transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
             </div>

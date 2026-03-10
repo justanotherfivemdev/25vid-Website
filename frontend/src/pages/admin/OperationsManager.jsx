@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Calendar, Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -279,7 +279,7 @@ const OperationsManager = () => {
                         {op.max_participants && (
                           <span className="text-sm text-gray-400">
                             <Users className="inline w-4 h-4 mr-1" />
-                            {op.rsvp_list?.length || 0}/{op.max_participants}
+                            {op.rsvps?.filter(r => r.status === 'attending').length || 0}/{op.max_participants}
                           </span>
                         )}
                       </div>
@@ -288,8 +288,8 @@ const OperationsManager = () => {
                       </CardTitle>
                       <p className="text-gray-400 mt-2">{op.description}</p>
                       <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
-                        <span>📅 {op.date}</span>
-                        <span>🕒 {op.time}</span>
+                        <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" />{op.date}</span>
+                        <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{op.time}</span>
                       </div>
                     </div>
                     

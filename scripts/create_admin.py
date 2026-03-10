@@ -2,18 +2,22 @@
 """
 Azimuth Operations Group - Admin Bootstrap Script
 
-Creates the first admin user for production deployment.
+Creates or upserts the admin (Bishop) user for production deployment.
 Run this once after deploying to create your admin account.
+All credentials are accepted at runtime — nothing is hardcoded.
 
 Usage:
     python3 create_admin.py
+
+Requirements:
+    pip install motor passlib python-dotenv bcrypt
 """
 
 import sys
 import os
 from pathlib import Path
+from getpass import getpass
 
-# Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'backend'))
 
 import asyncio
@@ -22,114 +26,115 @@ from passlib.context import CryptContext
 import uuid
 from datetime import datetime, timezone
 
-# Load environment variables
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / 'backend' / '.env')
 
-# Configuration
-MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-DB_NAME = os.environ.get('DB_NAME', 'azimuth_operations')
+MONGO_URL = os.environ.get('MONGO_URL')
+DB_NAME = os.environ.get('DB_NAME')
 
-# Password hashing
+if not MONGO_URL or not DB_NAME:
+    print("ERROR: MONGO_URL and DB_NAME must be set in backend/.env")
+    sys.exit(1)
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 async def create_admin_user():
-    """Create the first admin user"""
     print("=" * 60)
     print("AZIMUTH OPERATIONS GROUP - ADMIN BOOTSTRAP")
     print("=" * 60)
     print()
-    
-    # Connect to MongoDB
-    print(f"Connecting to MongoDB: {MONGO_URL}")
+
     client = AsyncIOMotorClient(MONGO_URL)
     db = client[DB_NAME]
-    
+
     try:
-        # Check if admin already exists
-        admin_exists = await db.users.find_one({"role": "admin"})
-        if admin_exists:
-            print("⚠️  An admin user already exists!")
-            print(f"   Email: {admin_exists['email']}")
-            print(f"   Username: {admin_exists['username']}")
+        # Show existing admins
+        admins = await db.users.find({"role": "admin"}, {"_id": 0, "email": 1, "username": 1}).to_list(100)
+        if admins:
+            print(f"Existing admin(s): {len(admins)}")
+            for a in admins:
+                print(f"  - {a['username']} ({a['email']})")
             print()
-            response = input("Do you want to create another admin? (yes/no): ")
-            if response.lower() not in ['yes', 'y']:
-                print("Aborted.")
-                return
-        
-        print()
-        print("Create New Admin User")
+
+        print("Create / Update Admin User")
         print("-" * 60)
-        
-        # Get admin details
+
         email = input("Admin email: ").strip()
         if not email:
-            print("❌ Email is required!")
+            print("Email is required.")
             return
-        
-        # Check if email exists
-        existing = await db.users.find_one({"email": email})
-        if existing:
-            print(f"❌ User with email {email} already exists!")
-            return
-        
-        username = input("Admin username: ").strip()
-        if not username:
-            print("❌ Username is required!")
-            return
-        
-        password = input("Admin password (min 8 characters): ").strip()
+
+        username = input("Admin username [Bishop]: ").strip() or "Bishop"
+
+        password = getpass("Admin password (min 8 chars): ")
         if len(password) < 8:
-            print("❌ Password must be at least 8 characters!")
+            print("Password must be at least 8 characters.")
             return
-        
-        confirm_password = input("Confirm password: ").strip()
-        if password != confirm_password:
-            print("❌ Passwords do not match!")
+
+        confirm = getpass("Confirm password: ")
+        if password != confirm:
+            print("Passwords do not match.")
             return
-        
-        rank = input("Rank (optional, e.g., Commander): ").strip() or None
+
+        rank = input("Rank (optional, e.g. Commander): ").strip() or None
         specialization = input("Specialization (optional): ").strip() or None
-        
-        # Create admin user
-        admin_user = {
-            "id": str(uuid.uuid4()),
-            "email": email,
-            "username": username,
-            "password_hash": pwd_context.hash(password),
-            "role": "admin",
-            "rank": rank,
-            "specialization": specialization,
-            "join_date": datetime.now(timezone.utc).isoformat(),
-            "is_active": True
-        }
-        
-        await db.users.insert_one(admin_user)
-        
-        print()
-        print("=" * 60)
-        print("✅ ADMIN USER CREATED SUCCESSFULLY!")
-        print("=" * 60)
-        print(f"Email: {email}")
+
+        existing = await db.users.find_one({"email": email}, {"_id": 0})
+        if existing:
+            # Upsert: promote to admin and reset password
+            await db.users.update_one(
+                {"email": email},
+                {"$set": {
+                    "username": username,
+                    "password_hash": pwd_context.hash(password),
+                    "role": "admin",
+                    "is_active": True,
+                    **({"rank": rank} if rank else {}),
+                    **({"specialization": specialization} if specialization else {}),
+                }}
+            )
+            print()
+            print("=" * 60)
+            print("EXISTING USER PROMOTED TO ADMIN")
+            print("=" * 60)
+        else:
+            admin_user = {
+                "id": str(uuid.uuid4()),
+                "email": email,
+                "username": username,
+                "password_hash": pwd_context.hash(password),
+                "role": "admin",
+                "rank": rank,
+                "specialization": specialization,
+                "status": "command",
+                "join_date": datetime.now(timezone.utc).isoformat(),
+                "is_active": True,
+                "discord_id": None,
+                "discord_username": None,
+                "discord_avatar": None,
+                "discord_linked": False,
+            }
+            await db.users.insert_one(admin_user)
+            print()
+            print("=" * 60)
+            print("ADMIN USER CREATED SUCCESSFULLY")
+            print("=" * 60)
+
+        print(f"Email:    {email}")
         print(f"Username: {username}")
-        print(f"Role: admin")
-        if rank:
-            print(f"Rank: {rank}")
-        if specialization:
-            print(f"Specialization: {specialization}")
+        print(f"Role:     admin")
         print()
-        print("🎖️  You can now login to the admin panel at:")
-        print("   https://yourdomain.com/admin")
+        print("You can now log in at: https://yourdomain.com/login")
+        print("Admin panel is at:     https://yourdomain.com/admin")
         print()
-        print("⚠️  Remember to:")
-        print("   1. Keep your credentials secure")
-        print("   2. Change password regularly")
-        print("   3. Don't share admin access")
+        print("Security reminders:")
+        print("  1. Keep your credentials secure")
+        print("  2. Change password regularly")
+        print("  3. Do not store passwords in source control")
         print()
-        
+
     except Exception as e:
-        print(f"❌ Error creating admin: {e}")
+        print(f"Error: {e}")
         import traceback
         traceback.print_exc()
     finally:
