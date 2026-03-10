@@ -18,8 +18,8 @@ from passlib.context import CryptContext
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# Upload directory - stored in frontend public so they're served as static files
-UPLOAD_DIR = ROOT_DIR.parent / 'frontend' / 'public' / 'uploads'
+# Upload directory - persistent backend location, served via StaticFiles
+UPLOAD_DIR = ROOT_DIR / 'uploads'
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # MongoDB connection
@@ -167,6 +167,7 @@ class Training(BaseModel):
     instructor: str
     schedule: str
     duration: str
+    image_url: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class TrainingCreate(BaseModel):
@@ -175,6 +176,7 @@ class TrainingCreate(BaseModel):
     instructor: str
     schedule: str
     duration: str
+    image_url: Optional[str] = None
 
 # ============================================================================
 # AUTH UTILITIES
@@ -548,7 +550,7 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    file_url = f"/uploads/{unique_name}"
+    file_url = f"/api/uploads/{unique_name}"
     return {"url": file_url, "filename": unique_name}
 
 # ============================================================================
@@ -617,6 +619,26 @@ async def delete_gallery_image(image_id: str, current_user: dict = Depends(get_c
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Image not found")
     return {"message": "Image deleted successfully"}
+
+@api_router.put("/admin/gallery/{image_id}")
+async def update_gallery_image(image_id: str, image_data: GalleryImageCreate, current_user: dict = Depends(get_current_admin)):
+    result = await db.gallery.update_one(
+        {"id": image_id},
+        {"$set": image_data.model_dump()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return {"message": "Image updated successfully"}
+
+@api_router.delete("/admin/discussions/{discussion_id}/reply/{reply_id}")
+async def delete_reply(discussion_id: str, reply_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.discussions.update_one(
+        {"id": discussion_id},
+        {"$pull": {"replies": {"id": reply_id}}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Reply not found")
+    return {"message": "Reply deleted successfully"}
 
 @api_router.delete("/admin/training/{training_id}")
 async def delete_training(training_id: str, current_user: dict = Depends(get_current_admin)):
@@ -696,6 +718,9 @@ async def root():
 
 # Include the router in the main app
 app.include_router(api_router)
+
+# Serve uploaded files at /api/uploads/
+app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,

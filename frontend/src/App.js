@@ -16,14 +16,22 @@ import OperationsManager from '@/pages/admin/OperationsManager';
 import SiteContentManager from '@/pages/admin/SiteContentManager';
 import AnnouncementsManager from '@/pages/admin/AnnouncementsManager';
 import UsersManager from '@/pages/admin/UsersManager';
+import TrainingManager from '@/pages/admin/TrainingManager';
+import GalleryManager from '@/pages/admin/GalleryManager';
+
+// Member Pages
+import MemberHub from '@/pages/member/MemberHub';
+import DiscussionForum from '@/pages/member/DiscussionForum';
+import DiscussionThread from '@/pages/member/DiscussionThread';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Helper: resolve image URLs (handles relative /uploads/... paths)
+// Helper: resolve image URLs (handles relative /uploads/... and /api/uploads/... paths)
 const resolveImg = (url) => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
+  if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`;
   return `${BACKEND_URL}${url}`;
 };
 
@@ -505,7 +513,7 @@ const LoginPage = () => {
       if (response.data.user.role === 'admin') {
         navigate('/admin');
       } else {
-        navigate('/');
+        navigate('/hub');
       }
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.message || 'An error occurred';
@@ -569,12 +577,19 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Admin Routes - Protected */}
+        {/* Admin Routes - Protected, admin only */}
         <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/operations" element={<ProtectedRoute adminOnly><OperationsManager /></ProtectedRoute>} />
         <Route path="/admin/site-content" element={<ProtectedRoute adminOnly><SiteContentManager /></ProtectedRoute>} />
         <Route path="/admin/announcements" element={<ProtectedRoute adminOnly><AnnouncementsManager /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute adminOnly><UsersManager /></ProtectedRoute>} />
+        <Route path="/admin/training" element={<ProtectedRoute adminOnly><TrainingManager /></ProtectedRoute>} />
+        <Route path="/admin/gallery" element={<ProtectedRoute adminOnly><GalleryManager /></ProtectedRoute>} />
+
+        {/* Member Routes - Protected, any authenticated user */}
+        <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
+        <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />
+        <Route path="/hub/discussions/:id" element={<ProtectedRoute><DiscussionThread /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

@@ -62,6 +62,8 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
   const getDisplayUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
+    // Handle both old /uploads/ and new /api/uploads/ paths
+    if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`;
     return `${BACKEND_URL}${url}`;
   };
 
