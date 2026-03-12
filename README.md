@@ -44,6 +44,8 @@ yarn install
 yarn start
 ```
 
+For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env` so auth cookies are accepted by the browser.
+
 ## Environment Variables
 
 ### Backend (`backend/.env`)
@@ -55,6 +57,7 @@ yarn start
 | `JWT_SECRET` | Yes | Strong random secret for JWT signing |
 | `JWT_ALGORITHM` | Yes | `HS256` |
 | `JWT_EXPIRATION_HOURS` | Yes | Token lifetime in hours (recommended: `24`) |
+| `COOKIE_SECURE` | No | Cookie security flag (`false` for local HTTP dev, `true` for HTTPS production; default: `true`) |
 | `DISCORD_CLIENT_ID` | No | Discord OAuth app client ID (optional) |
 | `DISCORD_CLIENT_SECRET` | No | Discord OAuth app client secret (optional) |
 | `DISCORD_REDIRECT_URI` | No | Discord callback URL (optional) |
@@ -89,6 +92,12 @@ All homepage content is editable live through the **Admin > Command Center** pan
 - Section headings and footer
 
 Default fallback values are in `frontend/src/config/siteContent.js` and are only used when no database content exists yet.
+
+## Documentation Status
+
+- ✅ `README.md` is current for the existing feature set and project layout.
+- ✅ `DEPLOYMENT.md` is relevant for production self-hosting.
+- 🔎 The key current caveat is cookie behavior during local development: if you run over plain HTTP, set `COOKIE_SECURE=false` in backend env.
 
 ## Discord Integration (Optional)
 
