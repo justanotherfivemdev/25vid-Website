@@ -1,47 +1,34 @@
 # 25th Infantry Division — PRD
 
 ## Status: Production Ready
-All features complete. Security hardening complete. All tests passing.
-Rebranded from "Azimuth Operations Group" to "25th Infantry Division".
+All features complete. Security hardened. Auth centralized via context provider.
 
 ## Core Features
 - Public landing page with 25th ID branding, hero images, unit history timeline
-- HttpOnly cookie-based authentication (JWT never in localStorage or URL)
-- Member Hub with discussions, operations, RSVP, roster, schedule
-- Admin Command Center with full CMS (site content, operations, announcements, training, gallery, unit history, users)
+- HttpOnly cookie-based authentication with centralized AuthProvider context
+- Member Hub with discussions, operations, RSVP, roster, schedule, Member of the Week
+- Admin Command Center with CMS, MOTW management, unit history, member management
 - Discord OAuth2 (cookie-based, no token in URL params)
 
-## Security Measures (March 2026)
-- Auth tokens stored in HttpOnly Secure SameSite=Lax cookies
-- Discord callback sets cookie on redirect — no JWT in URL query params
-- CORS requires explicit origins from CORS_ORIGINS env var (no wildcard with credentials)
-- Password validation: minimum 8 characters on registration and set-password
-- Search input regex-escaped before MongoDB query
-- 22 automated pytest tests covering auth, admin auth, RSVP, upload, search, CORS
+## Auth Architecture (March 2026)
+- `AuthContext.jsx` checks `/auth/me` once on mount, shares user state via React context
+- `ProtectedRoute` reads context (no per-route API calls — instant navigation)
+- Login/register/Discord callback set HttpOnly cookie; frontend never touches token
+- 401 interceptor clears stale session and redirects to login
 
-## Documentation
-- `README.md` — Project overview, quick start, env vars, bootstrap
-- `DEPLOYMENT.md` — Full self-hosted Linux deployment guide (25th ID paths)
-- `nginx-production.conf` — Production nginx config (25th ID paths)
-- `backend/.env.example` — Backend env var template
+## Member of the Week
+- Admin sets MOTW from Dashboard (search members → add optional citation)
+- Displayed prominently at top of Member Hub with gold accent card
+- Backend: `member_of_the_week` collection, single doc `{id: "current"}`
 
-## Admin Bootstrap
-```bash
-python3 /app/backend/create_admin.py
-```
-
-## Env Vars
-- `CORS_ORIGINS` — Comma-separated allowed origins (required, no wildcard)
-- `COOKIE_SECURE` — Set to "false" for HTTP-only dev environments (default: true)
+## Content Formatting
+- All announcement/description/admin-posted text uses `whitespace-pre-wrap`
+- Preserves paragraph breaks without requiring HTML input from admins
 
 ## Completed Tasks
-- Phase 1-5: Full-stack MilSim app
-- Phase 6: Discord OAuth2
-- Phase 7: My Schedule, set-password, reminders
-- Phase 8: Production cleanup
-- Phase 9: Full rebrand to 25th Infantry Division
-- Phase 10: Unit History timeline
-- Phase 11: Security hardening (cookie auth, CORS fix, password validation, search sanitization, regex escape, nginx rebrand, join section CTA, automated tests, branding images)
+- Phases 1-10: Full-stack MilSim app + rebrand + unit history
+- Phase 11: Security hardening (cookie auth, CORS, password validation, search sanitization)
+- Phase 12: UX fixes (auth persistence, paragraph formatting, logo consistency, admin nav, join section CTA) + Member of the Week feature
 
 ## Backlog
 - None pending
