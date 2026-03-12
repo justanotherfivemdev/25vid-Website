@@ -100,6 +100,10 @@ class User(BaseModel):
     discord_username: Optional[str] = None
     discord_avatar: Optional[str] = None
     discord_linked: bool = False
+    # Phase 6: Unit hierarchy
+    company: Optional[str] = None     # e.g., "Alpha", "Bravo", "HQ"
+    platoon: Optional[str] = None     # e.g., "1st Platoon", "2nd Platoon"
+    billet: Optional[str] = None      # e.g., "Company Commander", "Squad Leader", "Rifleman"
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -133,6 +137,10 @@ class UserResponse(BaseModel):
     discord_username: Optional[str] = None
     discord_avatar: Optional[str] = None
     discord_linked: bool = False
+    # Phase 6: Unit hierarchy
+    company: Optional[str] = None
+    platoon: Optional[str] = None
+    billet: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -259,6 +267,10 @@ class AdminProfileUpdate(BaseModel):
     favorite_role: Optional[str] = None
     discord_id: Optional[str] = None
     discord_username: Optional[str] = None
+    # Phase 6: Unit hierarchy fields
+    company: Optional[str] = None
+    platoon: Optional[str] = None
+    billet: Optional[str] = None
 
 class MissionHistoryEntry(BaseModel):
     operation_name: str
@@ -295,6 +307,14 @@ class HistoryEntryCreate(BaseModel):
     image_url: Optional[str] = None
     campaign_type: str = "campaign"
     sort_order: int = 0
+
+class MemberOfTheWeek(BaseModel):
+    user_id: str
+    username: str
+    reason: str = ""
+    avatar_url: Optional[str] = None
+    rank: Optional[str] = None
+    set_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 # ============================================================================
 # AUTH UTILITIES
@@ -381,8 +401,24 @@ def user_to_response(u: dict) -> UserResponse:
         awards=u.get("awards", []), mission_history=u.get("mission_history", []),
         training_history=u.get("training_history", []),
         discord_id=u.get("discord_id"), discord_username=u.get("discord_username"),
-        discord_avatar=u.get("discord_avatar"), discord_linked=u.get("discord_linked", False)
+        discord_avatar=u.get("discord_avatar"), discord_linked=u.get("discord_linked", False),
+        company=u.get("company"), platoon=u.get("platoon"), billet=u.get("billet")
     )
+
+# ============================================================================
+# AUTH STATUS ENDPOINT (for frontend feature detection)
+# ============================================================================
+
+@api_router.get("/auth/status")
+async def get_auth_status():
+    """
+    Returns the availability of authentication features.
+    Frontend uses this to conditionally render Discord login button, etc.
+    """
+    return {
+        "discord_enabled": bool(DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET and DISCORD_REDIRECT_URI),
+        "email_enabled": True,  # Always available
+    }
 
 # ============================================================================
 # AUTH ENDPOINTS
@@ -594,7 +630,7 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
             return redirect
 
     # 3. Create new user from Discord
-    email_for_user = discord_email or f"discord_{discord_id}@azimuth.local"
+    email_for_user = discord_email or f"discord_{discord_id}@25thid.local"
     new_user = User(
         email=email_for_user,
         username=discord_username or f"Operator_{discord_id[:8]}",
@@ -620,7 +656,7 @@ async def discord_unlink(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="No Discord account linked")
     # Safety: prevent unlink if Discord is the only auth method
     email = current_user.get("email", "")
-    if email.endswith("@azimuth.local"):
+    if email.endswith("@25thid.local"):
         raise HTTPException(
             status_code=400,
             detail="Cannot unlink Discord — it is your only login method. Set an email and password first."
@@ -644,7 +680,7 @@ async def set_password(data: SetPasswordRequest, response: Response, current_use
     """Allow Discord-only users to set a real email and password."""
     current_email = current_user.get("email", "")
     # Only allow if user currently has a placeholder email
-    if not current_email.endswith("@azimuth.local"):
+    if not current_email.endswith("@25thid.local"):
         raise HTTPException(status_code=400, detail="You already have an email and password set.")
     # Check if new email is taken by another user
     existing = await db.users.find_one({"email": data.email, "id": {"$ne": current_user["id"]}}, {"_id": 0})
@@ -1145,9 +1181,78 @@ async def get_roster(current_user: dict = Depends(get_current_user)):
             "id": u["id"], "username": u["username"], "role": u.get("role", "member"),
             "rank": u.get("rank"), "specialization": u.get("specialization"),
             "status": u.get("status", "recruit"), "squad": u.get("squad"),
-            "avatar_url": u.get("avatar_url"), "join_date": jd
+            "avatar_url": u.get("avatar_url"), "join_date": jd,
+            "company": u.get("company"), "platoon": u.get("platoon"), "billet": u.get("billet")
         })
     return roster
+
+@api_router.get("/roster/hierarchy")
+async def get_roster_hierarchy(current_user: dict = Depends(get_current_user)):
+    """Get roster organized by unit hierarchy (Company > Platoon > Squad)."""
+    users = await db.users.find(
+        {"is_active": {"$ne": False}},
+        {"_id": 0, "password_hash": 0, "email": 0}
+    ).to_list(1000)
+    
+    # Build hierarchy structure
+    hierarchy = {
+        "command_staff": [],  # Users with status=command or billet containing "Commander"/"XO"
+        "companies": {},      # Grouped by company
+        "unassigned": []      # Users without company assignment
+    }
+    
+    for u in users:
+        member_data = {
+            "id": u["id"], "username": u["username"], "role": u.get("role", "member"),
+            "rank": u.get("rank"), "specialization": u.get("specialization"),
+            "status": u.get("status", "recruit"), "squad": u.get("squad"),
+            "avatar_url": u.get("avatar_url"),
+            "company": u.get("company"), "platoon": u.get("platoon"), "billet": u.get("billet")
+        }
+        
+        billet = (u.get("billet") or "").lower()
+        status = u.get("status", "recruit")
+        company = u.get("company")
+        platoon = u.get("platoon")
+        squad = u.get("squad")
+        
+        # Command staff: status=command or billet is CO/XO level
+        if status == "command" or any(x in billet for x in ["commander", "commanding officer", "executive officer", "xo", "sergeant major", "first sergeant"]):
+            hierarchy["command_staff"].append(member_data)
+        elif company:
+            # Initialize company if needed
+            if company not in hierarchy["companies"]:
+                hierarchy["companies"][company] = {"platoons": {}, "unassigned": []}
+            
+            if platoon:
+                # Initialize platoon if needed
+                if platoon not in hierarchy["companies"][company]["platoons"]:
+                    hierarchy["companies"][company]["platoons"][platoon] = {"squads": {}, "unassigned": []}
+                
+                if squad:
+                    # Initialize squad if needed
+                    if squad not in hierarchy["companies"][company]["platoons"][platoon]["squads"]:
+                        hierarchy["companies"][company]["platoons"][platoon]["squads"][squad] = []
+                    hierarchy["companies"][company]["platoons"][platoon]["squads"][squad].append(member_data)
+                else:
+                    hierarchy["companies"][company]["platoons"][platoon]["unassigned"].append(member_data)
+            else:
+                hierarchy["companies"][company]["unassigned"].append(member_data)
+        else:
+            hierarchy["unassigned"].append(member_data)
+    
+    # Sort command staff by rank/billet importance
+    def sort_key(m):
+        billet = (m.get("billet") or "").lower()
+        if "commander" in billet or "commanding" in billet: return 0
+        if "xo" in billet or "executive" in billet: return 1
+        if "sergeant major" in billet: return 2
+        if "first sergeant" in billet: return 3
+        return 10
+    
+    hierarchy["command_staff"].sort(key=sort_key)
+    
+    return hierarchy
 
 @api_router.get("/roster/{user_id}")
 async def get_member_profile(user_id: str, current_user: dict = Depends(get_current_user)):
@@ -1298,6 +1403,43 @@ async def search_content(q: str, current_user: dict = Depends(get_current_user))
     return {"operations": ops, "discussions": discs}
 
 # ============================================================================
+# MEMBER OF THE WEEK ENDPOINTS
+# ============================================================================
+
+@api_router.get("/member-of-the-week")
+async def get_member_of_the_week():
+    doc = await db.member_of_the_week.find_one({"id": "current"}, {"_id": 0})
+    if not doc:
+        return None
+    return doc
+
+@api_router.put("/admin/member-of-the-week")
+async def set_member_of_the_week(data: dict, current_user: dict = Depends(get_current_admin)):
+    user_id = data.get("user_id")
+    reason = data.get("reason", "")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    member = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    motw = {
+        "id": "current",
+        "user_id": user_id,
+        "username": member.get("username", "Unknown"),
+        "reason": reason,
+        "avatar_url": member.get("profile", {}).get("avatar_url", ""),
+        "rank": member.get("rank", ""),
+        "set_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.member_of_the_week.replace_one({"id": "current"}, motw, upsert=True)
+    return motw
+
+@api_router.delete("/admin/member-of-the-week")
+async def clear_member_of_the_week(current_user: dict = Depends(get_current_admin)):
+    await db.member_of_the_week.delete_one({"id": "current"})
+    return {"message": "Member of the Week cleared"}
+
+# ============================================================================
 # UNIT HISTORY ENDPOINTS
 # ============================================================================
 
@@ -1333,6 +1475,595 @@ async def delete_history_entry(entry_id: str, current_user: dict = Depends(get_c
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="History entry not found")
     return {"message": "History entry deleted successfully"}
+
+# ============================================================================
+# UNIT TAGS MANAGEMENT (Admin configurable options)
+# ============================================================================
+
+@api_router.get("/unit-tags")
+async def get_unit_tags(current_user: dict = Depends(get_current_user)):
+    """
+    Get all available unit tags (ranks, companies, platoons, squads, billets, specializations).
+    Combines predefined defaults with admin-added custom tags.
+    """
+    # Get existing tags from database
+    tags_doc = await db.unit_tags.find_one({"id": "unit_tags"}, {"_id": 0})
+    
+    # Defaults that are always available
+    defaults = {
+        "ranks": ["Private", "Private First Class", "Specialist", "Corporal", "Sergeant", "Staff Sergeant", "Sergeant First Class", "Master Sergeant", "First Sergeant", "Sergeant Major", "Second Lieutenant", "First Lieutenant", "Captain", "Major", "Lieutenant Colonel", "Colonel"],
+        "companies": ["HQ", "Alpha", "Bravo", "Charlie", "Delta"],
+        "platoons": ["1st Platoon", "2nd Platoon", "3rd Platoon", "Weapons Platoon", "HQ Platoon"],
+        "squads": ["1st Squad", "2nd Squad", "3rd Squad", "Weapons Squad"],
+        "billets": ["Commanding Officer", "Executive Officer", "First Sergeant", "Platoon Leader", "Platoon Sergeant", "Squad Leader", "Team Leader", "Rifleman", "Automatic Rifleman", "Grenadier", "Designated Marksman", "Combat Medic", "RTO", "Forward Observer"],
+        "specializations": ["Infantry", "Reconnaissance", "Armor", "Artillery", "Engineering", "Medical", "Communications", "Logistics", "Aviation"],
+        "statuses": ["recruit", "active", "reserve", "staff", "command", "inactive"]
+    }
+    
+    if tags_doc:
+        # Merge custom tags with defaults (preserving custom additions)
+        for key in defaults:
+            if key in tags_doc:
+                # Combine defaults with custom, remove duplicates while preserving order
+                combined = defaults[key] + [t for t in tags_doc[key] if t not in defaults[key]]
+                defaults[key] = combined
+    
+    return defaults
+
+@api_router.put("/admin/unit-tags")
+async def update_unit_tags(tags: dict, current_user: dict = Depends(get_current_admin)):
+    """
+    Add custom tags to the unit configuration.
+    These extend (not replace) the default options.
+    """
+    tags["id"] = "unit_tags"
+    await db.unit_tags.update_one(
+        {"id": "unit_tags"},
+        {"$set": tags},
+        upsert=True
+    )
+    return {"message": "Unit tags updated successfully"}
+
+# ============================================================================
+# OPERATION RSVP DETAILS (Enhanced roster view)
+# ============================================================================
+
+@api_router.get("/operations/{operation_id}/roster")
+async def get_operation_roster(operation_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Get detailed RSVP roster for an operation, including member details (rank, specialization, etc.)
+    """
+    operation = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+    if not operation:
+        raise HTTPException(status_code=404, detail="Operation not found")
+    
+    rsvps = operation.get("rsvps", [])
+    user_ids = [r["user_id"] for r in rsvps]
+    
+    # Fetch full member details for all RSVPed users
+    users = await db.users.find(
+        {"id": {"$in": user_ids}},
+        {"_id": 0, "password_hash": 0, "email": 0}
+    ).to_list(len(user_ids))
+    
+    user_map = {u["id"]: u for u in users}
+    
+    # Build enriched RSVP list
+    enriched_rsvps = {
+        "attending": [],
+        "tentative": [],
+        "waitlisted": []
+    }
+    
+    for r in rsvps:
+        user_data = user_map.get(r["user_id"], {})
+        enriched = {
+            "user_id": r["user_id"],
+            "username": r.get("username", user_data.get("username", "Unknown")),
+            "status": r["status"],
+            "role_notes": r.get("role_notes", ""),
+            "rsvp_time": r.get("rsvp_time", ""),
+            # Member details
+            "rank": user_data.get("rank"),
+            "specialization": user_data.get("specialization"),
+            "squad": user_data.get("squad"),
+            "company": user_data.get("company"),
+            "platoon": user_data.get("platoon"),
+            "billet": user_data.get("billet"),
+            "avatar_url": user_data.get("avatar_url"),
+            "member_status": user_data.get("status", "recruit")
+        }
+        
+        if r["status"] == "attending":
+            enriched_rsvps["attending"].append(enriched)
+        elif r["status"] == "tentative":
+            enriched_rsvps["tentative"].append(enriched)
+        elif r["status"] == "waitlisted":
+            enriched_rsvps["waitlisted"].append(enriched)
+    
+    return {
+        "operation_id": operation_id,
+        "title": operation.get("title", ""),
+        "date": operation.get("date", ""),
+        "time": operation.get("time", ""),
+        "max_participants": operation.get("max_participants"),
+        "rsvps": enriched_rsvps,
+        "counts": {
+            "attending": len(enriched_rsvps["attending"]),
+            "tentative": len(enriched_rsvps["tentative"]),
+            "waitlisted": len(enriched_rsvps["waitlisted"]),
+            "total": len(rsvps)
+        }
+    }
+
+# ============================================================================
+# INTEL / BRIEFING SYSTEM
+# ============================================================================
+
+class IntelBriefing(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    content: str
+    category: str  # intel_update, commanders_intent, operational_order, after_action_report, training_bulletin
+    classification: str = "routine"  # routine, priority, immediate, flash
+    tags: List[str] = []
+    author_id: str = ""
+    author_name: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = None
+
+class IntelBriefingCreate(BaseModel):
+    title: str
+    content: str
+    category: str
+    classification: str = "routine"
+    tags: List[str] = []
+
+class IntelBriefingUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    category: Optional[str] = None
+    classification: Optional[str] = None
+    tags: Optional[List[str]] = None
+
+def _fix_dates(b):
+    if isinstance(b.get("created_at"), str):
+        b["created_at"] = datetime.fromisoformat(b["created_at"])
+    if b.get("updated_at") and isinstance(b["updated_at"], str):
+        b["updated_at"] = datetime.fromisoformat(b["updated_at"])
+
+@api_router.get("/intel")
+async def get_intel_briefings(
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+    tag: Optional[str] = None,
+    classification: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if category:
+        query["category"] = category
+    if classification:
+        query["classification"] = classification
+    if tag:
+        query["tags"] = tag
+    if search:
+        safe = re.escape(search)[:100]
+        query["$or"] = [
+            {"title": {"$regex": safe, "$options": "i"}},
+            {"content": {"$regex": safe, "$options": "i"}}
+        ]
+    briefings = await db.intel_briefings.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+    # Batch-load acknowledgment counts + user status
+    b_ids = [b["id"] for b in briefings]
+    ack_pipeline = [
+        {"$match": {"briefing_id": {"$in": b_ids}}},
+        {"$group": {"_id": "$briefing_id", "count": {"$sum": 1}}}
+    ]
+    ack_counts = {r["_id"]: r["count"] for r in await db.intel_acknowledgments.aggregate(ack_pipeline).to_list(500)}
+    user_acks = set()
+    async for a in db.intel_acknowledgments.find({"briefing_id": {"$in": b_ids}, "user_id": current_user["id"]}, {"briefing_id": 1, "_id": 0}):
+        user_acks.add(a["briefing_id"])
+    for b in briefings:
+        _fix_dates(b)
+        b["ack_count"] = ack_counts.get(b["id"], 0)
+        b["user_acknowledged"] = b["id"] in user_acks
+    return briefings
+
+@api_router.get("/intel/tags")
+async def get_intel_tags(current_user: dict = Depends(get_current_user)):
+    pipeline = [{"$unwind": "$tags"}, {"$group": {"_id": "$tags"}}, {"$sort": {"_id": 1}}]
+    results = await db.intel_briefings.aggregate(pipeline).to_list(200)
+    return [r["_id"] for r in results]
+
+@api_router.get("/intel/{briefing_id}")
+async def get_intel_briefing(briefing_id: str, current_user: dict = Depends(get_current_user)):
+    briefing = await db.intel_briefings.find_one({"id": briefing_id}, {"_id": 0})
+    if not briefing:
+        raise HTTPException(status_code=404, detail="Briefing not found")
+    _fix_dates(briefing)
+    ack_count = await db.intel_acknowledgments.count_documents({"briefing_id": briefing_id})
+    user_ack = await db.intel_acknowledgments.find_one({"briefing_id": briefing_id, "user_id": current_user["id"]})
+    briefing["ack_count"] = ack_count
+    briefing["user_acknowledged"] = user_ack is not None
+    return briefing
+
+@api_router.post("/intel/{briefing_id}/acknowledge")
+async def acknowledge_briefing(briefing_id: str, current_user: dict = Depends(get_current_user)):
+    exists = await db.intel_briefings.find_one({"id": briefing_id})
+    if not exists:
+        raise HTTPException(status_code=404, detail="Briefing not found")
+    already = await db.intel_acknowledgments.find_one({"briefing_id": briefing_id, "user_id": current_user["id"]})
+    if already:
+        return {"message": "Already acknowledged", "ack_count": await db.intel_acknowledgments.count_documents({"briefing_id": briefing_id})}
+    doc = {
+        "briefing_id": briefing_id,
+        "user_id": current_user["id"],
+        "username": current_user["username"],
+        "rank": current_user.get("rank", ""),
+        "company": current_user.get("company", ""),
+        "acknowledged_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.intel_acknowledgments.insert_one(doc)
+    count = await db.intel_acknowledgments.count_documents({"briefing_id": briefing_id})
+    return {"message": "Acknowledged", "ack_count": count}
+
+@api_router.delete("/intel/{briefing_id}/acknowledge")
+async def unacknowledge_briefing(briefing_id: str, current_user: dict = Depends(get_current_user)):
+    await db.intel_acknowledgments.delete_one({"briefing_id": briefing_id, "user_id": current_user["id"]})
+    count = await db.intel_acknowledgments.count_documents({"briefing_id": briefing_id})
+    return {"message": "Unacknowledged", "ack_count": count}
+
+@api_router.get("/admin/intel/{briefing_id}/acknowledgments")
+async def get_briefing_acknowledgments(briefing_id: str, current_user: dict = Depends(get_current_admin)):
+    acks = await db.intel_acknowledgments.find({"briefing_id": briefing_id}, {"_id": 0}).sort("acknowledged_at", -1).to_list(500)
+    for a in acks:
+        if isinstance(a.get("acknowledged_at"), str):
+            a["acknowledged_at"] = datetime.fromisoformat(a["acknowledged_at"])
+    return acks
+
+@api_router.post("/admin/intel")
+async def create_intel_briefing(data: IntelBriefingCreate, current_user: dict = Depends(get_current_admin)):
+    briefing_dict = data.model_dump()
+    briefing_dict["id"] = str(uuid.uuid4())
+    briefing_dict["author_id"] = current_user["id"]
+    briefing_dict["author_name"] = current_user["username"]
+    briefing_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    briefing_dict["updated_at"] = None
+    await db.intel_briefings.insert_one(briefing_dict)
+    del briefing_dict["_id"]
+    briefing_dict["created_at"] = datetime.fromisoformat(briefing_dict["created_at"])
+    return briefing_dict
+
+@api_router.put("/admin/intel/{briefing_id}")
+async def update_intel_briefing(briefing_id: str, data: IntelBriefingUpdate, current_user: dict = Depends(get_current_admin)):
+    existing = await db.intel_briefings.find_one({"id": briefing_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Briefing not found")
+    updates = {k: v for k, v in data.model_dump().items() if v is not None}
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.intel_briefings.update_one({"id": briefing_id}, {"$set": updates})
+    updated = await db.intel_briefings.find_one({"id": briefing_id}, {"_id": 0})
+    if isinstance(updated.get("created_at"), str):
+        updated["created_at"] = datetime.fromisoformat(updated["created_at"])
+    if updated.get("updated_at") and isinstance(updated["updated_at"], str):
+        updated["updated_at"] = datetime.fromisoformat(updated["updated_at"])
+    return updated
+
+@api_router.delete("/admin/intel/{briefing_id}")
+async def delete_intel_briefing(briefing_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.intel_briefings.delete_one({"id": briefing_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Briefing not found")
+    # Also remove acknowledgments
+    await db.intel_acknowledgments.delete_many({"briefing_id": briefing_id})
+    return {"message": "Briefing deleted"}
+
+# ============================================================================
+# CAMPAIGN / THEATER MAP SYSTEM
+# ============================================================================
+
+class CampaignObjective(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str = ""
+    status: str = "pending"  # pending, in_progress, complete, failed
+    grid_ref: str = ""
+    assigned_to: str = ""
+    priority: str = "secondary"  # primary, secondary, tertiary
+    notes: str = ""
+
+class CampaignPhase(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str = ""
+    status: str = "planned"  # planned, active, complete
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+class CampaignCreate(BaseModel):
+    name: str
+    description: str = ""
+    theater: str = ""
+    status: str = "planning"  # planning, active, complete, archived
+    phases: List[dict] = []
+    objectives: List[dict] = []
+    situation: str = ""
+    commander_notes: str = ""
+
+class CampaignUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    theater: Optional[str] = None
+    status: Optional[str] = None
+    phases: Optional[List[dict]] = None
+    objectives: Optional[List[dict]] = None
+    situation: Optional[str] = None
+    commander_notes: Optional[str] = None
+
+@api_router.get("/campaigns")
+async def get_campaigns(current_user: dict = Depends(get_current_user)):
+    campaigns = await db.campaigns.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    for c in campaigns:
+        _fix_dates(c)
+    return campaigns
+
+@api_router.get("/campaigns/active")
+async def get_active_campaign(current_user: dict = Depends(get_current_user)):
+    campaign = await db.campaigns.find_one({"status": "active"}, {"_id": 0})
+    if not campaign:
+        return None
+    _fix_dates(campaign)
+    return campaign
+
+@api_router.get("/campaigns/{campaign_id}")
+async def get_campaign(campaign_id: str, current_user: dict = Depends(get_current_user)):
+    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    _fix_dates(campaign)
+    return campaign
+
+@api_router.post("/admin/campaigns")
+async def create_campaign(data: CampaignCreate, current_user: dict = Depends(get_current_admin)):
+    d = data.model_dump()
+    d["id"] = str(uuid.uuid4())
+    d["created_by"] = current_user["id"]
+    d["created_at"] = datetime.now(timezone.utc).isoformat()
+    d["updated_at"] = None
+    # Ensure every phase/objective has an id
+    for p in d.get("phases", []):
+        if not p.get("id"):
+            p["id"] = str(uuid.uuid4())
+    for o in d.get("objectives", []):
+        if not o.get("id"):
+            o["id"] = str(uuid.uuid4())
+    await db.campaigns.insert_one(d)
+    del d["_id"]
+    _fix_dates(d)
+    return d
+
+@api_router.put("/admin/campaigns/{campaign_id}")
+async def update_campaign(campaign_id: str, data: CampaignUpdate, current_user: dict = Depends(get_current_admin)):
+    existing = await db.campaigns.find_one({"id": campaign_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    updates = {k: v for k, v in data.model_dump().items() if v is not None}
+    # Ensure ids on phases/objectives
+    for p in updates.get("phases", []):
+        if not p.get("id"):
+            p["id"] = str(uuid.uuid4())
+    for o in updates.get("objectives", []):
+        if not o.get("id"):
+            o["id"] = str(uuid.uuid4())
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.campaigns.update_one({"id": campaign_id}, {"$set": updates})
+    updated = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    _fix_dates(updated)
+    return updated
+
+@api_router.delete("/admin/campaigns/{campaign_id}")
+async def delete_campaign(campaign_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.campaigns.delete_one({"id": campaign_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return {"message": "Campaign deleted"}
+
+# ============================================================================
+# RECRUITMENT PIPELINE
+# ============================================================================
+
+class OpenBillet(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    company: Optional[str] = None
+    platoon: Optional[str] = None
+    description: str
+    requirements: Optional[str] = None
+    is_open: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Application(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    billet_id: Optional[str] = None
+    applicant_name: str
+    applicant_email: EmailStr
+    discord_username: Optional[str] = None
+    timezone: Optional[str] = None
+    experience: str
+    availability: str
+    why_join: str
+    status: str = "pending"  # pending, reviewing, accepted, rejected
+    admin_notes: Optional[str] = None
+    submitted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+
+@api_router.get("/recruitment/billets")
+async def get_open_billets():
+    """Get all open billets for the public recruitment page."""
+    billets = await db.open_billets.find(
+        {"is_open": True},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return billets
+
+@api_router.get("/admin/recruitment/billets")
+async def get_all_billets(current_user: dict = Depends(get_current_admin)):
+    """Get all billets (open and closed) for admin management."""
+    billets = await db.open_billets.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return billets
+
+@api_router.post("/admin/recruitment/billets")
+async def create_billet(billet: OpenBillet, current_user: dict = Depends(get_current_admin)):
+    """Create a new open billet."""
+    billet_dict = billet.model_dump()
+    billet_dict["created_at"] = billet_dict["created_at"].isoformat()
+    await db.open_billets.insert_one(billet_dict)
+    return {"message": "Billet created", "id": billet.id}
+
+@api_router.put("/admin/recruitment/billets/{billet_id}")
+async def update_billet(billet_id: str, updates: dict, current_user: dict = Depends(get_current_admin)):
+    """Update an existing billet."""
+    result = await db.open_billets.update_one(
+        {"id": billet_id},
+        {"$set": updates}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Billet not found")
+    return {"message": "Billet updated"}
+
+@api_router.delete("/admin/recruitment/billets/{billet_id}")
+async def delete_billet(billet_id: str, current_user: dict = Depends(get_current_admin)):
+    """Delete a billet."""
+    result = await db.open_billets.delete_one({"id": billet_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Billet not found")
+    return {"message": "Billet deleted"}
+
+@api_router.post("/recruitment/apply")
+async def submit_application(application: Application):
+    """Submit a new recruitment application (public endpoint)."""
+    app_dict = application.model_dump()
+    app_dict["submitted_at"] = app_dict["submitted_at"].isoformat()
+    if app_dict.get("reviewed_at"):
+        app_dict["reviewed_at"] = app_dict["reviewed_at"].isoformat()
+    await db.applications.insert_one(app_dict)
+    return {"message": "Application submitted successfully", "id": application.id}
+
+@api_router.get("/admin/recruitment/applications")
+async def get_applications(status: Optional[str] = None, current_user: dict = Depends(get_current_admin)):
+    """Get all applications, optionally filtered by status."""
+    query = {}
+    if status:
+        query["status"] = status
+    applications = await db.applications.find(query, {"_id": 0}).sort("submitted_at", -1).to_list(500)
+    return applications
+
+@api_router.get("/admin/recruitment/applications/{application_id}")
+async def get_application(application_id: str, current_user: dict = Depends(get_current_admin)):
+    """Get a single application by ID."""
+    app = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return app
+
+@api_router.put("/admin/recruitment/applications/{application_id}")
+async def update_application(application_id: str, updates: dict, current_user: dict = Depends(get_current_admin)):
+    """Update application status and notes."""
+    updates["reviewed_at"] = datetime.now(timezone.utc).isoformat()
+    updates["reviewed_by"] = current_user["username"]
+    result = await db.applications.update_one(
+        {"id": application_id},
+        {"$set": updates}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return {"message": "Application updated"}
+
+@api_router.get("/admin/recruitment/stats")
+async def get_recruitment_stats(current_user: dict = Depends(get_current_admin)):
+    """Get recruitment pipeline statistics."""
+    total = await db.applications.count_documents({})
+    pending = await db.applications.count_documents({"status": "pending"})
+    reviewing = await db.applications.count_documents({"status": "reviewing"})
+    accepted = await db.applications.count_documents({"status": "accepted"})
+    rejected = await db.applications.count_documents({"status": "rejected"})
+    open_billets = await db.open_billets.count_documents({"is_open": True})
+    
+    return {
+        "total_applications": total,
+        "pending": pending,
+        "reviewing": reviewing,
+        "accepted": accepted,
+        "rejected": rejected,
+        "open_billets": open_billets
+    }
+
+# ============================================================================
+# RECRUIT ENDPOINTS (For authenticated recruits)
+# ============================================================================
+
+class RecruitApplication(BaseModel):
+    """Application submitted by an authenticated recruit"""
+    billet_id: Optional[str] = None
+    discord_username: Optional[str] = None
+    timezone: Optional[str] = None
+    experience: str
+    availability: str
+    why_join: str
+
+@api_router.get("/recruit/my-application")
+async def get_my_application(current_user: dict = Depends(get_current_user)):
+    """Get the current recruit's application status."""
+    # Find application by user's email
+    app = await db.applications.find_one(
+        {"applicant_email": current_user["email"]},
+        {"_id": 0}
+    )
+    return app  # Returns null if no application exists
+
+@api_router.post("/recruit/apply")
+async def recruit_submit_application(
+    application: RecruitApplication,
+    current_user: dict = Depends(get_current_user)
+):
+    """Submit application as an authenticated recruit (linked to account)."""
+    # Check if user already has an application
+    existing = await db.applications.find_one({"applicant_email": current_user["email"]})
+    if existing:
+        raise HTTPException(status_code=400, detail="You have already submitted an application")
+    
+    # Create application linked to user account
+    app_dict = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],  # Link to user account
+        "applicant_name": current_user["username"],
+        "applicant_email": current_user["email"],
+        "billet_id": application.billet_id,
+        "discord_username": application.discord_username or current_user.get("discord_username"),
+        "timezone": application.timezone,
+        "experience": application.experience,
+        "availability": application.availability,
+        "why_join": application.why_join,
+        "status": "pending",
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
+        "admin_notes": None,
+        "reviewed_at": None,
+        "reviewed_by": None
+    }
+    
+    await db.applications.insert_one(app_dict)
+    
+    # Update user's discord_username if provided
+    if application.discord_username:
+        await db.users.update_one(
+            {"id": current_user["id"]},
+            {"$set": {"discord_username": application.discord_username}}
+        )
+    
+    return {"message": "Application submitted successfully", "id": app_dict["id"]}
 
 # ============================================================================
 # MISC ENDPOINTS

@@ -10,7 +10,7 @@ import base64
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://vid-25-deploy.preview.emergentagent.com"
+    BASE_URL = "https://unit-colors-verify.preview.emergentagent.com"
 
 # Test credentials
 ADMIN_EMAIL = "bishop@azimuth.ops"

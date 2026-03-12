@@ -5,39 +5,85 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Calendar, Clock, Users, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Users, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
 
 const STATUS_ICON = { attending: CheckCircle, tentative: HelpCircle, waitlisted: Clock };
 const STATUS_COLOR = { attending: 'text-green-400', tentative: 'text-yellow-400', waitlisted: 'text-orange-400' };
-const TYPE_CFG = { combat: 'bg-amber-800/80', training: 'bg-blue-700/80', recon: 'bg-emerald-700/80', support: 'bg-amber-700/80' };
+const TYPE_CFG = { combat: 'bg-tropic-red/80', training: 'bg-tropic-gold-dark/80', recon: 'bg-emerald-700/80', support: 'bg-gray-600/80' };
+
+const RsvpMemberRow = ({ r, user, group, onPromote }) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  return (
+    <div className="border border-gray-800/50 rounded overflow-hidden" data-testid={`rsvp-entry-${r.user_id}`}>
+      <div 
+        className="flex items-center justify-between py-2 px-3 bg-black/30 cursor-pointer hover:bg-black/50 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-3">
+          {r.avatar_url ? (
+            <img src={resolveImg(r.avatar_url)} alt="" className="w-8 h-8 rounded object-cover border border-gray-700" />
+          ) : (
+            <div className="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500">{r.username?.[0]?.toUpperCase()}</div>
+          )}
+          <div>
+            <Link to={`/roster/${r.user_id}`} className="font-medium text-sm hover:text-amber-400 transition-colors" onClick={e => e.stopPropagation()}>{r.username}</Link>
+            {r.rank && <span className="text-xs text-gray-500 ml-2">{r.rank}</span>}
+          </div>
+          {r.role_notes && <span className="text-xs text-amber-500/80 border border-amber-700/30 px-1.5 py-0.5 rounded bg-amber-900/20">{r.role_notes}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          {r.specialization && <span className="text-[10px] text-tropic-gold hidden sm:inline">{r.specialization}</span>}
+          {user?.role === 'admin' && group.label === 'WAITLISTED' && (
+            <Button size="sm" onClick={(e) => { e.stopPropagation(); onPromote(r.user_id); }} className="bg-green-700 hover:bg-green-600 text-xs px-2 py-1 h-auto" data-testid={`promote-${r.user_id}`}><ChevronUp className="w-3 h-3 mr-1" />Promote</Button>
+          )}
+          <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </div>
+      </div>
+      {expanded && (
+        <div className="px-3 py-2 bg-gray-900/50 border-t border-gray-800/30 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          {r.company && <div><span className="text-gray-600">Company:</span> <span className="text-tropic-gold">{r.company}</span></div>}
+          {r.platoon && <div><span className="text-gray-600">Platoon:</span> <span className="text-green-400">{r.platoon}</span></div>}
+          {r.squad && <div><span className="text-gray-600">Squad:</span> <span className="text-gray-400">{r.squad}</span></div>}
+          {r.billet && <div><span className="text-gray-600">Billet:</span> <span className="text-amber-400">{r.billet}</span></div>}
+          {r.member_status && <div><span className="text-gray-600">Status:</span> <span className="text-gray-400 capitalize">{r.member_status}</span></div>}
+          {r.rsvp_time && <div><span className="text-gray-600">RSVPed:</span> <span className="text-gray-500">{new Date(r.rsvp_time).toLocaleDateString()}</span></div>}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const OperationDetail = () => {
   const { id } = useParams();
   const [operation, setOperation] = useState(null);
-  const [rsvpData, setRsvpData] = useState(null);
+  const [rosterData, setRosterData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [roleNotes, setRoleNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user, logout } = useAuth();
 
   useEffect(() => { fetchData(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
-      const [opRes, rsvpRes] = await Promise.all([
+      const [opRes, rosterRes] = await Promise.all([
         axios.get(`${API}/operations`),
-        axios.get(`${API}/operations/${id}/rsvp`)
+        axios.get(`${API}/operations/${id}/roster`)
       ]);
       const op = opRes.data.find(o => o.id === id);
       if (!op) { navigate('/hub'); return; }
       setOperation(op);
-      setRsvpData(rsvpRes.data);
+      setRosterData(rosterRes.data);
       // Pre-fill role notes if user already RSVPed
-      const allRsvps = [...(rsvpRes.data.attending || []), ...(rsvpRes.data.tentative || []), ...(rsvpRes.data.waitlisted || [])];
+      const rsvps = rosterRes.data?.rsvps || {};
+      const allRsvps = [...(rsvps.attending || []), ...(rsvps.tentative || []), ...(rsvps.waitlisted || [])];
       const myRsvp = allRsvps.find(r => r.user_id === user.id);
       if (myRsvp) setRoleNotes(myRsvp.role_notes || '');
     } catch (e) { console.error(e); }
@@ -45,8 +91,9 @@ const OperationDetail = () => {
   };
 
   const myStatus = () => {
-    if (!rsvpData) return null;
-    const all = [...(rsvpData.attending || []), ...(rsvpData.tentative || []), ...(rsvpData.waitlisted || [])];
+    if (!rosterData?.rsvps) return null;
+    const rsvps = rosterData.rsvps;
+    const all = [...(rsvps.attending || []), ...(rsvps.tentative || []), ...(rsvps.waitlisted || [])];
     return all.find(r => r.user_id === user.id)?.status || null;
   };
 
@@ -76,14 +123,15 @@ const OperationDetail = () => {
     } catch (e) { alert(e.response?.data?.detail || 'Promote failed'); }
   };
 
-  const handleLogout = () => { axios.post(`${API}/auth/logout`).catch(() => {}); localStorage.removeItem('user'); navigate('/'); };
+  const handleLogout = async () => { await logout(); navigate('/'); };
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
   if (!operation) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Operation not found</div>;
 
   const currentStatus = myStatus();
-  const counts = rsvpData?.counts || {};
-  const maxP = rsvpData?.max_participants;
+  const counts = rosterData?.counts || {};
+  const maxP = rosterData?.max_participants;
+  const rsvps = rosterData?.rsvps || {};
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -115,7 +163,7 @@ const OperationDetail = () => {
                 </div>
               </div>
               <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h2>
-              <p className="text-gray-300 leading-relaxed">{operation.description}</p>
+              <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{operation.description}</p>
               {/* Attendance summary */}
               <div className="flex items-center gap-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
                 <div className="text-center"><div className="text-2xl font-bold text-green-400">{counts.attending || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">ATTENDING</div></div>
@@ -148,35 +196,25 @@ const OperationDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Attending Roster */}
-          {rsvpData && (
+          {/* Attending Roster with Full Details */}
+          {rosterData && (
             <div className="space-y-4">
               {[
-                { label: 'ATTENDING', list: rsvpData.attending, color: 'text-green-400', icon: CheckCircle },
-                { label: 'TENTATIVE', list: rsvpData.tentative, color: 'text-yellow-400', icon: HelpCircle },
-                { label: 'WAITLISTED', list: rsvpData.waitlisted, color: 'text-orange-400', icon: Clock },
+                { label: 'ATTENDING', list: rsvps.attending, color: 'text-green-400', icon: CheckCircle },
+                { label: 'TENTATIVE', list: rsvps.tentative, color: 'text-yellow-400', icon: HelpCircle },
+                { label: 'WAITLISTED', list: rsvps.waitlisted, color: 'text-orange-400', icon: Clock },
               ].filter(g => g.list?.length > 0).map(group => (
                 <Card key={group.label} className="bg-gray-900/80 border-gray-800">
                   <CardHeader className="pb-2">
                     <CardTitle className={`text-sm tracking-wider flex items-center gap-2 ${group.color}`}>
                       <group.icon className="w-4 h-4" /> {group.label} ({group.list.length})
                     </CardTitle>
+                    <p className="text-[10px] text-gray-600">Click a row to see unit assignment details</p>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {group.list.map((r, i) => (
-                        <div key={r.user_id || i} className="flex items-center justify-between py-2 px-3 bg-black/20 rounded border border-gray-800/30" data-testid={`rsvp-entry-${r.user_id}`}>
-                          <div className="flex items-center gap-3">
-                            <Link to={`/roster/${r.user_id}`} className="font-medium text-sm hover:text-amber-400 transition-colors">{r.username}</Link>
-                            {r.role_notes && <span className="text-xs text-gray-500 border border-gray-800 px-1.5 py-0.5 rounded">{r.role_notes}</span>}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-gray-600">{new Date(r.rsvp_time).toLocaleDateString()}</span>
-                            {user?.role === 'admin' && group.label === 'WAITLISTED' && (
-                              <Button size="sm" onClick={() => handlePromote(r.user_id)} className="bg-green-700 hover:bg-green-600 text-xs px-2 py-1 h-auto" data-testid={`promote-${r.user_id}`}><ChevronUp className="w-3 h-3 mr-1" />Promote</Button>
-                            )}
-                          </div>
-                        </div>
+                        <RsvpMemberRow key={r.user_id || i} r={r} user={user} group={group} onPromote={handlePromote} />
                       ))}
                     </div>
                   </CardContent>

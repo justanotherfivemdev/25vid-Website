@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin } from 'lucide-react';
+
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const MemberHub = () => {
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
   const [operations, setOperations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [training, setTraining] = useState([]);
@@ -21,28 +23,29 @@ const MemberHub = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
   const [mySchedule, setMySchedule] = useState([]);
+  const [motw, setMotw] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('user') || '{}');
-    setUser(stored);
     fetchAll();
   }, []);
 
   const fetchAll = async () => {
     try {
-      const [ops, ann, train, disc, sched] = await Promise.all([
+      const [ops, ann, train, disc, sched, motwRes] = await Promise.all([
         axios.get(`${API}/operations`),
         axios.get(`${API}/announcements`),
         axios.get(`${API}/training`),
         axios.get(`${API}/discussions`),
         axios.get(`${API}/my-schedule`).catch(() => ({ data: [] })),
+        axios.get(`${API}/member-of-the-week`).catch(() => ({ data: null })),
       ]);
       setOperations(ops.data.slice(0, 4));
       setAnnouncements(ann.data.slice(0, 4));
       setTraining(train.data.slice(0, 3));
       setDiscussions(disc.data.slice(0, 5));
       setMySchedule(sched.data || []);
+      setMotw(motwRes.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -63,30 +66,31 @@ const MemberHub = () => {
     setSearchResults(null);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
-  const getTypeColor = (t) => ({ combat: 'bg-amber-700', training: 'bg-blue-600', recon: 'bg-green-600', support: 'bg-yellow-600' }[t] || 'bg-gray-600');
-  const getPriorityColor = (p) => ({ urgent: 'text-amber-500 border-amber-500', high: 'text-orange-500 border-orange-500', normal: 'text-blue-400 border-blue-400', low: 'text-gray-400 border-gray-400' }[p] || 'text-gray-400 border-gray-400');
+  const getTypeColor = (t) => ({ combat: 'bg-tropic-red', training: 'bg-tropic-gold-dark', recon: 'bg-green-600', support: 'bg-gray-600' }[t] || 'bg-gray-600');
+  const getPriorityColor = (p) => ({ urgent: 'text-tropic-red border-tropic-red', high: 'text-orange-500 border-orange-500', normal: 'text-tropic-gold border-tropic-gold', low: 'text-gray-400 border-gray-400' }[p] || 'text-gray-400 border-gray-400');
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Top bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30" data-testid="member-nav">
+      {/* Top bar - 25th ID colors */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-red/30" data-testid="member-nav">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH ID HUB</h1>
+          <div className="flex items-center gap-3">
+            <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
+            <h1 className="text-xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH ID HUB</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-400 hidden sm:block">Welcome, <span className="text-amber-400 font-bold">{user?.username}</span></span>
+            <span className="text-sm text-gray-400 hidden sm:block">Welcome, <span className="text-tropic-gold font-bold">{user?.username}</span></span>
             <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
             <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
             {user?.role === 'admin' && (
-              <Link to="/admin"><Button size="sm" variant="outline" className="border-amber-700 text-amber-500 hover:bg-amber-700/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
+              <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
             )}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4 mr-1" />Home</Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700" data-testid="member-logout-btn"><LogOut className="w-4 h-4" /></Button>
@@ -96,11 +100,11 @@ const MemberHub = () => {
 
       <div className="pt-20 pb-12 px-6">
         <div className="container mx-auto max-w-7xl space-y-8">
-          {/* Welcome banner with search */}
-          <div className="bg-gradient-to-r from-amber-900/30 to-gray-900 border border-amber-700/30 rounded-lg p-6" data-testid="member-welcome-banner">
+          {/* Welcome banner with search - 25th ID colors */}
+          <div className="bg-gradient-to-r from-tropic-red/20 to-gray-900 border border-tropic-red/30 rounded-lg p-6" data-testid="member-welcome-banner">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h2 className="text-3xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>OPERATIONS HUB</h2>
+                <h2 className="text-3xl font-bold text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>OPERATIONS HUB</h2>
                 <p className="text-gray-400 mt-1">Your tactical command overview — stay informed, stay ready.</p>
               </div>
               <form onSubmit={handleSearch} className="flex gap-2 w-full md:w-auto">
@@ -114,7 +118,7 @@ const MemberHub = () => {
                     data-testid="hub-search-input"
                   />
                 </div>
-                <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-amber-700 hover:bg-amber-800" data-testid="hub-search-btn">
+                <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-tropic-red hover:bg-tropic-red-dark" data-testid="hub-search-btn">
                   {searching ? '...' : 'Search'}
                 </Button>
                 {searchResults && <Button type="button" variant="outline" onClick={clearSearch} className="border-gray-700" data-testid="hub-search-clear">Clear</Button>}
@@ -132,7 +136,7 @@ const MemberHub = () => {
                   <div className="grid md:grid-cols-2 gap-3">
                     {searchResults.operations.map(op => (
                       <Link to={`/hub/operations/${op.id}`} key={op.id}>
-                        <Card className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors" data-testid={`search-op-${op.id}`}>
+                        <Card className="bg-gray-900 border-gray-800 hover:border-tropic-red/30 transition-colors" data-testid={`search-op-${op.id}`}>
                           <CardContent className="py-3">
                             <div className="flex items-center gap-2 mb-1">
                               <Badge className={`${getTypeColor(op.operation_type)} text-white text-xs`}>{op.operation_type?.toUpperCase()}</Badge>
@@ -152,7 +156,7 @@ const MemberHub = () => {
                   <div className="space-y-2">
                     {searchResults.discussions.map(d => (
                       <Link to={`/hub/discussions/${d.id}`} key={d.id}>
-                        <Card className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors" data-testid={`search-disc-${d.id}`}>
+                        <Card className="bg-gray-900 border-gray-800 hover:border-tropic-red/30 transition-colors" data-testid={`search-disc-${d.id}`}>
                           <CardContent className="py-3 flex items-center gap-3">
                             {d.pinned && <Pin className="w-3 h-3 text-yellow-500 shrink-0" />}
                             <Badge variant="outline" className="text-xs border-gray-700">{d.category}</Badge>
@@ -185,8 +189,8 @@ const MemberHub = () => {
               <div className="space-y-2" data-testid="op-reminders">
                 {upcoming.map(op => (
                   <Link to={`/hub/operations/${op.id}`} key={op.id} className="block">
-                    <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg p-4 flex items-center gap-4 hover:bg-amber-900/30 transition-colors">
-                      <Bell className="w-5 h-5 text-amber-400 shrink-0 animate-pulse" />
+                    <div className="bg-tropic-red/10 border border-tropic-red/40 rounded-lg p-4 flex items-center gap-4 hover:bg-tropic-red/20 transition-colors">
+                      <Bell className="w-5 h-5 text-tropic-gold shrink-0 animate-pulse" />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">{op.title}</div>
                         <div className="text-xs text-gray-400 flex items-center gap-3 mt-0.5">
@@ -202,6 +206,32 @@ const MemberHub = () => {
             );
           })()}
 
+          {/* Member of the Week - 25th ID colors */}
+          {motw && (
+            <Card className="bg-gradient-to-r from-tropic-red/20 via-tropic-gold/10 to-transparent border-tropic-gold/40" data-testid="motw-card">
+              <CardContent className="p-5 flex items-center gap-5">
+                <div className="relative shrink-0">
+                  <div className="w-16 h-16 rounded-full border-2 border-tropic-gold overflow-hidden bg-gray-800 flex items-center justify-center">
+                    {motw.avatar_url ? (
+                      <img src={motw.avatar_url.startsWith('http') ? motw.avatar_url : `${BACKEND_URL}/api${motw.avatar_url}`} alt={motw.username} className="w-full h-full object-cover" />
+                    ) : (
+                      <Star className="w-8 h-8 text-tropic-gold" />
+                    )}
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-tropic-red rounded-full flex items-center justify-center border border-black">
+                    <Star className="w-3.5 h-3.5 text-tropic-gold fill-tropic-gold" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs tracking-widest text-tropic-gold mb-0.5">MEMBER OF THE WEEK</div>
+                  <div className="text-lg font-bold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{motw.username}</div>
+                  {motw.rank && <div className="text-xs text-gray-400">{motw.rank}</div>}
+                  {motw.reason && <p className="text-sm text-gray-300 mt-1 whitespace-pre-wrap">{motw.reason}</p>}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* My Schedule */}
           {mySchedule.length > 0 && (
             <section data-testid="my-schedule-section">
@@ -213,7 +243,7 @@ const MemberHub = () => {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {mySchedule.map(op => (
                   <Link to={`/hub/operations/${op.id}`} key={op.id}>
-                    <Card className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors h-full" data-testid={`schedule-op-${op.id}`}>
+                    <Card className="bg-gray-900 border-gray-800 hover:border-tropic-red/30 transition-colors h-full" data-testid={`schedule-op-${op.id}`}>
                       <CardContent className="py-3 space-y-2">
                         <div className="flex items-center justify-between">
                           <Badge className={`${getTypeColor(op.operation_type)} text-white text-xs`}>{op.operation_type?.toUpperCase()}</Badge>
@@ -234,22 +264,25 @@ const MemberHub = () => {
             </section>
           )}
 
-          {/* Quick nav */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Link to="/hub/discussions" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center" data-testid="hub-nav-discussions">
-              <MessageSquare className="w-8 h-8 mx-auto mb-2 text-amber-500" /><span className="font-medium text-sm">Discussions</span>
+          {/* Quick nav - 25th ID colors */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <Link to="/hub/discussions" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-discussions">
+              <MessageSquare className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Discussions</span>
             </Link>
-            <a href="#ops" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center">
-              <Calendar className="w-8 h-8 mx-auto mb-2 text-blue-500" /><span className="font-medium text-sm">Operations</span>
+            <a href="#ops" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center">
+              <Calendar className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Operations</span>
             </a>
-            <a href="#training" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center">
+            <a href="#training" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center">
               <BookOpen className="w-8 h-8 mx-auto mb-2 text-green-500" /><span className="font-medium text-sm">Training</span>
             </a>
-            <a href="#intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center">
-              <Megaphone className="w-8 h-8 mx-auto mb-2 text-yellow-500" /><span className="font-medium text-sm">Intel</span>
-            </a>
-            <Link to="/roster" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-amber-700/50 transition-colors text-center" data-testid="hub-nav-roster">
-              <Users className="w-8 h-8 mx-auto mb-2 text-purple-500" /><span className="font-medium text-sm">Roster</span>
+            <Link to="/hub/intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-intel">
+              <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Intel Board</span>
+            </Link>
+            <Link to="/hub/campaign" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-campaign">
+              <MapPin className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Campaign</span>
+            </Link>
+            <Link to="/roster" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-roster">
+              <Users className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Roster</span>
             </Link>
           </div>
 
@@ -269,7 +302,7 @@ const MemberHub = () => {
                       </div>
                       <CardTitle className="text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{a.title}</CardTitle>
                     </CardHeader>
-                    <CardContent><p className="text-sm text-gray-400">{a.content}</p></CardContent>
+                    <CardContent><p className="text-sm text-gray-400 whitespace-pre-wrap">{a.content}</p></CardContent>
                   </Card>
                 ))}
               </div>
@@ -288,7 +321,7 @@ const MemberHub = () => {
                   const tentative = op.rsvps?.filter(r => r.status === 'tentative').length || 0;
                   const waitlisted = op.rsvps?.filter(r => r.status === 'waitlisted').length || 0;
                   return (
-                    <Card key={op.id} className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors" data-testid={`hub-operation-${op.id}`}>
+                    <Card key={op.id} className="bg-gray-900 border-gray-800 hover:border-tropic-red/30 transition-colors" data-testid={`hub-operation-${op.id}`}>
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <Badge className={`${getTypeColor(op.operation_type)} text-white`}>{op.operation_type.toUpperCase()}</Badge>
@@ -308,7 +341,7 @@ const MemberHub = () => {
                           {waitlisted > 0 && <span className="text-orange-400">{waitlisted} waitlisted</span>}
                         </div>
                         <Link to={`/hub/operations/${op.id}`}>
-                          <Button size="sm" className="bg-amber-700 hover:bg-amber-800 w-full" data-testid={`hub-rsvp-${op.id}`}>VIEW & RSVP <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                          <Button size="sm" className="bg-tropic-red hover:bg-tropic-red-dark w-full" data-testid={`hub-rsvp-${op.id}`}>VIEW & RSVP <ChevronRight className="w-4 h-4 ml-1" /></Button>
                         </Link>
                       </CardContent>
                     </Card>
@@ -331,7 +364,7 @@ const MemberHub = () => {
                       <CardTitle className="text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{t.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-gray-400 mb-3">{t.description}</p>
+                      <p className="text-sm text-gray-400 mb-3 whitespace-pre-wrap">{t.description}</p>
                       <div className="text-xs text-gray-500 space-y-1">
                         <div>Instructor: {t.instructor}</div>
                         <div>Schedule: {t.schedule}</div>
@@ -354,10 +387,10 @@ const MemberHub = () => {
               <div className="space-y-2">
                 {discussions.map((d) => (
                   <Link to={`/hub/discussions/${d.id}`} key={d.id} className="block">
-                    <Card className={`bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors ${d.pinned ? 'border-l-2 border-l-yellow-600' : ''}`} data-testid={`hub-discussion-${d.id}`}>
+                    <Card className={`bg-gray-900 border-gray-800 hover:border-tropic-red/30 transition-colors ${d.pinned ? 'border-l-2 border-l-tropic-gold' : ''}`} data-testid={`hub-discussion-${d.id}`}>
                       <CardContent className="py-3 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          {d.pinned && <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
+                          {d.pinned && <Pin className="w-3.5 h-3.5 text-tropic-gold shrink-0" />}
                           <Badge variant="outline" className="text-xs border-gray-700">{d.category}</Badge>
                           <span className="font-medium">{d.title}</span>
                           <span className="text-xs text-gray-500">by {d.author_name}</span>

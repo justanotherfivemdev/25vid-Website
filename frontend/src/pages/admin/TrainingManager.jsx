@@ -89,7 +89,7 @@ const TrainingManager = () => {
                   <div><Label>Duration</Label><Input required value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., 2 hours" data-testid="training-duration-input" /></div>
                 </div>
                 <div><Label>Schedule</Label><Input required value={form.schedule} onChange={(e) => setForm({ ...form, schedule: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Every Saturday 1800 UTC" data-testid="training-schedule-input" /></div>
-                <div className="border border-blue-700 p-4 rounded-lg bg-blue-900/10">
+                <div className="border border-tropic-gold/50 p-4 rounded-lg bg-tropic-gold/10">
                   <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Training Image (Optional)" description="Shown on training card. Recommended: 800x450px landscape." previewClass="w-full h-32 object-cover" />
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
@@ -111,7 +111,7 @@ const TrainingManager = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{t.title}</CardTitle>
-                      <p className="text-gray-400 mt-2">{t.description}</p>
+                      <p className="text-gray-400 mt-2 whitespace-pre-wrap">{t.description}</p>
                       <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500">
                         <span className="flex items-center"><User className="w-4 h-4 mr-1" />{t.instructor}</span>
                         <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{t.duration}</span>

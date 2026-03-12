@@ -5,18 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Shield, Home, LogOut, Calendar, Clock, Award, Target, MapPin, Globe } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
-const STATUS_COLORS = { recruit: 'bg-yellow-700', active: 'bg-green-700', reserve: 'bg-blue-700', staff: 'bg-purple-700', command: 'bg-amber-700', inactive: 'bg-gray-700' };
+const STATUS_COLORS = { recruit: 'bg-tropic-gold-dark', active: 'bg-green-700', reserve: 'bg-tropic-gold/60', staff: 'bg-purple-700', command: 'bg-tropic-red', inactive: 'bg-gray-700' };
 
 const MemberProfile = () => {
   const { id } = useParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     axios.get(`${API}/roster/${id}`)
@@ -25,7 +26,7 @@ const MemberProfile = () => {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
-  const handleLogout = () => { axios.post(`${API}/auth/logout`).catch(() => {}); localStorage.removeItem('user'); navigate('/'); };
+  const handleLogout = async () => { await logout(); navigate('/'); };
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading profile...</div>;
   if (!profile) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Profile not found</div>;
@@ -41,7 +42,7 @@ const MemberProfile = () => {
             <h1 className="text-xl font-bold tracking-widest truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{profile.username}</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {isOwnProfile && <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-blue-700 text-blue-400 hover:bg-blue-700/10">Edit Profile</Button></Link>}
+            {isOwnProfile && <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-tropic-gold text-tropic-gold hover:bg-tropic-gold/10">Edit Profile</Button></Link>}
             {user?.role === 'admin' && <Link to={`/admin/users/${profile.id}`}><Button size="sm" variant="outline" className="border-amber-700 text-amber-400 hover:bg-amber-700/10"><Shield className="w-4 h-4 mr-1" />Admin Edit</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
@@ -81,7 +82,7 @@ const MemberProfile = () => {
                 <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">JOINED</div><div className="text-sm font-medium flex items-center gap-1"><Calendar className="w-3 h-3 text-gray-500" />{new Date(profile.join_date).toLocaleDateString()}</div></div>
               </div>
 
-              {profile.bio && <p className="mt-6 text-gray-300 text-sm leading-relaxed border-l-2 border-amber-800/40 pl-4" data-testid="profile-bio">{profile.bio}</p>}
+              {profile.bio && <p className="mt-6 text-gray-300 text-sm leading-relaxed border-l-2 border-amber-800/40 pl-4 whitespace-pre-wrap" data-testid="profile-bio">{profile.bio}</p>}
             </CardContent>
           </Card>
 
@@ -127,7 +128,7 @@ const MemberProfile = () => {
           {/* Training History */}
           {profile.training_history?.length > 0 && (
             <Card className="bg-gray-900/80 border-gray-800" data-testid="profile-training">
-              <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider flex items-center gap-2"><MapPin className="w-5 h-5 text-blue-500" /> TRAINING HISTORY</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider flex items-center gap-2"><MapPin className="w-5 h-5 text-tropic-gold" /> TRAINING HISTORY</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {profile.training_history.map((t, i) => (
@@ -136,7 +137,7 @@ const MemberProfile = () => {
                         <div className="font-bold text-sm tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{t.course_name}</div>
                         <div className="text-xs text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" />{t.completion_date}</div>
                       </div>
-                      {t.instructor && <div className="text-xs text-blue-400">Instructor: {t.instructor}</div>}
+                      {t.instructor && <div className="text-xs text-tropic-gold">Instructor: {t.instructor}</div>}
                       {t.notes && <div className="text-xs text-gray-500 mt-1">{t.notes}</div>}
                     </div>
                   ))}

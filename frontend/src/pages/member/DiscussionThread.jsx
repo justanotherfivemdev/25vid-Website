@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, MessageSquare, Trash2, Send, Shield, Home, LogOut } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -17,7 +18,7 @@ const DiscussionThread = () => {
   const [reply, setReply] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user, logout } = useAuth();
 
   useEffect(() => { fetchDiscussion(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -53,12 +54,12 @@ const DiscussionThread = () => {
     } catch (err) { alert('Error deleting reply'); }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
-  const getCatColor = (c) => ({ general: 'border-gray-500 text-gray-400', operations: 'border-amber-500 text-amber-400', training: 'border-blue-500 text-blue-400', feedback: 'border-green-500 text-green-400' }[c] || 'border-gray-500 text-gray-400');
+  const getCatColor = (c) => ({ general: 'border-gray-500 text-gray-400', operations: 'border-tropic-red text-tropic-red', training: 'border-tropic-gold text-tropic-gold', feedback: 'border-green-500 text-green-400' }[c] || 'border-gray-500 text-gray-400');
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
   if (!discussion) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Discussion not found</div>;

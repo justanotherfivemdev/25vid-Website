@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Users, Shield, Megaphone, Clock, ChevronRight } from 'lucide-react';
 import { defaultSiteContent } from '@/config/siteContent';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 
 import AdminDashboard from '@/pages/admin/Dashboard';
 import OperationsManager from '@/pages/admin/OperationsManager';
@@ -26,6 +26,14 @@ import MemberProfile from '@/pages/member/MemberProfile';
 import EditProfile from '@/pages/member/EditProfile';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
+import UnitTagsManager from '@/pages/admin/UnitTagsManager';
+import RecruitmentManager from '@/pages/admin/RecruitmentManager';
+import IntelManager from '@/pages/admin/IntelManager';
+import CampaignManager from '@/pages/admin/CampaignManager';
+import RecruitDashboard from '@/pages/RecruitDashboard';
+import IntelBoard from '@/pages/member/IntelBoard';
+import CampaignMap from '@/pages/member/CampaignMap';
+import JoinUs from '@/pages/JoinUs';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -89,27 +97,35 @@ const useSiteContent = () => {
 };
 
 // ============================================================================
-// PROTECTED ROUTE WRAPPER
+// PROTECTED ROUTE WRAPPER — reads from AuthContext (no API call per route)
 // ============================================================================
-const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const [authState, setAuthState] = useState(null);
+const ProtectedRoute = ({ children, adminOnly = false, allowRecruit = false }) => {
+  const { user, checking } = useAuth();
 
-  useEffect(() => {
-    // Verify session via cookie — no token in localStorage
-    axios.get(`${API}/auth/me`)
-      .then(res => {
-        localStorage.setItem('user', JSON.stringify(res.data));
-        setAuthState(res.data.role === 'admin' ? 'admin' : 'member');
-      })
-      .catch(() => {
-        localStorage.removeItem('user');
-        setAuthState('none');
-      });
-  }, []);
+  if (checking) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (adminOnly && user.role !== 'admin') return <Navigate to="/" replace />;
+  
+  // Recruit check: if user is a recruit and this route doesn't allow recruits, redirect to recruit dashboard
+  if (!allowRecruit && user.status === 'recruit' && user.role !== 'admin') {
+    return <Navigate to="/recruit" replace />;
+  }
+  
+  return children;
+};
 
-  if (authState === null) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
-  if (authState === 'none') return <Navigate to="/login" replace />;
-  if (adminOnly && authState !== 'admin') return <Navigate to="/" replace />;
+// Recruit-specific route - only for recruits
+const RecruitRoute = ({ children }) => {
+  const { user, checking } = useAuth();
+
+  if (checking) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  
+  // If user is NOT a recruit (or is admin), redirect to appropriate page
+  if (user.status !== 'recruit' || user.role === 'admin') {
+    return <Navigate to={user.role === 'admin' ? '/admin' : '/hub'} replace />;
+  }
+  
   return children;
 };
 
@@ -218,10 +234,10 @@ const UnitHistorySection = () => {
   }, []);
 
   const typeAccent = (t) => ({
-    campaign: 'border-amber-700 bg-amber-700',
-    operation: 'border-blue-600 bg-blue-600',
+    campaign: 'border-tropic-red bg-tropic-red',
+    operation: 'border-tropic-gold-dark bg-tropic-gold-dark',
     milestone: 'border-emerald-600 bg-emerald-600',
-  }[t] || 'border-amber-700 bg-amber-700');
+  }[t] || 'border-tropic-red bg-tropic-red');
 
   if (loading || entries.length === 0) return null;
 
@@ -266,7 +282,7 @@ const UnitHistorySection = () => {
                         </div>
                       )}
 
-                      <p className="text-gray-400 text-sm leading-relaxed">{entry.description}</p>
+                      <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap">{entry.description}</p>
                     </div>
                   </div>
                 </div>
@@ -295,7 +311,7 @@ const OperationalSuperioritySection = ({ content }) => {
           </h2>
           <div className="relative">
             <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-700 via-amber-700/40 to-transparent"></div>
-            <p className="text-lg leading-relaxed text-gray-300 pl-8" data-testid="ops-superiority-description">{content.operationalSuperiority?.description}</p>
+            <p className="text-lg leading-relaxed text-gray-300 pl-8 whitespace-pre-wrap" data-testid="ops-superiority-description">{content.operationalSuperiority?.description}</p>
           </div>
         </div>
         <div className="h-px bg-gradient-to-r from-transparent via-amber-800/40 to-transparent mb-16"></div>
@@ -325,7 +341,7 @@ const LethalitySection = ({ content }) => {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h3 className="text-3xl font-bold tracking-wide" data-testid="logistics-heading">LOGISTICS & OPERATIONAL SUPPORT</h3>
-            <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="logistics-description">{content.lethality?.logistics?.description}</p>
+            <p className="text-base md:text-lg leading-relaxed text-gray-300 whitespace-pre-wrap" data-testid="logistics-description">{content.lethality?.logistics?.description}</p>
           </div>
           <div className="aspect-video overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/40 group">
             <img src={resolveImg(content.lethality?.logistics?.image)} alt="Logistics" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -339,7 +355,7 @@ const LethalitySection = ({ content }) => {
           </div>
           <div className="order-1 md:order-2 space-y-6">
             <h3 className="text-3xl font-bold tracking-wide" data-testid="training-heading">TRAINING PROGRAMS</h3>
-            <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="training-description">{content.lethality?.training?.description}</p>
+            <p className="text-base md:text-lg leading-relaxed text-gray-300 whitespace-pre-wrap" data-testid="training-description">{content.lethality?.training?.description}</p>
           </div>
         </div>
       </div>
@@ -360,10 +376,10 @@ const UpcomingOperationsSection = ({ content }) => {
   }, []);
 
   const typeConfig = {
-    combat:   { bg: 'bg-amber-800/80', border: 'border-amber-800/30', glow: 'shadow-amber-900/20' },
-    training: { bg: 'bg-blue-700/80', border: 'border-blue-800/30', glow: 'shadow-blue-900/20' },
+    combat:   { bg: 'bg-tropic-red/80', border: 'border-tropic-red/30', glow: 'shadow-tropic-red/20' },
+    training: { bg: 'bg-tropic-gold-dark/80', border: 'border-tropic-gold-dark/30', glow: 'shadow-tropic-gold-dark/20' },
     recon:    { bg: 'bg-emerald-700/80', border: 'border-emerald-800/30', glow: 'shadow-emerald-900/20' },
-    support:  { bg: 'bg-amber-700/80', border: 'border-amber-800/30', glow: 'shadow-amber-900/20' },
+    support:  { bg: 'bg-gray-600/80', border: 'border-gray-700/30', glow: 'shadow-gray-900/20' },
   };
   const getType = (t) => typeConfig[t] || typeConfig.combat;
 
@@ -389,7 +405,7 @@ const UpcomingOperationsSection = ({ content }) => {
                       {op.logo_url && <img src={resolveImg(op.logo_url)} alt="" className="w-7 h-7 object-contain rounded opacity-80" />}
                     </div>
                     <CardTitle className="text-xl tracking-wide">{op.title}</CardTitle>
-                    <CardDescription className="text-gray-400 text-sm mt-1 line-clamp-2">{op.description}</CardDescription>
+                    <CardDescription className="text-gray-400 text-sm mt-1 line-clamp-2 whitespace-pre-wrap">{op.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2 text-sm mb-4">
@@ -422,9 +438,9 @@ const AnnouncementsSection = ({ content }) => {
   }, []);
 
   const priorityConfig = {
-    urgent: { class: 'intel-urgent', badge: 'bg-amber-800 text-amber-200', dot: 'bg-amber-500' },
+    urgent: { class: 'intel-urgent', badge: 'bg-tropic-red text-white', dot: 'bg-tropic-red' },
     high:   { class: 'intel-high',   badge: 'bg-orange-800 text-orange-200', dot: 'bg-orange-500' },
-    normal: { class: 'intel-normal', badge: 'bg-blue-800/60 text-blue-200', dot: 'bg-blue-500' },
+    normal: { class: 'intel-normal', badge: 'bg-tropic-gold-dark/60 text-tropic-gold', dot: 'bg-tropic-gold' },
     low:    { class: 'intel-low',    badge: 'bg-gray-800 text-gray-300', dot: 'bg-gray-500' },
   };
   const getPriority = (p) => priorityConfig[p] || priorityConfig.normal;
@@ -455,8 +471,8 @@ const AnnouncementsSection = ({ content }) => {
                     </div>
                     <CardTitle className="text-xl mt-2 tracking-wide">{ann.title}</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-400 text-sm leading-relaxed">{ann.content}</p>
+                  <CardContent className="pt-0">
+                    <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap">{ann.content}</p>
                     <div className="mt-4 flex items-center justify-between">
                       <span className="text-xs text-gray-500 flex items-center"><Megaphone className="w-3 h-3 mr-1.5 text-gray-600"/>{ann.author_name}</span>
                       {ann.badge_url && <img src={resolveImg(ann.badge_url)} alt="badge" className="w-7 h-7 object-contain opacity-70" />}
@@ -604,6 +620,7 @@ const LandingPage = () => {
 // ============================================================================
 const LoginPage = () => {
   const { content } = useSiteContent();
+  const { login: authLogin, user } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', password: '', username: '', rank: '', specialization: '' });
   const [error, setError] = useState('');
@@ -612,9 +629,16 @@ const LoginPage = () => {
   const [discordAvailable, setDiscordAvailable] = useState(false);
   const navigate = useNavigate();
 
-  // Check if Discord OAuth is enabled on the backend
+  // If already logged in, redirect
   useEffect(() => {
-    axios.get(`${API}/auth/discord`).then(() => setDiscordAvailable(true)).catch(() => {});
+    if (user) navigate(user.role === 'admin' ? '/admin' : '/hub');
+  }, [user, navigate]);
+
+  // Check if Discord OAuth is enabled on the backend via dedicated status endpoint
+  useEffect(() => {
+    axios.get(`${API}/auth/status`)
+      .then(res => setDiscordAvailable(res.data?.discord_enabled === true))
+      .catch(() => setDiscordAvailable(false));
   }, []);
 
   // Handle Discord OAuth callback — cookie is set by backend redirect
@@ -624,13 +648,20 @@ const LoginPage = () => {
     const discordError = params.get('discord_error');
 
     if (discordSuccess) {
-      // Cookie was set by backend — fetch user data
+      // Cookie was set by backend — fetch user data into auth context
       setDiscordLoading(true);
       axios.get(`${API}/auth/me`)
         .then(res => {
-          localStorage.setItem('user', JSON.stringify(res.data));
+          authLogin(res.data);
           window.history.replaceState({}, '', '/login');
-          navigate(res.data.role === 'admin' ? '/admin' : '/hub');
+          // Route based on role and status
+          if (res.data.role === 'admin') {
+            navigate('/admin');
+          } else if (res.data.status === 'recruit') {
+            navigate('/recruit');
+          } else {
+            navigate('/hub');
+          }
         })
         .catch(() => {
           setError('Discord login failed. Please try again.');
@@ -649,7 +680,7 @@ const LoginPage = () => {
       setError(errorMessages[discordError] || `Discord error: ${discordError}`);
       window.history.replaceState({}, '', '/login');
     }
-  }, [navigate]);
+  }, [navigate, authLogin]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -661,9 +692,17 @@ const LoginPage = () => {
         ? { email: formData.email, password: formData.password }
         : { email: formData.email, username: formData.username, password: formData.password, rank: formData.rank || undefined, specialization: formData.specialization || undefined };
       const response = await axios.post(`${API}${endpoint}`, payload);
-      // Cookie is set by backend — just store user data for UI
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate(response.data.user.role === 'admin' ? '/admin' : '/hub');
+      // Cookie is set by backend — store user in auth context
+      authLogin(response.data.user);
+      // Route based on role and status
+      const user = response.data.user;
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.status === 'recruit') {
+        navigate('/recruit');
+      } else {
+        navigate('/hub');
+      }
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || 'An error occurred';
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
@@ -703,7 +742,8 @@ const LoginPage = () => {
       {content.login?.showBackground && <div className="absolute inset-0 bg-black" style={{ opacity: content.login.overlayOpacity || 0.85 }}></div>}
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-2 tracking-wider">25TH INFANTRY DIVISION</h1>
+          <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th Infantry Division" className="w-20 h-20 mx-auto mb-4 object-contain drop-shadow-[0_0_20px_rgba(212,160,23,0.3)]" data-testid="login-logo" />
+          <h1 className="text-4xl sm:text-5xl font-bold mb-2 tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH INFANTRY DIVISION</h1>
           <p className="text-gray-400 text-sm tracking-wide">Tropic Lightning — Member Access</p>
         </div>
         <Card className="glass-card">
@@ -756,26 +796,36 @@ const LoginPage = () => {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/operations" element={<ProtectedRoute adminOnly><OperationsManager /></ProtectedRoute>} />
-        <Route path="/admin/site-content" element={<ProtectedRoute adminOnly><SiteContentManager /></ProtectedRoute>} />
-        <Route path="/admin/announcements" element={<ProtectedRoute adminOnly><AnnouncementsManager /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute adminOnly><UsersManager /></ProtectedRoute>} />
-        <Route path="/admin/training" element={<ProtectedRoute adminOnly><TrainingManager /></ProtectedRoute>} />
-        <Route path="/admin/gallery" element={<ProtectedRoute adminOnly><GalleryManager /></ProtectedRoute>} />
-        <Route path="/admin/history" element={<ProtectedRoute adminOnly><HistoryManager /></ProtectedRoute>} />
-        <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
-        <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
-        <Route path="/hub/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-        <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />
-        <Route path="/hub/discussions/:id" element={<ProtectedRoute><DiscussionThread /></ProtectedRoute>} />
-        <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
-        <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
-        <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/join" element={<JoinUs />} />
+          <Route path="/recruit" element={<RecruitRoute><RecruitDashboard /></RecruitRoute>} />
+          <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/operations" element={<ProtectedRoute adminOnly><OperationsManager /></ProtectedRoute>} />
+          <Route path="/admin/site-content" element={<ProtectedRoute adminOnly><SiteContentManager /></ProtectedRoute>} />
+          <Route path="/admin/announcements" element={<ProtectedRoute adminOnly><AnnouncementsManager /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute adminOnly><UsersManager /></ProtectedRoute>} />
+          <Route path="/admin/training" element={<ProtectedRoute adminOnly><TrainingManager /></ProtectedRoute>} />
+          <Route path="/admin/gallery" element={<ProtectedRoute adminOnly><GalleryManager /></ProtectedRoute>} />
+          <Route path="/admin/history" element={<ProtectedRoute adminOnly><HistoryManager /></ProtectedRoute>} />
+          <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
+          <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
+          <Route path="/admin/recruitment" element={<ProtectedRoute adminOnly><RecruitmentManager /></ProtectedRoute>} />
+          <Route path="/admin/intel" element={<ProtectedRoute adminOnly><IntelManager /></ProtectedRoute>} />
+          <Route path="/admin/campaigns" element={<ProtectedRoute adminOnly><CampaignManager /></ProtectedRoute>} />
+          <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
+          <Route path="/hub/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+          <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />
+          <Route path="/hub/discussions/:id" element={<ProtectedRoute><DiscussionThread /></ProtectedRoute>} />
+          <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
+          <Route path="/hub/intel" element={<ProtectedRoute><IntelBoard /></ProtectedRoute>} />
+          <Route path="/hub/campaign" element={<ProtectedRoute><CampaignMap /></ProtectedRoute>} />
+          <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
+          <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

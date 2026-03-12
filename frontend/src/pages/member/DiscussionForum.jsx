@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, MessageSquare, ArrowLeft, Shield, Home, LogOut, Pin, PinOff, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -31,7 +32,7 @@ const DiscussionForum = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user, logout } = useAuth();
 
   useEffect(() => { fetchDiscussions(); }, []);
 
@@ -86,14 +87,14 @@ const DiscussionForum = () => {
     setSearchResults(null);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
   const filtered = filter === 'all' ? discussions : discussions.filter(d => d.category === filter);
 
-  const getCatColor = (c) => ({ general: 'border-gray-500 text-gray-400', operations: 'border-amber-500 text-amber-400', training: 'border-blue-500 text-blue-400', feedback: 'border-green-500 text-green-400' }[c] || 'border-gray-500 text-gray-400');
+  const getCatColor = (c) => ({ general: 'border-gray-500 text-gray-400', operations: 'border-tropic-red text-tropic-red', training: 'border-tropic-gold text-tropic-gold', feedback: 'border-green-500 text-green-400' }[c] || 'border-gray-500 text-gray-400');
 
   return (
     <div className="min-h-screen bg-black text-white">
