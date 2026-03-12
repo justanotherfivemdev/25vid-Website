@@ -14,7 +14,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://command-center-v2-2.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://unit-colors-verify.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
 ADMIN_EMAIL = "bishop@azimuth.ops"
