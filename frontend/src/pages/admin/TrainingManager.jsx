@@ -111,7 +111,7 @@ const TrainingManager = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{t.title}</CardTitle>
-                      <p className="text-gray-400 mt-2">{t.description}</p>
+                      <p className="text-gray-400 mt-2 whitespace-pre-wrap">{t.description}</p>
                       <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500">
                         <span className="flex items-center"><User className="w-4 h-4 mr-1" />{t.instructor}</span>
                         <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{t.duration}</span>

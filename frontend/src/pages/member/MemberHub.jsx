@@ -361,7 +361,7 @@ const MemberHub = () => {
                       <CardTitle className="text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{t.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-gray-400 mb-3">{t.description}</p>
+                      <p className="text-sm text-gray-400 mb-3 whitespace-pre-wrap">{t.description}</p>
                       <div className="text-xs text-gray-500 space-y-1">
                         <div>Instructor: {t.instructor}</div>
                         <div>Schedule: {t.schedule}</div>

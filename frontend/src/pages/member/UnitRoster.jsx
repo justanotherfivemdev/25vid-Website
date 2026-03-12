@@ -76,6 +76,7 @@ const HierarchySection = ({ title, members, icon: Icon, color, defaultOpen = tru
 const UnitRoster = () => {
   const [members, setMembers] = useState([]);
   const [hierarchy, setHierarchy] = useState(null);
+  const [hierarchyError, setHierarchyError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('hierarchy'); // 'hierarchy' or 'grid'
   const [search, setSearch] = useState('');
@@ -93,11 +94,18 @@ const UnitRoster = () => {
     try {
       const [rosterRes, hierarchyRes] = await Promise.all([
         axios.get(`${API}/roster`),
-        axios.get(`${API}/roster/hierarchy`).catch(() => ({ data: null }))
+        axios.get(`${API}/roster/hierarchy`).catch(err => {
+          console.error('Hierarchy endpoint failed:', err.response?.status || err.message);
+          setHierarchyError(true);
+          return { data: null };
+        })
       ]);
       setMembers(rosterRes.data);
-      setHierarchy(hierarchyRes.data);
-    } catch (e) { console.error(e); }
+      if (hierarchyRes.data) {
+        setHierarchy(hierarchyRes.data);
+        setHierarchyError(false);
+      }
+    } catch (e) { console.error('Roster fetch failed:', e); }
     finally { setLoading(false); }
   };
 
@@ -265,6 +273,15 @@ const UnitRoster = () => {
                 />
               )}
             </div>
+          ) : viewMode === 'hierarchy' && hierarchyError ? (
+            <div className="text-center py-12 border border-dashed border-amber-800/50 rounded-lg bg-amber-900/10">
+              <p className="text-amber-500 mb-2">Could not load organizational hierarchy.</p>
+              <Button size="sm" variant="outline" className="border-gray-700" onClick={() => setViewMode('grid')}>
+                <LayoutGrid className="w-4 h-4 mr-1" />Switch to Grid View
+              </Button>
+            </div>
+          ) : viewMode === 'hierarchy' && !hierarchy ? (
+            <div className="text-center py-12 text-gray-500">Loading hierarchy...</div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-gray-600 border border-dashed border-gray-800 rounded-lg">No operators match your filters.</div>
           ) : (

@@ -282,7 +282,7 @@ const OperationsManager = () => {
                       <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                         {op.title}
                       </CardTitle>
-                      <p className="text-gray-400 mt-2">{op.description}</p>
+                      <p className="text-gray-400 mt-2 whitespace-pre-wrap">{op.description}</p>
                       <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
                         <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" />{op.date}</span>
                         <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{op.time}</span>

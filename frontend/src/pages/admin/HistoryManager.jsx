@@ -195,7 +195,7 @@ const HistoryManager = () => {
                         <span className="text-amber-500 font-bold text-sm">{entry.year}</span>
                       </div>
                       <h3 className="font-bold text-lg">{entry.title}</h3>
-                      <p className="text-gray-400 text-sm line-clamp-2 mt-1">{entry.description}</p>
+                      <p className="text-gray-400 text-sm line-clamp-2 mt-1 whitespace-pre-wrap">{entry.description}</p>
                     </div>
                     <div className="flex gap-2 shrink-0">
                       <Button size="sm" variant="outline" onClick={() => handleEdit(entry)}

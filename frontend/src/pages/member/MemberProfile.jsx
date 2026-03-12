@@ -82,7 +82,7 @@ const MemberProfile = () => {
                 <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">JOINED</div><div className="text-sm font-medium flex items-center gap-1"><Calendar className="w-3 h-3 text-gray-500" />{new Date(profile.join_date).toLocaleDateString()}</div></div>
               </div>
 
-              {profile.bio && <p className="mt-6 text-gray-300 text-sm leading-relaxed border-l-2 border-amber-800/40 pl-4" data-testid="profile-bio">{profile.bio}</p>}
+              {profile.bio && <p className="mt-6 text-gray-300 text-sm leading-relaxed border-l-2 border-amber-800/40 pl-4 whitespace-pre-wrap" data-testid="profile-bio">{profile.bio}</p>}
             </CardContent>
           </Card>
 
