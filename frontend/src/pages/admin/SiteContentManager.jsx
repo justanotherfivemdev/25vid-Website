@@ -308,14 +308,11 @@ const SiteContentManager = () => {
         {/* 6 — SECTION HEADINGS */}
         <SectionCard number="06" icon={Type} title="Section Headings & Subtexts" subtitle="Control the title and description text above each homepage section">
           {[
-            { key: 'about', label: 'About', defaultH: 'ABOUT', defaultS: '' },
             { key: 'history', label: 'Unit History', defaultH: 'UNIT HISTORY', defaultS: 'Over 80 years of service, sacrifice, and the Tropic Lightning legacy' },
             { key: 'operations', label: 'Upcoming Operations', defaultH: 'UPCOMING OPERATIONS', defaultS: 'Join the next tactical mission' },
             { key: 'intel', label: 'Latest Intel / Announcements', defaultH: 'LATEST INTEL', defaultS: 'Stay informed with our latest updates' },
             { key: 'gallery', label: 'Mission Gallery', defaultH: 'MISSION GALLERY', defaultS: 'Moments from the field' },
             { key: 'enlist', label: 'Enlist / Join Section', defaultH: 'ENLIST TODAY', defaultS: 'Join the most professional MilSim unit' },
-            { key: 'lethality', label: 'Lethality on Demand', defaultH: 'LETHALITY ON DEMAND', defaultS: '' },
-            { key: 'operationalSuperiority', label: 'Operational Superiority', defaultH: 'OPERATIONAL SUPERIORITY', defaultS: '' },
           ].map(({ key, label, defaultH, defaultS }) => (
             <div key={key} className="grid grid-cols-[1fr,1fr] gap-4 pb-4 border-b border-gray-800/50 last:border-0">
               <div>
@@ -357,18 +354,18 @@ const SiteContentManager = () => {
           <div>
             <Label>Footer Tagline</Label>
             <FieldHint location="Footer, below brand name" purpose="Short unit description or slogan" />
-            <Input value={get('footer.description')} onChange={e => set('footer.description', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            <Input value={get('footer.tagline')} onChange={e => set('footer.tagline', e.target.value)} className="bg-black border-gray-700 mt-2" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Discord</Label>
               <FieldHint location="Footer, Connect column" />
-              <Input value={get('footer.contact.discord')} onChange={e => set('footer.contact.discord', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('footer.discord')} onChange={e => set('footer.discord', e.target.value)} className="bg-black border-gray-700 mt-2" />
             </div>
             <div>
               <Label>Email</Label>
               <FieldHint location="Footer, Connect column" />
-              <Input value={get('footer.contact.email')} onChange={e => set('footer.contact.email', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('footer.email')} onChange={e => set('footer.email', e.target.value)} className="bg-black border-gray-700 mt-2" />
             </div>
           </div>
         </SectionCard>

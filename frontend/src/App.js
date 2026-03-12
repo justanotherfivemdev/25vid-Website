@@ -173,24 +173,33 @@ const Navigation = ({ scrollToSection, content }) => {
 // ============================================================================
 // HERO SECTION
 // ============================================================================
-const HeroSection = ({ content }) => (
-  <section className="hero-section relative min-h-screen flex items-center justify-center" style={{ backgroundImage: `url('${resolveImg(content.hero.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }} data-testid="hero-section">
-    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/75 to-black"></div>
-    <div className="relative z-10 text-center px-6">
-      <div className="mb-10 compass-logo" data-testid="unit-logo">
-        <img src={`${process.env.REACT_APP_BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th Infantry Division" className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain drop-shadow-[0_0_30px_rgba(212,160,23,0.4)]" />
+const HeroSection = ({ content }) => {
+  const heroLine1 = typeof content.hero.tagline === 'string'
+    ? content.hero.tagline
+    : textOrFallback(content.hero.tagline?.line1, 'TROPIC LIGHTNING');
+  const heroLine2 = typeof content.hero.tagline === 'object'
+    ? textOrFallback(content.hero.tagline?.line2, textOrFallback(content.hero.subtitle, ''))
+    : textOrFallback(content.hero.subtitle, '');
+
+  return (
+    <section className="hero-section relative min-h-screen flex items-center justify-center" style={{ backgroundImage: `url('${resolveImg(content.hero.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }} data-testid="hero-section">
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/75 to-black"></div>
+      <div className="relative z-10 text-center px-6">
+        <div className="mb-10 compass-logo" data-testid="unit-logo">
+          <img src={`${process.env.REACT_APP_BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th Infantry Division" className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain drop-shadow-[0_0_30px_rgba(212,160,23,0.4)]" />
+        </div>
+        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-[0.08em] leading-tight" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="hero-tagline">
+          <span className="block">{heroLine1}</span>
+          {heroLine2 && <span className="block text-lg sm:text-xl lg:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-tropic-gold to-tropic-gold-light mt-4 tracking-[0.15em]">{heroLine2}</span>}
+        </h1>
+        <div className="mt-10">
+          <Link to="/login"><Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">{content.nav?.buttonText || 'ENLIST NOW'}</Button></Link>
+        </div>
       </div>
-      <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-[0.08em] leading-tight" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="hero-tagline">
-        <span className="block">{typeof content.hero.tagline === 'string' ? content.hero.tagline : content.hero.tagline?.line1 || 'TROPIC LIGHTNING'}</span>
-        {content.hero.subtitle && <span className="block text-lg sm:text-xl lg:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-tropic-gold to-tropic-gold-light mt-4 tracking-[0.15em]">{content.hero.subtitle}</span>}
-      </h1>
-      <div className="mt-10">
-        <Link to="/login"><Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">{content.nav?.buttonText || 'ENLIST NOW'}</Button></Link>
-      </div>
-    </div>
-    <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>
-  </section>
-);
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>
+    </section>
+  );
+};
 
 // ============================================================================
 // ABOUT SECTION
