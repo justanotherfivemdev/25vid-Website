@@ -1597,6 +1597,137 @@ async def get_operation_roster(operation_id: str, current_user: dict = Depends(g
     }
 
 # ============================================================================
+# RECRUITMENT PIPELINE
+# ============================================================================
+
+class OpenBillet(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    company: Optional[str] = None
+    platoon: Optional[str] = None
+    description: str
+    requirements: Optional[str] = None
+    is_open: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Application(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    billet_id: Optional[str] = None
+    applicant_name: str
+    applicant_email: EmailStr
+    discord_username: Optional[str] = None
+    timezone: Optional[str] = None
+    experience: str
+    availability: str
+    why_join: str
+    status: str = "pending"  # pending, reviewing, accepted, rejected
+    admin_notes: Optional[str] = None
+    submitted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+
+@api_router.get("/recruitment/billets")
+async def get_open_billets():
+    """Get all open billets for the public recruitment page."""
+    billets = await db.open_billets.find(
+        {"is_open": True},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return billets
+
+@api_router.get("/admin/recruitment/billets")
+async def get_all_billets(current_user: dict = Depends(get_current_admin)):
+    """Get all billets (open and closed) for admin management."""
+    billets = await db.open_billets.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return billets
+
+@api_router.post("/admin/recruitment/billets")
+async def create_billet(billet: OpenBillet, current_user: dict = Depends(get_current_admin)):
+    """Create a new open billet."""
+    billet_dict = billet.model_dump()
+    billet_dict["created_at"] = billet_dict["created_at"].isoformat()
+    await db.open_billets.insert_one(billet_dict)
+    return {"message": "Billet created", "id": billet.id}
+
+@api_router.put("/admin/recruitment/billets/{billet_id}")
+async def update_billet(billet_id: str, updates: dict, current_user: dict = Depends(get_current_admin)):
+    """Update an existing billet."""
+    result = await db.open_billets.update_one(
+        {"id": billet_id},
+        {"$set": updates}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Billet not found")
+    return {"message": "Billet updated"}
+
+@api_router.delete("/admin/recruitment/billets/{billet_id}")
+async def delete_billet(billet_id: str, current_user: dict = Depends(get_current_admin)):
+    """Delete a billet."""
+    result = await db.open_billets.delete_one({"id": billet_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Billet not found")
+    return {"message": "Billet deleted"}
+
+@api_router.post("/recruitment/apply")
+async def submit_application(application: Application):
+    """Submit a new recruitment application (public endpoint)."""
+    app_dict = application.model_dump()
+    app_dict["submitted_at"] = app_dict["submitted_at"].isoformat()
+    if app_dict.get("reviewed_at"):
+        app_dict["reviewed_at"] = app_dict["reviewed_at"].isoformat()
+    await db.applications.insert_one(app_dict)
+    return {"message": "Application submitted successfully", "id": application.id}
+
+@api_router.get("/admin/recruitment/applications")
+async def get_applications(status: Optional[str] = None, current_user: dict = Depends(get_current_admin)):
+    """Get all applications, optionally filtered by status."""
+    query = {}
+    if status:
+        query["status"] = status
+    applications = await db.applications.find(query, {"_id": 0}).sort("submitted_at", -1).to_list(500)
+    return applications
+
+@api_router.get("/admin/recruitment/applications/{application_id}")
+async def get_application(application_id: str, current_user: dict = Depends(get_current_admin)):
+    """Get a single application by ID."""
+    app = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return app
+
+@api_router.put("/admin/recruitment/applications/{application_id}")
+async def update_application(application_id: str, updates: dict, current_user: dict = Depends(get_current_admin)):
+    """Update application status and notes."""
+    updates["reviewed_at"] = datetime.now(timezone.utc).isoformat()
+    updates["reviewed_by"] = current_user["username"]
+    result = await db.applications.update_one(
+        {"id": application_id},
+        {"$set": updates}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return {"message": "Application updated"}
+
+@api_router.get("/admin/recruitment/stats")
+async def get_recruitment_stats(current_user: dict = Depends(get_current_admin)):
+    """Get recruitment pipeline statistics."""
+    total = await db.applications.count_documents({})
+    pending = await db.applications.count_documents({"status": "pending"})
+    reviewing = await db.applications.count_documents({"status": "reviewing"})
+    accepted = await db.applications.count_documents({"status": "accepted"})
+    rejected = await db.applications.count_documents({"status": "rejected"})
+    open_billets = await db.open_billets.count_documents({"is_open": True})
+    
+    return {
+        "total_applications": total,
+        "pending": pending,
+        "reviewing": reviewing,
+        "accepted": accepted,
+        "rejected": rejected,
+        "open_billets": open_billets
+    }
+
+# ============================================================================
 # MISC ENDPOINTS
 # ============================================================================
 

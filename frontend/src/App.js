@@ -27,6 +27,8 @@ import EditProfile from '@/pages/member/EditProfile';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
 import UnitTagsManager from '@/pages/admin/UnitTagsManager';
+import RecruitmentManager from '@/pages/admin/RecruitmentManager';
+import JoinUs from '@/pages/JoinUs';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -767,6 +769,8 @@ function App() {
           <Route path="/admin/history" element={<ProtectedRoute adminOnly><HistoryManager /></ProtectedRoute>} />
           <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
           <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
+          <Route path="/admin/recruitment" element={<ProtectedRoute adminOnly><RecruitmentManager /></ProtectedRoute>} />
+          <Route path="/join" element={<JoinUs />} />
           <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
           <Route path="/hub/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />

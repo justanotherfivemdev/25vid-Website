@@ -13,11 +13,11 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
 
-const STATUS_COLORS = { recruit: 'bg-yellow-700', active: 'bg-green-700', reserve: 'bg-blue-700', staff: 'bg-purple-700', command: 'bg-amber-700', inactive: 'bg-gray-700' };
+const STATUS_COLORS = { recruit: 'bg-tropic-gold-dark', active: 'bg-green-700', reserve: 'bg-blue-700', staff: 'bg-purple-700', command: 'bg-tropic-red', inactive: 'bg-gray-700' };
 
 const MemberCard = ({ member, compact = false }) => (
   <Link to={`/roster/${member.id}`}>
-    <Card className={`bg-gray-900/80 border-gray-800 hover:border-amber-700/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-amber-900/10 group ${compact ? '' : ''}`} data-testid={`roster-card-${member.id}`}>
+    <Card className={`bg-gray-900/80 border-gray-800 hover:border-tropic-red/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-tropic-red/10 group ${compact ? '' : ''}`} data-testid={`roster-card-${member.id}`}>
       <CardContent className={compact ? 'p-3' : 'p-4'}>
         <div className="flex items-start gap-3">
           {member.avatar_url ? (
@@ -26,12 +26,12 @@ const MemberCard = ({ member, compact = false }) => (
             <div className={`${compact ? 'w-10 h-10 text-base' : 'w-12 h-12 text-lg'} rounded-lg bg-gray-800 flex items-center justify-center font-bold text-gray-500 border border-gray-700`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{member.username[0]?.toUpperCase()}</div>
           )}
           <div className="flex-1 min-w-0">
-            <div className={`font-bold ${compact ? 'text-sm' : 'text-base'} tracking-wide truncate group-hover:text-amber-400 transition-colors`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{member.username}</div>
+            <div className={`font-bold ${compact ? 'text-sm' : 'text-base'} tracking-wide truncate group-hover:text-tropic-gold transition-colors`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{member.username}</div>
             {member.rank && <div className="text-xs text-gray-400">{member.rank}</div>}
-            {member.billet && <div className="text-xs text-amber-500/80">{member.billet}</div>}
+            {member.billet && <div className="text-xs text-tropic-gold/80">{member.billet}</div>}
             {!compact && member.specialization && <div className="text-xs text-gray-500">{member.specialization}</div>}
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-amber-500 transition-colors shrink-0 mt-1" />
+          <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-tropic-red transition-colors shrink-0 mt-1" />
         </div>
         {!compact && (
           <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -39,7 +39,7 @@ const MemberCard = ({ member, compact = false }) => (
             {member.company && <span className="text-[10px] text-blue-400 border border-blue-800/50 px-1.5 py-0 rounded">{member.company}</span>}
             {member.platoon && <span className="text-[10px] text-green-400 border border-green-800/50 px-1.5 py-0 rounded">{member.platoon}</span>}
             {member.squad && <span className="text-[10px] text-gray-500 border border-gray-800 px-1.5 py-0 rounded">{member.squad}</span>}
-            {member.role === 'admin' && <Badge className="bg-amber-900/50 text-amber-400 text-[10px] px-2 py-0">ADMIN</Badge>}
+            {member.role === 'admin' && <Badge className="bg-tropic-red/50 text-tropic-gold text-[10px] px-2 py-0">ADMIN</Badge>}
           </div>
         )}
       </CardContent>
@@ -125,14 +125,14 @@ const UnitRoster = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-red/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700">Hub</Button></Link>
-            <h1 className="text-xl font-bold tracking-widest" style={{ fontFamily: 'Rajdhani, sans-serif' }}>UNIT ROSTER</h1>
+            <h1 className="text-xl font-bold tracking-widest text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>UNIT ROSTER</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-amber-700 text-amber-500 hover:bg-amber-700/10"><Shield className="w-4 h-4" /></Button></Link>}
+            {user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4" /></Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -149,12 +149,12 @@ const UnitRoster = () => {
                 <p className="text-sm text-gray-500">{filtered.length} of {members.length} operators</p>
               </div>
             </div>
-            {/* View Toggle */}
+            {/* View Toggle - 25th ID colors */}
             <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1">
               <Button 
                 size="sm" 
                 variant={viewMode === 'hierarchy' ? 'default' : 'ghost'}
-                className={viewMode === 'hierarchy' ? 'bg-amber-700 hover:bg-amber-800' : 'text-gray-400 hover:text-white'}
+                className={viewMode === 'hierarchy' ? 'bg-tropic-red hover:bg-tropic-red-dark' : 'text-gray-400 hover:text-white'}
                 onClick={() => setViewMode('hierarchy')}
                 data-testid="view-hierarchy"
               >
@@ -163,7 +163,7 @@ const UnitRoster = () => {
               <Button 
                 size="sm" 
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                className={viewMode === 'grid' ? 'bg-amber-700 hover:bg-amber-800' : 'text-gray-400 hover:text-white'}
+                className={viewMode === 'grid' ? 'bg-tropic-red hover:bg-tropic-red-dark' : 'text-gray-400 hover:text-white'}
                 onClick={() => setViewMode('grid')}
                 data-testid="view-grid"
               >
@@ -274,8 +274,8 @@ const UnitRoster = () => {
               )}
             </div>
           ) : viewMode === 'hierarchy' && hierarchyError ? (
-            <div className="text-center py-12 border border-dashed border-amber-800/50 rounded-lg bg-amber-900/10">
-              <p className="text-amber-500 mb-2">Could not load organizational hierarchy.</p>
+            <div className="text-center py-12 border border-dashed border-tropic-red/50 rounded-lg bg-tropic-red/10">
+              <p className="text-tropic-gold mb-2">Could not load organizational hierarchy.</p>
               <Button size="sm" variant="outline" className="border-gray-700" onClick={() => setViewMode('grid')}>
                 <LayoutGrid className="w-4 h-4 mr-1" />Switch to Grid View
               </Button>

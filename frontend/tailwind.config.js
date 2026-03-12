@@ -13,6 +13,15 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			// 25th Infantry Division "Tropic Lightning" brand colors
+  			'tropic': {
+  				red: '#C8102E',
+  				gold: '#FFD700',
+  				'red-dark': '#9A0C23',
+  				'red-light': '#E8334A',
+  				'gold-dark': '#D4AF37',
+  				'gold-light': '#FFE44D',
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
