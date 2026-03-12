@@ -1728,6 +1728,70 @@ async def get_recruitment_stats(current_user: dict = Depends(get_current_admin))
     }
 
 # ============================================================================
+# RECRUIT ENDPOINTS (For authenticated recruits)
+# ============================================================================
+
+class RecruitApplication(BaseModel):
+    """Application submitted by an authenticated recruit"""
+    billet_id: Optional[str] = None
+    discord_username: Optional[str] = None
+    timezone: Optional[str] = None
+    experience: str
+    availability: str
+    why_join: str
+
+@api_router.get("/recruit/my-application")
+async def get_my_application(current_user: dict = Depends(get_current_user)):
+    """Get the current recruit's application status."""
+    # Find application by user's email
+    app = await db.applications.find_one(
+        {"applicant_email": current_user["email"]},
+        {"_id": 0}
+    )
+    return app  # Returns null if no application exists
+
+@api_router.post("/recruit/apply")
+async def recruit_submit_application(
+    application: RecruitApplication,
+    current_user: dict = Depends(get_current_user)
+):
+    """Submit application as an authenticated recruit (linked to account)."""
+    # Check if user already has an application
+    existing = await db.applications.find_one({"applicant_email": current_user["email"]})
+    if existing:
+        raise HTTPException(status_code=400, detail="You have already submitted an application")
+    
+    # Create application linked to user account
+    app_dict = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],  # Link to user account
+        "applicant_name": current_user["username"],
+        "applicant_email": current_user["email"],
+        "billet_id": application.billet_id,
+        "discord_username": application.discord_username or current_user.get("discord_username"),
+        "timezone": application.timezone,
+        "experience": application.experience,
+        "availability": application.availability,
+        "why_join": application.why_join,
+        "status": "pending",
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
+        "admin_notes": None,
+        "reviewed_at": None,
+        "reviewed_by": None
+    }
+    
+    await db.applications.insert_one(app_dict)
+    
+    # Update user's discord_username if provided
+    if application.discord_username:
+        await db.users.update_one(
+            {"id": current_user["id"]},
+            {"$set": {"discord_username": application.discord_username}}
+        )
+    
+    return {"message": "Application submitted successfully", "id": app_dict["id"]}
+
+# ============================================================================
 # MISC ENDPOINTS
 # ============================================================================
 

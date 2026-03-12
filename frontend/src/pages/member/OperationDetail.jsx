@@ -14,7 +14,7 @@ const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) r
 
 const STATUS_ICON = { attending: CheckCircle, tentative: HelpCircle, waitlisted: Clock };
 const STATUS_COLOR = { attending: 'text-green-400', tentative: 'text-yellow-400', waitlisted: 'text-orange-400' };
-const TYPE_CFG = { combat: 'bg-amber-800/80', training: 'bg-blue-700/80', recon: 'bg-emerald-700/80', support: 'bg-amber-700/80' };
+const TYPE_CFG = { combat: 'bg-tropic-red/80', training: 'bg-tropic-gold-dark/80', recon: 'bg-emerald-700/80', support: 'bg-gray-600/80' };
 
 const RsvpMemberRow = ({ r, user, group, onPromote }) => {
   const [expanded, setExpanded] = useState(false);
@@ -38,7 +38,7 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
           {r.role_notes && <span className="text-xs text-amber-500/80 border border-amber-700/30 px-1.5 py-0.5 rounded bg-amber-900/20">{r.role_notes}</span>}
         </div>
         <div className="flex items-center gap-2">
-          {r.specialization && <span className="text-[10px] text-blue-400 hidden sm:inline">{r.specialization}</span>}
+          {r.specialization && <span className="text-[10px] text-tropic-gold hidden sm:inline">{r.specialization}</span>}
           {user?.role === 'admin' && group.label === 'WAITLISTED' && (
             <Button size="sm" onClick={(e) => { e.stopPropagation(); onPromote(r.user_id); }} className="bg-green-700 hover:bg-green-600 text-xs px-2 py-1 h-auto" data-testid={`promote-${r.user_id}`}><ChevronUp className="w-3 h-3 mr-1" />Promote</Button>
           )}
@@ -47,7 +47,7 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
       </div>
       {expanded && (
         <div className="px-3 py-2 bg-gray-900/50 border-t border-gray-800/30 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          {r.company && <div><span className="text-gray-600">Company:</span> <span className="text-blue-400">{r.company}</span></div>}
+          {r.company && <div><span className="text-gray-600">Company:</span> <span className="text-tropic-gold">{r.company}</span></div>}
           {r.platoon && <div><span className="text-gray-600">Platoon:</span> <span className="text-green-400">{r.platoon}</span></div>}
           {r.squad && <div><span className="text-gray-600">Squad:</span> <span className="text-gray-400">{r.squad}</span></div>}
           {r.billet && <div><span className="text-gray-600">Billet:</span> <span className="text-amber-400">{r.billet}</span></div>}

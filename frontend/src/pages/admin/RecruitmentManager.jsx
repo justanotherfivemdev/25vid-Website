@@ -18,7 +18,7 @@ const API = `${BACKEND_URL}/api`;
 
 const STATUS_COLORS = {
   pending: 'bg-tropic-gold/20 text-tropic-gold border-tropic-gold/30',
-  reviewing: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  reviewing: 'bg-tropic-gold/30 text-tropic-gold border-tropic-gold/50',
   accepted: 'bg-green-500/20 text-green-400 border-green-500/30',
   rejected: 'bg-red-500/20 text-red-400 border-red-500/30'
 };
@@ -156,7 +156,7 @@ const RecruitmentManager = () => {
             </Card>
             <Card className="bg-gray-900 border-gray-800">
               <CardContent className="py-4 text-center">
-                <div className="text-2xl font-bold text-blue-400">{stats.reviewing}</div>
+                <div className="text-2xl font-bold text-tropic-gold">{stats.reviewing}</div>
                 <div className="text-xs text-gray-500">Reviewing</div>
               </CardContent>
             </Card>
@@ -227,7 +227,7 @@ const RecruitmentManager = () => {
                           </div>
                           <div className="text-sm text-gray-400 flex items-center gap-4">
                             <span>{app.applicant_email}</span>
-                            {app.discord_username && <span className="text-indigo-400">{app.discord_username}</span>}
+                            {app.discord_username && <span className="text-tropic-gold">{app.discord_username}</span>}
                             {app.timezone && <span className="text-gray-500">{app.timezone}</span>}
                           </div>
                           <div className="text-xs text-gray-600 mt-1">
@@ -367,7 +367,7 @@ const RecruitmentManager = () => {
                   </div>
                   <div>
                     <Label className="text-gray-500">Discord</Label>
-                    <div className="text-sm text-indigo-400">{selectedApp.discord_username || '—'}</div>
+                    <div className="text-sm text-tropic-gold">{selectedApp.discord_username || '—'}</div>
                   </div>
                   <div>
                     <Label className="text-gray-500">Timezone</Label>
@@ -413,7 +413,7 @@ const RecruitmentManager = () => {
                   <Button onClick={() => handleUpdateAppStatus('pending')} variant="outline" className={`flex-1 ${selectedApp.status === 'pending' ? 'border-tropic-gold text-tropic-gold' : 'border-gray-700'}`}>
                     <Clock className="w-4 h-4 mr-1" />Pending
                   </Button>
-                  <Button onClick={() => handleUpdateAppStatus('reviewing')} variant="outline" className={`flex-1 ${selectedApp.status === 'reviewing' ? 'border-blue-500 text-blue-400' : 'border-gray-700'}`}>
+                  <Button onClick={() => handleUpdateAppStatus('reviewing')} variant="outline" className={`flex-1 ${selectedApp.status === 'reviewing' ? 'border-tropic-gold text-tropic-gold' : 'border-gray-700'}`}>
                     <Eye className="w-4 h-4 mr-1" />Reviewing
                   </Button>
                   <Button onClick={() => handleUpdateAppStatus('accepted')} className="flex-1 bg-green-700 hover:bg-green-600" data-testid="accept-app">

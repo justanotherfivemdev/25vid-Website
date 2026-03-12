@@ -225,7 +225,7 @@ const AdminDashboard = () => {
               <div className="font-medium">Manage Operations</div>
             </a>
             <a href="/admin/announcements" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
-              <Megaphone className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+              <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" />
               <div className="font-medium">Post Announcement</div>
             </a>
             <a href="/admin/users" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">

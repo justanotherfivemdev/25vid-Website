@@ -13,7 +13,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
 
-const STATUS_COLORS = { recruit: 'bg-tropic-gold-dark', active: 'bg-green-700', reserve: 'bg-blue-700', staff: 'bg-purple-700', command: 'bg-tropic-red', inactive: 'bg-gray-700' };
+const STATUS_COLORS = { recruit: 'bg-tropic-gold-dark', active: 'bg-green-700', reserve: 'bg-tropic-gold/60', staff: 'bg-purple-700', command: 'bg-tropic-red', inactive: 'bg-gray-700' };
 
 const MemberCard = ({ member, compact = false }) => (
   <Link to={`/roster/${member.id}`}>
@@ -36,7 +36,7 @@ const MemberCard = ({ member, compact = false }) => (
         {!compact && (
           <div className="flex items-center gap-2 mt-3 flex-wrap">
             <Badge className={`${STATUS_COLORS[member.status] || 'bg-gray-700'} text-white text-[10px] px-2 py-0`}>{(member.status || 'recruit').toUpperCase()}</Badge>
-            {member.company && <span className="text-[10px] text-blue-400 border border-blue-800/50 px-1.5 py-0 rounded">{member.company}</span>}
+            {member.company && <span className="text-[10px] text-tropic-gold border border-tropic-gold/50 px-1.5 py-0 rounded">{member.company}</span>}
             {member.platoon && <span className="text-[10px] text-green-400 border border-green-800/50 px-1.5 py-0 rounded">{member.platoon}</span>}
             {member.squad && <span className="text-[10px] text-gray-500 border border-gray-800 px-1.5 py-0 rounded">{member.squad}</span>}
             {member.role === 'admin' && <Badge className="bg-tropic-red/50 text-tropic-gold text-[10px] px-2 py-0">ADMIN</Badge>}
@@ -219,7 +219,7 @@ const UnitRoster = () => {
               {Object.entries(hierarchy.companies || {}).sort().map(([companyName, companyData]) => (
                 <div key={companyName} className="space-y-3">
                   <div className="flex items-center gap-2 px-2">
-                    <Building2 className="w-5 h-5 text-blue-500" />
+                    <Building2 className="w-5 h-5 text-tropic-red" />
                     <h3 className="text-xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{companyName} COMPANY</h3>
                   </div>
                   
@@ -228,7 +228,7 @@ const UnitRoster = () => {
                     <HierarchySection 
                       title={`${companyName} Co. HQ`} 
                       members={companyData.unassigned} 
-                      color="text-blue-400"
+                      color="text-tropic-gold"
                       defaultOpen={false}
                     />
                   )}

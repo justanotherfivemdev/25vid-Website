@@ -15,11 +15,11 @@ const API = `${BACKEND_URL}/api`;
 // Tag categories configuration
 const TAG_CATEGORIES = [
   { key: 'ranks', label: 'Ranks', icon: Shield, color: 'text-amber-500', description: 'Military ranks for the unit hierarchy' },
-  { key: 'companies', label: 'Companies', icon: Building2, color: 'text-blue-500', description: 'Company-level units (e.g., Alpha, Bravo, HQ)' },
+  { key: 'companies', label: 'Companies', icon: Building2, color: 'text-tropic-gold', description: 'Company-level units (e.g., Alpha, Bravo, HQ)' },
   { key: 'platoons', label: 'Platoons', icon: Users, color: 'text-green-500', description: 'Platoon-level units within companies' },
   { key: 'squads', label: 'Squads', icon: Target, color: 'text-purple-500', description: 'Squad-level teams within platoons' },
   { key: 'billets', label: 'Billets / Positions', icon: Award, color: 'text-yellow-500', description: 'Job titles and positions (e.g., Squad Leader, Medic)' },
-  { key: 'specializations', label: 'Specializations / MOS', icon: Target, color: 'text-cyan-500', description: 'Military occupational specialties' },
+  { key: 'specializations', label: 'Specializations / MOS', icon: Target, color: 'text-tropic-gold', description: 'Military occupational specialties' },
 ];
 
 const TagCategoryCard = ({ category, tags, customTags, onAddTag, onRemoveCustomTag }) => {
@@ -224,8 +224,8 @@ const UnitTagsManager = () => {
         )}
 
         {/* Info box */}
-        <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-blue-400 mb-1">How Unit Tags Work</h3>
+        <div className="bg-tropic-gold/10 border border-tropic-gold/30 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-tropic-gold mb-1">How Unit Tags Work</h3>
           <ul className="text-xs text-gray-400 space-y-1 list-disc list-inside">
             <li>Default tags (gray) are built-in and cannot be removed</li>
             <li>Custom tags (amber) that you add can be removed anytime</li>

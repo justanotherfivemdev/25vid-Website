@@ -88,7 +88,7 @@ const HistoryManager = () => {
   };
 
   const typeColor = (t) => ({
-    campaign: 'bg-amber-700', operation: 'bg-blue-600', milestone: 'bg-emerald-600'
+    campaign: 'bg-tropic-red', operation: 'bg-tropic-gold-dark', milestone: 'bg-emerald-600'
   }[t] || 'bg-gray-600');
 
   return (

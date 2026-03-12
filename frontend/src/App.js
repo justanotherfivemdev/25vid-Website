@@ -28,6 +28,7 @@ import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
 import UnitTagsManager from '@/pages/admin/UnitTagsManager';
 import RecruitmentManager from '@/pages/admin/RecruitmentManager';
+import RecruitDashboard from '@/pages/RecruitDashboard';
 import JoinUs from '@/pages/JoinUs';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -94,12 +95,33 @@ const useSiteContent = () => {
 // ============================================================================
 // PROTECTED ROUTE WRAPPER — reads from AuthContext (no API call per route)
 // ============================================================================
-const ProtectedRoute = ({ children, adminOnly = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, allowRecruit = false }) => {
   const { user, checking } = useAuth();
 
   if (checking) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
   if (adminOnly && user.role !== 'admin') return <Navigate to="/" replace />;
+  
+  // Recruit check: if user is a recruit and this route doesn't allow recruits, redirect to recruit dashboard
+  if (!allowRecruit && user.status === 'recruit' && user.role !== 'admin') {
+    return <Navigate to="/recruit" replace />;
+  }
+  
+  return children;
+};
+
+// Recruit-specific route - only for recruits
+const RecruitRoute = ({ children }) => {
+  const { user, checking } = useAuth();
+
+  if (checking) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  
+  // If user is NOT a recruit (or is admin), redirect to appropriate page
+  if (user.status !== 'recruit' || user.role === 'admin') {
+    return <Navigate to={user.role === 'admin' ? '/admin' : '/hub'} replace />;
+  }
+  
   return children;
 };
 
@@ -208,10 +230,10 @@ const UnitHistorySection = () => {
   }, []);
 
   const typeAccent = (t) => ({
-    campaign: 'border-amber-700 bg-amber-700',
-    operation: 'border-blue-600 bg-blue-600',
+    campaign: 'border-tropic-red bg-tropic-red',
+    operation: 'border-tropic-gold-dark bg-tropic-gold-dark',
     milestone: 'border-emerald-600 bg-emerald-600',
-  }[t] || 'border-amber-700 bg-amber-700');
+  }[t] || 'border-tropic-red bg-tropic-red');
 
   if (loading || entries.length === 0) return null;
 
@@ -350,10 +372,10 @@ const UpcomingOperationsSection = ({ content }) => {
   }, []);
 
   const typeConfig = {
-    combat:   { bg: 'bg-amber-800/80', border: 'border-amber-800/30', glow: 'shadow-amber-900/20' },
-    training: { bg: 'bg-blue-700/80', border: 'border-blue-800/30', glow: 'shadow-blue-900/20' },
+    combat:   { bg: 'bg-tropic-red/80', border: 'border-tropic-red/30', glow: 'shadow-tropic-red/20' },
+    training: { bg: 'bg-tropic-gold-dark/80', border: 'border-tropic-gold-dark/30', glow: 'shadow-tropic-gold-dark/20' },
     recon:    { bg: 'bg-emerald-700/80', border: 'border-emerald-800/30', glow: 'shadow-emerald-900/20' },
-    support:  { bg: 'bg-amber-700/80', border: 'border-amber-800/30', glow: 'shadow-amber-900/20' },
+    support:  { bg: 'bg-gray-600/80', border: 'border-gray-700/30', glow: 'shadow-gray-900/20' },
   };
   const getType = (t) => typeConfig[t] || typeConfig.combat;
 
@@ -412,9 +434,9 @@ const AnnouncementsSection = ({ content }) => {
   }, []);
 
   const priorityConfig = {
-    urgent: { class: 'intel-urgent', badge: 'bg-amber-800 text-amber-200', dot: 'bg-amber-500' },
+    urgent: { class: 'intel-urgent', badge: 'bg-tropic-red text-white', dot: 'bg-tropic-red' },
     high:   { class: 'intel-high',   badge: 'bg-orange-800 text-orange-200', dot: 'bg-orange-500' },
-    normal: { class: 'intel-normal', badge: 'bg-blue-800/60 text-blue-200', dot: 'bg-blue-500' },
+    normal: { class: 'intel-normal', badge: 'bg-tropic-gold-dark/60 text-tropic-gold', dot: 'bg-tropic-gold' },
     low:    { class: 'intel-low',    badge: 'bg-gray-800 text-gray-300', dot: 'bg-gray-500' },
   };
   const getPriority = (p) => priorityConfig[p] || priorityConfig.normal;
@@ -628,7 +650,14 @@ const LoginPage = () => {
         .then(res => {
           authLogin(res.data);
           window.history.replaceState({}, '', '/login');
-          navigate(res.data.role === 'admin' ? '/admin' : '/hub');
+          // Route based on role and status
+          if (res.data.role === 'admin') {
+            navigate('/admin');
+          } else if (res.data.status === 'recruit') {
+            navigate('/recruit');
+          } else {
+            navigate('/hub');
+          }
         })
         .catch(() => {
           setError('Discord login failed. Please try again.');
@@ -661,7 +690,15 @@ const LoginPage = () => {
       const response = await axios.post(`${API}${endpoint}`, payload);
       // Cookie is set by backend — store user in auth context
       authLogin(response.data.user);
-      navigate(response.data.user.role === 'admin' ? '/admin' : '/hub');
+      // Route based on role and status
+      const user = response.data.user;
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.status === 'recruit') {
+        navigate('/recruit');
+      } else {
+        navigate('/hub');
+      }
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || 'An error occurred';
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
@@ -759,6 +796,8 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/join" element={<JoinUs />} />
+          <Route path="/recruit" element={<RecruitRoute><RecruitDashboard /></RecruitRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/operations" element={<ProtectedRoute adminOnly><OperationsManager /></ProtectedRoute>} />
           <Route path="/admin/site-content" element={<ProtectedRoute adminOnly><SiteContentManager /></ProtectedRoute>} />
@@ -770,7 +809,6 @@ function App() {
           <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
           <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
           <Route path="/admin/recruitment" element={<ProtectedRoute adminOnly><RecruitmentManager /></ProtectedRoute>} />
-          <Route path="/join" element={<JoinUs />} />
           <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
           <Route path="/hub/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />

@@ -83,7 +83,7 @@ const GalleryManager = () => {
 
   const filtered = filter === 'all' ? images : images.filter(i => i.category === filter);
 
-  const getCatColor = (c) => ({ operation: 'bg-amber-700', training: 'bg-blue-600', team: 'bg-green-600', equipment: 'bg-yellow-600' }[c] || 'bg-gray-600');
+  const getCatColor = (c) => ({ operation: 'bg-tropic-red', training: 'bg-tropic-gold-dark', team: 'bg-green-600', equipment: 'bg-gray-600' }[c] || 'bg-gray-600');
 
   return (
     <AdminLayout>

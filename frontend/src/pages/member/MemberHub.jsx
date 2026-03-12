@@ -71,8 +71,8 @@ const MemberHub = () => {
     navigate('/');
   };
 
-  const getTypeColor = (t) => ({ combat: 'bg-tropic-red', training: 'bg-blue-600', recon: 'bg-green-600', support: 'bg-tropic-gold-dark' }[t] || 'bg-gray-600');
-  const getPriorityColor = (p) => ({ urgent: 'text-tropic-red border-tropic-red', high: 'text-orange-500 border-orange-500', normal: 'text-blue-400 border-blue-400', low: 'text-gray-400 border-gray-400' }[p] || 'text-gray-400 border-gray-400');
+  const getTypeColor = (t) => ({ combat: 'bg-tropic-red', training: 'bg-tropic-gold-dark', recon: 'bg-green-600', support: 'bg-gray-600' }[t] || 'bg-gray-600');
+  const getPriorityColor = (p) => ({ urgent: 'text-tropic-red border-tropic-red', high: 'text-orange-500 border-orange-500', normal: 'text-tropic-gold border-tropic-gold', low: 'text-gray-400 border-gray-400' }[p] || 'text-gray-400 border-gray-400');
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 

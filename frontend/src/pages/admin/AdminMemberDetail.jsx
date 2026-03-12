@@ -213,7 +213,7 @@ const AdminMemberDetail = () => {
         <Card className="bg-gray-900 border-gray-800" data-testid="admin-unit-assignment">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg tracking-wider flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-blue-500" /> UNIT ASSIGNMENT
+              <Building2 className="w-5 h-5 text-tropic-gold" /> UNIT ASSIGNMENT
             </CardTitle>
             <p className="text-xs text-gray-500 mt-1">Assign this member to a position in the unit hierarchy. Used for the organizational roster view.</p>
           </CardHeader>
@@ -230,7 +230,7 @@ const AdminMemberDetail = () => {
         <Card className="bg-gray-900 border-gray-800" data-testid="admin-discord-fields">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg tracking-wider flex items-center gap-2">
-              <Link2 className="w-5 h-5 text-indigo-500" /> DISCORD INTEGRATION PREP
+              <Link2 className="w-5 h-5 text-tropic-gold" /> DISCORD INTEGRATION PREP
             </CardTitle>
             <p className="text-xs text-gray-500 mt-1">These fields prepare the account for future Discord OAuth linking. They are not active OAuth controls — values here will be overwritten when Discord linking goes live.</p>
           </CardHeader>
@@ -304,7 +304,7 @@ const AdminMemberDetail = () => {
         <Card className="bg-gray-900 border-gray-800" data-testid="admin-training-history">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg tracking-wider flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-500" /> TRAINING HISTORY</CardTitle>
+              <CardTitle className="text-lg tracking-wider flex items-center gap-2"><Calendar className="w-5 h-5 text-tropic-gold" /> TRAINING HISTORY</CardTitle>
               <Dialog open={trainingDialogOpen} onOpenChange={setTrainingDialogOpen}>
                 <DialogTrigger asChild><Button size="sm" className="bg-amber-700 hover:bg-amber-800" data-testid="add-training-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
                 <DialogContent className="bg-gray-900 text-white border-gray-800">

@@ -89,7 +89,7 @@ const TrainingManager = () => {
                   <div><Label>Duration</Label><Input required value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., 2 hours" data-testid="training-duration-input" /></div>
                 </div>
                 <div><Label>Schedule</Label><Input required value={form.schedule} onChange={(e) => setForm({ ...form, schedule: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Every Saturday 1800 UTC" data-testid="training-schedule-input" /></div>
-                <div className="border border-blue-700 p-4 rounded-lg bg-blue-900/10">
+                <div className="border border-tropic-gold/50 p-4 rounded-lg bg-tropic-gold/10">
                   <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Training Image (Optional)" description="Shown on training card. Recommended: 800x450px landscape." previewClass="w-full h-32 object-cover" />
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">

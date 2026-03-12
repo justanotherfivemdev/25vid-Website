@@ -110,7 +110,7 @@ const OperationsManager = () => {
   const getTypeColor = (type) => {
     const colors = {
       combat: 'bg-amber-700',
-      training: 'bg-blue-600',
+      training: 'bg-tropic-gold-dark',
       recon: 'bg-green-600',
       support: 'bg-yellow-600'
     };
@@ -170,7 +170,7 @@ const OperationsManager = () => {
                 </div>
                 
                 {/* Operation Logo/Badge Field */}
-                <div className="space-y-2 border border-blue-700 p-4 rounded-lg bg-blue-900/10">
+                <div className="space-y-2 border border-tropic-gold/50 p-4 rounded-lg bg-tropic-gold/10">
                   <ImageUpload
                     value={formData.logo_url}
                     onChange={(url) => setFormData({...formData, logo_url: url})}

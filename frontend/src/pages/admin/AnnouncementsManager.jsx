@@ -89,7 +89,7 @@ const AnnouncementsManager = () => {
   };
 
   const getPriorityColor = (p) => {
-    const c = { urgent: 'bg-amber-700', high: 'bg-orange-600', normal: 'bg-blue-600', low: 'bg-gray-600' };
+    const c = { urgent: 'bg-tropic-red', high: 'bg-orange-600', normal: 'bg-tropic-gold-dark', low: 'bg-gray-600' };
     return c[p] || 'bg-gray-600';
   };
 
@@ -162,7 +162,7 @@ const AnnouncementsManager = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2 border border-blue-700 p-4 rounded-lg bg-blue-900/10">
+                <div className="space-y-2 border border-tropic-gold/50 p-4 rounded-lg bg-tropic-gold/10">
                   <ImageUpload
                     value={formData.badge_url}
                     onChange={(url) => setFormData({ ...formData, badge_url: url })}
