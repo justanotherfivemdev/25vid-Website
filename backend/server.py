@@ -100,6 +100,10 @@ class User(BaseModel):
     discord_username: Optional[str] = None
     discord_avatar: Optional[str] = None
     discord_linked: bool = False
+    # Phase 6: Unit hierarchy
+    company: Optional[str] = None     # e.g., "Alpha", "Bravo", "HQ"
+    platoon: Optional[str] = None     # e.g., "1st Platoon", "2nd Platoon"
+    billet: Optional[str] = None      # e.g., "Company Commander", "Squad Leader", "Rifleman"
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -133,6 +137,10 @@ class UserResponse(BaseModel):
     discord_username: Optional[str] = None
     discord_avatar: Optional[str] = None
     discord_linked: bool = False
+    # Phase 6: Unit hierarchy
+    company: Optional[str] = None
+    platoon: Optional[str] = None
+    billet: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -259,6 +267,10 @@ class AdminProfileUpdate(BaseModel):
     favorite_role: Optional[str] = None
     discord_id: Optional[str] = None
     discord_username: Optional[str] = None
+    # Phase 6: Unit hierarchy fields
+    company: Optional[str] = None
+    platoon: Optional[str] = None
+    billet: Optional[str] = None
 
 class MissionHistoryEntry(BaseModel):
     operation_name: str
@@ -389,7 +401,8 @@ def user_to_response(u: dict) -> UserResponse:
         awards=u.get("awards", []), mission_history=u.get("mission_history", []),
         training_history=u.get("training_history", []),
         discord_id=u.get("discord_id"), discord_username=u.get("discord_username"),
-        discord_avatar=u.get("discord_avatar"), discord_linked=u.get("discord_linked", False)
+        discord_avatar=u.get("discord_avatar"), discord_linked=u.get("discord_linked", False),
+        company=u.get("company"), platoon=u.get("platoon"), billet=u.get("billet")
     )
 
 # ============================================================================
@@ -617,7 +630,7 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
             return redirect
 
     # 3. Create new user from Discord
-    email_for_user = discord_email or f"discord_{discord_id}@azimuth.local"
+    email_for_user = discord_email or f"discord_{discord_id}@25thid.local"
     new_user = User(
         email=email_for_user,
         username=discord_username or f"Operator_{discord_id[:8]}",
@@ -643,7 +656,7 @@ async def discord_unlink(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="No Discord account linked")
     # Safety: prevent unlink if Discord is the only auth method
     email = current_user.get("email", "")
-    if email.endswith("@azimuth.local"):
+    if email.endswith("@25thid.local"):
         raise HTTPException(
             status_code=400,
             detail="Cannot unlink Discord — it is your only login method. Set an email and password first."
@@ -667,7 +680,7 @@ async def set_password(data: SetPasswordRequest, response: Response, current_use
     """Allow Discord-only users to set a real email and password."""
     current_email = current_user.get("email", "")
     # Only allow if user currently has a placeholder email
-    if not current_email.endswith("@azimuth.local"):
+    if not current_email.endswith("@25thid.local"):
         raise HTTPException(status_code=400, detail="You already have an email and password set.")
     # Check if new email is taken by another user
     existing = await db.users.find_one({"email": data.email, "id": {"$ne": current_user["id"]}}, {"_id": 0})
@@ -1168,9 +1181,78 @@ async def get_roster(current_user: dict = Depends(get_current_user)):
             "id": u["id"], "username": u["username"], "role": u.get("role", "member"),
             "rank": u.get("rank"), "specialization": u.get("specialization"),
             "status": u.get("status", "recruit"), "squad": u.get("squad"),
-            "avatar_url": u.get("avatar_url"), "join_date": jd
+            "avatar_url": u.get("avatar_url"), "join_date": jd,
+            "company": u.get("company"), "platoon": u.get("platoon"), "billet": u.get("billet")
         })
     return roster
+
+@api_router.get("/roster/hierarchy")
+async def get_roster_hierarchy(current_user: dict = Depends(get_current_user)):
+    """Get roster organized by unit hierarchy (Company > Platoon > Squad)."""
+    users = await db.users.find(
+        {"is_active": {"$ne": False}},
+        {"_id": 0, "password_hash": 0, "email": 0}
+    ).to_list(1000)
+    
+    # Build hierarchy structure
+    hierarchy = {
+        "command_staff": [],  # Users with status=command or billet containing "Commander"/"XO"
+        "companies": {},      # Grouped by company
+        "unassigned": []      # Users without company assignment
+    }
+    
+    for u in users:
+        member_data = {
+            "id": u["id"], "username": u["username"], "role": u.get("role", "member"),
+            "rank": u.get("rank"), "specialization": u.get("specialization"),
+            "status": u.get("status", "recruit"), "squad": u.get("squad"),
+            "avatar_url": u.get("avatar_url"),
+            "company": u.get("company"), "platoon": u.get("platoon"), "billet": u.get("billet")
+        }
+        
+        billet = (u.get("billet") or "").lower()
+        status = u.get("status", "recruit")
+        company = u.get("company")
+        platoon = u.get("platoon")
+        squad = u.get("squad")
+        
+        # Command staff: status=command or billet is CO/XO level
+        if status == "command" or any(x in billet for x in ["commander", "commanding officer", "executive officer", "xo", "sergeant major", "first sergeant"]):
+            hierarchy["command_staff"].append(member_data)
+        elif company:
+            # Initialize company if needed
+            if company not in hierarchy["companies"]:
+                hierarchy["companies"][company] = {"platoons": {}, "unassigned": []}
+            
+            if platoon:
+                # Initialize platoon if needed
+                if platoon not in hierarchy["companies"][company]["platoons"]:
+                    hierarchy["companies"][company]["platoons"][platoon] = {"squads": {}, "unassigned": []}
+                
+                if squad:
+                    # Initialize squad if needed
+                    if squad not in hierarchy["companies"][company]["platoons"][platoon]["squads"]:
+                        hierarchy["companies"][company]["platoons"][platoon]["squads"][squad] = []
+                    hierarchy["companies"][company]["platoons"][platoon]["squads"][squad].append(member_data)
+                else:
+                    hierarchy["companies"][company]["platoons"][platoon]["unassigned"].append(member_data)
+            else:
+                hierarchy["companies"][company]["unassigned"].append(member_data)
+        else:
+            hierarchy["unassigned"].append(member_data)
+    
+    # Sort command staff by rank/billet importance
+    def sort_key(m):
+        billet = (m.get("billet") or "").lower()
+        if "commander" in billet or "commanding" in billet: return 0
+        if "xo" in billet or "executive" in billet: return 1
+        if "sergeant major" in billet: return 2
+        if "first sergeant" in billet: return 3
+        return 10
+    
+    hierarchy["command_staff"].sort(key=sort_key)
+    
+    return hierarchy
 
 @api_router.get("/roster/{user_id}")
 async def get_member_profile(user_id: str, current_user: dict = Depends(get_current_user)):
@@ -1393,6 +1475,126 @@ async def delete_history_entry(entry_id: str, current_user: dict = Depends(get_c
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="History entry not found")
     return {"message": "History entry deleted successfully"}
+
+# ============================================================================
+# UNIT TAGS MANAGEMENT (Admin configurable options)
+# ============================================================================
+
+@api_router.get("/unit-tags")
+async def get_unit_tags(current_user: dict = Depends(get_current_user)):
+    """
+    Get all available unit tags (ranks, companies, platoons, squads, billets, specializations).
+    Combines predefined defaults with admin-added custom tags.
+    """
+    # Get existing tags from database
+    tags_doc = await db.unit_tags.find_one({"id": "unit_tags"}, {"_id": 0})
+    
+    # Defaults that are always available
+    defaults = {
+        "ranks": ["Private", "Private First Class", "Specialist", "Corporal", "Sergeant", "Staff Sergeant", "Sergeant First Class", "Master Sergeant", "First Sergeant", "Sergeant Major", "Second Lieutenant", "First Lieutenant", "Captain", "Major", "Lieutenant Colonel", "Colonel"],
+        "companies": ["HQ", "Alpha", "Bravo", "Charlie", "Delta"],
+        "platoons": ["1st Platoon", "2nd Platoon", "3rd Platoon", "Weapons Platoon", "HQ Platoon"],
+        "squads": ["1st Squad", "2nd Squad", "3rd Squad", "Weapons Squad"],
+        "billets": ["Commanding Officer", "Executive Officer", "First Sergeant", "Platoon Leader", "Platoon Sergeant", "Squad Leader", "Team Leader", "Rifleman", "Automatic Rifleman", "Grenadier", "Designated Marksman", "Combat Medic", "RTO", "Forward Observer"],
+        "specializations": ["Infantry", "Reconnaissance", "Armor", "Artillery", "Engineering", "Medical", "Communications", "Logistics", "Aviation"],
+        "statuses": ["recruit", "active", "reserve", "staff", "command", "inactive"]
+    }
+    
+    if tags_doc:
+        # Merge custom tags with defaults (preserving custom additions)
+        for key in defaults:
+            if key in tags_doc:
+                # Combine defaults with custom, remove duplicates while preserving order
+                combined = defaults[key] + [t for t in tags_doc[key] if t not in defaults[key]]
+                defaults[key] = combined
+    
+    return defaults
+
+@api_router.put("/admin/unit-tags")
+async def update_unit_tags(tags: dict, current_user: dict = Depends(get_current_admin)):
+    """
+    Add custom tags to the unit configuration.
+    These extend (not replace) the default options.
+    """
+    tags["id"] = "unit_tags"
+    await db.unit_tags.update_one(
+        {"id": "unit_tags"},
+        {"$set": tags},
+        upsert=True
+    )
+    return {"message": "Unit tags updated successfully"}
+
+# ============================================================================
+# OPERATION RSVP DETAILS (Enhanced roster view)
+# ============================================================================
+
+@api_router.get("/operations/{operation_id}/roster")
+async def get_operation_roster(operation_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Get detailed RSVP roster for an operation, including member details (rank, specialization, etc.)
+    """
+    operation = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+    if not operation:
+        raise HTTPException(status_code=404, detail="Operation not found")
+    
+    rsvps = operation.get("rsvps", [])
+    user_ids = [r["user_id"] for r in rsvps]
+    
+    # Fetch full member details for all RSVPed users
+    users = await db.users.find(
+        {"id": {"$in": user_ids}},
+        {"_id": 0, "password_hash": 0, "email": 0}
+    ).to_list(len(user_ids))
+    
+    user_map = {u["id"]: u for u in users}
+    
+    # Build enriched RSVP list
+    enriched_rsvps = {
+        "attending": [],
+        "tentative": [],
+        "waitlisted": []
+    }
+    
+    for r in rsvps:
+        user_data = user_map.get(r["user_id"], {})
+        enriched = {
+            "user_id": r["user_id"],
+            "username": r.get("username", user_data.get("username", "Unknown")),
+            "status": r["status"],
+            "role_notes": r.get("role_notes", ""),
+            "rsvp_time": r.get("rsvp_time", ""),
+            # Member details
+            "rank": user_data.get("rank"),
+            "specialization": user_data.get("specialization"),
+            "squad": user_data.get("squad"),
+            "company": user_data.get("company"),
+            "platoon": user_data.get("platoon"),
+            "billet": user_data.get("billet"),
+            "avatar_url": user_data.get("avatar_url"),
+            "member_status": user_data.get("status", "recruit")
+        }
+        
+        if r["status"] == "attending":
+            enriched_rsvps["attending"].append(enriched)
+        elif r["status"] == "tentative":
+            enriched_rsvps["tentative"].append(enriched)
+        elif r["status"] == "waitlisted":
+            enriched_rsvps["waitlisted"].append(enriched)
+    
+    return {
+        "operation_id": operation_id,
+        "title": operation.get("title", ""),
+        "date": operation.get("date", ""),
+        "time": operation.get("time", ""),
+        "max_participants": operation.get("max_participants"),
+        "rsvps": enriched_rsvps,
+        "counts": {
+            "attending": len(enriched_rsvps["attending"]),
+            "tentative": len(enriched_rsvps["tentative"]),
+            "waitlisted": len(enriched_rsvps["waitlisted"]),
+            "total": len(rsvps)
+        }
+    }
 
 # ============================================================================
 # MISC ENDPOINTS

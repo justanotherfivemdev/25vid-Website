@@ -245,7 +245,7 @@ const EditProfile = () => {
           )}
 
           {/* Set Password — for Discord-only users */}
-          {profile.email?.endsWith('@azimuth.local') && (
+          {profile.email?.endsWith('@25thid.local') && (
             <Card className="bg-gray-900/80 border-yellow-700/40" data-testid="set-password-section">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg tracking-wider flex items-center gap-2">

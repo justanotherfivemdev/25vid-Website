@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield } from 'lucide-react';
+import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield, Building2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -24,7 +24,8 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/gallery', icon: Image, label: 'Gallery' },
     { path: '/admin/history', icon: BookOpen, label: 'Unit History' },
     { path: '/admin/training', icon: FileText, label: 'Training' },
-    { path: '/admin/users', icon: Users, label: 'Members' }
+    { path: '/admin/users', icon: Users, label: 'Members' },
+    { path: '/admin/unit-config', icon: Building2, label: 'Unit Config' }
   ];
   
   return (

@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Save, Plus, Trash2, CheckCircle, AlertCircle, ArrowLeft, Target, Award, Calendar, Link2 } from 'lucide-react';
+import { Save, Plus, Trash2, CheckCircle, AlertCircle, ArrowLeft, Target, Award, Calendar, Link2, Building2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ImageUpload from '@/components/admin/ImageUpload';
@@ -17,7 +17,6 @@ import ImageUpload from '@/components/admin/ImageUpload';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
-const STATUS_OPTS = ['recruit', 'active', 'reserve', 'staff', 'command', 'inactive'];
 
 const AdminMemberDetail = () => {
   const { id } = useParams();
@@ -32,8 +31,12 @@ const AdminMemberDetail = () => {
   const [missionDialogOpen, setMissionDialogOpen] = useState(false);
   const [trainingDialogOpen, setTrainingDialogOpen] = useState(false);
   const [awardDialogOpen, setAwardDialogOpen] = useState(false);
+  const [unitTags, setUnitTags] = useState(null);
 
-  useEffect(() => { fetchMember(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { 
+    fetchMember(); 
+    fetchUnitTags();
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchMember = async () => {
     try {
@@ -41,6 +44,13 @@ const AdminMemberDetail = () => {
       setMember(res.data);
     } catch (e) { navigate('/admin/users'); }
     finally { setLoading(false); }
+  };
+
+  const fetchUnitTags = async () => {
+    try {
+      const res = await axios.get(`${API}/unit-tags`);
+      setUnitTags(res.data);
+    } catch (e) { console.error('Failed to load unit tags'); }
   };
 
   const handleSaveProfile = async () => {
@@ -53,7 +63,10 @@ const AdminMemberDetail = () => {
         squad: member.squad, avatar_url: member.avatar_url, bio: member.bio,
         timezone: member.timezone, favorite_role: member.favorite_role,
         discord_id: member.discord_id || undefined,
-        discord_username: member.discord_username || undefined
+        discord_username: member.discord_username || undefined,
+        company: member.company || undefined,
+        platoon: member.platoon || undefined,
+        billet: member.billet || undefined
       });
       setMessage({ type: 'success', text: 'Profile saved.' });
     } catch (e) {
@@ -109,6 +122,41 @@ const AdminMemberDetail = () => {
     await fetchMember();
   };
 
+  // Helper to render select with option to type custom value
+  const renderTagSelect = (field, label, options, placeholder) => {
+    const currentValue = member?.[field] || '';
+    const isCustom = currentValue && options && !options.includes(currentValue);
+    
+    return (
+      <div>
+        <Label>{label}</Label>
+        <div className="flex gap-2">
+          <Select 
+            value={isCustom ? '__custom__' : (currentValue || '__none__')} 
+            onValueChange={v => {
+              if (v === '__custom__') return;
+              if (v === '__none__') setMember({ ...member, [field]: '' });
+              else setMember({ ...member, [field]: v });
+            }}
+          >
+            <SelectTrigger className="bg-black border-gray-700 flex-1"><SelectValue placeholder={placeholder} /></SelectTrigger>
+            <SelectContent className="bg-gray-900 border-gray-700 max-h-60">
+              <SelectItem value="__none__">— None —</SelectItem>
+              {options?.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              {isCustom && <SelectItem value="__custom__">{currentValue} (custom)</SelectItem>}
+            </SelectContent>
+          </Select>
+          <Input 
+            value={currentValue} 
+            onChange={e => setMember({ ...member, [field]: e.target.value })} 
+            className="bg-black border-gray-700 w-40" 
+            placeholder="Or type custom..."
+          />
+        </div>
+      </div>
+    );
+  };
+
   if (loading) return <AdminLayout><div className="text-center py-12">Loading member...</div></AdminLayout>;
   if (!member) return <AdminLayout><div className="text-center py-12">Member not found</div></AdminLayout>;
 
@@ -143,21 +191,38 @@ const AdminMemberDetail = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Rank</Label><Input value={member.rank || ''} onChange={e => setMember({ ...member, rank: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Sergeant" /></div>
-              <div><Label>Specialization / MOS</Label><Input value={member.specialization || ''} onChange={e => setMember({ ...member, specialization: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Infantry, Recon" /></div>
+              {renderTagSelect('rank', 'Rank', unitTags?.ranks, 'Select rank...')}
+              {renderTagSelect('specialization', 'Specialization / MOS', unitTags?.specializations, 'Select spec...')}
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div><Label>Status</Label>
                 <Select value={member.status || 'recruit'} onValueChange={v => setMember({ ...member, status: v })}>
                   <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">{STATUS_OPTS.map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
+                  <SelectContent className="bg-gray-900 border-gray-700">{(unitTags?.statuses || ['recruit', 'active', 'reserve', 'staff', 'command', 'inactive']).map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Squad / Team</Label><Input value={member.squad || ''} onChange={e => setMember({ ...member, squad: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Alpha, Bravo" /></div>
+              {renderTagSelect('squad', 'Squad / Team', unitTags?.squads, 'Select squad...')}
               <div><Label>Timezone</Label><Input value={member.timezone || ''} onChange={e => setMember({ ...member, timezone: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., EST" /></div>
             </div>
             <div><Label>Preferred Role / Loadout</Label><Input value={member.favorite_role || ''} onChange={e => setMember({ ...member, favorite_role: e.target.value })} className="bg-black border-gray-700" /></div>
             <div><Label>Bio</Label><Textarea value={member.bio || ''} onChange={e => setMember({ ...member, bio: e.target.value })} rows={3} className="bg-black border-gray-700" /></div>
+          </CardContent>
+        </Card>
+
+        {/* Unit Assignment (Hierarchy) */}
+        <Card className="bg-gray-900 border-gray-800" data-testid="admin-unit-assignment">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg tracking-wider flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-500" /> UNIT ASSIGNMENT
+            </CardTitle>
+            <p className="text-xs text-gray-500 mt-1">Assign this member to a position in the unit hierarchy. Used for the organizational roster view.</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              {renderTagSelect('company', 'Company', unitTags?.companies, 'Select company...')}
+              {renderTagSelect('platoon', 'Platoon', unitTags?.platoons, 'Select platoon...')}
+              {renderTagSelect('billet', 'Billet / Position', unitTags?.billets, 'Select billet...')}
+            </div>
           </CardContent>
         </Card>
 

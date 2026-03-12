@@ -26,6 +26,7 @@ import MemberProfile from '@/pages/member/MemberProfile';
 import EditProfile from '@/pages/member/EditProfile';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
+import UnitTagsManager from '@/pages/admin/UnitTagsManager';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -765,6 +766,7 @@ function App() {
           <Route path="/admin/gallery" element={<ProtectedRoute adminOnly><GalleryManager /></ProtectedRoute>} />
           <Route path="/admin/history" element={<ProtectedRoute adminOnly><HistoryManager /></ProtectedRoute>} />
           <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
+          <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
           <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
           <Route path="/hub/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />
