@@ -1627,6 +1627,12 @@ class IntelBriefingUpdate(BaseModel):
     classification: Optional[str] = None
     tags: Optional[List[str]] = None
 
+def _fix_dates(b):
+    if isinstance(b.get("created_at"), str):
+        b["created_at"] = datetime.fromisoformat(b["created_at"])
+    if b.get("updated_at") and isinstance(b["updated_at"], str):
+        b["updated_at"] = datetime.fromisoformat(b["updated_at"])
+
 @api_router.get("/intel")
 async def get_intel_briefings(
     category: Optional[str] = None,
@@ -1649,11 +1655,20 @@ async def get_intel_briefings(
             {"content": {"$regex": safe, "$options": "i"}}
         ]
     briefings = await db.intel_briefings.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+    # Batch-load acknowledgment counts + user status
+    b_ids = [b["id"] for b in briefings]
+    ack_pipeline = [
+        {"$match": {"briefing_id": {"$in": b_ids}}},
+        {"$group": {"_id": "$briefing_id", "count": {"$sum": 1}}}
+    ]
+    ack_counts = {r["_id"]: r["count"] for r in await db.intel_acknowledgments.aggregate(ack_pipeline).to_list(500)}
+    user_acks = set()
+    async for a in db.intel_acknowledgments.find({"briefing_id": {"$in": b_ids}, "user_id": current_user["id"]}, {"briefing_id": 1, "_id": 0}):
+        user_acks.add(a["briefing_id"])
     for b in briefings:
-        if isinstance(b.get("created_at"), str):
-            b["created_at"] = datetime.fromisoformat(b["created_at"])
-        if b.get("updated_at") and isinstance(b["updated_at"], str):
-            b["updated_at"] = datetime.fromisoformat(b["updated_at"])
+        _fix_dates(b)
+        b["ack_count"] = ack_counts.get(b["id"], 0)
+        b["user_acknowledged"] = b["id"] in user_acks
     return briefings
 
 @api_router.get("/intel/tags")
@@ -1667,11 +1682,46 @@ async def get_intel_briefing(briefing_id: str, current_user: dict = Depends(get_
     briefing = await db.intel_briefings.find_one({"id": briefing_id}, {"_id": 0})
     if not briefing:
         raise HTTPException(status_code=404, detail="Briefing not found")
-    if isinstance(briefing.get("created_at"), str):
-        briefing["created_at"] = datetime.fromisoformat(briefing["created_at"])
-    if briefing.get("updated_at") and isinstance(briefing["updated_at"], str):
-        briefing["updated_at"] = datetime.fromisoformat(briefing["updated_at"])
+    _fix_dates(briefing)
+    ack_count = await db.intel_acknowledgments.count_documents({"briefing_id": briefing_id})
+    user_ack = await db.intel_acknowledgments.find_one({"briefing_id": briefing_id, "user_id": current_user["id"]})
+    briefing["ack_count"] = ack_count
+    briefing["user_acknowledged"] = user_ack is not None
     return briefing
+
+@api_router.post("/intel/{briefing_id}/acknowledge")
+async def acknowledge_briefing(briefing_id: str, current_user: dict = Depends(get_current_user)):
+    exists = await db.intel_briefings.find_one({"id": briefing_id})
+    if not exists:
+        raise HTTPException(status_code=404, detail="Briefing not found")
+    already = await db.intel_acknowledgments.find_one({"briefing_id": briefing_id, "user_id": current_user["id"]})
+    if already:
+        return {"message": "Already acknowledged", "ack_count": await db.intel_acknowledgments.count_documents({"briefing_id": briefing_id})}
+    doc = {
+        "briefing_id": briefing_id,
+        "user_id": current_user["id"],
+        "username": current_user["username"],
+        "rank": current_user.get("rank", ""),
+        "company": current_user.get("company", ""),
+        "acknowledged_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.intel_acknowledgments.insert_one(doc)
+    count = await db.intel_acknowledgments.count_documents({"briefing_id": briefing_id})
+    return {"message": "Acknowledged", "ack_count": count}
+
+@api_router.delete("/intel/{briefing_id}/acknowledge")
+async def unacknowledge_briefing(briefing_id: str, current_user: dict = Depends(get_current_user)):
+    await db.intel_acknowledgments.delete_one({"briefing_id": briefing_id, "user_id": current_user["id"]})
+    count = await db.intel_acknowledgments.count_documents({"briefing_id": briefing_id})
+    return {"message": "Unacknowledged", "ack_count": count}
+
+@api_router.get("/admin/intel/{briefing_id}/acknowledgments")
+async def get_briefing_acknowledgments(briefing_id: str, current_user: dict = Depends(get_current_admin)):
+    acks = await db.intel_acknowledgments.find({"briefing_id": briefing_id}, {"_id": 0}).sort("acknowledged_at", -1).to_list(500)
+    for a in acks:
+        if isinstance(a.get("acknowledged_at"), str):
+            a["acknowledged_at"] = datetime.fromisoformat(a["acknowledged_at"])
+    return acks
 
 @api_router.post("/admin/intel")
 async def create_intel_briefing(data: IntelBriefingCreate, current_user: dict = Depends(get_current_admin)):
@@ -1706,7 +1756,119 @@ async def delete_intel_briefing(briefing_id: str, current_user: dict = Depends(g
     result = await db.intel_briefings.delete_one({"id": briefing_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Briefing not found")
+    # Also remove acknowledgments
+    await db.intel_acknowledgments.delete_many({"briefing_id": briefing_id})
     return {"message": "Briefing deleted"}
+
+# ============================================================================
+# CAMPAIGN / THEATER MAP SYSTEM
+# ============================================================================
+
+class CampaignObjective(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str = ""
+    status: str = "pending"  # pending, in_progress, complete, failed
+    grid_ref: str = ""
+    assigned_to: str = ""
+    priority: str = "secondary"  # primary, secondary, tertiary
+    notes: str = ""
+
+class CampaignPhase(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str = ""
+    status: str = "planned"  # planned, active, complete
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+class CampaignCreate(BaseModel):
+    name: str
+    description: str = ""
+    theater: str = ""
+    status: str = "planning"  # planning, active, complete, archived
+    phases: List[dict] = []
+    objectives: List[dict] = []
+    situation: str = ""
+    commander_notes: str = ""
+
+class CampaignUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    theater: Optional[str] = None
+    status: Optional[str] = None
+    phases: Optional[List[dict]] = None
+    objectives: Optional[List[dict]] = None
+    situation: Optional[str] = None
+    commander_notes: Optional[str] = None
+
+@api_router.get("/campaigns")
+async def get_campaigns(current_user: dict = Depends(get_current_user)):
+    campaigns = await db.campaigns.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    for c in campaigns:
+        _fix_dates(c)
+    return campaigns
+
+@api_router.get("/campaigns/active")
+async def get_active_campaign(current_user: dict = Depends(get_current_user)):
+    campaign = await db.campaigns.find_one({"status": "active"}, {"_id": 0})
+    if not campaign:
+        return None
+    _fix_dates(campaign)
+    return campaign
+
+@api_router.get("/campaigns/{campaign_id}")
+async def get_campaign(campaign_id: str, current_user: dict = Depends(get_current_user)):
+    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    _fix_dates(campaign)
+    return campaign
+
+@api_router.post("/admin/campaigns")
+async def create_campaign(data: CampaignCreate, current_user: dict = Depends(get_current_admin)):
+    d = data.model_dump()
+    d["id"] = str(uuid.uuid4())
+    d["created_by"] = current_user["id"]
+    d["created_at"] = datetime.now(timezone.utc).isoformat()
+    d["updated_at"] = None
+    # Ensure every phase/objective has an id
+    for p in d.get("phases", []):
+        if not p.get("id"):
+            p["id"] = str(uuid.uuid4())
+    for o in d.get("objectives", []):
+        if not o.get("id"):
+            o["id"] = str(uuid.uuid4())
+    await db.campaigns.insert_one(d)
+    del d["_id"]
+    _fix_dates(d)
+    return d
+
+@api_router.put("/admin/campaigns/{campaign_id}")
+async def update_campaign(campaign_id: str, data: CampaignUpdate, current_user: dict = Depends(get_current_admin)):
+    existing = await db.campaigns.find_one({"id": campaign_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    updates = {k: v for k, v in data.model_dump().items() if v is not None}
+    # Ensure ids on phases/objectives
+    for p in updates.get("phases", []):
+        if not p.get("id"):
+            p["id"] = str(uuid.uuid4())
+    for o in updates.get("objectives", []):
+        if not o.get("id"):
+            o["id"] = str(uuid.uuid4())
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.campaigns.update_one({"id": campaign_id}, {"$set": updates})
+    updated = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    _fix_dates(updated)
+    return updated
+
+@api_router.delete("/admin/campaigns/{campaign_id}")
+async def delete_campaign(campaign_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.campaigns.delete_one({"id": campaign_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return {"message": "Campaign deleted"}
 
 # ============================================================================
 # RECRUITMENT PIPELINE

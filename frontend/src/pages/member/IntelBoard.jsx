@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Search, FileText, Shield, Home, LogOut, Tag, Clock, User, ChevronRight, X, Filter } from 'lucide-react';
+import { ArrowLeft, Search, FileText, Shield, Home, LogOut, Tag, Clock, User, ChevronRight, X, Filter, CheckCircle, Eye } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -39,6 +39,7 @@ const IntelBoard = () => {
   const [filterCat, setFilterCat] = useState('');
   const [filterTag, setFilterTag] = useState('');
   const [selected, setSelected] = useState(null);
+  const [acking, setAcking] = useState(false);
 
   useEffect(() => {
     fetchBriefings();
@@ -57,6 +58,23 @@ const IntelBoard = () => {
       setBriefings(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
+  };
+
+  const handleAcknowledge = async (briefingId, isAcked) => {
+    setAcking(true);
+    try {
+      if (isAcked) {
+        await axios.delete(`${API}/intel/${briefingId}/acknowledge`);
+      } else {
+        await axios.post(`${API}/intel/${briefingId}/acknowledge`);
+      }
+      // Update local state
+      setBriefings(prev => prev.map(b => b.id === briefingId ? { ...b, user_acknowledged: !isAcked, ack_count: b.ack_count + (isAcked ? -1 : 1) } : b));
+      if (selected?.id === briefingId) {
+        setSelected(prev => ({ ...prev, user_acknowledged: !isAcked, ack_count: prev.ack_count + (isAcked ? -1 : 1) }));
+      }
+    } catch (e) { console.error(e); }
+    finally { setAcking(false); }
   };
 
   const handleLogout = async () => { await logout(); navigate('/'); };
@@ -154,7 +172,7 @@ const IntelBoard = () => {
                 const cls = getCls(b.classification);
                 return (
                   <button key={b.id} onClick={() => setSelected(b)} className="w-full text-left group" data-testid={`briefing-${idx}`}>
-                    <Card className="bg-gray-900/80 border-gray-800 hover:border-amber-700/40 transition-all duration-300 overflow-hidden">
+                    <Card className={`bg-gray-900/80 border-gray-800 hover:border-amber-700/40 transition-all duration-300 overflow-hidden ${b.user_acknowledged ? 'border-l-2 border-l-green-600' : ''}`}>
                       <div className={`h-0.5 ${cat.color.split(' ')[0]}`}></div>
                       <CardContent className="p-5">
                         <div className="flex items-start gap-4">
@@ -162,12 +180,18 @@ const IntelBoard = () => {
                             <div className="flex items-center gap-2 flex-wrap mb-2">
                               <Badge className={`${cat.color} text-[10px] tracking-wider`}>{cat.short}</Badge>
                               <Badge variant="outline" className={`${cls.color} text-[10px] tracking-wider border`}>{cls.label}</Badge>
+                              {b.user_acknowledged && (
+                                <Badge variant="outline" className="border-green-700 text-green-500 text-[10px]">
+                                  <CheckCircle className="w-2.5 h-2.5 mr-1" />READ
+                                </Badge>
+                              )}
                             </div>
                             <h3 className="text-lg font-bold tracking-wide group-hover:text-tropic-gold transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{b.title}</h3>
                             <p className="text-sm text-gray-500 mt-1 line-clamp-2">{b.content}</p>
                             <div className="flex items-center gap-4 mt-3 text-xs text-gray-600">
                               <span className="flex items-center gap-1"><User className="w-3 h-3" />{b.author_name}</span>
                               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(b.created_at).toLocaleDateString()}</span>
+                              <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{b.ack_count || 0} read</span>
                               {(b.tags || []).length > 0 && (
                                 <span className="flex items-center gap-1 text-tropic-gold/60">
                                   <Tag className="w-3 h-3" />{b.tags.slice(0, 3).join(', ')}{b.tags.length > 3 && ` +${b.tags.length - 3}`}
@@ -217,6 +241,25 @@ const IntelBoard = () => {
                     ))}
                   </div>
                 )}
+                {/* Acknowledge Bar */}
+                <div className="mt-6 pt-4 border-t border-gray-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>{selected.ack_count || 0} personnel have acknowledged</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={acking}
+                    onClick={(e) => { e.stopPropagation(); handleAcknowledge(selected.id, selected.user_acknowledged); }}
+                    className={selected.user_acknowledged
+                      ? 'bg-green-800/40 border border-green-700 text-green-400 hover:bg-red-900/30 hover:text-red-400 hover:border-red-700'
+                      : 'bg-amber-700 hover:bg-amber-800 text-white'}
+                    data-testid="acknowledge-btn"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1.5" />
+                    {selected.user_acknowledged ? 'ACKNOWLEDGED' : 'ACKNOWLEDGE'}
+                  </Button>
+                </div>
               </div>
             </>
           )}

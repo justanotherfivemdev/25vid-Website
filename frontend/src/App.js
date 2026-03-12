@@ -29,8 +29,10 @@ import HistoryManager from '@/pages/admin/HistoryManager';
 import UnitTagsManager from '@/pages/admin/UnitTagsManager';
 import RecruitmentManager from '@/pages/admin/RecruitmentManager';
 import IntelManager from '@/pages/admin/IntelManager';
+import CampaignManager from '@/pages/admin/CampaignManager';
 import RecruitDashboard from '@/pages/RecruitDashboard';
 import IntelBoard from '@/pages/member/IntelBoard';
+import CampaignMap from '@/pages/member/CampaignMap';
 import JoinUs from '@/pages/JoinUs';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -812,12 +814,14 @@ function App() {
           <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
           <Route path="/admin/recruitment" element={<ProtectedRoute adminOnly><RecruitmentManager /></ProtectedRoute>} />
           <Route path="/admin/intel" element={<ProtectedRoute adminOnly><IntelManager /></ProtectedRoute>} />
+          <Route path="/admin/campaigns" element={<ProtectedRoute adminOnly><CampaignManager /></ProtectedRoute>} />
           <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
           <Route path="/hub/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />
           <Route path="/hub/discussions/:id" element={<ProtectedRoute><DiscussionThread /></ProtectedRoute>} />
           <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
           <Route path="/hub/intel" element={<ProtectedRoute><IntelBoard /></ProtectedRoute>} />
+          <Route path="/hub/campaign" element={<ProtectedRoute><CampaignMap /></ProtectedRoute>} />
           <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
           <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
         </Routes>

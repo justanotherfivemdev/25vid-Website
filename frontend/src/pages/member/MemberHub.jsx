@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -265,7 +265,7 @@ const MemberHub = () => {
           )}
 
           {/* Quick nav - 25th ID colors */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             <Link to="/hub/discussions" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-discussions">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Discussions</span>
             </Link>
@@ -278,8 +278,11 @@ const MemberHub = () => {
             <Link to="/hub/intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-intel">
               <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Intel Board</span>
             </Link>
+            <Link to="/hub/campaign" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-campaign">
+              <MapPin className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Campaign</span>
+            </Link>
             <Link to="/roster" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-roster">
-              <Users className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Roster</span>
+              <Users className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Roster</span>
             </Link>
           </div>
 
