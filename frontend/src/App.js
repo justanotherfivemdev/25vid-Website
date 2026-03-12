@@ -26,11 +26,11 @@ import MemberProfile from '@/pages/member/MemberProfile';
 import EditProfile from '@/pages/member/EditProfile';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
+import RecruitDashboard from '@/pages/RecruitDashboard';
 import RecruitmentManager from '@/pages/admin/RecruitmentManager';
 import IntelManager from '@/pages/admin/IntelManager';
 import CampaignManager from '@/pages/admin/CampaignManager';
 import UnitTagsManager from '@/pages/admin/UnitTagsManager';
-import RecruitDashboard from '@/pages/RecruitDashboard';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -797,10 +797,6 @@ function App() {
         <Route path="/admin/training" element={<ProtectedRoute adminOnly><TrainingManager /></ProtectedRoute>} />
         <Route path="/admin/gallery" element={<ProtectedRoute adminOnly><GalleryManager /></ProtectedRoute>} />
         <Route path="/admin/history" element={<ProtectedRoute adminOnly><HistoryManager /></ProtectedRoute>} />
-        <Route path="/admin/recruitment" element={<ProtectedRoute adminOnly><RecruitmentManager /></ProtectedRoute>} />
-        <Route path="/admin/intel" element={<ProtectedRoute adminOnly><IntelManager /></ProtectedRoute>} />
-        <Route path="/admin/campaigns" element={<ProtectedRoute adminOnly><CampaignManager /></ProtectedRoute>} />
-        <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
@@ -810,7 +806,42 @@ function App() {
         <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
-      </Routes>
+<Route
+  path="/admin/recruitment"
+  element={
+    <ProtectedRoute adminOnly>
+      <RecruitmentManager />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/intel"
+  element={
+    <ProtectedRoute adminOnly>
+      <IntelManager />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/campaigns"
+  element={
+    <ProtectedRoute adminOnly>
+      <CampaignManager />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/unit-config"
+  element={
+    <ProtectedRoute adminOnly>
+      <UnitTagsManager />
+    </ProtectedRoute>
+  }
+/>
+</Routes>
     </BrowserRouter>
   );
 }
