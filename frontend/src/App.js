@@ -27,6 +27,10 @@ import EditProfile from '@/pages/member/EditProfile';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
 import RecruitDashboard from '@/pages/RecruitDashboard';
+import RecruitmentManager from '@/pages/admin/RecruitmentManager';
+import IntelManager from '@/pages/admin/IntelManager';
+import CampaignManager from '@/pages/admin/CampaignManager';
+import UnitTagsManager from '@/pages/admin/UnitTagsManager';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -802,7 +806,42 @@ function App() {
         <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
-      </Routes>
+<Route
+  path="/admin/recruitment"
+  element={
+    <ProtectedRoute adminOnly>
+      <RecruitmentManager />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/intel"
+  element={
+    <ProtectedRoute adminOnly>
+      <IntelManager />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/campaigns"
+  element={
+    <ProtectedRoute adminOnly>
+      <CampaignManager />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/unit-config"
+  element={
+    <ProtectedRoute adminOnly>
+      <UnitTagsManager />
+    </ProtectedRoute>
+  }
+/>
+</Routes>
     </BrowserRouter>
   );
 }
