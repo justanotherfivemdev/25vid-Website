@@ -9,9 +9,30 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, AlertCircle, CheckCircle, Globe, Type, Image as ImageIcon, Layout, FileText, Hash } from 'lucide-react';
 import ImageUpload from '@/components/admin/ImageUpload';
+import { defaultSiteContent } from '@/config/siteContent';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+const deepMerge = (defaults, overrides) => {
+  if (!overrides) return defaults;
+  const result = { ...defaults };
+  for (const key of Object.keys(overrides)) {
+    if (
+      overrides[key] &&
+      typeof overrides[key] === 'object' &&
+      !Array.isArray(overrides[key]) &&
+      defaults[key] &&
+      typeof defaults[key] === 'object' &&
+      !Array.isArray(defaults[key])
+    ) {
+      result[key] = deepMerge(defaults[key], overrides[key]);
+    } else if (overrides[key] !== undefined && overrides[key] !== null && overrides[key] !== '') {
+      result[key] = overrides[key];
+    }
+  }
+  return result;
+};
 
 /* ─── tiny label component ─── */
 const FieldHint = ({ location, purpose, recommended }) => (
@@ -51,7 +72,7 @@ const SiteContentManager = () => {
   const fetchContent = async () => {
     try {
       const res = await axios.get(`${API}/admin/site-content`);
-      setContent(res.data || {});
+      setContent(deepMerge(defaultSiteContent, res.data || {}));
     } catch (e) {
       setMessage({ type: 'error', text: 'Failed to load site content' });
     } finally { setLoading(false); }
@@ -74,7 +95,7 @@ const SiteContentManager = () => {
     const keys = path.split('.');
     let v = content;
     for (const k of keys) { v = v?.[k]; }
-    return v || '';
+    return v ?? '';
   };
   const set = (path, value) => {
     const keys = path.split('.');
@@ -133,12 +154,14 @@ const SiteContentManager = () => {
             <div>
               <Label>Brand Name</Label>
               <FieldHint location="Top-left of nav bar on every page" purpose="Your unit's display name" />
-              <Input value={get('nav.brandName')} onChange={e => set('nav.brandName', e.target.value)} className="bg-black border-gray-700 mt-2" placeholder="25TH INFANTRY DIVISION" data-testid="nav-brand-input" />
+              <Input value={get('nav.brandName')} onChange={e => set('nav.brandName', e.target.value)} className="bg-black border-gray-700 mt-2" data-testid="nav-brand-input" />
+              <FieldHint recommended="25TH INFANTRY DIVISION" />
             </div>
             <div>
               <Label>CTA Button Text</Label>
               <FieldHint location="Top-right of nav bar + hero section" purpose="Primary call-to-action button" />
-              <Input value={get('nav.buttonText')} onChange={e => set('nav.buttonText', e.target.value)} className="bg-black border-gray-700 mt-2" placeholder="JOIN NOW" data-testid="nav-btn-input" />
+              <Input value={get('nav.buttonText')} onChange={e => set('nav.buttonText', e.target.value)} className="bg-black border-gray-700 mt-2" data-testid="nav-btn-input" />
+              <FieldHint recommended="ENLIST NOW" />
             </div>
           </div>
         </SectionCard>
@@ -164,6 +187,18 @@ const SiteContentManager = () => {
 
         {/* 3 — ABOUT SECTION */}
         <SectionCard number="03" icon={FileText} title="About Section" subtitle="Unit background, emblem, and founder quote — below the hero">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Section Heading</Label>
+              <FieldHint location="About section title" purpose="Main label shown above the about copy" />
+              <Input value={get('sectionHeadings.about.heading')} onChange={e => set('sectionHeadings.about.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            </div>
+            <div>
+              <Label>Section Subtext</Label>
+              <FieldHint location="Below the About heading" purpose="Optional supporting line" />
+              <Input value={get('sectionHeadings.about.subtext')} onChange={e => set('sectionHeadings.about.subtext', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            </div>
+          </div>
           <ImageUpload value={get('about.logoImage')} onChange={url => set('about.logoImage', url)} label="Unit Emblem / Patch"
             description="Appears on: Left side of About section. Purpose: Unit identity badge. Recommended: 300x300px square PNG with transparency."
             previewClass="w-28 h-28 object-contain" />
@@ -190,13 +225,26 @@ const SiteContentManager = () => {
             <div className="mt-4">
               <Label>Quote Author</Label>
               <FieldHint location="Below the quote text" purpose="Attribution line" />
-              <Input value={get('about.quote.author')} onChange={e => set('about.quote.author', e.target.value)} className="bg-black border-gray-700 mt-2" placeholder="- B. Bishop (CEO and Founder)" />
+              <Input value={get('about.quote.author')} onChange={e => set('about.quote.author', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <FieldHint recommended="25th Infantry Division Motto" />
             </div>
           </div>
         </SectionCard>
 
         {/* 4 — OPERATIONAL SUPERIORITY */}
         <SectionCard number="04" icon={ImageIcon} title="Operational Superiority" subtitle="3-column tactical image showcase with description text">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Section Heading</Label>
+              <FieldHint location="Large left-side heading" purpose="Main section title shown on the homepage" />
+              <Input value={get('sectionHeadings.operationalSuperiority.heading')} onChange={e => set('sectionHeadings.operationalSuperiority.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            </div>
+            <div>
+              <Label>Section Subtext</Label>
+              <FieldHint location="Above the description text" purpose="Optional supporting label" />
+              <Input value={get('sectionHeadings.operationalSuperiority.subtext')} onChange={e => set('sectionHeadings.operationalSuperiority.subtext', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            </div>
+          </div>
           <div>
             <Label>Section Description</Label>
             <FieldHint location="Right side of heading" purpose="Describes the unit's operational capability" />
@@ -213,8 +261,25 @@ const SiteContentManager = () => {
 
         {/* 5 — LETHALITY ON DEMAND */}
         <SectionCard number="05" icon={Layout} title="Lethality on Demand" subtitle="Logistics and training showcase sections">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Section Heading</Label>
+              <FieldHint location="Top of the Lethality section" purpose="Main section title shown on the homepage" />
+              <Input value={get('sectionHeadings.lethality.heading')} onChange={e => set('sectionHeadings.lethality.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            </div>
+            <div>
+              <Label>Section Subtext</Label>
+              <FieldHint location="Below the Lethality heading" purpose="Optional supporting line" />
+              <Input value={get('sectionHeadings.lethality.subtext')} onChange={e => set('sectionHeadings.lethality.subtext', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            </div>
+          </div>
           <div className="border border-gray-800 rounded-lg p-4 space-y-4">
             <h4 className="text-sm font-bold text-gray-400 tracking-wider">LOGISTICS BLOCK</h4>
+            <div>
+              <Label>Logistics Heading</Label>
+              <FieldHint location="Logistics block title" purpose="Visible heading above the logistics description" />
+              <Input value={get('lethality.logistics.heading')} onChange={e => set('lethality.logistics.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            </div>
             <div>
               <Label>Logistics Description</Label>
               <FieldHint location="Left of logistics image" purpose="Logistical support overview" />
@@ -225,6 +290,11 @@ const SiteContentManager = () => {
           </div>
           <div className="border border-gray-800 rounded-lg p-4 space-y-4">
             <h4 className="text-sm font-bold text-gray-400 tracking-wider">TRAINING BLOCK</h4>
+            <div>
+              <Label>Training Heading</Label>
+              <FieldHint location="Training block title" purpose="Visible heading above the training description" />
+              <Input value={get('lethality.training.heading')} onChange={e => set('lethality.training.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            </div>
             <div>
               <Label>Training Description</Label>
               <FieldHint location="Right of training image" purpose="Training program overview" />
@@ -238,6 +308,8 @@ const SiteContentManager = () => {
         {/* 6 — SECTION HEADINGS */}
         <SectionCard number="06" icon={Type} title="Section Headings & Subtexts" subtitle="Control the title and description text above each homepage section">
           {[
+            { key: 'about', label: 'About', defaultH: 'ABOUT', defaultS: '' },
+            { key: 'history', label: 'Unit History', defaultH: 'UNIT HISTORY', defaultS: 'Over 80 years of service, sacrifice, and the Tropic Lightning legacy' },
             { key: 'operations', label: 'Upcoming Operations', defaultH: 'UPCOMING OPERATIONS', defaultS: 'Join the next tactical mission' },
             { key: 'intel', label: 'Latest Intel / Announcements', defaultH: 'LATEST INTEL', defaultS: 'Stay informed with our latest updates' },
             { key: 'gallery', label: 'Mission Gallery', defaultH: 'MISSION GALLERY', defaultS: 'Moments from the field' },
@@ -248,12 +320,14 @@ const SiteContentManager = () => {
             <div key={key} className="grid grid-cols-[1fr,1fr] gap-4 pb-4 border-b border-gray-800/50 last:border-0">
               <div>
                 <Label>{label} — Heading</Label>
-                <Input value={get(`sectionHeadings.${key}.heading`) || ''} onChange={e => set(`sectionHeadings.${key}.heading`, e.target.value)} className="bg-black border-gray-700 mt-1" placeholder={defaultH} />
+                <Input value={get(`sectionHeadings.${key}.heading`) || ''} onChange={e => set(`sectionHeadings.${key}.heading`, e.target.value)} className="bg-black border-gray-700 mt-1" />
+                <FieldHint recommended={defaultH} />
               </div>
               {defaultS !== '' ? (
                 <div>
                   <Label>{label} — Subtext</Label>
-                  <Input value={get(`sectionHeadings.${key}.subtext`) || ''} onChange={e => set(`sectionHeadings.${key}.subtext`, e.target.value)} className="bg-black border-gray-700 mt-1" placeholder={defaultS} />
+                  <Input value={get(`sectionHeadings.${key}.subtext`) || ''} onChange={e => set(`sectionHeadings.${key}.subtext`, e.target.value)} className="bg-black border-gray-700 mt-1" />
+                  <FieldHint recommended={defaultS} />
                 </div>
               ) : <div></div>}
             </div>

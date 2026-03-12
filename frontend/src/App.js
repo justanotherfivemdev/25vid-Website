@@ -78,6 +78,11 @@ const deepMerge = (defaults, overrides) => {
   return result;
 };
 
+const textOrFallback = (value, fallback) => {
+  if (typeof value !== 'string') return fallback;
+  return value.trim() ? value : fallback;
+};
+
 // ============================================================================
 // DYNAMIC CONTENT HOOK
 // ============================================================================
@@ -192,12 +197,17 @@ const HeroSection = ({ content }) => (
 // ============================================================================
 const AboutSection = ({ content }) => {
   const quote = typeof content.about?.quote === 'object' ? content.about.quote : { text: content.about?.quote || '', author: '', backgroundImage: '' };
+  const aboutHeading = textOrFallback(content.sectionHeadings?.about?.heading, 'ABOUT');
+  const aboutSubtext = textOrFallback(content.sectionHeadings?.about?.subtext, '');
   return (
     <section id="about" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="about-section">
       <div className="container mx-auto max-w-6xl">
         <div className="grid md:grid-cols-[280px,1fr] gap-16 items-start">
           <div className="space-y-8">
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold section-underline tracking-wider" data-testid="about-heading">ABOUT</h2>
+            <div className="space-y-3">
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold section-underline tracking-wider" data-testid="about-heading">{aboutHeading}</h2>
+              {aboutSubtext && <p className="text-sm md:text-base text-gray-500 tracking-wide" data-testid="about-subtext">{aboutSubtext}</p>}
+            </div>
             {content.about?.logoImage && (
               <img src={resolveImg(content.about.logoImage)} alt="Unit Emblem" className="w-48 h-48 object-contain opacity-80 mt-6" data-testid="about-logo" />
             )}
@@ -227,9 +237,11 @@ const AboutSection = ({ content }) => {
 // ============================================================================
 // UNIT HISTORY TIMELINE SECTION
 // ============================================================================
-const UnitHistorySection = () => {
+const UnitHistorySection = ({ content }) => {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const historyHeading = textOrFallback(content.sectionHeadings?.history?.heading, 'UNIT HISTORY');
+  const historySubtext = textOrFallback(content.sectionHeadings?.history?.subtext, 'Over 80 years of service, sacrifice, and the Tropic Lightning legacy');
 
   useEffect(() => {
     axios.get(`${API}/unit-history`).then(r => setEntries(r.data)).catch(() => {}).finally(() => setLoading(false));
@@ -248,8 +260,8 @@ const UnitHistorySection = () => {
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-5xl">
         <div className="section-label mb-16">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold" data-testid="unit-history-heading">UNIT HISTORY</h2>
-          <p className="text-base md:text-lg">Over 80 years of service, sacrifice, and the Tropic Lightning legacy</p>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold" data-testid="unit-history-heading">{historyHeading}</h2>
+          <p className="text-base md:text-lg">{historySubtext}</p>
         </div>
 
         {/* Timeline */}
@@ -303,17 +315,22 @@ const UnitHistorySection = () => {
 // ============================================================================
 const OperationalSuperioritySection = ({ content }) => {
   const sh = content.sectionHeadings?.operationalSuperiority || {};
+  const heading = textOrFallback(sh.heading, 'OPERATIONAL SUPERIORITY');
+  const subtext = textOrFallback(sh.subtext, '');
   return (
     <section className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #060606 50%, #000 100%)' }} data-testid="operational-superiority-section">
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-7xl">
         <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
           <h2 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-tropic-gold-light to-tropic-gold" data-testid="ops-superiority-heading">
-            {(sh.heading || 'OPERATIONAL SUPERIORITY').split(' ').map((w, i) => <span key={i} className="block">{w}</span>)}
+            {heading.split(' ').map((w, i) => <span key={i} className="block">{w}</span>)}
           </h2>
           <div className="relative">
             <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-tropic-gold via-tropic-gold/40 to-transparent"></div>
-            <p className="text-lg leading-relaxed text-gray-300 pl-8" data-testid="ops-superiority-description">{content.operationalSuperiority?.description}</p>
+            <div className="pl-8 space-y-3">
+              {subtext && <p className="text-sm uppercase tracking-[0.2em] text-tropic-gold/70" data-testid="ops-superiority-subtext">{subtext}</p>}
+              <p className="text-lg leading-relaxed text-gray-300" data-testid="ops-superiority-description">{content.operationalSuperiority?.description}</p>
+            </div>
           </div>
         </div>
         <div className="h-px bg-gradient-to-r from-transparent via-tropic-gold/35 to-transparent mb-16"></div>
@@ -335,14 +352,21 @@ const OperationalSuperioritySection = ({ content }) => {
 // ============================================================================
 const LethalitySection = ({ content }) => {
   const sh = content.sectionHeadings?.lethality || {};
+  const heading = textOrFallback(sh.heading, 'LETHALITY ON DEMAND');
+  const subtext = textOrFallback(sh.subtext, '');
+  const logisticsHeading = textOrFallback(content.lethality?.logistics?.heading, 'LOGISTICS & OPERATIONAL SUPPORT');
+  const trainingHeading = textOrFallback(content.lethality?.training?.heading, 'TRAINING PROGRAMS');
   return (
     <section id="training" className="py-28 px-6" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="lethality-section">
       <div className="container mx-auto max-w-7xl space-y-20">
-        <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-wider" data-testid="lethality-heading">{sh.heading || 'LETHALITY ON DEMAND'}</h2>
+        <div className="space-y-3">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-wider" data-testid="lethality-heading">{heading}</h2>
+          {subtext && <p className="text-base md:text-lg text-gray-400" data-testid="lethality-subtext">{subtext}</p>}
+        </div>
         {/* Logistics */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <h3 className="text-3xl font-bold tracking-wide" data-testid="logistics-heading">LOGISTICS & OPERATIONAL SUPPORT</h3>
+            <h3 className="text-3xl font-bold tracking-wide" data-testid="logistics-heading">{logisticsHeading}</h3>
             <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="logistics-description">{content.lethality?.logistics?.description}</p>
           </div>
           <div className="aspect-video overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/40 group">
@@ -356,7 +380,7 @@ const LethalitySection = ({ content }) => {
             <img src={resolveImg(content.lethality?.training?.image)} alt="Training" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
           <div className="order-1 md:order-2 space-y-6">
-            <h3 className="text-3xl font-bold tracking-wide" data-testid="training-heading">TRAINING PROGRAMS</h3>
+            <h3 className="text-3xl font-bold tracking-wide" data-testid="training-heading">{trainingHeading}</h3>
             <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="training-description">{content.lethality?.training?.description}</p>
           </div>
         </div>
@@ -605,7 +629,7 @@ const LandingPage = () => {
       <Navigation scrollToSection={scrollToSection} content={content} />
       <HeroSection content={content} />
       <AboutSection content={content} />
-      <UnitHistorySection />
+      <UnitHistorySection content={content} />
       <OperationalSuperioritySection content={content} />
       <LethalitySection content={content} />
       <UpcomingOperationsSection content={content} />

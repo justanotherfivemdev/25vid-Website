@@ -30,11 +30,21 @@ export const defaultSiteContent = {
     missionText: 'To maintain a combat-ready force capable of rapid deployment and sustained operations, embodying the Tropic Lightning tradition of speed, discipline, and lethal proficiency in every engagement.'
   },
   sectionHeadings: {
+    about: {
+      heading: 'ABOUT',
+      subtext: ''
+    },
+    history: {
+      heading: 'UNIT HISTORY',
+      subtext: 'Over 80 years of service, sacrifice, and the Tropic Lightning legacy'
+    },
     operationalSuperiority: {
-      heading: 'OPERATIONAL SUPERIORITY'
+      heading: 'OPERATIONAL SUPERIORITY',
+      subtext: ''
     },
     lethality: {
-      heading: 'LETHALITY ON DEMAND'
+      heading: 'LETHALITY ON DEMAND',
+      subtext: ''
     },
     operations: {
       heading: 'UPCOMING OPERATIONS',
@@ -79,10 +89,12 @@ export const defaultSiteContent = {
   },
   lethality: {
     logistics: {
+      heading: 'LOGISTICS & OPERATIONAL SUPPORT',
       description: 'Sustained operations demand robust logistical support. The 25th maintains a complete supply chain, vehicle maintenance, and medical support infrastructure — ensuring every element stays mission-capable in any theater.',
       image: ''
     },
     training: {
+      heading: 'TRAINING PROGRAMS',
       description: 'Our training pipeline is built on progressive skill development. From basic infantry tactics to advanced combined arms integration, every soldier in the 25th earns their place through demonstrated proficiency and unwavering discipline.',
       image: ''
     }
