@@ -116,7 +116,7 @@ const OperationDetail = () => {
                 </div>
               </div>
               <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h2>
-              <p className="text-gray-300 leading-relaxed">{operation.description}</p>
+              <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{operation.description}</p>
               {/* Attendance summary */}
               <div className="flex items-center gap-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
                 <div className="text-center"><div className="text-2xl font-bold text-green-400">{counts.attending || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">ATTENDING</div></div>

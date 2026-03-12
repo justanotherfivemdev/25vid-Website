@@ -211,7 +211,7 @@ const AnnouncementsManager = () => {
                       <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                         {ann.title}
                       </CardTitle>
-                      <p className="text-gray-400 mt-2">{ann.content}</p>
+                      <p className="text-gray-400 mt-2 whitespace-pre-wrap">{ann.content}</p>
                       <div className="flex items-center mt-3 text-sm text-gray-500">
                         <Megaphone className="w-4 h-4 mr-1" />
                         Posted by {ann.author_name}

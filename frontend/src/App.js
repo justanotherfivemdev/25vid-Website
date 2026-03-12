@@ -253,7 +253,7 @@ const UnitHistorySection = () => {
                         </div>
                       )}
 
-                      <p className="text-gray-400 text-sm leading-relaxed">{entry.description}</p>
+                      <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap">{entry.description}</p>
                     </div>
                   </div>
                 </div>
@@ -376,7 +376,7 @@ const UpcomingOperationsSection = ({ content }) => {
                       {op.logo_url && <img src={resolveImg(op.logo_url)} alt="" className="w-7 h-7 object-contain rounded opacity-80" />}
                     </div>
                     <CardTitle className="text-xl tracking-wide">{op.title}</CardTitle>
-                    <CardDescription className="text-gray-400 text-sm mt-1 line-clamp-2">{op.description}</CardDescription>
+                    <CardDescription className="text-gray-400 text-sm mt-1 line-clamp-2 whitespace-pre-wrap">{op.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2 text-sm mb-4">
@@ -442,7 +442,7 @@ const AnnouncementsSection = ({ content }) => {
                     </div>
                     <CardTitle className="text-xl mt-2 tracking-wide">{ann.title}</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-0">
                     <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap">{ann.content}</p>
                     <div className="mt-4 flex items-center justify-between">
                       <span className="text-xs text-gray-500 flex items-center"><Megaphone className="w-3 h-3 mr-1.5 text-gray-600"/>{ann.author_name}</span>
@@ -605,9 +605,11 @@ const LoginPage = () => {
     if (user) navigate(user.role === 'admin' ? '/admin' : '/hub');
   }, [user, navigate]);
 
-  // Check if Discord OAuth is enabled on the backend
+  // Check if Discord OAuth is enabled on the backend via dedicated status endpoint
   useEffect(() => {
-    axios.get(`${API}/auth/discord`).then(() => setDiscordAvailable(true)).catch(() => {});
+    axios.get(`${API}/auth/status`)
+      .then(res => setDiscordAvailable(res.data?.discord_enabled === true))
+      .catch(() => setDiscordAvailable(false));
   }, []);
 
   // Handle Discord OAuth callback — cookie is set by backend redirect

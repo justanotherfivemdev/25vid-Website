@@ -393,6 +393,21 @@ def user_to_response(u: dict) -> UserResponse:
     )
 
 # ============================================================================
+# AUTH STATUS ENDPOINT (for frontend feature detection)
+# ============================================================================
+
+@api_router.get("/auth/status")
+async def get_auth_status():
+    """
+    Returns the availability of authentication features.
+    Frontend uses this to conditionally render Discord login button, etc.
+    """
+    return {
+        "discord_enabled": bool(DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET and DISCORD_REDIRECT_URI),
+        "email_enabled": True,  # Always available
+    }
+
+# ============================================================================
 # AUTH ENDPOINTS
 # ============================================================================
 
