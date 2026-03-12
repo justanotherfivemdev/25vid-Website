@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, Users, Calendar, Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Edit, Trash2, Users, Calendar, Clock, ChevronDown, ChevronUp, CheckCircle, HelpCircle, Shield } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,11 +16,110 @@ import ImageUpload from '@/components/admin/ImageUpload';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+const RSVP_STATUS_CFG = {
+  attending: { label: 'ATTENDING', color: 'text-green-400', icon: CheckCircle },
+  tentative: { label: 'TENTATIVE', color: 'text-yellow-400', icon: HelpCircle },
+  waitlisted: { label: 'WAITLISTED', color: 'text-orange-400', icon: Clock },
+};
+
+const resolveImg = (url) => {
+  if (!url) return '';
+  const BU = process.env.REACT_APP_BACKEND_URL;
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('/uploads/')) return `${BU}/api${url}`;
+  return `${BU}${url}`;
+};
+
+const RosterPanel = ({ operationId }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get(`${API}/operations/${operationId}/roster`)
+      .then(r => setData(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [operationId]);
+
+  if (loading) return <div className="text-sm text-gray-500 py-3 text-center">Loading roster...</div>;
+  if (!data) return <div className="text-sm text-gray-600 py-3 text-center">Failed to load roster</div>;
+
+  const { rsvps, counts } = data;
+
+  return (
+    <div className="space-y-4 pt-2" data-testid={`roster-panel-${operationId}`}>
+      {/* Summary Bar */}
+      <div className="flex items-center gap-6 bg-black/40 rounded-lg p-3 border border-gray-800/50">
+        <div className="text-center"><div className="text-xl font-bold text-green-400">{counts.attending}</div><div className="text-[9px] text-gray-500 tracking-wider">ATTENDING</div></div>
+        <div className="text-center"><div className="text-xl font-bold text-yellow-400">{counts.tentative}</div><div className="text-[9px] text-gray-500 tracking-wider">TENTATIVE</div></div>
+        <div className="text-center"><div className="text-xl font-bold text-orange-400">{counts.waitlisted}</div><div className="text-[9px] text-gray-500 tracking-wider">WAITLISTED</div></div>
+        <div className="text-center ml-auto"><div className="text-xl font-bold text-gray-300">{counts.total}</div><div className="text-[9px] text-gray-500 tracking-wider">TOTAL</div></div>
+      </div>
+
+      {/* Roster Groups */}
+      {['attending', 'tentative', 'waitlisted'].map(status => {
+        const list = rsvps[status] || [];
+        if (list.length === 0) return null;
+        const cfg = RSVP_STATUS_CFG[status];
+        const Icon = cfg.icon;
+        return (
+          <div key={status}>
+            <div className={`flex items-center gap-2 mb-2 ${cfg.color}`}>
+              <Icon className="w-4 h-4" />
+              <span className="text-xs font-bold tracking-wider">{cfg.label} ({list.length})</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[10px] text-gray-600 tracking-wider border-b border-gray-800">
+                    <th className="text-left py-1.5 px-2">OPERATOR</th>
+                    <th className="text-left py-1.5 px-2">RANK</th>
+                    <th className="text-left py-1.5 px-2">COMPANY</th>
+                    <th className="text-left py-1.5 px-2">PLATOON</th>
+                    <th className="text-left py-1.5 px-2">BILLET</th>
+                    <th className="text-left py-1.5 px-2">ROLE NOTES</th>
+                    <th className="text-left py-1.5 px-2">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((r, i) => (
+                    <tr key={r.user_id || i} className="border-b border-gray-800/30 hover:bg-gray-800/30 transition-colors" data-testid={`roster-row-${r.user_id}`}>
+                      <td className="py-2 px-2">
+                        <div className="flex items-center gap-2">
+                          {r.avatar_url ? (
+                            <img src={resolveImg(r.avatar_url)} alt="" className="w-6 h-6 rounded object-cover border border-gray-700" />
+                          ) : (
+                            <div className="w-6 h-6 rounded bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-500">{r.username?.[0]?.toUpperCase()}</div>
+                          )}
+                          <Link to={`/admin/users/${r.user_id}`} className="hover:text-amber-400 transition-colors font-medium">{r.username}</Link>
+                        </div>
+                      </td>
+                      <td className="py-2 px-2 text-gray-400">{r.rank || '—'}</td>
+                      <td className="py-2 px-2 text-tropic-gold">{r.company || '—'}</td>
+                      <td className="py-2 px-2 text-green-400">{r.platoon || '—'}</td>
+                      <td className="py-2 px-2 text-amber-400">{r.billet || '—'}</td>
+                      <td className="py-2 px-2">
+                        {r.role_notes ? <Badge variant="outline" className="border-amber-700/40 text-amber-500 text-[10px]">{r.role_notes}</Badge> : <span className="text-gray-700">—</span>}
+                      </td>
+                      <td className="py-2 px-2 text-gray-500 capitalize text-xs">{r.member_status || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const OperationsManager = () => {
   const [operations, setOperations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingOp, setEditingOp] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [expandedOp, setExpandedOp] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -263,54 +364,73 @@ const OperationsManager = () => {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {operations.map((op) => (
-              <Card key={op.id} className="bg-gray-900 border-gray-800">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className={`${getTypeColor(op.operation_type)} px-3 py-1 rounded text-xs font-bold uppercase`}>
-                          {op.operation_type}
-                        </span>
-                        {op.max_participants && (
+            {operations.map((op) => {
+              const rsvpCount = op.rsvps?.length || 0;
+              const attendingCount = op.rsvps?.filter(r => r.status === 'attending').length || 0;
+              const isExpanded = expandedOp === op.id;
+              return (
+                <Card key={op.id} className="bg-gray-900 border-gray-800" data-testid={`op-card-${op.id}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <span className={`${getTypeColor(op.operation_type)} px-3 py-1 rounded text-xs font-bold uppercase`}>
+                            {op.operation_type}
+                          </span>
                           <span className="text-sm text-gray-400">
                             <Users className="inline w-4 h-4 mr-1" />
-                            {op.rsvps?.filter(r => r.status === 'attending').length || 0}/{op.max_participants}
+                            {attendingCount}{op.max_participants ? `/${op.max_participants}` : ''} attending
+                            {rsvpCount > attendingCount && <span className="text-gray-600"> ({rsvpCount} total RSVPs)</span>}
                           </span>
-                        )}
+                        </div>
+                        <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                          {op.title}
+                        </CardTitle>
+                        <p className="text-gray-400 mt-2 whitespace-pre-wrap line-clamp-2">{op.description}</p>
+                        <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
+                          <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" />{op.date}</span>
+                          <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{op.time}</span>
+                        </div>
                       </div>
-                      <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-                        {op.title}
-                      </CardTitle>
-                      <p className="text-gray-400 mt-2 whitespace-pre-wrap">{op.description}</p>
-                      <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
-                        <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" />{op.date}</span>
-                        <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{op.time}</span>
+                      
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setExpandedOp(isExpanded ? null : op.id)}
+                          className={`border-gray-700 ${isExpanded ? 'bg-amber-700/10 text-amber-500 border-amber-700/50' : ''}`}
+                          data-testid={`toggle-roster-${op.id}`}
+                        >
+                          <Users className="w-4 h-4 mr-1" />
+                          {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(op)}
+                          className="border-gray-700"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(op.id)}
+                          className="border-amber-700 text-amber-500 hover:bg-amber-700/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                    
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEdit(op)}
-                        className="border-gray-700"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(op.id)}
-                        className="border-amber-700 text-amber-500 hover:bg-amber-700/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
+                  </CardHeader>
+                  {isExpanded && (
+                    <CardContent className="border-t border-gray-800 pt-4">
+                      <RosterPanel operationId={op.id} />
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

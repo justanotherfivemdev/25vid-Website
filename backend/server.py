@@ -1597,6 +1597,118 @@ async def get_operation_roster(operation_id: str, current_user: dict = Depends(g
     }
 
 # ============================================================================
+# INTEL / BRIEFING SYSTEM
+# ============================================================================
+
+class IntelBriefing(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    content: str
+    category: str  # intel_update, commanders_intent, operational_order, after_action_report, training_bulletin
+    classification: str = "routine"  # routine, priority, immediate, flash
+    tags: List[str] = []
+    author_id: str = ""
+    author_name: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = None
+
+class IntelBriefingCreate(BaseModel):
+    title: str
+    content: str
+    category: str
+    classification: str = "routine"
+    tags: List[str] = []
+
+class IntelBriefingUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    category: Optional[str] = None
+    classification: Optional[str] = None
+    tags: Optional[List[str]] = None
+
+@api_router.get("/intel")
+async def get_intel_briefings(
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+    tag: Optional[str] = None,
+    classification: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if category:
+        query["category"] = category
+    if classification:
+        query["classification"] = classification
+    if tag:
+        query["tags"] = tag
+    if search:
+        safe = re.escape(search)[:100]
+        query["$or"] = [
+            {"title": {"$regex": safe, "$options": "i"}},
+            {"content": {"$regex": safe, "$options": "i"}}
+        ]
+    briefings = await db.intel_briefings.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+    for b in briefings:
+        if isinstance(b.get("created_at"), str):
+            b["created_at"] = datetime.fromisoformat(b["created_at"])
+        if b.get("updated_at") and isinstance(b["updated_at"], str):
+            b["updated_at"] = datetime.fromisoformat(b["updated_at"])
+    return briefings
+
+@api_router.get("/intel/tags")
+async def get_intel_tags(current_user: dict = Depends(get_current_user)):
+    pipeline = [{"$unwind": "$tags"}, {"$group": {"_id": "$tags"}}, {"$sort": {"_id": 1}}]
+    results = await db.intel_briefings.aggregate(pipeline).to_list(200)
+    return [r["_id"] for r in results]
+
+@api_router.get("/intel/{briefing_id}")
+async def get_intel_briefing(briefing_id: str, current_user: dict = Depends(get_current_user)):
+    briefing = await db.intel_briefings.find_one({"id": briefing_id}, {"_id": 0})
+    if not briefing:
+        raise HTTPException(status_code=404, detail="Briefing not found")
+    if isinstance(briefing.get("created_at"), str):
+        briefing["created_at"] = datetime.fromisoformat(briefing["created_at"])
+    if briefing.get("updated_at") and isinstance(briefing["updated_at"], str):
+        briefing["updated_at"] = datetime.fromisoformat(briefing["updated_at"])
+    return briefing
+
+@api_router.post("/admin/intel")
+async def create_intel_briefing(data: IntelBriefingCreate, current_user: dict = Depends(get_current_admin)):
+    briefing_dict = data.model_dump()
+    briefing_dict["id"] = str(uuid.uuid4())
+    briefing_dict["author_id"] = current_user["id"]
+    briefing_dict["author_name"] = current_user["username"]
+    briefing_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    briefing_dict["updated_at"] = None
+    await db.intel_briefings.insert_one(briefing_dict)
+    del briefing_dict["_id"]
+    briefing_dict["created_at"] = datetime.fromisoformat(briefing_dict["created_at"])
+    return briefing_dict
+
+@api_router.put("/admin/intel/{briefing_id}")
+async def update_intel_briefing(briefing_id: str, data: IntelBriefingUpdate, current_user: dict = Depends(get_current_admin)):
+    existing = await db.intel_briefings.find_one({"id": briefing_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Briefing not found")
+    updates = {k: v for k, v in data.model_dump().items() if v is not None}
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.intel_briefings.update_one({"id": briefing_id}, {"$set": updates})
+    updated = await db.intel_briefings.find_one({"id": briefing_id}, {"_id": 0})
+    if isinstance(updated.get("created_at"), str):
+        updated["created_at"] = datetime.fromisoformat(updated["created_at"])
+    if updated.get("updated_at") and isinstance(updated["updated_at"], str):
+        updated["updated_at"] = datetime.fromisoformat(updated["updated_at"])
+    return updated
+
+@api_router.delete("/admin/intel/{briefing_id}")
+async def delete_intel_briefing(briefing_id: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.intel_briefings.delete_one({"id": briefing_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Briefing not found")
+    return {"message": "Briefing deleted"}
+
+# ============================================================================
 # RECRUITMENT PIPELINE
 # ============================================================================
 

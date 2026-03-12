@@ -275,9 +275,9 @@ const MemberHub = () => {
             <a href="#training" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center">
               <BookOpen className="w-8 h-8 mx-auto mb-2 text-green-500" /><span className="font-medium text-sm">Training</span>
             </a>
-            <a href="#intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center">
-              <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Intel</span>
-            </a>
+            <Link to="/hub/intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-intel">
+              <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Intel Board</span>
+            </Link>
             <Link to="/roster" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-roster">
               <Users className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Roster</span>
             </Link>
