@@ -64,6 +64,11 @@ DISCORD_REDIRECT_URI = os.environ.get('DISCORD_REDIRECT_URI')
 DISCORD_API_URL = "https://discord.com/api/v10"
 DISCORD_SCOPES = "identify email"
 
+
+def require_discord_config() -> None:
+    if not (DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET and DISCORD_REDIRECT_URI):
+        raise HTTPException(status_code=500, detail="Discord integration not configured")
+
 # Create the main app without a prefix
 app = FastAPI()
 
@@ -92,9 +97,9 @@ class User(BaseModel):
     timezone: Optional[str] = None
     squad: Optional[str] = None
     favorite_role: Optional[str] = None
-    awards: List[dict] = []           # [{id, name, date, description}]
-    mission_history: List[dict] = []  # [{id, operation_name, date, role_performed, notes}]
-    training_history: List[dict] = [] # [{id, course_name, completion_date, instructor, notes}]
+    awards: List[dict] = Field(default_factory=list)           # [{id, name, date, description}]
+    mission_history: List[dict] = Field(default_factory=list)  # [{id, operation_name, date, role_performed, notes}]
+    training_history: List[dict] = Field(default_factory=list) # [{id, course_name, completion_date, instructor, notes}]
     # Phase 5: Discord integration prep
     discord_id: Optional[str] = None
     discord_username: Optional[str] = None
@@ -130,9 +135,9 @@ class UserResponse(BaseModel):
     timezone: Optional[str] = None
     squad: Optional[str] = None
     favorite_role: Optional[str] = None
-    awards: List[dict] = []
-    mission_history: List[dict] = []
-    training_history: List[dict] = []
+    awards: List[dict] = Field(default_factory=list)
+    mission_history: List[dict] = Field(default_factory=list)
+    training_history: List[dict] = Field(default_factory=list)
     discord_id: Optional[str] = None
     discord_username: Optional[str] = None
     discord_avatar: Optional[str] = None
@@ -157,7 +162,7 @@ class Operation(BaseModel):
     time: str
     max_participants: Optional[int] = None
     logo_url: Optional[str] = None
-    rsvps: List[dict] = []  # [{user_id, username, status, role_notes, rsvp_time}]
+    rsvps: List[dict] = Field(default_factory=list)  # [{user_id, username, status, role_notes, rsvp_time}]
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -199,7 +204,7 @@ class Discussion(BaseModel):
     content: str
     author_id: str
     author_name: str
-    replies: List[dict] = []
+    replies: List[dict] = Field(default_factory=list)
     pinned: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -491,8 +496,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 @api_router.get("/auth/discord")
 async def discord_login_redirect():
     """Initiate Discord OAuth2 login/signup flow."""
-    if not DISCORD_CLIENT_ID:
-        raise HTTPException(status_code=500, detail="Discord integration not configured")
+    require_discord_config()
     state = create_discord_state("login")
     params = {
         "client_id": DISCORD_CLIENT_ID,
@@ -506,8 +510,7 @@ async def discord_login_redirect():
 @api_router.get("/auth/discord/link")
 async def discord_link_redirect(current_user: dict = Depends(get_current_user)):
     """Initiate Discord OAuth2 account linking flow for logged-in user."""
-    if not DISCORD_CLIENT_ID:
-        raise HTTPException(status_code=500, detail="Discord integration not configured")
+    require_discord_config()
     if current_user.get("discord_linked"):
         raise HTTPException(status_code=400, detail="Discord already linked. Unlink first.")
     state = create_discord_state("link", current_user["id"])
@@ -523,6 +526,7 @@ async def discord_link_redirect(current_user: dict = Depends(get_current_user)):
 @api_router.get("/auth/discord/callback")
 async def discord_callback(code: str = None, state: str = None, error: str = None):
     """Handle Discord OAuth2 callback — exchanges code, creates/links/logs in user."""
+    require_discord_config()
     frontend_base = DISCORD_REDIRECT_URI.rsplit("/api/", 1)[0]
 
     if error or not code or not state:
@@ -1607,7 +1611,7 @@ class IntelBriefing(BaseModel):
     content: str
     category: str  # intel_update, commanders_intent, operational_order, after_action_report, training_bulletin
     classification: str = "routine"  # routine, priority, immediate, flash
-    tags: List[str] = []
+    tags: List[str] = Field(default_factory=list)
     author_id: str = ""
     author_name: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -1618,7 +1622,7 @@ class IntelBriefingCreate(BaseModel):
     content: str
     category: str
     classification: str = "routine"
-    tags: List[str] = []
+    tags: List[str] = Field(default_factory=list)
 
 class IntelBriefingUpdate(BaseModel):
     title: Optional[str] = None
@@ -1732,7 +1736,7 @@ async def create_intel_briefing(data: IntelBriefingCreate, current_user: dict = 
     briefing_dict["created_at"] = datetime.now(timezone.utc).isoformat()
     briefing_dict["updated_at"] = None
     await db.intel_briefings.insert_one(briefing_dict)
-    del briefing_dict["_id"]
+    briefing_dict.pop("_id", None)
     briefing_dict["created_at"] = datetime.fromisoformat(briefing_dict["created_at"])
     return briefing_dict
 
@@ -1787,8 +1791,8 @@ class CampaignCreate(BaseModel):
     description: str = ""
     theater: str = ""
     status: str = "planning"  # planning, active, complete, archived
-    phases: List[dict] = []
-    objectives: List[dict] = []
+    phases: List[dict] = Field(default_factory=list)
+    objectives: List[dict] = Field(default_factory=list)
     situation: str = ""
     commander_notes: str = ""
 
@@ -1840,7 +1844,7 @@ async def create_campaign(data: CampaignCreate, current_user: dict = Depends(get
         if not o.get("id"):
             o["id"] = str(uuid.uuid4())
     await db.campaigns.insert_one(d)
-    del d["_id"]
+    d.pop("_id", None)
     _fix_dates(d)
     return d
 
