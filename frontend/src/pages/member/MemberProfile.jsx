@@ -10,7 +10,14 @@ import { useAuth } from '@/context/AuthContext';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
-const STATUS_COLORS = { recruit: 'bg-tropic-gold-dark', active: 'bg-green-700', reserve: 'bg-tropic-gold/60', staff: 'bg-purple-700', command: 'bg-tropic-red', inactive: 'bg-gray-700' };
+const STATUS_COLORS = {
+  recruit: 'bg-tropic-gold-dark',
+  active: 'bg-tropic-red',
+  reserve: 'bg-gray-700',
+  staff: 'bg-tropic-gold-dark',
+  command: 'bg-tropic-red',
+  inactive: 'bg-gray-700'
+};
 
 const MemberProfile = () => {
   const { id } = useParams();
@@ -35,7 +42,7 @@ const MemberProfile = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-red/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Roster</Button></Link>
@@ -43,7 +50,7 @@ const MemberProfile = () => {
           </div>
           <div className="flex items-center space-x-3">
             {isOwnProfile && <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-tropic-gold text-tropic-gold hover:bg-tropic-gold/10">Edit Profile</Button></Link>}
-            {user?.role === 'admin' && <Link to={`/admin/users/${profile.id}`}><Button size="sm" variant="outline" className="border-amber-700 text-amber-400 hover:bg-amber-700/10"><Shield className="w-4 h-4 mr-1" />Admin Edit</Button></Link>}
+            {user?.role === 'admin' && <Link to={`/admin/users/${profile.id}`}><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin Edit</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -67,7 +74,7 @@ const MemberProfile = () => {
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {profile.rank && <span className="text-sm text-gray-400">{profile.rank}</span>}
                     <Badge className={`${STATUS_COLORS[profile.status] || 'bg-gray-700'} text-white text-xs`}>{(profile.status || 'recruit').toUpperCase()}</Badge>
-                    {profile.role === 'admin' && <Badge className="bg-amber-900/60 text-amber-400 text-xs">ADMIN</Badge>}
+                    {profile.role === 'admin' && <Badge className="bg-amber-900/60 text-tropic-gold text-xs">ADMIN</Badge>}
                     {profile.discord_linked && <Badge className="bg-[#5865F2]/20 text-[#5865F2] text-xs border border-[#5865F2]/30">{profile.discord_username || 'Discord'}</Badge>}
                   </div>
                 </div>
@@ -82,14 +89,14 @@ const MemberProfile = () => {
                 <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">JOINED</div><div className="text-sm font-medium flex items-center gap-1"><Calendar className="w-3 h-3 text-gray-500" />{new Date(profile.join_date).toLocaleDateString()}</div></div>
               </div>
 
-              {profile.bio && <p className="mt-6 text-gray-300 text-sm leading-relaxed border-l-2 border-amber-800/40 pl-4 whitespace-pre-wrap" data-testid="profile-bio">{profile.bio}</p>}
+              {profile.bio && <p className="mt-6 text-gray-300 text-sm leading-relaxed border-l-2 border-tropic-red/40 pl-4 whitespace-pre-wrap" data-testid="profile-bio">{profile.bio}</p>}
             </CardContent>
           </Card>
 
           {/* Awards */}
           {profile.awards?.length > 0 && (
             <Card className="bg-gray-900/80 border-gray-800" data-testid="profile-awards">
-              <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider flex items-center gap-2"><Award className="w-5 h-5 text-yellow-500" /> AWARDS & QUALIFICATIONS</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider flex items-center gap-2"><Award className="w-5 h-5 text-tropic-gold" /> AWARDS & QUALIFICATIONS</CardTitle></CardHeader>
               <CardContent>
                 <div className="grid gap-3">
                   {profile.awards.map((a, i) => (
@@ -107,7 +114,7 @@ const MemberProfile = () => {
           {/* Mission History */}
           {profile.mission_history?.length > 0 && (
             <Card className="bg-gray-900/80 border-gray-800" data-testid="profile-missions">
-              <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider flex items-center gap-2"><Target className="w-5 h-5 text-amber-500" /> MISSION HISTORY</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider flex items-center gap-2"><Target className="w-5 h-5 text-tropic-gold" /> MISSION HISTORY</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {profile.mission_history.map((m, i) => (
@@ -116,7 +123,7 @@ const MemberProfile = () => {
                         <div className="font-bold text-sm tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{m.operation_name}</div>
                         <div className="text-xs text-gray-500 flex items-center gap-1"><Calendar className="w-3 h-3" />{m.date}</div>
                       </div>
-                      <div className="text-xs text-amber-400 mb-1">Role: {m.role_performed}</div>
+                      <div className="text-xs text-tropic-gold mb-1">Role: {m.role_performed}</div>
                       {m.notes && <div className="text-xs text-gray-500">{m.notes}</div>}
                     </div>
                   ))}

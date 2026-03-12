@@ -59,11 +59,11 @@ const AdminDashboard = () => {
   };
   
   const statCards = [
-    { label: 'Total Operations', value: stats.operations, icon: Calendar, color: 'red' },
-    { label: 'Announcements', value: stats.announcements, icon: Megaphone, color: 'blue' },
-    { label: 'Discussions', value: stats.discussions, icon: MessageSquare, color: 'green' },
-    { label: 'Gallery Images', value: stats.gallery, icon: Image, color: 'purple' },
-    { label: 'Members', value: stats.users, icon: Users, color: 'yellow' }
+    { label: 'Total Operations', value: stats.operations, icon: Calendar, color: 'tropic-red' },
+    { label: 'Announcements', value: stats.announcements, icon: Megaphone, color: 'tropic-gold' },
+    { label: 'Discussions', value: stats.discussions, icon: MessageSquare, color: 'tropic-red' },
+    { label: 'Gallery Images', value: stats.gallery, icon: Image, color: 'tropic-gold' },
+    { label: 'Members', value: stats.users, icon: Users, color: 'tropic-gold' }
   ];
 
   const fetchMotw = async () => {
@@ -126,7 +126,7 @@ const AdminDashboard = () => {
                     <CardTitle className="text-sm font-medium text-gray-400">
                       {stat.label}
                     </CardTitle>
-                    <Icon className={`w-5 h-5 text-${stat.color}-500`} />
+                    <Icon className={`w-5 h-5 ${stat.color === 'tropic-red' ? 'text-tropic-red' : 'text-tropic-gold'}`} />
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
@@ -143,13 +143,13 @@ const AdminDashboard = () => {
         <Card className="bg-gray-900 border-gray-800">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2"><Star className="w-5 h-5 text-amber-500" />Member of the Week</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Star className="w-5 h-5 text-tropic-gold" />Member of the Week</CardTitle>
               <CardDescription>Highlight an outstanding unit member — visible to all in the Hub</CardDescription>
             </div>
             <div className="flex gap-2">
               <Dialog open={motwOpen} onOpenChange={setMotwOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="bg-amber-700 hover:bg-amber-800" onClick={openMotwDialog} data-testid="set-motw-btn">
+                  <Button size="sm" className="bg-tropic-red hover:bg-tropic-red-dark" onClick={openMotwDialog} data-testid="set-motw-btn">
                     <Star className="w-4 h-4 mr-1" />{motw ? 'Change' : 'Set'}
                   </Button>
                 </DialogTrigger>
@@ -165,7 +165,7 @@ const AdminDashboard = () => {
                       {filteredMembers.map(m => (
                         <button key={m.id} type="button"
                           onClick={() => setMotwForm({ ...motwForm, user_id: m.id })}
-                          className={`w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 transition-colors ${motwForm.user_id === m.id ? 'bg-amber-700/30 border border-amber-600' : 'hover:bg-gray-800'}`}
+                          className={`w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 transition-colors ${motwForm.user_id === m.id ? 'bg-tropic-red/10 border border-tropic-red/50' : 'hover:bg-gray-800'}`}
                           data-testid={`motw-member-${m.id}`}>
                           <span className="font-medium">{m.username}</span>
                           <span className="text-gray-500 text-xs">{m.rank || ''}</span>
@@ -182,7 +182,7 @@ const AdminDashboard = () => {
                         data-testid="motw-reason" />
                     </div>
                     <Button disabled={!motwForm.user_id} onClick={handleSetMotw}
-                      className="w-full bg-amber-700 hover:bg-amber-800" data-testid="motw-confirm-btn">
+                      className="w-full bg-tropic-red hover:bg-tropic-red-dark" data-testid="motw-confirm-btn">
                       Confirm Member of the Week
                     </Button>
                   </div>
@@ -197,12 +197,12 @@ const AdminDashboard = () => {
           </CardHeader>
           {motw && (
             <CardContent className="pt-0">
-              <div className="flex items-center gap-4 p-3 bg-amber-900/15 rounded-lg border border-amber-700/30">
-                <div className="w-12 h-12 rounded-full border-2 border-amber-500 overflow-hidden bg-gray-800 flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-4 p-3 bg-tropic-red/10 rounded-lg border border-tropic-red/30">
+                <div className="w-12 h-12 rounded-full border-2 border-tropic-red/50 overflow-hidden bg-gray-800 flex items-center justify-center shrink-0">
                   {motw.avatar_url ? (
                     <img src={resolveImg(motw.avatar_url)} alt={motw.username} className="w-full h-full object-cover" />
                   ) : (
-                    <Star className="w-6 h-6 text-amber-500" />
+                    <Star className="w-6 h-6 text-tropic-gold" />
                   )}
                 </div>
                 <div>

@@ -124,7 +124,7 @@ const EditProfile = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-red/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
@@ -191,7 +191,7 @@ const EditProfile = () => {
                 </div>
               </div>
               <div className="flex justify-end pt-4">
-                <Button onClick={handleSave} disabled={saving} className="bg-amber-700 hover:bg-amber-800 px-8" data-testid="profile-save-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>
+                <Button onClick={handleSave} disabled={saving} className="bg-tropic-red hover:bg-tropic-red-dark px-8" data-testid="profile-save-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>
               </div>
             </CardContent>
           </Card>
@@ -222,7 +222,7 @@ const EditProfile = () => {
                     onClick={handleUnlinkDiscord}
                     disabled={unlinking}
                     variant="outline"
-                    className="border-amber-700 text-amber-500 hover:bg-amber-700/10"
+                    className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"
                     data-testid="discord-unlink-btn"
                   >
                     <Unlink className="w-4 h-4 mr-2" />{unlinking ? 'Unlinking...' : 'Unlink Discord'}
@@ -249,7 +249,7 @@ const EditProfile = () => {
             <Card className="bg-gray-900/80 border-yellow-700/40" data-testid="set-password-section">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg tracking-wider flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-yellow-500" /> SET EMAIL & PASSWORD
+                  <Lock className="w-5 h-5 text-tropic-gold" /> SET EMAIL & PASSWORD
                 </CardTitle>
                 <p className="text-xs text-gray-500 mt-1">Your account was created via Discord. Add an email and password to enable password-based login and allow Discord unlinking.</p>
               </CardHeader>

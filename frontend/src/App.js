@@ -145,13 +145,13 @@ const Navigation = ({ scrollToSection, content }) => {
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} /></svg>
           </button>
           <div className={`${menuOpen ? 'flex flex-col absolute top-full left-0 right-0 bg-black/95 p-6 space-y-4 border-b border-white/10' : 'hidden'} md:flex md:flex-row md:static md:bg-transparent md:p-0 md:space-y-0 md:border-0 items-center md:space-x-8`}>
-            <button onClick={() => { scrollToSection('about'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-amber-500 transition-colors" data-testid="nav-about">ABOUT</button>
-            <button onClick={() => { scrollToSection('operations'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-amber-500 transition-colors" data-testid="nav-operations">OPERATIONS</button>
-            <button onClick={() => { scrollToSection('training'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-amber-500 transition-colors" data-testid="nav-training">TRAINING</button>
-            <button onClick={() => { scrollToSection('intel'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-amber-500 transition-colors" data-testid="nav-intel">INTEL</button>
-            <div className="hidden md:block h-5 w-px bg-amber-800/60"></div>
+            <button onClick={() => { scrollToSection('about'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-about">ABOUT</button>
+            <button onClick={() => { scrollToSection('operations'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-operations">OPERATIONS</button>
+            <button onClick={() => { scrollToSection('training'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-training">TRAINING</button>
+            <button onClick={() => { scrollToSection('intel'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-intel">INTEL</button>
+            <div className="hidden md:block h-5 w-px bg-tropic-red/40"></div>
             <Link to="/login" onClick={() => setMenuOpen(false)}>
-              <Button className="bg-amber-700 hover:bg-amber-800 text-white px-6 py-2 tactical-button font-bold tracking-wider" data-testid="nav-join-button">{btnText}</Button>
+              <Button className="bg-tropic-red hover:bg-tropic-red-dark text-white px-6 py-2 tactical-button font-bold tracking-wider" data-testid="nav-join-button">{btnText}</Button>
             </Link>
           </div>
         </div>
@@ -172,7 +172,7 @@ const HeroSection = ({ content }) => (
       </div>
       <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-[0.08em] leading-tight" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="hero-tagline">
         <span className="block">{typeof content.hero.tagline === 'string' ? content.hero.tagline : content.hero.tagline?.line1 || 'TROPIC LIGHTNING'}</span>
-        {content.hero.subtitle && <span className="block text-lg sm:text-xl lg:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200 mt-4 tracking-[0.15em]">{content.hero.subtitle}</span>}
+        {content.hero.subtitle && <span className="block text-lg sm:text-xl lg:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-tropic-gold to-tropic-gold-light mt-4 tracking-[0.15em]">{content.hero.subtitle}</span>}
       </h1>
       <div className="mt-10">
         <Link to="/login"><Button className="bg-amber-700 hover:bg-amber-800 text-white px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">{content.nav?.buttonText || 'ENLIST NOW'}</Button></Link>
@@ -196,19 +196,19 @@ const AboutSection = ({ content }) => {
             {content.about?.logoImage && (
               <img src={resolveImg(content.about.logoImage)} alt="Unit Emblem" className="w-48 h-48 object-contain opacity-80 mt-6" data-testid="about-logo" />
             )}
-            <Link to="/login"><Button className="bg-amber-700 hover:bg-amber-800 text-white px-10 py-5 text-lg tactical-button shadow-lg shadow-amber-900/40 tracking-wider" data-testid="about-join-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
+            <Link to="/login"><Button className="bg-amber-700 hover:bg-amber-800 text-white px-10 py-5 text-lg tactical-button shadow-lg shadow-tropic-red/30 tracking-wider" data-testid="about-join-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
           </div>
           <div className="space-y-8 text-base md:text-lg leading-relaxed">
             <p className="text-gray-300" data-testid="about-description-1">{content.about?.paragraph1}</p>
-            <div className="h-px bg-gradient-to-r from-transparent via-amber-800/40 to-transparent"></div>
+            <div className="h-px bg-gradient-to-r from-transparent via-tropic-red/30 to-transparent"></div>
             <p className="text-gray-300" data-testid="about-description-2">{content.about?.paragraph2}</p>
             {/* Quote block */}
             <div className="mt-12 relative rounded-lg overflow-hidden" style={{ backgroundImage: `url('${resolveImg(quote.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '280px' }}>
-              <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/75 to-amber-900/30"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/75 to-tropic-red/20"></div>
               <div className="relative z-10 p-10 md:p-14 flex items-center justify-center min-h-[280px]">
-                <div className="border-l-4 border-amber-700 pl-8 max-w-xl">
+                <div className="border-l-4 border-tropic-red pl-8 max-w-xl">
                   <p className="text-xl md:text-2xl italic text-gray-200 mb-5 font-light leading-relaxed" data-testid="founder-quote">{quote.text}</p>
-                  <p className="text-base text-amber-400 font-bold tracking-wide" data-testid="founder-name">{quote.author}</p>
+                  <p className="text-base text-tropic-gold font-bold tracking-wide" data-testid="founder-name">{quote.author}</p>
                 </div>
               </div>
             </div>
@@ -231,10 +231,10 @@ const UnitHistorySection = () => {
   }, []);
 
   const typeAccent = (t) => ({
-    campaign: 'border-amber-700 bg-amber-700',
+    campaign: 'border-tropic-red bg-amber-700',
     operation: 'border-blue-600 bg-blue-600',
     milestone: 'border-emerald-600 bg-emerald-600',
-  }[t] || 'border-amber-700 bg-amber-700');
+  }[t] || 'border-tropic-red bg-amber-700');
 
   if (loading || entries.length === 0) return null;
 
@@ -260,14 +260,14 @@ const UnitHistorySection = () => {
               return (
                 <div key={entry.id} className="relative" data-testid={`history-timeline-${idx}`}>
                   {/* Dot on the line */}
-                  <div className={`absolute left-6 md:left-1/2 w-4 h-4 rounded-full ${accent.split(' ')[1]} border-2 border-black -translate-x-1/2 z-10 shadow-lg shadow-amber-900/30`}></div>
+                  <div className={`absolute left-6 md:left-1/2 w-4 h-4 rounded-full ${accent.split(' ')[1]} border-2 border-black -translate-x-1/2 z-10 shadow-lg shadow-tropic-red/20`}></div>
 
                   {/* Content card */}
                   <div className={`ml-14 md:ml-0 md:w-[calc(50%-2.5rem)] ${isLeft ? 'md:mr-auto md:pr-0' : 'md:ml-auto md:pl-0'}`}>
-                    <div className={`group relative rounded-lg border ${accent.split(' ')[0]}/30 bg-black/60 backdrop-blur p-6 hover:border-amber-700/60 transition-all duration-500`}>
+                    <div className={`group relative rounded-lg border ${accent.split(' ')[0]}/30 bg-black/60 backdrop-blur p-6 hover:border-tropic-red/60 transition-all duration-500`}>
                       {/* Year badge */}
                       <div className="flex items-center gap-3 mb-3">
-                        <span className="text-amber-500 font-bold text-lg tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.year}</span>
+                        <span className="text-tropic-gold font-bold text-lg tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.year}</span>
                         <span className={`text-[10px] tracking-widest px-2 py-0.5 rounded ${accent.split(' ')[1]} text-white/90`}>{entry.campaign_type.toUpperCase()}</span>
                       </div>
 
@@ -311,10 +311,10 @@ const OperationalSuperioritySection = ({ content }) => {
             <p className="text-lg leading-relaxed text-gray-300 pl-8" data-testid="ops-superiority-description">{content.operationalSuperiority?.description}</p>
           </div>
         </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-amber-800/40 to-transparent mb-16"></div>
+        <div className="h-px bg-gradient-to-r from-transparent via-tropic-red/30 to-transparent mb-16"></div>
         <div className="grid md:grid-cols-3 gap-6">
           {(content.operationalSuperiority?.images || []).map((img, idx) => (
-            <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-white/10 hover:border-amber-700/40 transition-all duration-500 shadow-2xl shadow-black/40 group" data-testid={`ops-image-${idx + 1}`}>
+            <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-white/10 hover:border-tropic-red/40 transition-all duration-500 shadow-2xl shadow-black/40 group" data-testid={`ops-image-${idx + 1}`}>
               <img src={resolveImg(img)} alt={`Tactical ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
@@ -500,7 +500,7 @@ const GallerySection = ({ content }) => {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {(content.gallery?.showcaseImages || []).map((img, idx) => (
-            <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-white/5 hover:border-amber-700/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30" data-testid={`gallery-image-${idx}`}>
+            <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-white/5 hover:border-tropic-red/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30" data-testid={`gallery-image-${idx}`}>
               <img src={resolveImg(img)} alt={`Mission ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
             </div>
           ))}
@@ -539,7 +539,7 @@ const JoinUsSection = ({ content }) => {
               </Link>
               {content.footer?.discord && (
                 <a href={content.footer.discord} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="border-amber-700/50 text-amber-400 hover:bg-amber-900/20 px-10 py-5 text-lg tracking-wider w-full sm:w-auto" data-testid="join-discord-button">
+                  <Button variant="outline" className="border-tropic-red/50 text-tropic-gold hover:bg-amber-900/20 px-10 py-5 text-lg tracking-wider w-full sm:w-auto" data-testid="join-discord-button">
                     JOIN OUR DISCORD
                   </Button>
                 </a>
@@ -566,16 +566,16 @@ const Footer = ({ content }) => (
         <div>
           <h4 className="text-sm font-bold mb-3 tracking-[0.15em] text-gray-400">QUICK LINKS</h4>
           <ul className="space-y-2 text-sm text-gray-500">
-            <li><a href="#about" className="hover:text-amber-500 transition-colors">About</a></li>
-            <li><a href="#operations" className="hover:text-amber-500 transition-colors">Operations</a></li>
-            <li><a href="#training" className="hover:text-amber-500 transition-colors">Training</a></li>
-            <li><Link to="/login" className="hover:text-amber-500 transition-colors">Member Portal</Link></li>
+            <li><a href="#about" className="hover:text-tropic-gold transition-colors">About</a></li>
+            <li><a href="#operations" className="hover:text-tropic-gold transition-colors">Operations</a></li>
+            <li><a href="#training" className="hover:text-tropic-gold transition-colors">Training</a></li>
+            <li><Link to="/login" className="hover:text-tropic-gold transition-colors">Member Portal</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="text-sm font-bold mb-3 tracking-[0.15em] text-gray-400">CONNECT</h4>
           <div className="space-y-2 text-sm text-gray-500">
-            {content.footer?.discord && <p><a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition-colors">Discord Server</a></p>}
+            {content.footer?.discord && <p><a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="hover:text-tropic-gold transition-colors">Discord Server</a></p>}
             {(content.footer?.contact?.email || content.footer?.email) && <p>Email: {content.footer?.contact?.email || content.footer?.email}</p>}
           </div>
         </div>
@@ -655,7 +655,7 @@ const RecruitDashboard = () => {
     <div className="min-h-screen bg-black text-white px-6 py-16">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-wider text-amber-400">RECRUIT PROCESSING</h1>
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-wider text-tropic-gold">RECRUIT PROCESSING</h1>
           <p className="text-gray-400 mt-3">Your account is active, but staff approval is still required before full hub access.</p>
         </div>
 
@@ -668,7 +668,7 @@ const RecruitDashboard = () => {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="bg-black/40 border border-amber-900/30 rounded-lg p-4">
                 <div className="text-xs tracking-[0.2em] text-gray-500 mb-2">ACCOUNT STATUS</div>
-                <div className="text-lg font-semibold text-amber-400">{user?.status || 'recruit'}</div>
+                <div className="text-lg font-semibold text-tropic-gold">{user?.status || 'recruit'}</div>
               </div>
               <div className="bg-black/40 border border-amber-900/30 rounded-lg p-4">
                 <div className="text-xs tracking-[0.2em] text-gray-500 mb-2">SPECIALIZATION</div>
@@ -687,7 +687,7 @@ const RecruitDashboard = () => {
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Button onClick={() => navigate('/hub/profile')} className="bg-amber-700 hover:bg-amber-800 text-white tracking-wider">UPDATE PROFILE</Button>
-              <Button variant="outline" onClick={handleLogout} className="border-amber-700/50 text-amber-400 hover:bg-amber-900/20 tracking-wider">LOG OUT</Button>
+              <Button variant="outline" onClick={handleLogout} className="border-tropic-red/50 text-tropic-gold hover:bg-amber-900/20 tracking-wider">LOG OUT</Button>
             </div>
           </CardContent>
         </Card>
@@ -798,7 +798,7 @@ const LoginPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-amber-700 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-2 border-tropic-red border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400 tracking-wider">Authenticating with Discord...</p>
         </div>
       </div>
@@ -824,7 +824,7 @@ const LoginPage = () => {
                 <div><label className="block text-sm font-medium mb-2">Rank (Optional)</label><Input type="text" className="bg-black/50 border-white/20" value={formData.rank} onChange={(e) => setFormData({...formData, rank: e.target.value})} data-testid="auth-rank-input" /></div>
                 <div><label className="block text-sm font-medium mb-2">Specialization (Optional)</label><Input type="text" placeholder="e.g., Assault, Recon, Support" className="bg-black/50 border-white/20" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} data-testid="auth-specialization-input" /></div>
               </>}
-              {error && <div className="text-amber-500 text-sm text-center" data-testid="auth-error">{error}</div>}
+              {error && <div className="text-tropic-gold text-sm text-center" data-testid="auth-error">{error}</div>}
               <Button type="submit" disabled={submitting} className="w-full bg-amber-700 hover:bg-amber-800 py-5 tactical-button tracking-wider" data-testid="auth-submit-button">{submitting ? 'Please wait...' : isLogin ? 'LOGIN' : 'REGISTER'}</Button>
             </form>
             {/* Discord OAuth — only shown when backend has Discord configured */}
@@ -847,11 +847,11 @@ const LoginPage = () => {
               </div>
             )}
             <div className="mt-6 text-center">
-              <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-sm text-gray-400 hover:text-amber-500 transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
+              <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-sm text-gray-400 hover:text-tropic-gold transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
             </div>
           </CardContent>
         </Card>
-        <div className="mt-6 text-center"><Link to="/" className="text-sm text-gray-500 hover:text-amber-500 transition-colors">&larr; Back to Home</Link></div>
+        <div className="mt-6 text-center"><Link to="/" className="text-sm text-gray-500 hover:text-tropic-gold transition-colors">&larr; Back to Home</Link></div>
       </div>
     </div>
   );

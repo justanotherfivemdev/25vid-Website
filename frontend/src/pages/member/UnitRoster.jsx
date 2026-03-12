@@ -13,7 +13,14 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
 
-const STATUS_COLORS = { recruit: 'bg-tropic-gold-dark', active: 'bg-green-700', reserve: 'bg-tropic-gold/60', staff: 'bg-purple-700', command: 'bg-tropic-red', inactive: 'bg-gray-700' };
+const STATUS_COLORS = {
+  recruit: 'bg-tropic-gold-dark',
+  active: 'bg-tropic-red',
+  reserve: 'bg-gray-700',
+  staff: 'bg-tropic-gold-dark',
+  command: 'bg-tropic-red',
+  inactive: 'bg-gray-700'
+};
 
 const MemberCard = ({ member, compact = false }) => (
   <Link to={`/roster/${member.id}`}>
@@ -143,7 +150,7 @@ const UnitRoster = () => {
         <div className="container mx-auto max-w-7xl space-y-6">
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-amber-500" />
+              <Users className="w-8 h-8 text-tropic-gold" />
               <div>
                 <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="roster-title">PERSONNEL DIRECTORY</h2>
                 <p className="text-sm text-gray-500">{filtered.length} of {members.length} operators</p>
@@ -212,7 +219,7 @@ const UnitRoster = () => {
                 title="COMMAND STAFF" 
                 members={hierarchy.command_staff} 
                 icon={Shield} 
-                color="text-amber-500"
+                color="text-tropic-gold"
               />
               
               {/* Companies */}
