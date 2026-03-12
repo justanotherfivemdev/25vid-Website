@@ -61,6 +61,8 @@ DB_NAME=25th_infantry_division
 JWT_SECRET=<GENERATE_A_STRONG_RANDOM_SECRET>
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
+# Local HTTP development only: set false to allow auth cookie over http://
+COOKIE_SECURE=true
 
 # Optional — Discord OAuth2 (omit all three to disable Discord login)
 # DISCORD_CLIENT_ID=<YOUR_DISCORD_APP_CLIENT_ID>
@@ -324,6 +326,7 @@ sudo systemctl reload nginx
 | `JWT_SECRET` | backend/.env | Yes | Strong random secret for JWT signing |
 | `JWT_ALGORITHM` | backend/.env | Yes | `HS256` |
 | `JWT_EXPIRATION_HOURS` | backend/.env | Yes | Token lifetime (24 recommended) |
+| `COOKIE_SECURE` | backend/.env | Optional | Auth cookie `Secure` flag (`true` for HTTPS production, `false` only for local HTTP dev) |
 | `DISCORD_CLIENT_ID` | backend/.env | Optional | Discord OAuth app ID (omit to disable Discord) |
 | `DISCORD_CLIENT_SECRET` | backend/.env | Optional | Discord OAuth app secret |
 | `DISCORD_REDIRECT_URI` | backend/.env | Optional | Must match Discord portal + your domain |
