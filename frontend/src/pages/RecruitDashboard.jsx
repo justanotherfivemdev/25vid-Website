@@ -122,6 +122,18 @@ const RecruitDashboard = () => {
 
       <div className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-2xl space-y-8">
+          <Card className="bg-gray-900/80 border-amber-700/30" data-testid="recruit-profile-cta">
+            <CardContent className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-tropic-gold tracking-wider">KEEP YOUR PROFILE CURRENT</h3>
+                <p className="text-sm text-gray-400 mt-1">Add your bio, timezone, and role preferences so staff can process you faster.</p>
+              </div>
+              <Button onClick={() => navigate('/hub/profile')} className="bg-amber-700 hover:bg-amber-800 text-white tracking-wider" data-testid="recruit-update-profile">
+                Update Profile
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Welcome Message */}
           <div className="text-center space-y-2">
             <h2 className="text-3xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
