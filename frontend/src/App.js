@@ -24,6 +24,8 @@ import OperationDetail from '@/pages/member/OperationDetail';
 import UnitRoster from '@/pages/member/UnitRoster';
 import MemberProfile from '@/pages/member/MemberProfile';
 import EditProfile from '@/pages/member/EditProfile';
+import IntelBoard from '@/pages/member/IntelBoard';
+import CampaignMap from '@/pages/member/CampaignMap';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
 import RecruitDashboard from '@/pages/RecruitDashboard';
@@ -913,6 +915,8 @@ function App() {
         <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />
         <Route path="/hub/discussions/:id" element={<ProtectedRoute><DiscussionThread /></ProtectedRoute>} />
         <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
+        <Route path="/hub/intel" element={<ProtectedRoute><IntelBoard /></ProtectedRoute>} />
+        <Route path="/hub/campaign" element={<ProtectedRoute><CampaignMap /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
       </Routes>
