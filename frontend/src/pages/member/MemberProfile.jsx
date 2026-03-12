@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Shield, Home, LogOut, Calendar, Clock, Award, Target, MapPin, Globe } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,7 +17,7 @@ const MemberProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     axios.get(`${API}/roster/${id}`)
@@ -25,7 +26,7 @@ const MemberProfile = () => {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
-  const handleLogout = () => { axios.post(`${API}/auth/logout`).catch(() => {}); localStorage.removeItem('user'); navigate('/'); };
+  const handleLogout = async () => { await logout(); navigate('/'); };
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading profile...</div>;
   if (!profile) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Profile not found</div>;

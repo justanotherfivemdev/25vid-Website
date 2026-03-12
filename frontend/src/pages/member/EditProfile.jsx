@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Save, CheckCircle, AlertCircle, Home, LogOut, Link2, Unlink, Lock } from 'lucide-react';
 import ImageUpload from '@/components/admin/ImageUpload';
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const EditProfile = () => {
+  const { logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,7 +69,7 @@ const EditProfile = () => {
     } finally { setSaving(false); }
   };
 
-  const handleLogout = () => { axios.post(`${API}/auth/logout`).catch(() => {}); localStorage.removeItem('user'); navigate('/'); };
+  const handleLogout = async () => { await logout(); navigate('/'); };
 
   const handleLinkDiscord = async () => {
     try {

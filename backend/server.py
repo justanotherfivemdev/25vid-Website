@@ -296,6 +296,14 @@ class HistoryEntryCreate(BaseModel):
     campaign_type: str = "campaign"
     sort_order: int = 0
 
+class MemberOfTheWeek(BaseModel):
+    user_id: str
+    username: str
+    reason: str = ""
+    avatar_url: Optional[str] = None
+    rank: Optional[str] = None
+    set_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 # ============================================================================
 # AUTH UTILITIES
 # ============================================================================
@@ -1296,6 +1304,43 @@ async def search_content(q: str, current_user: dict = Depends(get_current_user))
         {"$or": [{"title": regex}, {"content": regex}]}, {"_id": 0}
     ).sort("created_at", -1).to_list(20)
     return {"operations": ops, "discussions": discs}
+
+# ============================================================================
+# MEMBER OF THE WEEK ENDPOINTS
+# ============================================================================
+
+@api_router.get("/member-of-the-week")
+async def get_member_of_the_week():
+    doc = await db.member_of_the_week.find_one({"id": "current"}, {"_id": 0})
+    if not doc:
+        return None
+    return doc
+
+@api_router.put("/admin/member-of-the-week")
+async def set_member_of_the_week(data: dict, current_user: dict = Depends(get_current_admin)):
+    user_id = data.get("user_id")
+    reason = data.get("reason", "")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    member = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    motw = {
+        "id": "current",
+        "user_id": user_id,
+        "username": member.get("username", "Unknown"),
+        "reason": reason,
+        "avatar_url": member.get("profile", {}).get("avatar_url", ""),
+        "rank": member.get("rank", ""),
+        "set_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.member_of_the_week.replace_one({"id": "current"}, motw, upsert=True)
+    return motw
+
+@api_router.delete("/admin/member-of-the-week")
+async def clear_member_of_the_week(current_user: dict = Depends(get_current_admin)):
+    await db.member_of_the_week.delete_one({"id": "current"})
+    return {"message": "Member of the Week cleared"}
 
 # ============================================================================
 # UNIT HISTORY ENDPOINTS

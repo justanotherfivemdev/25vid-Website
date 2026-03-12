@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star } from 'lucide-react';
+
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const MemberHub = () => {
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
   const [operations, setOperations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [training, setTraining] = useState([]);
@@ -21,28 +23,29 @@ const MemberHub = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
   const [mySchedule, setMySchedule] = useState([]);
+  const [motw, setMotw] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('user') || '{}');
-    setUser(stored);
     fetchAll();
   }, []);
 
   const fetchAll = async () => {
     try {
-      const [ops, ann, train, disc, sched] = await Promise.all([
+      const [ops, ann, train, disc, sched, motwRes] = await Promise.all([
         axios.get(`${API}/operations`),
         axios.get(`${API}/announcements`),
         axios.get(`${API}/training`),
         axios.get(`${API}/discussions`),
         axios.get(`${API}/my-schedule`).catch(() => ({ data: [] })),
+        axios.get(`${API}/member-of-the-week`).catch(() => ({ data: null })),
       ]);
       setOperations(ops.data.slice(0, 4));
       setAnnouncements(ann.data.slice(0, 4));
       setTraining(train.data.slice(0, 3));
       setDiscussions(disc.data.slice(0, 5));
       setMySchedule(sched.data || []);
+      setMotw(motwRes.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -63,8 +66,8 @@ const MemberHub = () => {
     setSearchResults(null);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -78,7 +81,8 @@ const MemberHub = () => {
       {/* Top bar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30" data-testid="member-nav">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
+            <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
             <h1 className="text-xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH ID HUB</h1>
           </div>
           <div className="flex items-center space-x-4">
@@ -202,6 +206,32 @@ const MemberHub = () => {
             );
           })()}
 
+          {/* Member of the Week */}
+          {motw && (
+            <Card className="bg-gradient-to-r from-amber-900/30 via-amber-800/10 to-transparent border-amber-700/40" data-testid="motw-card">
+              <CardContent className="p-5 flex items-center gap-5">
+                <div className="relative shrink-0">
+                  <div className="w-16 h-16 rounded-full border-2 border-amber-500 overflow-hidden bg-gray-800 flex items-center justify-center">
+                    {motw.avatar_url ? (
+                      <img src={motw.avatar_url.startsWith('http') ? motw.avatar_url : `${BACKEND_URL}/api${motw.avatar_url}`} alt={motw.username} className="w-full h-full object-cover" />
+                    ) : (
+                      <Star className="w-8 h-8 text-amber-500" />
+                    )}
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-amber-600 rounded-full flex items-center justify-center border border-black">
+                    <Star className="w-3.5 h-3.5 text-white fill-white" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs tracking-widest text-amber-500 mb-0.5">MEMBER OF THE WEEK</div>
+                  <div className="text-lg font-bold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{motw.username}</div>
+                  {motw.rank && <div className="text-xs text-gray-400">{motw.rank}</div>}
+                  {motw.reason && <p className="text-sm text-gray-300 mt-1 whitespace-pre-wrap">{motw.reason}</p>}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* My Schedule */}
           {mySchedule.length > 0 && (
             <section data-testid="my-schedule-section">
@@ -269,7 +299,7 @@ const MemberHub = () => {
                       </div>
                       <CardTitle className="text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{a.title}</CardTitle>
                     </CardHeader>
-                    <CardContent><p className="text-sm text-gray-400">{a.content}</p></CardContent>
+                    <CardContent><p className="text-sm text-gray-400 whitespace-pre-wrap">{a.content}</p></CardContent>
                   </Card>
                 ))}
               </div>

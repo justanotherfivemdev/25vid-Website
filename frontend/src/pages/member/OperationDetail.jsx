@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Calendar, Clock, Users, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -22,7 +23,7 @@ const OperationDetail = () => {
   const [roleNotes, setRoleNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user, logout } = useAuth();
 
   useEffect(() => { fetchData(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -76,7 +77,7 @@ const OperationDetail = () => {
     } catch (e) { alert(e.response?.data?.detail || 'Promote failed'); }
   };
 
-  const handleLogout = () => { axios.post(`${API}/auth/logout`).catch(() => {}); localStorage.removeItem('user'); navigate('/'); };
+  const handleLogout = async () => { await logout(); navigate('/'); };
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
   if (!operation) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Operation not found</div>;
