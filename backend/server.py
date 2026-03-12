@@ -7,7 +7,6 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-import shutil
 import secrets
 import json
 import re
@@ -15,7 +14,7 @@ import urllib.parse
 import httpx
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Literal
 import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
@@ -176,7 +175,7 @@ class OperationCreate(BaseModel):
     logo_url: Optional[str] = None  # Country/faction/region badge
 
 class RSVPSubmit(BaseModel):
-    status: str = "attending"  # attending, tentative, not_attending
+    status: Literal["attending", "tentative", "not_attending"] = "attending"
     role_notes: Optional[str] = None
 
 class Announcement(BaseModel):
@@ -193,7 +192,7 @@ class Announcement(BaseModel):
 class AnnouncementCreate(BaseModel):
     title: str
     content: str
-    priority: str = "normal"
+    priority: Literal["low", "normal", "high", "urgent"] = "normal"
     badge_url: Optional[str] = None  # Bottom-right badge/logo
 
 class Discussion(BaseModel):
@@ -228,7 +227,7 @@ class GalleryImage(BaseModel):
 class GalleryImageCreate(BaseModel):
     title: str
     image_url: str
-    category: str = "operation"
+    category: Literal["operation", "training", "team", "equipment"] = "operation"
 
 class Training(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -331,6 +330,9 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
+def normalize_email(email: str) -> str:
+    return email.strip().lower()
+
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
@@ -356,6 +358,8 @@ async def get_current_user(request: Request) -> dict:
         user = await db.users.find_one({"id": user_id}, {"_id": 0})
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
+        if not user.get("is_active", True):
+            raise HTTPException(status_code=401, detail="Account is inactive")
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
@@ -431,13 +435,15 @@ async def get_auth_status():
 
 @api_router.post("/auth/register", response_model=TokenResponse)
 async def register(user_data: UserRegister, response: Response):
+    normalized_email = normalize_email(user_data.email)
     # Check if user exists
-    existing_user = await db.users.find_one({"email": user_data.email})
+    existing_user = await db.users.find_one({"email": normalized_email})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # Create user
     user_dict = user_data.model_dump()
+    user_dict["email"] = normalized_email
     user_dict["password_hash"] = hash_password(user_dict.pop("password"))
     user_obj = User(**user_dict)
     
@@ -459,7 +465,8 @@ async def register(user_data: UserRegister, response: Response):
 
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(credentials: UserLogin, response: Response):
-    user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
+    normalized_email = normalize_email(credentials.email)
+    user = await db.users.find_one({"email": normalized_email}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
@@ -683,19 +690,20 @@ class SetPasswordRequest(BaseModel):
 async def set_password(data: SetPasswordRequest, response: Response, current_user: dict = Depends(get_current_user)):
     """Allow Discord-only users to set a real email and password."""
     current_email = current_user.get("email", "")
+    normalized_email = normalize_email(data.email)
     # Only allow if user currently has a placeholder email
     if not current_email.endswith("@25thid.local"):
         raise HTTPException(status_code=400, detail="You already have an email and password set.")
     # Check if new email is taken by another user
-    existing = await db.users.find_one({"email": data.email, "id": {"$ne": current_user["id"]}}, {"_id": 0})
+    existing = await db.users.find_one({"email": normalized_email, "id": {"$ne": current_user["id"]}}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="This email is already registered to another account.")
     await db.users.update_one(
         {"id": current_user["id"]},
-        {"$set": {"email": data.email, "password_hash": pwd_context.hash(data.password)}}
+        {"$set": {"email": normalized_email, "password_hash": pwd_context.hash(data.password)}}
     )
     # Return new token with updated email
-    new_token = create_access_token({"sub": current_user["id"], "email": data.email})
+    new_token = create_access_token({"sub": current_user["id"], "email": normalized_email})
     set_auth_cookie(response, new_token)
     return {"message": "Email and password set successfully. You can now log in with email/password.", "access_token": new_token}
 
@@ -749,7 +757,7 @@ async def get_operation(operation_id: str):
     return operation
 
 @api_router.post("/operations", response_model=Operation)
-async def create_operation(operation_data: OperationCreate, current_user: dict = Depends(get_current_user)):
+async def create_operation(operation_data: OperationCreate, current_user: dict = Depends(get_current_admin)):
     op_dict = operation_data.model_dump()
     op_dict["created_by"] = current_user["id"]
     operation_obj = Operation(**op_dict)
@@ -864,7 +872,7 @@ async def get_announcements():
     return announcements
 
 @api_router.post("/announcements", response_model=Announcement)
-async def create_announcement(announcement_data: AnnouncementCreate, current_user: dict = Depends(get_current_user)):
+async def create_announcement(announcement_data: AnnouncementCreate, current_user: dict = Depends(get_current_admin)):
     ann_dict = announcement_data.model_dump()
     ann_dict["author_id"] = current_user["id"]
     ann_dict["author_name"] = current_user["username"]
@@ -947,7 +955,7 @@ async def get_gallery(category: Optional[str] = None):
     return images
 
 @api_router.post("/gallery", response_model=GalleryImage)
-async def upload_image(image_data: GalleryImageCreate, current_user: dict = Depends(get_current_user)):
+async def upload_image(image_data: GalleryImageCreate, current_user: dict = Depends(get_current_admin)):
     img_dict = image_data.model_dump()
     img_dict["uploaded_by"] = current_user["username"]
     image_obj = GalleryImage(**img_dict)
@@ -1033,19 +1041,29 @@ async def update_site_content(content: dict, current_user: dict = Depends(get_cu
 
 @api_router.post("/upload")
 async def upload_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
-    allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'}
+    allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
     ext = Path(file.filename).suffix.lower()
     if ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail=f"File type {ext} not allowed. Use: {', '.join(allowed_extensions)}")
 
-    if file.size and file.size > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
-
     unique_name = f"{uuid.uuid4().hex}{ext}"
     file_path = UPLOAD_DIR / unique_name
+    max_size = 10 * 1024 * 1024
+    written = 0
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(file_path, "wb") as buffer:
+            while chunk := file.file.read(1024 * 1024):
+                written += len(chunk)
+                if written > max_size:
+                    raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+                buffer.write(chunk)
+    except HTTPException:
+        if file_path.exists():
+            file_path.unlink()
+        raise
+    finally:
+        await file.close()
 
     file_url = f"/api/uploads/{unique_name}"
     return {"url": file_url, "filename": unique_name}
@@ -1431,7 +1449,7 @@ async def set_member_of_the_week(data: dict, current_user: dict = Depends(get_cu
         "user_id": user_id,
         "username": member.get("username", "Unknown"),
         "reason": reason,
-        "avatar_url": member.get("profile", {}).get("avatar_url", ""),
+        "avatar_url": member.get("avatar_url", ""),
         "rank": member.get("rank", ""),
         "set_at": datetime.now(timezone.utc).isoformat()
     }
@@ -1888,8 +1906,15 @@ class OpenBillet(BaseModel):
     is_open: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class Application(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+class OpenBilletUpdate(BaseModel):
+    title: Optional[str] = None
+    company: Optional[str] = None
+    platoon: Optional[str] = None
+    description: Optional[str] = None
+    requirements: Optional[str] = None
+    is_open: Optional[bool] = None
+
+class PublicApplicationCreate(BaseModel):
     billet_id: Optional[str] = None
     applicant_name: str
     applicant_email: EmailStr
@@ -1898,11 +1923,10 @@ class Application(BaseModel):
     experience: str
     availability: str
     why_join: str
-    status: str = "pending"  # pending, reviewing, accepted, rejected
+
+class ApplicationReviewUpdate(BaseModel):
+    status: Optional[Literal["pending", "reviewing", "accepted", "rejected"]] = None
     admin_notes: Optional[str] = None
-    submitted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    reviewed_at: Optional[datetime] = None
-    reviewed_by: Optional[str] = None
 
 @api_router.get("/recruitment/billets")
 async def get_open_billets():
@@ -1928,11 +1952,14 @@ async def create_billet(billet: OpenBillet, current_user: dict = Depends(get_cur
     return {"message": "Billet created", "id": billet.id}
 
 @api_router.put("/admin/recruitment/billets/{billet_id}")
-async def update_billet(billet_id: str, updates: dict, current_user: dict = Depends(get_current_admin)):
+async def update_billet(billet_id: str, updates: OpenBilletUpdate, current_user: dict = Depends(get_current_admin)):
     """Update an existing billet."""
+    update_dict = {k: v for k, v in updates.model_dump().items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
     result = await db.open_billets.update_one(
         {"id": billet_id},
-        {"$set": updates}
+        {"$set": update_dict}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Billet not found")
@@ -1947,14 +1974,18 @@ async def delete_billet(billet_id: str, current_user: dict = Depends(get_current
     return {"message": "Billet deleted"}
 
 @api_router.post("/recruitment/apply")
-async def submit_application(application: Application):
+async def submit_application(application: PublicApplicationCreate):
     """Submit a new recruitment application (public endpoint)."""
     app_dict = application.model_dump()
-    app_dict["submitted_at"] = app_dict["submitted_at"].isoformat()
-    if app_dict.get("reviewed_at"):
-        app_dict["reviewed_at"] = app_dict["reviewed_at"].isoformat()
+    app_dict["id"] = str(uuid.uuid4())
+    app_dict["applicant_email"] = normalize_email(app_dict["applicant_email"])
+    app_dict["status"] = "pending"
+    app_dict["admin_notes"] = None
+    app_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
+    app_dict["reviewed_at"] = None
+    app_dict["reviewed_by"] = None
     await db.applications.insert_one(app_dict)
-    return {"message": "Application submitted successfully", "id": application.id}
+    return {"message": "Application submitted successfully", "id": app_dict["id"]}
 
 @api_router.get("/admin/recruitment/applications")
 async def get_applications(status: Optional[str] = None, current_user: dict = Depends(get_current_admin)):
@@ -1974,13 +2005,16 @@ async def get_application(application_id: str, current_user: dict = Depends(get_
     return app
 
 @api_router.put("/admin/recruitment/applications/{application_id}")
-async def update_application(application_id: str, updates: dict, current_user: dict = Depends(get_current_admin)):
+async def update_application(application_id: str, updates: ApplicationReviewUpdate, current_user: dict = Depends(get_current_admin)):
     """Update application status and notes."""
-    updates["reviewed_at"] = datetime.now(timezone.utc).isoformat()
-    updates["reviewed_by"] = current_user["username"]
+    update_dict = {k: v for k, v in updates.model_dump().items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    update_dict["reviewed_at"] = datetime.now(timezone.utc).isoformat()
+    update_dict["reviewed_by"] = current_user["username"]
     result = await db.applications.update_one(
         {"id": application_id},
-        {"$set": updates}
+        {"$set": update_dict}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")
