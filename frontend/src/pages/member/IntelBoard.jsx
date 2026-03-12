@@ -42,13 +42,15 @@ const IntelBoard = () => {
   const [acking, setAcking] = useState(false);
 
   useEffect(() => {
-    fetchBriefings();
     axios.get(`${API}/intel/tags`).then(r => setAllTags(r.data)).catch(() => {});
   }, []);
 
-  useEffect(() => { fetchBriefings(); }, [search, filterCat, filterTag]);
+  useEffect(() => {
+    fetchBriefings();
+  }, [search, filterCat, filterTag]);
 
   const fetchBriefings = async () => {
+    setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filterCat) params.append('category', filterCat);
@@ -71,7 +73,7 @@ const IntelBoard = () => {
       // Update local state
       setBriefings(prev => prev.map(b => b.id === briefingId ? { ...b, user_acknowledged: !isAcked, ack_count: b.ack_count + (isAcked ? -1 : 1) } : b));
       if (selected?.id === briefingId) {
-        setSelected(prev => ({ ...prev, user_acknowledged: !isAcked, ack_count: prev.ack_count + (isAcked ? -1 : 1) }));
+        setSelected(prev => (prev ? { ...prev, user_acknowledged: !isAcked, ack_count: prev.ack_count + (isAcked ? -1 : 1) } : prev));
       }
     } catch (e) { console.error(e); }
     finally { setAcking(false); }
