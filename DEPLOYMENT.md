@@ -327,6 +327,17 @@ sudo systemctl reload nginx
 | `JWT_ALGORITHM` | backend/.env | Yes | `HS256` |
 | `JWT_EXPIRATION_HOURS` | backend/.env | Yes | Token lifetime (24 recommended) |
 | `COOKIE_SECURE` | backend/.env | Optional | Auth cookie `Secure` flag (`true` for HTTPS production, `false` only for local HTTP dev) |
+| `FRONTEND_URL` | backend/.env | Recommended | Public frontend origin used in email verification links |
+| `EMAIL_DELIVERY_MODE` | backend/.env | Optional | `smtp` for real email delivery or `log` to write verification links to backend logs |
+| `SMTP_HOST` | backend/.env | Recommended for production | SMTP hostname for verification emails |
+| `SMTP_PORT` | backend/.env | Optional | SMTP port (default `587`) |
+| `SMTP_USERNAME` | backend/.env | Optional | SMTP username |
+| `SMTP_PASSWORD` | backend/.env | Optional | SMTP password |
+| `SMTP_FROM_EMAIL` | backend/.env | Optional | Outbound sender email address |
+| `SMTP_FROM_NAME` | backend/.env | Optional | Outbound sender display name |
+| `SMTP_USE_TLS` | backend/.env | Optional | Enable STARTTLS (default `true`) |
+| `SMTP_USE_SSL` | backend/.env | Optional | Use implicit SSL SMTP instead of STARTTLS |
+| `EMAIL_VERIFICATION_TTL_HOURS` | backend/.env | Optional | Verification link lifetime in hours |
 | `DISCORD_CLIENT_ID` | backend/.env | Optional | Discord OAuth app ID (omit to disable Discord) |
 | `DISCORD_CLIENT_SECRET` | backend/.env | Optional | Discord OAuth app secret |
 | `DISCORD_REDIRECT_URI` | backend/.env | Optional | Must match Discord portal + your domain |

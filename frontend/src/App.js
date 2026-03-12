@@ -660,9 +660,12 @@ const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', password: '', username: '', rank: '', specialization: '' });
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [discordLoading, setDiscordLoading] = useState(false);
   const [discordAvailable, setDiscordAvailable] = useState(false);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
+  const [resendingVerification, setResendingVerification] = useState(false);
   const navigate = useNavigate();
 
   // If already authenticated, send the user to the correct destination immediately
@@ -685,6 +688,27 @@ const LoginPage = () => {
     const params = new URLSearchParams(window.location.search);
     const discordSuccess = params.get('discord_success');
     const discordError = params.get('discord_error');
+    const verifyEmailToken = params.get('verify_email_token');
+
+    if (verifyEmailToken) {
+      setSubmitting(true);
+      axios.post(`${API}/auth/verify-email`, { token: verifyEmailToken })
+        .then(res => {
+          setIsLogin(true);
+          setError('');
+          setPendingVerificationEmail('');
+          setNotice(res.data?.message || 'Email verified successfully. You can now log in.');
+        })
+        .catch(err => {
+          setNotice('');
+          setError(err.response?.data?.detail || 'This verification link is invalid or has expired.');
+        })
+        .finally(() => {
+          setSubmitting(false);
+          window.history.replaceState({}, '', '/login');
+        });
+      return;
+    }
 
     if (discordSuccess) {
       // Cookie was set by backend — fetch user data
@@ -717,6 +741,7 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setNotice('');
     setSubmitting(true);
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
@@ -724,17 +749,52 @@ const LoginPage = () => {
         ? { email: formData.email, password: formData.password }
         : { email: formData.email, username: formData.username, password: formData.password, rank: formData.rank || undefined, specialization: formData.specialization || undefined };
       const response = await axios.post(`${API}${endpoint}`, payload);
-      // Cookie is set by backend — just store user data for UI
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate(getPostAuthRoute(response.data.user), { replace: true });
+      if (isLogin) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        navigate(getPostAuthRoute(response.data.user), { replace: true });
+        return;
+      }
+
+      setIsLogin(true);
+      setPendingVerificationEmail(formData.email);
+      setNotice(response.data?.message || 'Registration successful. Check your email to verify your account.');
     } catch (err) {
-      const msg = err.response?.data?.detail || err.message || 'An error occurred';
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      const detail = err.response?.data?.detail;
+      if (detail?.code === 'email_not_verified') {
+        setPendingVerificationEmail(formData.email);
+        setError(detail.message);
+      } else {
+        const msg = detail || err.message || 'An error occurred';
+        setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      }
     } finally { setSubmitting(false); }
+  };
+
+  const handleResendVerification = async () => {
+    const email = (pendingVerificationEmail || formData.email || '').trim();
+    if (!email) {
+      setError('Enter your email address first so we know where to resend the verification link.');
+      return;
+    }
+
+    setError('');
+    setNotice('');
+    setResendingVerification(true);
+    try {
+      const response = await axios.post(`${API}/auth/resend-verification`, { email });
+      setPendingVerificationEmail(email);
+      setNotice(response.data?.message || 'A new verification email has been sent.');
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Unable to resend verification email.';
+      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    } finally {
+      setResendingVerification(false);
+    }
   };
 
   const handleDiscordLogin = async () => {
     setError('');
+    setNotice('');
     setDiscordLoading(true);
     try {
       const res = await axios.get(`${API}/auth/discord`);
@@ -780,7 +840,19 @@ const LoginPage = () => {
                 <div><label className="block text-sm font-medium mb-2">Rank (Optional)</label><Input type="text" className="bg-black/50 border-white/20" value={formData.rank} onChange={(e) => setFormData({...formData, rank: e.target.value})} data-testid="auth-rank-input" /></div>
                 <div><label className="block text-sm font-medium mb-2">Specialization (Optional)</label><Input type="text" placeholder="e.g., Assault, Recon, Support" className="bg-black/50 border-white/20" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} data-testid="auth-specialization-input" /></div>
               </>}
+              {notice && <div className="text-green-400 text-sm text-center" data-testid="auth-notice">{notice}</div>}
               {error && <div className="text-tropic-gold text-sm text-center" data-testid="auth-error">{error}</div>}
+              {isLogin && pendingVerificationEmail && (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendingVerification}
+                  className="w-full text-sm text-gray-300 hover:text-tropic-gold transition-colors disabled:opacity-60"
+                  data-testid="auth-resend-verification-button"
+                >
+                  {resendingVerification ? 'Sending verification email...' : `Resend verification email to ${pendingVerificationEmail}`}
+                </button>
+              )}
               <Button type="submit" disabled={submitting} className="w-full bg-tropic-gold hover:bg-tropic-gold-light text-black py-5 tactical-button tracking-wider" data-testid="auth-submit-button">{submitting ? 'Please wait...' : isLogin ? 'LOGIN' : 'REGISTER'}</Button>
             </form>
             {/* Discord OAuth — only shown when backend has Discord configured */}
@@ -803,7 +875,7 @@ const LoginPage = () => {
               </div>
             )}
             <div className="mt-6 text-center">
-              <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-sm text-gray-400 hover:text-tropic-gold transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
+              <button onClick={() => { setIsLogin(!isLogin); setError(''); setNotice(''); }} className="text-sm text-gray-400 hover:text-tropic-gold transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
             </div>
           </CardContent>
         </Card>

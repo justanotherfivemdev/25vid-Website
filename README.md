@@ -58,6 +58,17 @@ For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env` so auth 
 | `JWT_ALGORITHM` | Yes | `HS256` |
 | `JWT_EXPIRATION_HOURS` | Yes | Token lifetime in hours (recommended: `24`) |
 | `COOKIE_SECURE` | No | Cookie security flag (`false` for local HTTP dev, `true` for HTTPS production; default: `true`) |
+| `FRONTEND_URL` | No | Public frontend origin used in email verification links (recommended in production) |
+| `EMAIL_DELIVERY_MODE` | No | `smtp` for real email delivery or `log` to print verification emails in backend logs (default: `smtp` when SMTP is configured, otherwise `log`) |
+| `SMTP_HOST` | No | SMTP hostname for verification emails |
+| `SMTP_PORT` | No | SMTP port (default: `587`) |
+| `SMTP_USERNAME` | No | SMTP username/from login |
+| `SMTP_PASSWORD` | No | SMTP password |
+| `SMTP_FROM_EMAIL` | No | Outbound "from" email address |
+| `SMTP_FROM_NAME` | No | Outbound "from" display name |
+| `SMTP_USE_TLS` | No | Enable STARTTLS for SMTP (default: `true`) |
+| `SMTP_USE_SSL` | No | Use implicit SSL SMTP instead of STARTTLS (default: `false`) |
+| `EMAIL_VERIFICATION_TTL_HOURS` | No | Verification link lifetime in hours (default: `24`) |
 | `DISCORD_CLIENT_ID` | No | Discord OAuth app client ID (optional) |
 | `DISCORD_CLIENT_SECRET` | No | Discord OAuth app client secret (optional) |
 | `DISCORD_REDIRECT_URI` | No | Discord callback URL (optional) |

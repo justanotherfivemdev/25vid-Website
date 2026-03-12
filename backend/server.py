@@ -11,8 +11,10 @@ import secrets
 import json
 import re
 import urllib.parse
+import smtplib
 import httpx
 from pathlib import Path
+from email.message import EmailMessage
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional, Literal
 import uuid
@@ -36,6 +38,8 @@ db = client[os.environ['DB_NAME']]
 JWT_SECRET = os.environ['JWT_SECRET']
 JWT_ALGORITHM = os.environ['JWT_ALGORITHM']
 JWT_EXPIRATION_HOURS = int(os.environ.get('JWT_EXPIRATION_HOURS', 24))
+EMAIL_VERIFICATION_TTL_HOURS = int(os.environ.get('EMAIL_VERIFICATION_TTL_HOURS', 24))
+EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS = int(os.environ.get('EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS', 60))
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -45,6 +49,17 @@ security = HTTPBearer(auto_error=False)
 COOKIE_NAME = "auth_token"
 COOKIE_MAX_AGE = JWT_EXPIRATION_HOURS * 3600
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "true").lower() == "true"
+
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "").rstrip("/")
+SMTP_HOST = os.environ.get("SMTP_HOST", "").strip()
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USERNAME = os.environ.get("SMTP_USERNAME", "").strip()
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_FROM_EMAIL = os.environ.get("SMTP_FROM_EMAIL", SMTP_USERNAME or "no-reply@25thid.local").strip()
+SMTP_FROM_NAME = os.environ.get("SMTP_FROM_NAME", "25th Infantry Division").strip()
+SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").lower() == "true"
+SMTP_USE_SSL = os.environ.get("SMTP_USE_SSL", "false").lower() == "true"
+EMAIL_DELIVERY_MODE = os.environ.get("EMAIL_DELIVERY_MODE", "smtp" if SMTP_HOST else "log").strip().lower()
 
 def set_auth_cookie(response, token: str):
     response.set_cookie(
@@ -89,6 +104,9 @@ class User(BaseModel):
     specialization: Optional[str] = None
     join_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = True
+    email_verified: bool = False
+    email_verified_at: Optional[str] = None
+    email_verification_sent_at: Optional[str] = None
     # Phase 4 profile fields
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
@@ -128,6 +146,7 @@ class UserResponse(BaseModel):
     rank: Optional[str] = None
     specialization: Optional[str] = None
     join_date: datetime
+    email_verified: bool = False
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     status: str = "recruit"
@@ -150,6 +169,17 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str
     user: UserResponse
+
+class RegistrationResponse(BaseModel):
+    message: str
+    requires_verification: bool = True
+    email: EmailStr
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 class Operation(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -333,6 +363,91 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def normalize_email(email: str) -> str:
     return email.strip().lower()
 
+def get_frontend_base_url() -> str:
+    if FRONTEND_URL:
+        return FRONTEND_URL
+    if DISCORD_REDIRECT_URI and "/api/" in DISCORD_REDIRECT_URI:
+        return DISCORD_REDIRECT_URI.rsplit("/api/", 1)[0]
+    cors_origins_raw = os.environ.get('CORS_ORIGINS', '')
+    cors_origins = [o.strip().rstrip("/") for o in cors_origins_raw.split(',') if o.strip() and o.strip() != '*']
+    return cors_origins[0] if cors_origins else "http://localhost:3000"
+
+def create_email_verification_token(user_id: str, email: str) -> str:
+    payload = {
+        "sub": user_id,
+        "email": normalize_email(email),
+        "purpose": "verify_email",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=EMAIL_VERIFICATION_TTL_HOURS)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def validate_email_verification_token(token: str) -> Optional[dict]:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("purpose") != "verify_email":
+            return None
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.exceptions.PyJWTError:
+        return None
+    except Exception:
+        return None
+
+def build_verification_link(token: str) -> str:
+    return f"{get_frontend_base_url()}/login?verify_email_token={urllib.parse.quote(token)}"
+
+def send_email_message(message: EmailMessage) -> None:
+    if EMAIL_DELIVERY_MODE == "log":
+        logger.info("Email delivery mode is 'log'; email contents follow.\n%s", message)
+        return
+    if not SMTP_HOST:
+        raise RuntimeError("SMTP_HOST is not configured")
+
+    if SMTP_USE_SSL:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) as smtp:
+            if SMTP_USERNAME:
+                smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+            smtp.send_message(message)
+        return
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as smtp:
+        if SMTP_USE_TLS:
+            smtp.starttls()
+        if SMTP_USERNAME:
+            smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+        smtp.send_message(message)
+
+def send_verification_email(recipient_email: str, username: str, user_id: str) -> None:
+    token = create_email_verification_token(user_id, recipient_email)
+    verification_link = build_verification_link(token)
+    message = EmailMessage()
+    message["Subject"] = "Verify your 25th Infantry Division account"
+    message["From"] = f"{SMTP_FROM_NAME} <{SMTP_FROM_EMAIL}>"
+    message["To"] = recipient_email
+    message.set_content(
+        f"Hello {username},\n\n"
+        "Verify your email address to activate your account:\n"
+        f"{verification_link}\n\n"
+        f"This link expires in {EMAIL_VERIFICATION_TTL_HOURS} hours.\n"
+        "If you did not create this account, you can ignore this email."
+    )
+    message.add_alternative(
+        f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; color: #111;">
+            <p>Hello {username},</p>
+            <p>Verify your email address to activate your account.</p>
+            <p><a href="{verification_link}">Verify your account</a></p>
+            <p>This link expires in {EMAIL_VERIFICATION_TTL_HOURS} hours.</p>
+            <p>If you did not create this account, you can ignore this email.</p>
+          </body>
+        </html>
+        """,
+        subtype="html",
+    )
+    send_email_message(message)
+
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
@@ -405,6 +520,7 @@ def user_to_response(u: dict) -> UserResponse:
     return UserResponse(
         id=u["id"], email=u.get("email", ""), username=u["username"], role=u.get("role", "member"),
         rank=u.get("rank"), specialization=u.get("specialization"), join_date=jd,
+        email_verified=u.get("email_verified", False),
         avatar_url=u.get("avatar_url"), bio=u.get("bio"), status=u.get("status", "recruit"),
         timezone=u.get("timezone"), squad=u.get("squad"), favorite_role=u.get("favorite_role"),
         awards=u.get("awards", []), mission_history=u.get("mission_history", []),
@@ -427,41 +543,98 @@ async def get_auth_status():
     return {
         "discord_enabled": bool(DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET and DISCORD_REDIRECT_URI),
         "email_enabled": True,  # Always available
+        "email_verification_required": True,
     }
 
 # ============================================================================
 # AUTH ENDPOINTS
 # ============================================================================
 
-@api_router.post("/auth/register", response_model=TokenResponse)
+@api_router.post("/auth/register", response_model=RegistrationResponse)
 async def register(user_data: UserRegister, response: Response):
     normalized_email = normalize_email(user_data.email)
     # Check if user exists
     existing_user = await db.users.find_one({"email": normalized_email})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     # Create user
     user_dict = user_data.model_dump()
     user_dict["email"] = normalized_email
     user_dict["password_hash"] = hash_password(user_dict.pop("password"))
+    user_dict["email_verified"] = False
+    user_dict["email_verification_sent_at"] = datetime.now(timezone.utc).isoformat()
     user_obj = User(**user_dict)
-    
+
+    try:
+        send_verification_email(user_obj.email, user_obj.username, user_obj.id)
+    except Exception as exc:
+        logger.error("Failed to send verification email to %s: %s", user_obj.email, exc)
+        raise HTTPException(status_code=503, detail="Unable to send verification email right now. Please try again later.")
+
     doc = user_obj.model_dump()
     doc['join_date'] = doc['join_date'].isoformat()
     await db.users.insert_one(doc)
-    
-    # Create token
-    access_token = create_access_token({"sub": user_obj.id, "email": user_obj.email})
-    set_auth_cookie(response, access_token)
-    
-    user_response = user_to_response(user_obj.model_dump())
-    
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=user_response
+
+    clear_auth_cookie(response)
+    return RegistrationResponse(
+        message="Registration successful. Check your email to verify your account before logging in.",
+        requires_verification=True,
+        email=user_obj.email,
     )
+
+@api_router.post("/auth/verify-email")
+async def verify_email(payload: VerifyEmailRequest):
+    token_data = validate_email_verification_token(payload.token)
+    if not token_data:
+        raise HTTPException(status_code=400, detail="This verification link is invalid or has expired.")
+
+    user = await db.users.find_one({"id": token_data["sub"]}, {"_id": 0})
+    if not user or normalize_email(user.get("email", "")) != token_data.get("email"):
+        raise HTTPException(status_code=400, detail="This verification link is no longer valid.")
+
+    if user.get("email_verified"):
+        return {"message": "Your email is already verified."}
+
+    verified_at = datetime.now(timezone.utc).isoformat()
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"email_verified": True, "email_verified_at": verified_at}, "$unset": {"email_verification_sent_at": ""}}
+    )
+    return {"message": "Email verified successfully. You can now log in."}
+
+@api_router.post("/auth/resend-verification")
+async def resend_verification_email(payload: ResendVerificationRequest):
+    normalized_email = normalize_email(payload.email)
+    user = await db.users.find_one({"email": normalized_email}, {"_id": 0})
+    if not user:
+        return {"message": "If that email is registered and still unverified, a verification link has been sent."}
+
+    if user.get("email_verified"):
+        return {"message": "That email address is already verified."}
+
+    last_sent_raw = user.get("email_verification_sent_at")
+    if last_sent_raw:
+        try:
+            last_sent = datetime.fromisoformat(last_sent_raw)
+            elapsed = (datetime.now(timezone.utc) - last_sent).total_seconds()
+            if elapsed < EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS:
+                retry_after = int(EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS - elapsed)
+                raise HTTPException(status_code=429, detail=f"Please wait {retry_after} seconds before requesting another verification email.")
+        except ValueError:
+            pass
+
+    try:
+        send_verification_email(user["email"], user["username"], user["id"])
+    except Exception as exc:
+        logger.error("Failed to resend verification email to %s: %s", user["email"], exc)
+        raise HTTPException(status_code=503, detail="Unable to send verification email right now. Please try again later.")
+
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"email_verification_sent_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "A new verification email has been sent."}
 
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(credentials: UserLogin, response: Response):
@@ -475,6 +648,15 @@ async def login(credentials: UserLogin, response: Response):
     
     if not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="Account is inactive")
+
+    if not user.get("email_verified", False):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "email_not_verified",
+                "message": "Verify your email before logging in. You can request a new verification link from the login form."
+            }
+        )
     
     access_token = create_access_token({"sub": user["id"], "email": user["email"]})
     set_auth_cookie(response, access_token)
@@ -534,7 +716,7 @@ async def discord_link_redirect(current_user: dict = Depends(get_current_user)):
 async def discord_callback(code: str = None, state: str = None, error: str = None):
     """Handle Discord OAuth2 callback — exchanges code, creates/links/logs in user."""
     require_discord_config()
-    frontend_base = DISCORD_REDIRECT_URI.rsplit("/api/", 1)[0]
+    frontend_base = get_frontend_base_url()
 
     if error or not code or not state:
         return RedirectResponse(f"{frontend_base}/login?discord_error=authorization_denied")
@@ -581,7 +763,8 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     discord_id = discord_user["id"]
     discord_username = discord_user.get("username", "")
     discord_avatar_hash = discord_user.get("avatar")
-    discord_email = discord_user.get("email")
+    discord_email = normalize_email(discord_user["email"]) if discord_user.get("email") else None
+    discord_email_verified = bool(discord_user.get("verified"))
     discord_avatar_url = (
         f"https://cdn.discordapp.com/avatars/{discord_id}/{discord_avatar_hash}.png"
         if discord_avatar_hash else None
@@ -632,7 +815,13 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
                     "discord_id": discord_id,
                     "discord_username": discord_username,
                     "discord_avatar": discord_avatar_url,
-                    "discord_linked": True
+                    "discord_linked": True,
+                    "email_verified": existing_by_email.get("email_verified", False) or discord_email_verified,
+                    "email_verified_at": (
+                        datetime.now(timezone.utc).isoformat()
+                        if discord_email_verified and not existing_by_email.get("email_verified", False)
+                        else existing_by_email.get("email_verified_at")
+                    ),
                 }}
             )
             jwt_token = create_access_token({"sub": existing_by_email["id"], "email": existing_by_email["email"]})
@@ -646,6 +835,8 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
         email=email_for_user,
         username=discord_username or f"Operator_{discord_id[:8]}",
         password_hash=pwd_context.hash(secrets.token_urlsafe(32)),
+        email_verified=True,
+        email_verified_at=datetime.now(timezone.utc).isoformat(),
         discord_id=discord_id,
         discord_username=discord_username,
         discord_avatar=discord_avatar_url,
@@ -700,7 +891,12 @@ async def set_password(data: SetPasswordRequest, response: Response, current_use
         raise HTTPException(status_code=400, detail="This email is already registered to another account.")
     await db.users.update_one(
         {"id": current_user["id"]},
-        {"$set": {"email": normalized_email, "password_hash": pwd_context.hash(data.password)}}
+        {"$set": {
+            "email": normalized_email,
+            "password_hash": pwd_context.hash(data.password),
+            "email_verified": True,
+            "email_verified_at": current_user.get("email_verified_at") or datetime.now(timezone.utc).isoformat()
+        }}
     )
     # Return new token with updated email
     new_token = create_access_token({"sub": current_user["id"], "email": normalized_email})
