@@ -26,6 +26,11 @@ import MemberProfile from '@/pages/member/MemberProfile';
 import EditProfile from '@/pages/member/EditProfile';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
+import RecruitmentManager from '@/pages/admin/RecruitmentManager';
+import IntelManager from '@/pages/admin/IntelManager';
+import CampaignManager from '@/pages/admin/CampaignManager';
+import UnitTagsManager from '@/pages/admin/UnitTagsManager';
+import RecruitDashboard from '@/pages/RecruitDashboard';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -612,89 +617,7 @@ const LandingPage = () => {
   );
 };
 
-// ============================================================================
-// RECRUIT DASHBOARD
-// ============================================================================
-const RecruitDashboard = () => {
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('user') || 'null');
-    } catch {
-      return null;
-    }
-  });
-  const [loading, setLoading] = useState(!user);
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    axios.get(`${API}/auth/me`)
-      .then(res => {
-        localStorage.setItem('user', JSON.stringify(res.data));
-        setUser(res.data);
-      })
-      .catch(() => {
-        localStorage.removeItem('user');
-        navigate('/login', { replace: true });
-      })
-      .finally(() => setLoading(false));
-  }, [navigate]);
-
-  const handleLogout = async () => {
-    try {
-      await axios.post(`${API}/auth/logout`);
-    } catch {}
-    localStorage.removeItem('user');
-    navigate('/login', { replace: true });
-  };
-
-  if (loading) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
-  }
-
-  return (
-    <div className="min-h-screen bg-black text-white px-6 py-16">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-wider text-tropic-gold">RECRUIT PROCESSING</h1>
-          <p className="text-gray-400 mt-3">Your account is active, but staff approval is still required before full hub access.</p>
-        </div>
-
-        <Card className="glass-card border-amber-900/40">
-          <CardHeader>
-            <CardTitle className="text-2xl tracking-wider">WELCOME, {user?.username?.toUpperCase?.() || 'RECRUIT'}</CardTitle>
-            <CardDescription className="text-gray-400">This holding area is only for pending recruits.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="bg-black/40 border border-amber-900/30 rounded-lg p-4">
-                <div className="text-xs tracking-[0.2em] text-gray-500 mb-2">ACCOUNT STATUS</div>
-                <div className="text-lg font-semibold text-tropic-gold">{user?.status || 'recruit'}</div>
-              </div>
-              <div className="bg-black/40 border border-amber-900/30 rounded-lg p-4">
-                <div className="text-xs tracking-[0.2em] text-gray-500 mb-2">SPECIALIZATION</div>
-                <div className="text-lg font-semibold text-white">{user?.specialization || 'Not yet assigned'}</div>
-              </div>
-            </div>
-
-            <div className="border border-amber-900/30 rounded-lg p-5 bg-amber-950/10">
-              <h2 className="text-lg font-semibold tracking-wider text-amber-300 mb-3">NEXT STEPS</h2>
-              <ul className="space-y-2 text-gray-300 text-sm leading-relaxed">
-                <li>• Staff will review your account details and contact you through Discord or email.</li>
-                <li>• Once approved, your status will be updated and the full Member Hub will unlock automatically.</li>
-                <li>• If your rank, specialization, or billet needs to change later, command staff will handle it from the Command Center.</li>
-              </ul>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button onClick={() => navigate('/hub/profile')} className="bg-amber-700 hover:bg-amber-800 text-white tracking-wider">UPDATE PROFILE</Button>
-              <Button variant="outline" onClick={handleLogout} className="border-tropic-red/50 text-tropic-gold hover:bg-amber-900/20 tracking-wider">LOG OUT</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-};
 
 // ============================================================================
 // LOGIN PAGE
@@ -874,6 +797,10 @@ function App() {
         <Route path="/admin/training" element={<ProtectedRoute adminOnly><TrainingManager /></ProtectedRoute>} />
         <Route path="/admin/gallery" element={<ProtectedRoute adminOnly><GalleryManager /></ProtectedRoute>} />
         <Route path="/admin/history" element={<ProtectedRoute adminOnly><HistoryManager /></ProtectedRoute>} />
+        <Route path="/admin/recruitment" element={<ProtectedRoute adminOnly><RecruitmentManager /></ProtectedRoute>} />
+        <Route path="/admin/intel" element={<ProtectedRoute adminOnly><IntelManager /></ProtectedRoute>} />
+        <Route path="/admin/campaigns" element={<ProtectedRoute adminOnly><CampaignManager /></ProtectedRoute>} />
+        <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
