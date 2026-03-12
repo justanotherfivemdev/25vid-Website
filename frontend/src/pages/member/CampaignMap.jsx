@@ -11,8 +11,8 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const OBJ_STATUS_CFG = {
   pending: { color: 'bg-gray-700', dot: 'bg-gray-500', label: 'PENDING' },
-  in_progress: { color: 'bg-amber-900/30', dot: 'bg-amber-500 animate-pulse', label: 'IN PROGRESS' },
-  complete: { color: 'bg-green-900/20', dot: 'bg-green-500', label: 'COMPLETE' },
+  in_progress: { color: 'bg-tropic-red/15', dot: 'bg-tropic-red animate-pulse', label: 'IN PROGRESS' },
+  complete: { color: 'bg-tropic-gold/15', dot: 'bg-tropic-gold', label: 'COMPLETE' },
   failed: { color: 'bg-red-900/20', dot: 'bg-red-500', label: 'FAILED' },
 };
 
@@ -79,7 +79,7 @@ const CampaignMap = () => {
             </h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin/campaigns"><Button size="sm" variant="outline" className="border-amber-700 text-amber-500"><Shield className="w-4 h-4 mr-1" />Manage</Button></Link>}
+            {user?.role === 'admin' && <Link to="/admin/campaigns"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Manage</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
