@@ -4,17 +4,25 @@
   background-color: #000000;
 }
 
+:root {
+  --brand-gold: #c9a227;
+  --brand-gold-light: #e3c766;
+  --brand-gold-dark: #8f701a;
+  --brand-red: #b01c2e;
+  --brand-olive: #556b2f;
+}
+
 .compass-logo {
-  filter: drop-shadow(0 0 20px rgba(180, 130, 20, 0.5));
+  filter: drop-shadow(0 0 24px rgba(201, 162, 39, 0.45));
 }
 
 .tactical-button {
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(180, 130, 20, 0.3);
+  box-shadow: 0 8px 24px rgba(201, 162, 39, 0.22);
 }
 .tactical-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(180, 130, 20, 0.5);
+  box-shadow: 0 12px 32px rgba(201, 162, 39, 0.34);
 }
 
 /* ============ OPERATION CARDS ============ */
@@ -29,7 +37,7 @@
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, transparent 60%, rgba(180, 130, 20, 0.3));
+  background: linear-gradient(135deg, transparent 52%, rgba(201, 162, 39, 0.42));
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
@@ -40,7 +48,7 @@
 .op-card:hover::before { opacity: 1; }
 .op-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(180, 130, 20, 0.15), 0 0 0 1px rgba(180, 130, 20, 0.2);
+  box-shadow: 0 12px 40px rgba(201, 162, 39, 0.16), 0 0 0 1px rgba(201, 162, 39, 0.24);
 }
 
 /* ============ INTEL/ANNOUNCEMENT CARDS ============ */
@@ -51,11 +59,11 @@
 }
 .intel-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.42);
 }
-.intel-urgent { border-left: 3px solid #D4A017; }
-.intel-high { border-left: 3px solid #ff6b35; }
-.intel-normal { border-left: 3px solid #4a90e2; }
+.intel-urgent { border-left: 3px solid var(--brand-red); }
+.intel-high { border-left: 3px solid #c96d1f; }
+.intel-normal { border-left: 3px solid var(--brand-gold); }
 .intel-low { border-left: 3px solid #555; }
 
 /* ============ SECTION DIVIDERS ============ */
@@ -72,7 +80,7 @@
   transform: translate(-50%, -50%);
   width: 60%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(180, 130, 20, 0.6), transparent);
+  background: linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.72), transparent);
 }
 
 /* ============ SECTION LABEL ============ */
@@ -91,7 +99,7 @@
   display: block;
   width: 60px;
   height: 2px;
-  background: #D4A017;
+  background: var(--brand-gold);
   margin: 12px auto 0;
 }
 .section-label p {
@@ -119,7 +127,7 @@
   left: 0;
   width: 80px;
   height: 3px;
-  background: #D4A017;
+  background: var(--brand-gold);
 }
 
 /* ============ TACTICAL GRID ============ */
@@ -130,9 +138,9 @@
 }
 
 /* keep backwards compat */
-.announcement-urgent { border-left: 4px solid #D4A017; }
-.announcement-high { border-left: 4px solid #ff6b35; }
-.announcement-normal { border-left: 4px solid #4a90e2; }
+.announcement-urgent { border-left: 4px solid var(--brand-red); }
+.announcement-high { border-left: 4px solid #c96d1f; }
+.announcement-normal { border-left: 4px solid var(--brand-gold); }
 .announcement-low { border-left: 4px solid #888888; }
 .operation-card { transition: all 0.3s ease; }
-.operation-card:hover { transform: scale(1.02); border-color: rgba(180,130,20,0.5); }
+.operation-card:hover { transform: scale(1.02); border-color: rgba(201, 162, 39, 0.5); }

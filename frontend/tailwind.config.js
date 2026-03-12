@@ -15,12 +15,14 @@ module.exports = {
   		colors: {
   			// 25th Infantry Division "Tropic Lightning" brand colors
   			'tropic': {
-  				red: '#C8102E',
-  				gold: '#FFD700',
-  				'red-dark': '#9A0C23',
-  				'red-light': '#E8334A',
-  				'gold-dark': '#D4AF37',
-  				'gold-light': '#FFE44D',
+  				red: '#B01C2E',
+  				gold: '#C9A227',
+  				'red-dark': '#7E1420',
+  				'red-light': '#D33A4C',
+  				'gold-dark': '#8F701A',
+  				'gold-light': '#E3C766',
+  				olive: '#556B2F',
+  				'olive-light': '#738C43',
   			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

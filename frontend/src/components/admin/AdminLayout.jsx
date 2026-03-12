@@ -33,8 +33,8 @@ const AdminLayout = ({ children }) => {
   
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Top Bar - 25th ID colors: red accent with gold highlights */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-tropic-red/30">
+      {/* Top Bar - 25th ID colors: gold-forward with red as secondary accent */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-tropic-gold/25">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center space-x-4">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
@@ -59,7 +59,7 @@ const AdminLayout = ({ children }) => {
               onClick={handleLogout}
               variant="outline" 
               size="sm"
-              className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"
+              className="border-tropic-red/50 text-tropic-red-light hover:bg-tropic-red/10"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -70,7 +70,7 @@ const AdminLayout = ({ children }) => {
       
       <div className="flex pt-16">
         {/* Sidebar - 25th ID colors */}
-        <div className="fixed left-0 top-16 bottom-0 w-64 bg-gray-900 border-r border-tropic-red/20 overflow-y-auto">
+        <div className="fixed left-0 top-16 bottom-0 w-64 bg-gray-900 border-r border-tropic-gold/15 overflow-y-auto">
           <nav className="p-4 space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -81,8 +81,8 @@ const AdminLayout = ({ children }) => {
                   <div
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-tropic-red text-white'
-                        : 'text-gray-400 hover:bg-tropic-red/10 hover:text-tropic-gold'
+                        ? 'bg-tropic-gold text-black'
+                        : 'text-gray-400 hover:bg-tropic-gold/10 hover:text-tropic-gold'
                     }`}
                   >
                     <Icon className={`w-5 h-5 ${isActive ? '' : ''}`} />

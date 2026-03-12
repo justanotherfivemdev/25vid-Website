@@ -140,23 +140,23 @@ const Navigation = ({ scrollToSection, content }) => {
   const btnText = content.nav?.buttonText || 'JOIN NOW';
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/85 backdrop-blur-lg border-b border-white/5" data-testid="main-nav">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/85 backdrop-blur-lg border-b border-tropic-gold/20" data-testid="main-nav">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-lg font-bold tracking-widest text-white/90 hover:text-white transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <Link to="/" className="text-lg font-bold tracking-widest text-tropic-gold-light hover:text-white transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
             {brandName}
           </Link>
           <button className="md:hidden text-white" onClick={() => setMenuOpen(!menuOpen)} data-testid="mobile-menu-btn">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} /></svg>
           </button>
-          <div className={`${menuOpen ? 'flex flex-col absolute top-full left-0 right-0 bg-black/95 p-6 space-y-4 border-b border-white/10' : 'hidden'} md:flex md:flex-row md:static md:bg-transparent md:p-0 md:space-y-0 md:border-0 items-center md:space-x-8`}>
+          <div className={`${menuOpen ? 'flex flex-col absolute top-full left-0 right-0 bg-black/95 p-6 space-y-4 border-b border-tropic-gold/20' : 'hidden'} md:flex md:flex-row md:static md:bg-transparent md:p-0 md:space-y-0 md:border-0 items-center md:space-x-8`}>
             <button onClick={() => { scrollToSection('about'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-about">ABOUT</button>
             <button onClick={() => { scrollToSection('training'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-training">TRAINING</button>
             <button onClick={() => { scrollToSection('operations'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-operations">OPERATIONS</button>
             <button onClick={() => { scrollToSection('intel'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-intel">INTEL</button>
-            <div className="hidden md:block h-5 w-px bg-tropic-red/40"></div>
+            <div className="hidden md:block h-5 w-px bg-tropic-gold/30"></div>
             <Link to="/login" onClick={() => setMenuOpen(false)}>
-              <Button className="bg-tropic-red hover:bg-tropic-red-dark text-white px-6 py-2 tactical-button font-bold tracking-wider" data-testid="nav-join-button">{btnText}</Button>
+              <Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-6 py-2 tactical-button font-bold tracking-wider" data-testid="nav-join-button">{btnText}</Button>
             </Link>
           </div>
         </div>
@@ -180,7 +180,7 @@ const HeroSection = ({ content }) => (
         {content.hero.subtitle && <span className="block text-lg sm:text-xl lg:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-tropic-gold to-tropic-gold-light mt-4 tracking-[0.15em]">{content.hero.subtitle}</span>}
       </h1>
       <div className="mt-10">
-        <Link to="/login"><Button className="bg-amber-700 hover:bg-amber-800 text-white px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">{content.nav?.buttonText || 'ENLIST NOW'}</Button></Link>
+        <Link to="/login"><Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">{content.nav?.buttonText || 'ENLIST NOW'}</Button></Link>
       </div>
     </div>
     <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>
@@ -201,17 +201,17 @@ const AboutSection = ({ content }) => {
             {content.about?.logoImage && (
               <img src={resolveImg(content.about.logoImage)} alt="Unit Emblem" className="w-48 h-48 object-contain opacity-80 mt-6" data-testid="about-logo" />
             )}
-            <Link to="/login"><Button className="bg-amber-700 hover:bg-amber-800 text-white px-10 py-5 text-lg tactical-button shadow-lg shadow-tropic-red/30 tracking-wider" data-testid="about-join-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
+            <Link to="/login"><Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button shadow-lg shadow-tropic-gold/20 tracking-wider" data-testid="about-join-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
           </div>
           <div className="space-y-8 text-base md:text-lg leading-relaxed">
             <p className="text-gray-300" data-testid="about-description-1">{content.about?.paragraph1}</p>
-            <div className="h-px bg-gradient-to-r from-transparent via-tropic-red/30 to-transparent"></div>
+            <div className="h-px bg-gradient-to-r from-transparent via-tropic-gold/40 to-transparent"></div>
             <p className="text-gray-300" data-testid="about-description-2">{content.about?.paragraph2}</p>
             {/* Quote block */}
             <div className="mt-12 relative rounded-lg overflow-hidden" style={{ backgroundImage: `url('${resolveImg(quote.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '280px' }}>
-              <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/75 to-tropic-red/20"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-black/78 to-tropic-gold-dark/25"></div>
               <div className="relative z-10 p-10 md:p-14 flex items-center justify-center min-h-[280px]">
-                <div className="border-l-4 border-tropic-red pl-8 max-w-xl">
+                <div className="border-l-4 border-tropic-gold pl-8 max-w-xl">
                   <p className="text-xl md:text-2xl italic text-gray-200 mb-5 font-light leading-relaxed" data-testid="founder-quote">{quote.text}</p>
                   <p className="text-base text-tropic-gold font-bold tracking-wide" data-testid="founder-name">{quote.author}</p>
                 </div>
@@ -236,10 +236,10 @@ const UnitHistorySection = () => {
   }, []);
 
   const typeAccent = (t) => ({
-    campaign: 'border-tropic-red bg-amber-700',
-    operation: 'border-blue-600 bg-blue-600',
-    milestone: 'border-emerald-600 bg-emerald-600',
-  }[t] || 'border-tropic-red bg-amber-700');
+    campaign: 'border-tropic-gold bg-tropic-gold-dark',
+    operation: 'border-tropic-red bg-tropic-red',
+    milestone: 'border-tropic-olive bg-tropic-olive',
+  }[t] || 'border-tropic-gold bg-tropic-gold-dark');
 
   if (loading || entries.length === 0) return null;
 
@@ -255,7 +255,7 @@ const UnitHistorySection = () => {
         {/* Timeline */}
         <div className="relative">
           {/* Center line */}
-          <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-amber-700/60 via-amber-700/30 to-transparent" aria-hidden="true"></div>
+          <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-tropic-gold/60 via-tropic-gold/25 to-transparent" aria-hidden="true"></div>
 
           <div className="space-y-12 md:space-y-16">
             {entries.map((entry, idx) => {
@@ -265,11 +265,11 @@ const UnitHistorySection = () => {
               return (
                 <div key={entry.id} className="relative" data-testid={`history-timeline-${idx}`}>
                   {/* Dot on the line */}
-                  <div className={`absolute left-6 md:left-1/2 w-4 h-4 rounded-full ${accent.split(' ')[1]} border-2 border-black -translate-x-1/2 z-10 shadow-lg shadow-tropic-red/20`}></div>
+                  <div className={`absolute left-6 md:left-1/2 w-4 h-4 rounded-full ${accent.split(' ')[1]} border-2 border-black -translate-x-1/2 z-10 shadow-lg shadow-tropic-gold/20`}></div>
 
                   {/* Content card */}
                   <div className={`ml-14 md:ml-0 md:w-[calc(50%-2.5rem)] ${isLeft ? 'md:mr-auto md:pr-0' : 'md:ml-auto md:pl-0'}`}>
-                    <div className={`group relative rounded-lg border ${accent.split(' ')[0]}/30 bg-black/60 backdrop-blur p-6 hover:border-tropic-red/60 transition-all duration-500`}>
+                    <div className={`group relative rounded-lg border ${accent.split(' ')[0]}/30 bg-black/60 backdrop-blur p-6 hover:border-tropic-gold/60 transition-all duration-500`}>
                       {/* Year badge */}
                       <div className="flex items-center gap-3 mb-3">
                         <span className="text-tropic-gold font-bold text-lg tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.year}</span>
@@ -308,18 +308,18 @@ const OperationalSuperioritySection = ({ content }) => {
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-7xl">
         <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
-          <h2 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-300 to-amber-500" data-testid="ops-superiority-heading">
+          <h2 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-tropic-gold-light to-tropic-gold" data-testid="ops-superiority-heading">
             {(sh.heading || 'OPERATIONAL SUPERIORITY').split(' ').map((w, i) => <span key={i} className="block">{w}</span>)}
           </h2>
           <div className="relative">
-            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-700 via-amber-700/40 to-transparent"></div>
+            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-tropic-gold via-tropic-gold/40 to-transparent"></div>
             <p className="text-lg leading-relaxed text-gray-300 pl-8" data-testid="ops-superiority-description">{content.operationalSuperiority?.description}</p>
           </div>
         </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-tropic-red/30 to-transparent mb-16"></div>
+        <div className="h-px bg-gradient-to-r from-transparent via-tropic-gold/35 to-transparent mb-16"></div>
         <div className="grid md:grid-cols-3 gap-6">
           {(content.operationalSuperiority?.images || []).map((img, idx) => (
-            <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-white/10 hover:border-tropic-red/40 transition-all duration-500 shadow-2xl shadow-black/40 group" data-testid={`ops-image-${idx + 1}`}>
+            <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-tropic-gold/15 hover:border-tropic-gold/40 transition-all duration-500 shadow-2xl shadow-black/40 group" data-testid={`ops-image-${idx + 1}`}>
               <img src={resolveImg(img)} alt={`Tactical ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
@@ -349,7 +349,7 @@ const LethalitySection = ({ content }) => {
             <img src={resolveImg(content.lethality?.logistics?.image)} alt="Logistics" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
         </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+        <div className="h-px bg-gradient-to-r from-transparent via-tropic-gold/25 to-transparent"></div>
         {/* Training */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1 aspect-video overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/40 group">
@@ -378,10 +378,10 @@ const UpcomingOperationsSection = ({ content }) => {
   }, []);
 
   const typeConfig = {
-    combat:   { bg: 'bg-amber-800/80', border: 'border-amber-800/30', glow: 'shadow-amber-900/20' },
-    training: { bg: 'bg-blue-700/80', border: 'border-blue-800/30', glow: 'shadow-blue-900/20' },
-    recon:    { bg: 'bg-emerald-700/80', border: 'border-emerald-800/30', glow: 'shadow-emerald-900/20' },
-    support:  { bg: 'bg-amber-700/80', border: 'border-amber-800/30', glow: 'shadow-amber-900/20' },
+    combat:   { bg: 'bg-tropic-red/85', border: 'border-tropic-red/35', glow: 'shadow-tropic-red/20' },
+    training: { bg: 'bg-tropic-olive/85', border: 'border-tropic-olive/35', glow: 'shadow-tropic-olive/20' },
+    recon:    { bg: 'bg-tropic-gold-dark/85', border: 'border-tropic-gold/35', glow: 'shadow-tropic-gold/20' },
+    support:  { bg: 'bg-tropic-gold/85', border: 'border-tropic-gold/35', glow: 'shadow-tropic-gold/20' },
   };
   const getType = (t) => typeConfig[t] || typeConfig.combat;
 
@@ -411,11 +411,11 @@ const UpcomingOperationsSection = ({ content }) => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2 text-sm mb-4">
-                      <div className="flex items-center text-gray-300"><Calendar className="w-4 h-4 mr-2 text-amber-600 shrink-0"/>{op.date}</div>
-                      <div className="flex items-center text-gray-300"><Clock className="w-4 h-4 mr-2 text-amber-600 shrink-0"/>{op.time}</div>
-                      {op.max_participants && <div className="flex items-center text-gray-400"><Users className="w-4 h-4 mr-2 text-amber-600 shrink-0"/><span>{op.rsvps?.length || 0} / {op.max_participants} operators</span></div>}
+                      <div className="flex items-center text-gray-300"><Calendar className="w-4 h-4 mr-2 text-tropic-gold shrink-0"/>{op.date}</div>
+                      <div className="flex items-center text-gray-300"><Clock className="w-4 h-4 mr-2 text-tropic-gold shrink-0"/>{op.time}</div>
+                      {op.max_participants && <div className="flex items-center text-gray-400"><Users className="w-4 h-4 mr-2 text-tropic-gold shrink-0"/><span>{op.rsvps?.length || 0} / {op.max_participants} operators</span></div>}
                     </div>
-                    <Link to="/login"><Button className="w-full bg-amber-700/90 hover:bg-amber-700 text-sm tracking-wider" data-testid={`operation-rsvp-${idx}`}>RSVP NOW <ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
+                    <Link to="/login"><Button className="w-full bg-tropic-gold hover:bg-tropic-gold-light text-black text-sm tracking-wider" data-testid={`operation-rsvp-${idx}`}>RSVP NOW <ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
                   </CardContent>
                 </Card>
               );
@@ -440,9 +440,9 @@ const AnnouncementsSection = ({ content }) => {
   }, []);
 
   const priorityConfig = {
-    urgent: { class: 'intel-urgent', badge: 'bg-amber-800 text-amber-200', dot: 'bg-amber-500' },
+    urgent: { class: 'intel-urgent', badge: 'bg-tropic-red/85 text-white', dot: 'bg-tropic-red' },
     high:   { class: 'intel-high',   badge: 'bg-orange-800 text-orange-200', dot: 'bg-orange-500' },
-    normal: { class: 'intel-normal', badge: 'bg-blue-800/60 text-blue-200', dot: 'bg-blue-500' },
+    normal: { class: 'intel-normal', badge: 'bg-tropic-gold-dark/80 text-tropic-gold-light', dot: 'bg-tropic-gold' },
     low:    { class: 'intel-low',    badge: 'bg-gray-800 text-gray-300', dot: 'bg-gray-500' },
   };
   const getPriority = (p) => priorityConfig[p] || priorityConfig.normal;
@@ -505,7 +505,7 @@ const GallerySection = ({ content }) => {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {(content.gallery?.showcaseImages || []).map((img, idx) => (
-            <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-white/5 hover:border-tropic-red/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30" data-testid={`gallery-image-${idx}`}>
+            <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-tropic-gold/10 hover:border-tropic-gold/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30" data-testid={`gallery-image-${idx}`}>
               <img src={resolveImg(img)} alt={`Mission ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
             </div>
           ))}
@@ -538,13 +538,13 @@ const JoinUsSection = ({ content }) => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Link to="/login">
-                <Button className="bg-amber-700 hover:bg-amber-800 px-10 py-5 text-lg tactical-button tracking-wider w-full sm:w-auto" data-testid="join-register-button">
+                <Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button tracking-wider w-full sm:w-auto" data-testid="join-register-button">
                   <Shield className="mr-2 w-5 h-5"/>CREATE ACCOUNT
                 </Button>
               </Link>
               {content.footer?.discord && (
                 <a href={content.footer.discord} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="border-tropic-red/50 text-tropic-gold hover:bg-amber-900/20 px-10 py-5 text-lg tracking-wider w-full sm:w-auto" data-testid="join-discord-button">
+                  <Button variant="outline" className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10 px-10 py-5 text-lg tracking-wider w-full sm:w-auto" data-testid="join-discord-button">
                     JOIN OUR DISCORD
                   </Button>
                 </a>
@@ -721,7 +721,7 @@ const LoginPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-tropic-red border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-2 border-tropic-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400 tracking-wider">Authenticating with Discord...</p>
         </div>
       </div>
@@ -748,7 +748,7 @@ const LoginPage = () => {
                 <div><label className="block text-sm font-medium mb-2">Specialization (Optional)</label><Input type="text" placeholder="e.g., Assault, Recon, Support" className="bg-black/50 border-white/20" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} data-testid="auth-specialization-input" /></div>
               </>}
               {error && <div className="text-tropic-gold text-sm text-center" data-testid="auth-error">{error}</div>}
-              <Button type="submit" disabled={submitting} className="w-full bg-amber-700 hover:bg-amber-800 py-5 tactical-button tracking-wider" data-testid="auth-submit-button">{submitting ? 'Please wait...' : isLogin ? 'LOGIN' : 'REGISTER'}</Button>
+              <Button type="submit" disabled={submitting} className="w-full bg-tropic-gold hover:bg-tropic-gold-light text-black py-5 tactical-button tracking-wider" data-testid="auth-submit-button">{submitting ? 'Please wait...' : isLogin ? 'LOGIN' : 'REGISTER'}</Button>
             </form>
             {/* Discord OAuth — only shown when backend has Discord configured */}
             {discordAvailable && (
@@ -797,6 +797,10 @@ function App() {
         <Route path="/admin/training" element={<ProtectedRoute adminOnly><TrainingManager /></ProtectedRoute>} />
         <Route path="/admin/gallery" element={<ProtectedRoute adminOnly><GalleryManager /></ProtectedRoute>} />
         <Route path="/admin/history" element={<ProtectedRoute adminOnly><HistoryManager /></ProtectedRoute>} />
+        <Route path="/admin/recruitment" element={<ProtectedRoute adminOnly><RecruitmentManager /></ProtectedRoute>} />
+        <Route path="/admin/intel" element={<ProtectedRoute adminOnly><IntelManager /></ProtectedRoute>} />
+        <Route path="/admin/campaigns" element={<ProtectedRoute adminOnly><CampaignManager /></ProtectedRoute>} />
+        <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
@@ -806,42 +810,7 @@ function App() {
         <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
-<Route
-  path="/admin/recruitment"
-  element={
-    <ProtectedRoute adminOnly>
-      <RecruitmentManager />
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/admin/intel"
-  element={
-    <ProtectedRoute adminOnly>
-      <IntelManager />
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/admin/campaigns"
-  element={
-    <ProtectedRoute adminOnly>
-      <CampaignManager />
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/admin/unit-config"
-  element={
-    <ProtectedRoute adminOnly>
-      <UnitTagsManager />
-    </ProtectedRoute>
-  }
-/>
-</Routes>
+      </Routes>
     </BrowserRouter>
   );
 }
