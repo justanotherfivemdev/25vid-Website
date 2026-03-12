@@ -146,8 +146,8 @@ const Navigation = ({ scrollToSection, content }) => {
           </button>
           <div className={`${menuOpen ? 'flex flex-col absolute top-full left-0 right-0 bg-black/95 p-6 space-y-4 border-b border-white/10' : 'hidden'} md:flex md:flex-row md:static md:bg-transparent md:p-0 md:space-y-0 md:border-0 items-center md:space-x-8`}>
             <button onClick={() => { scrollToSection('about'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-about">ABOUT</button>
-            <button onClick={() => { scrollToSection('operations'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-operations">OPERATIONS</button>
             <button onClick={() => { scrollToSection('training'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-training">TRAINING</button>
+            <button onClick={() => { scrollToSection('operations'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-operations">OPERATIONS</button>
             <button onClick={() => { scrollToSection('intel'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-intel">INTEL</button>
             <div className="hidden md:block h-5 w-px bg-tropic-red/40"></div>
             <Link to="/login" onClick={() => setMenuOpen(false)}>
@@ -567,8 +567,8 @@ const Footer = ({ content }) => (
           <h4 className="text-sm font-bold mb-3 tracking-[0.15em] text-gray-400">QUICK LINKS</h4>
           <ul className="space-y-2 text-sm text-gray-500">
             <li><a href="#about" className="hover:text-tropic-gold transition-colors">About</a></li>
-            <li><a href="#operations" className="hover:text-tropic-gold transition-colors">Operations</a></li>
             <li><a href="#training" className="hover:text-tropic-gold transition-colors">Training</a></li>
+            <li><a href="#operations" className="hover:text-tropic-gold transition-colors">Operations</a></li>
             <li><Link to="/login" className="hover:text-tropic-gold transition-colors">Member Portal</Link></li>
           </ul>
         </div>
