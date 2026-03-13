@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
@@ -39,16 +39,7 @@ const RecruitDashboard = () => {
     billet_id: ''
   });
 
-  useEffect(() => {
-    if (user && user.status !== 'recruit') {
-      // User is no longer a recruit, redirect to hub
-      navigate('/hub');
-      return;
-    }
-    fetchData();
-  }, [user, navigate]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [appsRes, billetsRes] = await Promise.all([
         axios.get(`${API}/recruit/my-application`).catch(() => ({ data: null })),
@@ -63,7 +54,16 @@ const RecruitDashboard = () => {
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [user?.discord_username]);
+
+  useEffect(() => {
+    if (user && user.status !== 'recruit') {
+      // User is no longer a recruit, redirect to hub
+      navigate('/hub');
+      return;
+    }
+    fetchData();
+  }, [user, navigate, fetchData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

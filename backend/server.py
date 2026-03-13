@@ -330,6 +330,9 @@ class HistoryEntry(BaseModel):
     year: str
     description: str
     image_url: Optional[str] = None
+    image_position: str = "center"
+    image_overlay_opacity: int = 60
+    text_contrast_mode: str = "auto"  # auto, light, dark
     campaign_type: str = "campaign"  # campaign, operation, milestone
     sort_order: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -339,6 +342,9 @@ class HistoryEntryCreate(BaseModel):
     year: str
     description: str
     image_url: Optional[str] = None
+    image_position: str = "center"
+    image_overlay_opacity: int = 60
+    text_contrast_mode: str = "auto"
     campaign_type: str = "campaign"
     sort_order: int = 0
 
@@ -1237,7 +1243,7 @@ async def update_site_content(content: dict, current_user: dict = Depends(get_cu
 
 @api_router.post("/upload")
 async def upload_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
-    allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+    allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.webm', '.mov', '.m4v', '.mp3', '.ogg'}
     ext = Path(file.filename).suffix.lower()
     if ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail=f"File type {ext} not allowed. Use: {', '.join(allowed_extensions)}")

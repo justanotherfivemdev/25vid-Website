@@ -11,13 +11,27 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
+
+  const mediaKind = (url) => {
+    if (!url) return 'none';
+    const clean = url.split('?')[0].toLowerCase();
+    if (/\.(mp4|webm|mov|m4v)$/.test(clean)) return 'video';
+    if (/\.(mp3|ogg|wav)$/.test(clean)) return 'audio';
+    if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(clean)) return 'image';
+    return 'image';
+  };
+
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    const allowed = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+      'video/mp4', 'video/webm', 'video/quicktime',
+      'audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav'
+    ];
     if (!allowed.includes(file.type)) {
-      setError('Invalid file type. Use JPG, PNG, GIF, WebP, or SVG.');
+      setError('Invalid file type. Use image/video/audio formats (JPG, PNG, WebP, MP4, WebM, MOV, MP3, OGG).');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -102,7 +116,7 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp3,audio/ogg,audio/wav"
         onChange={handleUpload}
         className="hidden"
       />
@@ -111,12 +125,20 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
 
       {value && (
         <div className="mt-2 border border-gray-700 rounded-lg overflow-hidden inline-block">
-          <img
-            src={getDisplayUrl(value)}
-            alt="Preview"
-            className={previewClass}
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
+          {mediaKind(value) === 'video' ? (
+            <video src={getDisplayUrl(value)} className={previewClass} muted loop autoPlay playsInline controls />
+          ) : mediaKind(value) === 'audio' ? (
+            <div className="p-4 bg-black/40 min-w-[280px]">
+              <audio src={getDisplayUrl(value)} className="w-full" controls />
+            </div>
+          ) : (
+            <img
+              src={getDisplayUrl(value)}
+              alt="Preview"
+              className={previewClass}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          )}
         </div>
       )}
     </div>

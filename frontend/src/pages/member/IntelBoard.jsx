@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
@@ -45,11 +45,7 @@ const IntelBoard = () => {
     axios.get(`${API}/intel/tags`).then(r => setAllTags(r.data)).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    fetchBriefings();
-  }, [search, filterCat, filterTag]);
-
-  const fetchBriefings = async () => {
+  const fetchBriefings = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -60,7 +56,11 @@ const IntelBoard = () => {
       setBriefings(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [search, filterCat, filterTag]);
+
+  useEffect(() => {
+    fetchBriefings();
+  }, [fetchBriefings]);
 
   const handleAcknowledge = async (briefingId, isAcked) => {
     setAcking(true);
