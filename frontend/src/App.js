@@ -66,6 +66,30 @@ const resolveImg = (url) => {
   return `${BACKEND_URL}${url}`;
 };
 
+
+const mediaKind = (url) => {
+  if (!url) return 'none';
+  const clean = url.split('?')[0].toLowerCase();
+  if (/\.(mp4|webm|mov|m4v)$/.test(clean)) return 'video';
+  if (/\.(mp3|ogg|wav)$/.test(clean)) return 'audio';
+  return 'image';
+};
+
+const MediaFrame = ({ src, alt, className = 'w-full h-full object-cover', imgClassName = className }) => {
+  const kind = mediaKind(src);
+  if (kind === 'video') {
+    return <video src={src} className={className} muted loop autoPlay playsInline />;
+  }
+  if (kind === 'audio') {
+    return (
+      <div className="w-full h-full bg-black/60 flex items-center justify-center p-4">
+        <audio src={src} controls className="w-full max-w-xs" />
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={imgClassName} />;
+};
+
 // Deep-merge helper
 const deepMerge = (defaults, overrides) => {
   if (!overrides) return defaults;
@@ -158,6 +182,7 @@ const Navigation = ({ scrollToSection, content }) => {
           </button>
           <div className={`${menuOpen ? 'flex flex-col absolute top-full left-0 right-0 bg-black/95 p-6 space-y-4 border-b border-tropic-gold/20' : 'hidden'} md:flex md:flex-row md:static md:bg-transparent md:p-0 md:space-y-0 md:border-0 items-center md:space-x-8`}>
             <button onClick={() => { scrollToSection('about'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-about">ABOUT</button>
+            <button onClick={() => { scrollToSection('history'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-history">HISTORY</button>
             <button onClick={() => { scrollToSection('training'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-training">TRAINING</button>
             <button onClick={() => { scrollToSection('operations'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-operations">OPERATIONS</button>
             <button onClick={() => { scrollToSection('intel'); setMenuOpen(false); }} className="text-sm tracking-[0.15em] text-gray-300 hover:text-tropic-gold transition-colors" data-testid="nav-intel">INTEL</button>
@@ -182,9 +207,12 @@ const HeroSection = ({ content }) => {
   const heroLine2 = typeof content.hero.tagline === 'object'
     ? textOrFallback(content.hero.tagline?.line2, textOrFallback(content.hero.subtitle, ''))
     : textOrFallback(content.hero.subtitle, '');
+  const heroMedia = resolveImg(content.hero.backgroundImage);
+  const heroIsVideo = mediaKind(heroMedia) === 'video';
 
   return (
-    <section className="hero-section relative min-h-screen flex items-center justify-center" style={{ backgroundImage: `url('${resolveImg(content.hero.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }} data-testid="hero-section">
+    <section className="hero-section relative min-h-screen flex items-center justify-center" style={heroIsVideo ? undefined : { backgroundImage: `url('${heroMedia}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }} data-testid="hero-section">
+      {heroIsVideo && <video src={heroMedia} className="absolute inset-0 w-full h-full object-cover" muted loop autoPlay playsInline />}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/75 to-black"></div>
       <div className="relative z-10 text-center px-6">
         <div className="mb-10 compass-logo" data-testid="unit-logo">
@@ -220,7 +248,9 @@ const AboutSection = ({ content }) => {
               {aboutSubtext && <p className="text-sm md:text-base text-gray-500 tracking-wide" data-testid="about-subtext">{aboutSubtext}</p>}
             </div>
             {content.about?.logoImage && (
-              <img src={resolveImg(content.about.logoImage)} alt="Unit Emblem" className="w-48 h-48 object-contain opacity-80 mt-6" data-testid="about-logo" />
+              <div className="w-48 h-48 opacity-80 mt-6" data-testid="about-logo">
+                <MediaFrame src={resolveImg(content.about.logoImage)} alt="Unit Emblem" className="w-48 h-48 object-contain" imgClassName="w-48 h-48 object-contain" />
+              </div>
             )}
             <Link to="/login"><Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button shadow-lg shadow-tropic-gold/20 tracking-wider" data-testid="about-join-button">{content.nav?.buttonText || 'JOIN NOW'}</Button></Link>
           </div>
@@ -229,7 +259,10 @@ const AboutSection = ({ content }) => {
             <div className="h-px bg-gradient-to-r from-transparent via-tropic-gold/40 to-transparent"></div>
             <p className="text-gray-300" data-testid="about-description-2">{content.about?.paragraph2}</p>
             {/* Quote block */}
-            <div className="mt-12 relative rounded-lg overflow-hidden" style={{ backgroundImage: `url('${resolveImg(quote.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '280px' }}>
+            <div className="mt-12 relative rounded-lg overflow-hidden" style={{ minHeight: '280px' }}>
+              {mediaKind(resolveImg(quote.backgroundImage)) === 'video'
+                ? <video src={resolveImg(quote.backgroundImage)} className="absolute inset-0 w-full h-full object-cover" muted loop autoPlay playsInline />
+                : <div className="absolute inset-0" style={{ backgroundImage: `url('${resolveImg(quote.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>}
               <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-black/78 to-tropic-gold-dark/25"></div>
               <div className="relative z-10 p-10 md:p-14 flex items-center justify-center min-h-[280px]">
                 <div className="border-l-4 border-tropic-gold pl-8 max-w-xl">
@@ -244,6 +277,27 @@ const AboutSection = ({ content }) => {
     </section>
   );
 };
+
+
+// ============================================================================
+// QUICK NAV TAB STRIP
+// ============================================================================
+const HistoryQuickTab = ({ onNavigate }) => (
+  <section className="px-6 -mt-2 relative z-20" data-testid="history-quick-tab">
+    <div className="container mx-auto max-w-6xl">
+      <button
+        type="button"
+        onClick={onNavigate}
+        className="w-full md:w-auto inline-flex items-center gap-3 rounded-md border border-tropic-gold/35 bg-black/80 hover:bg-black px-6 py-3 tracking-[0.15em] text-xs md:text-sm text-gray-300 hover:text-tropic-gold transition-colors"
+        data-testid="history-quick-scroll"
+      >
+        <span className="text-tropic-gold font-bold">HISTORY</span>
+        <span>JUMP TO TIMELINE</span>
+        <span aria-hidden="true" className="text-tropic-gold">↓</span>
+      </button>
+    </div>
+  </section>
+);
 
 // ============================================================================
 // UNIT HISTORY TIMELINE SECTION
@@ -437,7 +491,7 @@ const OperationalSuperioritySection = ({ content }) => {
         <div className="grid md:grid-cols-3 gap-6">
           {(content.operationalSuperiority?.images || []).map((img, idx) => (
             <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-tropic-gold/15 hover:border-tropic-gold/40 transition-all duration-500 shadow-2xl shadow-black/40 group" data-testid={`ops-image-${idx + 1}`}>
-              <img src={resolveImg(img)} alt={`Tactical ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <MediaFrame src={resolveImg(img)} alt={`Tactical ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
         </div>
@@ -470,14 +524,14 @@ const LethalitySection = ({ content }) => {
             <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="logistics-description">{content.lethality?.logistics?.description}</p>
           </div>
           <div className="aspect-video overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/40 group">
-            <img src={resolveImg(content.lethality?.logistics?.image)} alt="Logistics" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            <MediaFrame src={resolveImg(content.lethality?.logistics?.image)} alt="Logistics" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
         </div>
         <div className="h-px bg-gradient-to-r from-transparent via-tropic-gold/25 to-transparent"></div>
         {/* Training */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1 aspect-video overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/40 group">
-            <img src={resolveImg(content.lethality?.training?.image)} alt="Training" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            <MediaFrame src={resolveImg(content.lethality?.training?.image)} alt="Training" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
           <div className="order-1 md:order-2 space-y-6">
             <h3 className="text-3xl font-bold tracking-wide" data-testid="training-heading">{trainingHeading}</h3>
@@ -630,7 +684,7 @@ const GallerySection = ({ content }) => {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {(content.gallery?.showcaseImages || []).map((img, idx) => (
             <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-tropic-gold/10 hover:border-tropic-gold/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30" data-testid={`gallery-image-${idx}`}>
-              <img src={resolveImg(img)} alt={`Mission ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              <MediaFrame src={resolveImg(img)} alt={`Mission ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
             </div>
           ))}
         </div>
@@ -696,6 +750,7 @@ const Footer = ({ content }) => (
           <h4 className="text-sm font-bold mb-3 tracking-[0.15em] text-gray-400">QUICK LINKS</h4>
           <ul className="space-y-2 text-sm text-gray-500">
             <li><a href="#about" className="hover:text-tropic-gold transition-colors">About</a></li>
+            <li><a href="#history" className="hover:text-tropic-gold transition-colors">History</a></li>
             <li><a href="#training" className="hover:text-tropic-gold transition-colors">Training</a></li>
             <li><a href="#operations" className="hover:text-tropic-gold transition-colors">Operations</a></li>
             <li><Link to="/login" className="hover:text-tropic-gold transition-colors">Member Portal</Link></li>
@@ -729,6 +784,7 @@ const LandingPage = () => {
       <Navigation scrollToSection={scrollToSection} content={content} />
       <HeroSection content={content} />
       <AboutSection content={content} />
+      <HistoryQuickTab onNavigate={() => scrollToSection('history')} />
       <UnitHistorySection content={content} />
       <OperationalSuperioritySection content={content} />
       <LethalitySection content={content} />
