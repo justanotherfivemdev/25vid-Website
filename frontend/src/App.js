@@ -409,7 +409,6 @@ const UnitHistorySection = ({ content }) => {
               const imageSrc = hasImage
                 ? (entry.image_url.startsWith('http') ? entry.image_url : `${BACKEND_URL}/api${entry.image_url}`)
                 : '';
-              const isHistoryVideo = mediaKind(imageSrc) === 'video';
               const overlayOpacity = Math.min(90, Math.max(20, entry.image_overlay_opacity ?? 60)) / 100;
               const overlayColor = useDarkText
                 ? `rgba(255, 255, 255, ${(overlayOpacity * 0.45).toFixed(2)})`
@@ -424,23 +423,12 @@ const UnitHistorySection = ({ content }) => {
                   <div className={`ml-14 md:ml-0 md:w-[calc(50%-2.5rem)] ${isLeft ? 'md:mr-auto md:pr-0' : 'md:ml-auto md:pl-0'}`}>
                     <div
                       className={`group relative rounded-lg border ${accent.split(' ')[0]}/30 overflow-hidden ${hasImage ? '' : 'bg-black/60 backdrop-blur'} p-6 hover:border-tropic-gold/60 transition-all duration-500`}
-                      style={hasImage && !isHistoryVideo ? {
+                      style={hasImage ? {
                         backgroundImage: `url('${imageSrc}')`,
                         backgroundSize: 'cover',
                         backgroundPosition: entry.image_position || 'center'
                       } : undefined}
                     >
-                      {hasImage && isHistoryVideo && (
-                        <video
-                          src={imageSrc}
-                          className="absolute inset-0 w-full h-full object-cover"
-                          style={{ objectPosition: entry.image_position || 'center' }}
-                          muted
-                          loop
-                          autoPlay
-                          playsInline
-                        />
-                      )}
                       {hasImage && (
                         <>
                           <div
