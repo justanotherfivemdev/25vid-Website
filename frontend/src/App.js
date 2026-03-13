@@ -251,7 +251,7 @@ const AboutSection = ({ content }) => {
 const UnitHistorySection = ({ content }) => {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [entryContrast, setEntryContrast] = useState({});
+  const [entryBrightness, setEntryBrightness] = useState({});
   const historyHeading = textOrFallback(content.sectionHeadings?.history?.heading, 'UNIT HISTORY');
   const historySubtext = textOrFallback(content.sectionHeadings?.history?.subtext, 'Over 80 years of service, sacrifice, and the Tropic Lightning legacy');
 
@@ -264,7 +264,7 @@ const UnitHistorySection = ({ content }) => {
 
     const imageEntries = entries.filter((entry) => entry.image_url);
     if (imageEntries.length === 0) {
-      setEntryContrast({});
+      setEntryBrightness({});
       return undefined;
     }
 
@@ -278,7 +278,7 @@ const UnitHistorySection = ({ content }) => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            resolve('light');
+            resolve('dark');
             return;
           }
 
@@ -298,13 +298,13 @@ const UnitHistorySection = ({ content }) => {
           }
 
           const average = count ? totalLuminance / count : 0;
-          resolve(average > 130 ? 'dark' : 'light');
+          resolve(average > 130 ? 'bright' : 'dark');
         } catch {
-          resolve('light');
+          resolve('dark');
         }
       };
 
-      image.onerror = () => resolve('light');
+      image.onerror = () => resolve('dark');
       image.src = src;
     });
 
@@ -314,7 +314,7 @@ const UnitHistorySection = ({ content }) => {
       return [entry.id, contrast];
     })).then((results) => {
       if (cancelled) return;
-      setEntryContrast(Object.fromEntries(results));
+      setEntryBrightness(Object.fromEntries(results));
     });
 
     return () => {
@@ -349,11 +349,16 @@ const UnitHistorySection = ({ content }) => {
               const accent = typeAccent(entry.campaign_type);
               const isLeft = idx % 2 === 0;
               const hasImage = Boolean(entry.image_url);
-              const contrast = entryContrast[entry.id] || 'light';
-              const useDarkText = contrast === 'dark';
+              const detectedBrightness = entryBrightness[entry.id] || 'dark';
+              const requestedContrast = entry.text_contrast_mode || 'auto';
+              const useDarkText = hasImage && (requestedContrast === 'dark' || (requestedContrast === 'auto' && detectedBrightness === 'bright'));
               const imageSrc = hasImage
                 ? (entry.image_url.startsWith('http') ? entry.image_url : `${BACKEND_URL}/api${entry.image_url}`)
                 : '';
+              const overlayOpacity = Math.min(90, Math.max(20, entry.image_overlay_opacity ?? 60)) / 100;
+              const overlayColor = useDarkText
+                ? `rgba(255, 255, 255, ${(overlayOpacity * 0.45).toFixed(2)})`
+                : `rgba(0, 0, 0, ${overlayOpacity.toFixed(2)})`;
 
               return (
                 <div key={entry.id} className="relative" data-testid={`history-timeline-${idx}`}>
@@ -364,25 +369,33 @@ const UnitHistorySection = ({ content }) => {
                   <div className={`ml-14 md:ml-0 md:w-[calc(50%-2.5rem)] ${isLeft ? 'md:mr-auto md:pr-0' : 'md:ml-auto md:pl-0'}`}>
                     <div
                       className={`group relative rounded-lg border ${accent.split(' ')[0]}/30 overflow-hidden ${hasImage ? '' : 'bg-black/60 backdrop-blur'} p-6 hover:border-tropic-gold/60 transition-all duration-500`}
-                      style={hasImage ? { backgroundImage: `url('${imageSrc}')`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+                      style={hasImage ? {
+                        backgroundImage: `url('${imageSrc}')`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: entry.image_position || 'center'
+                      } : undefined}
                     >
                       {hasImage && (
                         <>
-                          <div className={`absolute inset-0 ${useDarkText ? 'bg-black/45' : 'bg-black/70'} transition-opacity duration-500`} aria-hidden="true"></div>
+                          <div
+                            className="absolute inset-0 transition-opacity duration-500"
+                            style={{ backgroundColor: overlayColor }}
+                            aria-hidden="true"
+                          ></div>
                           <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/55" aria-hidden="true"></div>
                         </>
                       )}
 
-                      <div className={`relative z-10 ${useDarkText ? 'text-white' : 'text-gray-100'}`}>
+                      <div className={`relative z-10 ${useDarkText ? 'text-gray-900' : 'text-white'}`}>
                       {/* Year badge */}
                       <div className="flex items-center gap-3 mb-3">
-                        <span className={`${useDarkText ? 'text-white' : 'text-tropic-gold'} font-bold text-lg tracking-wider`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.year}</span>
+                        <span className={`${useDarkText ? 'text-gray-900' : 'text-tropic-gold'} font-bold text-lg tracking-wider`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.year}</span>
                         <span className={`text-[10px] tracking-widest px-2 py-0.5 rounded ${accent.split(' ')[1]} text-white/90`}>{entry.campaign_type.toUpperCase()}</span>
                       </div>
 
                       <h3 className="text-xl md:text-2xl font-bold tracking-wide mb-3" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.title}</h3>
 
-                      <p className={`${useDarkText ? 'text-gray-100' : 'text-gray-300'} text-sm leading-relaxed`}>{entry.description}</p>
+                      <p className={`${useDarkText ? 'text-gray-800' : 'text-gray-200'} text-sm leading-relaxed`}>{entry.description}</p>
                       </div>
                     </div>
                   </div>

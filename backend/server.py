@@ -330,6 +330,9 @@ class HistoryEntry(BaseModel):
     year: str
     description: str
     image_url: Optional[str] = None
+    image_position: str = "center"
+    image_overlay_opacity: int = 60
+    text_contrast_mode: str = "auto"  # auto, light, dark
     campaign_type: str = "campaign"  # campaign, operation, milestone
     sort_order: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -339,6 +342,9 @@ class HistoryEntryCreate(BaseModel):
     year: str
     description: str
     image_url: Optional[str] = None
+    image_position: str = "center"
+    image_overlay_opacity: int = 60
+    text_contrast_mode: str = "auto"
     campaign_type: str = "campaign"
     sort_order: int = 0
 
