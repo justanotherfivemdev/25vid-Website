@@ -251,12 +251,76 @@ const AboutSection = ({ content }) => {
 const UnitHistorySection = ({ content }) => {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [entryBrightness, setEntryBrightness] = useState({});
   const historyHeading = textOrFallback(content.sectionHeadings?.history?.heading, 'UNIT HISTORY');
   const historySubtext = textOrFallback(content.sectionHeadings?.history?.subtext, 'Over 80 years of service, sacrifice, and the Tropic Lightning legacy');
 
   useEffect(() => {
     axios.get(`${API}/unit-history`).then(r => setEntries(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const imageEntries = entries.filter((entry) => entry.image_url);
+    if (imageEntries.length === 0) {
+      setEntryBrightness({});
+      return undefined;
+    }
+
+    const analyzeImageBrightness = (src) => new Promise((resolve) => {
+      const image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.referrerPolicy = 'no-referrer';
+
+      image.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve('dark');
+            return;
+          }
+
+          canvas.width = 24;
+          canvas.height = 24;
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+          const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+          let totalLuminance = 0;
+          let count = 0;
+          for (let i = 0; i < pixels.length; i += 4) {
+            const r = pixels[i];
+            const g = pixels[i + 1];
+            const b = pixels[i + 2];
+            totalLuminance += (0.299 * r) + (0.587 * g) + (0.114 * b);
+            count += 1;
+          }
+
+          const average = count ? totalLuminance / count : 0;
+          resolve(average > 130 ? 'bright' : 'dark');
+        } catch {
+          resolve('dark');
+        }
+      };
+
+      image.onerror = () => resolve('dark');
+      image.src = src;
+    });
+
+    Promise.all(imageEntries.map(async (entry) => {
+      const imageSrc = entry.image_url.startsWith('http') ? entry.image_url : `${BACKEND_URL}/api${entry.image_url}`;
+      const contrast = await analyzeImageBrightness(imageSrc);
+      return [entry.id, contrast];
+    })).then((results) => {
+      if (cancelled) return;
+      setEntryBrightness(Object.fromEntries(results));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [entries]);
 
   const typeAccent = (t) => ({
     campaign: 'border-tropic-gold bg-tropic-gold-dark',
@@ -284,6 +348,17 @@ const UnitHistorySection = ({ content }) => {
             {entries.map((entry, idx) => {
               const accent = typeAccent(entry.campaign_type);
               const isLeft = idx % 2 === 0;
+              const hasImage = Boolean(entry.image_url);
+              const detectedBrightness = entryBrightness[entry.id] || 'dark';
+              const requestedContrast = entry.text_contrast_mode || 'auto';
+              const useDarkText = hasImage && (requestedContrast === 'dark' || (requestedContrast === 'auto' && detectedBrightness === 'bright'));
+              const imageSrc = hasImage
+                ? (entry.image_url.startsWith('http') ? entry.image_url : `${BACKEND_URL}/api${entry.image_url}`)
+                : '';
+              const overlayOpacity = Math.min(90, Math.max(20, entry.image_overlay_opacity ?? 60)) / 100;
+              const overlayColor = useDarkText
+                ? `rgba(255, 255, 255, ${(overlayOpacity * 0.45).toFixed(2)})`
+                : `rgba(0, 0, 0, ${overlayOpacity.toFixed(2)})`;
 
               return (
                 <div key={entry.id} className="relative" data-testid={`history-timeline-${idx}`}>
@@ -292,22 +367,36 @@ const UnitHistorySection = ({ content }) => {
 
                   {/* Content card */}
                   <div className={`ml-14 md:ml-0 md:w-[calc(50%-2.5rem)] ${isLeft ? 'md:mr-auto md:pr-0' : 'md:ml-auto md:pl-0'}`}>
-                    <div className={`group relative rounded-lg border ${accent.split(' ')[0]}/30 bg-black/60 backdrop-blur p-6 hover:border-tropic-gold/60 transition-all duration-500`}>
+                    <div
+                      className={`group relative rounded-lg border ${accent.split(' ')[0]}/30 overflow-hidden ${hasImage ? '' : 'bg-black/60 backdrop-blur'} p-6 hover:border-tropic-gold/60 transition-all duration-500`}
+                      style={hasImage ? {
+                        backgroundImage: `url('${imageSrc}')`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: entry.image_position || 'center'
+                      } : undefined}
+                    >
+                      {hasImage && (
+                        <>
+                          <div
+                            className="absolute inset-0 transition-opacity duration-500"
+                            style={{ backgroundColor: overlayColor }}
+                            aria-hidden="true"
+                          ></div>
+                          <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/55" aria-hidden="true"></div>
+                        </>
+                      )}
+
+                      <div className={`relative z-10 ${useDarkText ? 'text-gray-900' : 'text-white'}`}>
                       {/* Year badge */}
                       <div className="flex items-center gap-3 mb-3">
-                        <span className="text-tropic-gold font-bold text-lg tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.year}</span>
+                        <span className={`${useDarkText ? 'text-gray-900' : 'text-tropic-gold'} font-bold text-lg tracking-wider`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.year}</span>
                         <span className={`text-[10px] tracking-widest px-2 py-0.5 rounded ${accent.split(' ')[1]} text-white/90`}>{entry.campaign_type.toUpperCase()}</span>
                       </div>
 
                       <h3 className="text-xl md:text-2xl font-bold tracking-wide mb-3" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.title}</h3>
 
-                      {entry.image_url && (
-                        <div className="mb-4 overflow-hidden rounded border border-white/10">
-                          <img src={entry.image_url.startsWith('http') ? entry.image_url : `${BACKEND_URL}/api${entry.image_url}`} alt={entry.title} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-700" />
-                        </div>
-                      )}
-
-                      <p className="text-gray-400 text-sm leading-relaxed">{entry.description}</p>
+                      <p className={`${useDarkText ? 'text-gray-800' : 'text-gray-200'} text-sm leading-relaxed`}>{entry.description}</p>
+                      </div>
                     </div>
                   </div>
                 </div>

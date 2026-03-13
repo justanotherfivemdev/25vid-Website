@@ -35,6 +35,7 @@ const HistoryManager = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({
     title: '', year: '', description: '', image_url: '',
+    image_position: 'center', image_overlay_opacity: 60, text_contrast_mode: 'auto',
     campaign_type: 'campaign', sort_order: 0
   });
 
@@ -68,7 +69,9 @@ const HistoryManager = () => {
     setEditing(entry);
     setForm({
       title: entry.title, year: entry.year, description: entry.description,
-      image_url: entry.image_url || '', campaign_type: entry.campaign_type,
+      image_url: entry.image_url || '', image_position: entry.image_position || 'center',
+      image_overlay_opacity: entry.image_overlay_opacity ?? 60,
+      text_contrast_mode: entry.text_contrast_mode || 'auto', campaign_type: entry.campaign_type,
       sort_order: entry.sort_order
     });
     setIsOpen(true);
@@ -83,7 +86,11 @@ const HistoryManager = () => {
   };
 
   const resetForm = () => {
-    setForm({ title: '', year: '', description: '', image_url: '', campaign_type: 'campaign', sort_order: 0 });
+    setForm({
+      title: '', year: '', description: '', image_url: '',
+      image_position: 'center', image_overlay_opacity: 60, text_contrast_mode: 'auto',
+      campaign_type: 'campaign', sort_order: 0
+    });
     setEditing(null);
   };
 
@@ -152,6 +159,39 @@ const HistoryManager = () => {
                 <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })}
                   label="Campaign Image (Optional)" description="Upload or paste URL."
                   previewClass="w-full h-48 object-cover" />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Image Position</Label>
+                    <Select value={form.image_position} onValueChange={(v) => setForm({ ...form, image_position: v })}>
+                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700">
+                        <SelectItem value="top">Top</SelectItem>
+                        <SelectItem value="center">Center</SelectItem>
+                        <SelectItem value="bottom">Bottom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Text Contrast</Label>
+                    <Select value={form.text_contrast_mode} onValueChange={(v) => setForm({ ...form, text_contrast_mode: v })}>
+                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700">
+                        <SelectItem value="auto">Auto Detect</SelectItem>
+                        <SelectItem value="light">Light Text</SelectItem>
+                        <SelectItem value="dark">Dark Text</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Overlay Strength ({form.image_overlay_opacity}%)</Label>
+                    <Input type="number" min={20} max={90} value={form.image_overlay_opacity}
+                      onChange={(e) => setForm({ ...form, image_overlay_opacity: Math.min(90, Math.max(20, parseInt(e.target.value) || 60)) })}
+                      className="bg-black border-gray-700" />
+                  </div>
+                </div>
                 <div className="flex justify-end space-x-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
                   <Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="history-submit-btn">
