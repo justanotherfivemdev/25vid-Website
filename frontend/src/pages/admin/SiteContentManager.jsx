@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, AlertCircle, CheckCircle, Globe, Type, Image as ImageIcon, Layout, FileText, Hash, Monitor } from 'lucide-react';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { defaultSiteContent } from '@/config/siteContent';
+import { applyBrowserMetadata } from '@/utils/browserMetadata';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -72,7 +73,9 @@ const SiteContentManager = () => {
   const fetchContent = async () => {
     try {
       const res = await axios.get(`${API}/admin/site-content`);
-      setContent(deepMerge(defaultSiteContent, res.data || {}));
+      const mergedContent = deepMerge(defaultSiteContent, res.data || {});
+      setContent(mergedContent);
+      applyBrowserMetadata(mergedContent.browser, defaultSiteContent.browser);
     } catch (e) {
       setMessage({ type: 'error', text: 'Failed to load site content' });
     } finally { setLoading(false); }
@@ -83,7 +86,8 @@ const SiteContentManager = () => {
     setMessage({ type: '', text: '' });
     try {
       await axios.put(`${API}/admin/site-content`, content);
-      setMessage({ type: 'success', text: 'All changes saved. Refresh the public site to see updates.' });
+      applyBrowserMetadata(content?.browser, defaultSiteContent.browser);
+      setMessage({ type: 'success', text: 'All changes saved. Browser tab settings update immediately after save.' });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
       setMessage({ type: 'error', text: 'Failed to save. Please try again.' });

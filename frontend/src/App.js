@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Users, Shield, Megaphone, Clock, ChevronRight } from 'lucide-react';
 import { defaultSiteContent } from '@/config/siteContent';
+import { applyBrowserMetadata } from '@/utils/browserMetadata';
 
 import AdminDashboard from '@/pages/admin/Dashboard';
 import OperationsManager from '@/pages/admin/OperationsManager';
