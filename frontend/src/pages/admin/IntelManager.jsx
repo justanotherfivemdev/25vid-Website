@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -77,9 +77,7 @@ const IntelManager = () => {
     title: '', content: '', category: 'intel_update', classification: 'routine', tags: []
   });
 
-  useEffect(() => { fetchBriefings(); }, [filterCat, search]);
-
-  const fetchBriefings = async () => {
+  const fetchBriefings = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (filterCat) params.append('category', filterCat);
@@ -88,7 +86,9 @@ const IntelManager = () => {
       setBriefings(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [filterCat, search]);
+
+  useEffect(() => { fetchBriefings(); }, [fetchBriefings]);
 
   const resetForm = () => {
     setForm({ title: '', content: '', category: 'intel_update', classification: 'routine', tags: [] });
