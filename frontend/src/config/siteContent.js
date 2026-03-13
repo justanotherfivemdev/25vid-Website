@@ -4,6 +4,11 @@
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 export const defaultSiteContent = {
+  browser: {
+    tabTitle: '25th Infantry Division',
+    tabIcon: '',
+    tabDescription: 'Ready to Strike — Anywhere, Anytime'
+  },
   hero: {
     backgroundImage: '',
     tagline: 'TROPIC LIGHTNING',

@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Save, AlertCircle, CheckCircle, Globe, Type, Image as ImageIcon, Layout, FileText, Hash } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Globe, Type, Image as ImageIcon, Layout, FileText, Hash, Monitor } from 'lucide-react';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { defaultSiteContent } from '@/config/siteContent';
+import { applyBrowserMetadata } from '@/utils/browserMetadata';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -72,7 +73,9 @@ const SiteContentManager = () => {
   const fetchContent = async () => {
     try {
       const res = await axios.get(`${API}/admin/site-content`);
-      setContent(deepMerge(defaultSiteContent, res.data || {}));
+      const mergedContent = deepMerge(defaultSiteContent, res.data || {});
+      setContent(mergedContent);
+      applyBrowserMetadata(mergedContent.browser, defaultSiteContent.browser);
     } catch (e) {
       setMessage({ type: 'error', text: 'Failed to load site content' });
     } finally { setLoading(false); }
@@ -83,7 +86,8 @@ const SiteContentManager = () => {
     setMessage({ type: '', text: '' });
     try {
       await axios.put(`${API}/admin/site-content`, content);
-      setMessage({ type: 'success', text: 'All changes saved. Refresh the public site to see updates.' });
+      applyBrowserMetadata(content?.browser, defaultSiteContent.browser);
+      setMessage({ type: 'success', text: 'All changes saved. Browser tab settings update immediately after save.' });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
       setMessage({ type: 'error', text: 'Failed to save. Please try again.' });
@@ -147,6 +151,27 @@ const SiteContentManager = () => {
             <AlertDescription>{message.text}</AlertDescription>
           </Alert>
         )}
+
+        {/* 00 — BROWSER TAB SETTINGS */}
+        <SectionCard number="00" icon={Monitor} title="Browser Tab Settings" subtitle="Control the browser tab title, icon, and description metadata">
+          <div>
+            <Label>Tab Title</Label>
+            <FieldHint location="Browser tab label" purpose="What visitors see in the tab text" recommended="25th Infantry Division" />
+            <Input value={get('browser.tabTitle')} onChange={e => set('browser.tabTitle', e.target.value)} className="bg-black border-gray-700 mt-2" data-testid="browser-tab-title-input" />
+          </div>
+          <div>
+            <Label>Tab Description (Meta Description)</Label>
+            <FieldHint location="Page metadata" purpose="Description used by browsers and search previews" recommended="Ready to Strike — Anywhere, Anytime" />
+            <Textarea value={get('browser.tabDescription')} onChange={e => set('browser.tabDescription', e.target.value)} rows={3} className="bg-black border-gray-700 mt-2" data-testid="browser-tab-description-input" />
+          </div>
+          <ImageUpload
+            value={get('browser.tabIcon')}
+            onChange={url => set('browser.tabIcon', url)}
+            label="Tab Icon (Favicon)"
+            description="Appears on: Browser tab icon + bookmarks. Purpose: Branding identity. Recommended: 64x64+ square PNG/SVG/ICO."
+            previewClass="w-16 h-16 object-contain rounded"
+          />
+        </SectionCard>
 
         {/* 1 — NAVIGATION BAR */}
         <SectionCard number="01" icon={Globe} title="Navigation Bar" subtitle="Top navigation bar visible on every page">

@@ -214,6 +214,16 @@ class TestFileUpload:
             assert "url" in res.json()
 
 
+    def test_upload_ico_with_auth(self, admin_cookies):
+        """Authenticated user should be able to upload .ico files for favicon support."""
+        with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
+            res = client.post("/upload", files={
+                "file": ("favicon.ico", b"\x00\x00\x01\x00" + b"\x00" * 100, "image/x-icon")
+            })
+            assert res.status_code == 200
+            assert res.json().get("url", "").endswith(".ico")
+
+
 # ============================================================================
 # SEARCH TESTS
 # ============================================================================
