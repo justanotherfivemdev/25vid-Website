@@ -17,7 +17,7 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
     const clean = url.split('?')[0].toLowerCase();
     if (/\.(mp4|webm|mov|m4v)$/.test(clean)) return 'video';
     if (/\.(mp3|ogg|wav)$/.test(clean)) return 'audio';
-    if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(clean)) return 'image';
+    if (/\.(jpg|jpeg|png|gif|webp|svg|ico)$/.test(clean)) return 'image';
     return 'image';
   };
 
@@ -26,12 +26,12 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
     if (!file) return;
 
     const allowed = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon',
       'video/mp4', 'video/webm', 'video/quicktime',
       'audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav'
     ];
     if (!allowed.includes(file.type)) {
-      setError('Invalid file type. Use image/video/audio formats (JPG, PNG, WebP, MP4, WebM, MOV, MP3, OGG).');
+      setError('Invalid file type. Use image/video/audio formats (JPG, PNG, WebP, SVG, ICO, MP4, WebM, MOV, MP3, OGG).');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -116,7 +116,7 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
       <input
         ref={fileRef}
         type="file"
-        accept="image/*,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp3,audio/ogg,audio/wav"
+        accept="image/*,.ico,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp3,audio/ogg,audio/wav"
         onChange={handleUpload}
         className="hidden"
       />
