@@ -137,7 +137,33 @@ const useSiteContent = () => {
 
   useEffect(() => {
     if (!loaded) return;
-    applyBrowserMetadata(content.browser, defaultSiteContent.browser);
+
+    const tabTitle = textOrFallback(content.browser?.tabTitle, defaultSiteContent.browser.tabTitle);
+    document.title = tabTitle;
+
+    const tabDescription = textOrFallback(content.browser?.tabDescription, defaultSiteContent.browser.tabDescription);
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute('name', 'description');
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.setAttribute('content', tabDescription);
+
+    const tabIcon = textOrFallback(content.browser?.tabIcon, defaultSiteContent.browser.tabIcon);
+    let iconLink = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+    if (!iconLink) {
+      iconLink = document.createElement('link');
+      iconLink.setAttribute('rel', 'icon');
+      document.head.appendChild(iconLink);
+    }
+
+    const iconHref = tabIcon ? resolveImg(tabIcon) : `${process.env.PUBLIC_URL}/favicon.ico`;
+    iconLink.setAttribute('href', iconHref);
+
+    const cleanIcon = iconHref.split('?')[0].toLowerCase();
+    const iconType = cleanIcon.endsWith('.svg') ? 'image/svg+xml' : cleanIcon.endsWith('.png') ? 'image/png' : 'image/x-icon';
+    iconLink.setAttribute('type', iconType);
   }, [content, loaded]);
 
   return { content, loaded };
