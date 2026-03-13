@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -88,7 +88,7 @@ const MemberHub = () => {
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-400 hidden sm:block">Welcome, <span className="text-tropic-gold font-bold">{user?.username}</span></span>
             <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
-            <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
+            <Link to="/hub/gallery"><Button size="sm" variant="outline" className="border-gray-700"><Image className="w-4 h-4 mr-1" />Gallery</Button></Link>
             {user?.role === 'admin' && (
               <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
             )}
@@ -281,8 +281,8 @@ const MemberHub = () => {
             <Link to="/hub/campaign" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-campaign">
               <MapPin className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Campaign</span>
             </Link>
-            <Link to="/roster" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-roster">
-              <Users className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Roster</span>
+            <Link to="/hub/gallery" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-gallery">
+              <Image className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Gallery</span>
             </Link>
           </div>
 
