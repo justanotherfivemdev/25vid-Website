@@ -26,6 +26,7 @@ import MemberProfile from '@/pages/member/MemberProfile';
 import EditProfile from '@/pages/member/EditProfile';
 import IntelBoard from '@/pages/member/IntelBoard';
 import CampaignMap from '@/pages/member/CampaignMap';
+import GalleryHub from '@/pages/member/GalleryHub';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
 import RecruitDashboard from '@/pages/RecruitDashboard';
@@ -109,6 +110,11 @@ const textOrFallback = (value, fallback) => {
   return value.trim() ? value : fallback;
 };
 
+const sanitizeMediaArray = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => typeof item === 'string' && item.trim());
+};
+
 // ============================================================================
 // DYNAMIC CONTENT HOOK
 // ============================================================================
@@ -120,9 +126,9 @@ const useSiteContent = () => {
     axios.get(`${API}/site-content`).then(res => {
       if (res.data) {
         const merged = deepMerge(defaultSiteContent, res.data);
-        // Arrays need special handling — only override if non-empty
-        if (res.data.operationalSuperiority?.images?.length) merged.operationalSuperiority.images = res.data.operationalSuperiority.images;
-        if (res.data.gallery?.showcaseImages?.length) merged.gallery.showcaseImages = res.data.gallery.showcaseImages;
+        // Arrays need special handling to remove blank slots from Command Center image pickers.
+        merged.operationalSuperiority.images = sanitizeMediaArray(res.data.operationalSuperiority?.images);
+        merged.gallery.showcaseImages = sanitizeMediaArray(res.data.gallery?.showcaseImages);
         setContent(merged);
       }
     }).catch(() => {}).finally(() => setLoaded(true));
@@ -1062,6 +1068,7 @@ function App() {
         <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
         <Route path="/hub/intel" element={<ProtectedRoute><IntelBoard /></ProtectedRoute>} />
         <Route path="/hub/campaign" element={<ProtectedRoute><CampaignMap /></ProtectedRoute>} />
+        <Route path="/hub/gallery" element={<ProtectedRoute><GalleryHub /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
       </Routes>

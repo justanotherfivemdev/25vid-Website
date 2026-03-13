@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -219,23 +220,27 @@ const AdminDashboard = () => {
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="/admin/operations" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+          <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Link to="/admin/operations" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
               <Calendar className="w-8 h-8 mx-auto mb-2 text-amber-500" />
               <div className="font-medium">Manage Operations</div>
-            </a>
-            <a href="/admin/announcements" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+            </Link>
+            <Link to="/admin/announcements" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
               <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" />
               <div className="font-medium">Post Announcement</div>
-            </a>
-            <a href="/admin/users" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+            </Link>
+            <Link to="/admin/users" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
               <Users className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
               <div className="font-medium">Manage Members</div>
-            </a>
-            <a href="/admin/site-content" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+            </Link>
+            <Link to="/admin/site-content" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
               <TrendingUp className="w-8 h-8 mx-auto mb-2 text-green-500" />
               <div className="font-medium">Edit Site Content</div>
-            </a>
+            </Link>
+            <Link to="/admin/gallery" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+              <Image className="w-8 h-8 mx-auto mb-2 text-tropic-red" />
+              <div className="font-medium">Manage Gallery</div>
+            </Link>
           </CardContent>
         </Card>
       </div>
