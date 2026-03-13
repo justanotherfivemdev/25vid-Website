@@ -88,6 +88,7 @@ const MemberHub = () => {
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-400 hidden sm:block">Welcome, <span className="text-tropic-gold font-bold">{user?.username}</span></span>
             <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
+            <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
             <Link to="/hub/gallery"><Button size="sm" variant="outline" className="border-gray-700"><Image className="w-4 h-4 mr-1" />Gallery</Button></Link>
             {user?.role === 'admin' && (
               <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
