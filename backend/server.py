@@ -549,7 +549,7 @@ async def get_auth_status():
     return {
         "discord_enabled": bool(DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET and DISCORD_REDIRECT_URI),
         "email_enabled": True,  # Always available
-        "email_verification_required": True,
+        "email_verification_required": False,
     }
 
 # ============================================================================
@@ -568,15 +568,19 @@ async def register(user_data: UserRegister, response: Response):
     user_dict = user_data.model_dump()
     user_dict["email"] = normalized_email
     user_dict["password_hash"] = hash_password(user_dict.pop("password"))
-    user_dict["email_verified"] = False
-    user_dict["email_verification_sent_at"] = datetime.now(timezone.utc).isoformat()
+    # TEMPORARY: email verification is disabled until SMTP is configured.
+    # Keep the fields and verification flow in place for easy re-enable later.
+    user_dict["email_verified"] = True
+    user_dict["email_verified_at"] = datetime.now(timezone.utc).isoformat()
+    # user_dict["email_verification_sent_at"] = datetime.now(timezone.utc).isoformat()
     user_obj = User(**user_dict)
 
-    try:
-        send_verification_email(user_obj.email, user_obj.username, user_obj.id)
-    except Exception as exc:
-        logger.error("Failed to send verification email to %s: %s", user_obj.email, exc)
-        raise HTTPException(status_code=503, detail="Unable to send verification email right now. Please try again later.")
+    # TEMPORARY: disable verification email delivery until SMTP/verification is configured.
+    # try:
+    #     send_verification_email(user_obj.email, user_obj.username, user_obj.id)
+    # except Exception as exc:
+    #     logger.error("Failed to send verification email to %s: %s", user_obj.email, exc)
+    #     raise HTTPException(status_code=503, detail="Unable to send verification email right now. Please try again later.")
 
     doc = user_obj.model_dump()
     doc['join_date'] = doc['join_date'].isoformat()
@@ -584,8 +588,8 @@ async def register(user_data: UserRegister, response: Response):
 
     clear_auth_cookie(response)
     return RegistrationResponse(
-        message="Registration successful. Check your email to verify your account before logging in.",
-        requires_verification=True,
+        message="Registration successful. You can now log in.",
+        requires_verification=False,
         email=user_obj.email,
     )
 
@@ -655,14 +659,15 @@ async def login(credentials: UserLogin, response: Response):
     if not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="Account is inactive")
 
-    if not user.get("email_verified", False):
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "email_not_verified",
-                "message": "Verify your email before logging in. You can request a new verification link from the login form."
-            }
-        )
+    # TEMPORARY: email verification enforcement disabled until SMTP is configured.
+    # if not user.get("email_verified", False):
+    #     raise HTTPException(
+    #         status_code=403,
+    #         detail={
+    #             "code": "email_not_verified",
+    #             "message": "Verify your email before logging in. You can request a new verification link from the login form."
+    #         }
+    #     )
     
     access_token = create_access_token({"sub": user["id"], "email": user["email"]})
     set_auth_cookie(response, access_token)
