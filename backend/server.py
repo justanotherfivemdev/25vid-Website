@@ -15,12 +15,21 @@ import smtplib
 import httpx
 from pathlib import Path
 from email.message import EmailMessage
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
-from typing import List, Optional, Literal
+from pydantic import BaseModel, Field, EmailStr, ConfigDict, TypeAdapter
+from typing import List, Optional, Literal, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
 from passlib.context import CryptContext
+
+from google_sheets_import import (
+    GoogleSheetsImportError,
+    parse_spreadsheet_id,
+    fetch_sheet_rows,
+    build_field_mapping,
+    row_to_mapped_fields,
+    split_permissions,
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -42,6 +51,7 @@ EMAIL_VERIFICATION_TTL_HOURS = int(os.environ.get('EMAIL_VERIFICATION_TTL_HOURS'
 EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS = int(os.environ.get('EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS', 60))
 
 # Password hashing
+IMPORT_EMAIL_ADAPTER = TypeAdapter(EmailStr)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
 
@@ -122,6 +132,9 @@ class User(BaseModel):
     discord_username: Optional[str] = None
     discord_avatar: Optional[str] = None
     discord_linked: bool = False
+    pre_registered: bool = False
+    permissions: List[str] = Field(default_factory=list)
+    unit: Optional[str] = None
     # Phase 6: Unit hierarchy
     company: Optional[str] = None     # e.g., "Alpha", "Bravo", "HQ"
     platoon: Optional[str] = None     # e.g., "1st Platoon", "2nd Platoon"
@@ -160,6 +173,9 @@ class UserResponse(BaseModel):
     discord_username: Optional[str] = None
     discord_avatar: Optional[str] = None
     discord_linked: bool = False
+    pre_registered: bool = False
+    permissions: List[str] = Field(default_factory=list)
+    unit: Optional[str] = None
     # Phase 6: Unit hierarchy
     company: Optional[str] = None
     platoon: Optional[str] = None
@@ -305,6 +321,27 @@ class AdminProfileUpdate(BaseModel):
     company: Optional[str] = None
     platoon: Optional[str] = None
     billet: Optional[str] = None
+
+class UserImportRequest(BaseModel):
+    spreadsheetId: Optional[str] = None
+    spreadsheetUrl: Optional[str] = None
+    sheetName: Optional[str] = None
+    fieldMapping: Optional[Dict[str, str]] = None
+
+class UserImportRowResult(BaseModel):
+    row_number: int
+    action: str
+    message: str
+    identifier: Optional[str] = None
+
+class UserImportResponse(BaseModel):
+    imported: int = 0
+    updated: int = 0
+    skipped: int = 0
+    errors: int = 0
+    sheet_name: Optional[str] = None
+    field_mapping: Dict[str, str] = Field(default_factory=dict)
+    results: List[UserImportRowResult] = Field(default_factory=list)
 
 class MissionHistoryEntry(BaseModel):
     operation_name: str
@@ -533,8 +570,96 @@ def user_to_response(u: dict) -> UserResponse:
         training_history=u.get("training_history", []),
         discord_id=u.get("discord_id"), discord_username=u.get("discord_username"),
         discord_avatar=u.get("discord_avatar"), discord_linked=u.get("discord_linked", False),
+        pre_registered=u.get("pre_registered", False), permissions=u.get("permissions", []), unit=u.get("unit"),
         company=u.get("company"), platoon=u.get("platoon"), billet=u.get("billet")
     )
+
+def validate_import_email(raw_email: str) -> str:
+    try:
+        validated = IMPORT_EMAIL_ADAPTER.validate_python(raw_email)
+    except Exception as exc:
+        raise ValueError(f"Invalid email '{raw_email}'") from exc
+    return normalize_email(str(validated))
+
+
+
+def sanitize_import_user_fields(raw: Dict[str, str]) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {}
+
+    if raw.get("username"):
+        payload["username"] = raw["username"]
+    if raw.get("email"):
+        payload["email"] = validate_import_email(raw["email"])
+    if raw.get("discord_id"):
+        payload["discord_id"] = raw["discord_id"]
+    if raw.get("discord_username"):
+        payload["discord_username"] = raw["discord_username"]
+    if raw.get("rank"):
+        payload["rank"] = raw["rank"]
+    if raw.get("role"):
+        payload["role"] = raw["role"].lower()
+    if raw.get("permissions"):
+        payload["permissions"] = split_permissions(raw["permissions"])
+    if raw.get("unit"):
+        payload["unit"] = raw["unit"]
+        # default convenience mapping for roster hierarchy
+        payload.setdefault("company", raw["unit"])
+    if raw.get("status"):
+        payload["status"] = raw["status"].lower()
+
+    return payload
+
+
+async def upsert_user_from_import(mapped_fields: Dict[str, str]) -> tuple[str, str]:
+    update_fields = sanitize_import_user_fields(mapped_fields)
+    email = update_fields.get("email")
+    discord_id = update_fields.get("discord_id")
+
+    existing_by_email = None
+    existing_by_discord = None
+
+    if email:
+        existing_by_email = await db.users.find_one({"email": email}, {"_id": 0})
+    if discord_id:
+        existing_by_discord = await db.users.find_one({"discord_id": discord_id}, {"_id": 0})
+
+    if existing_by_email and existing_by_discord and existing_by_email["id"] != existing_by_discord["id"]:
+        raise ValueError(
+            "Conflicting identifiers: provided email and discord_id belong to different existing accounts"
+        )
+
+    existing = existing_by_email or existing_by_discord
+
+    if existing:
+        update_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.users.update_one({"id": existing["id"]}, {"$set": update_fields})
+        return "updated", existing.get("email") or existing.get("discord_id") or existing.get("id")
+
+    generated_email = email or f"imported_discord_{discord_id}@25thid.local"
+    generated_username = update_fields.get("username") or update_fields.get("discord_username") or f"PreReg_{str(uuid.uuid4())[:8]}"
+
+    new_user = User(
+        email=generated_email,
+        username=generated_username,
+        password_hash=pwd_context.hash(secrets.token_urlsafe(32)),
+        role=update_fields.get("role", "member"),
+        rank=update_fields.get("rank"),
+        status=update_fields.get("status", "recruit"),
+        discord_id=update_fields.get("discord_id"),
+        discord_username=update_fields.get("discord_username"),
+        discord_linked=bool(update_fields.get("discord_id")),
+        pre_registered=True,
+        permissions=update_fields.get("permissions", []),
+        unit=update_fields.get("unit"),
+        company=update_fields.get("company"),
+        is_active=False,
+    )
+
+    doc = new_user.model_dump()
+    doc["join_date"] = doc["join_date"].isoformat()
+    await db.users.insert_one(doc)
+    return "created", generated_email
+
 
 # ============================================================================
 # AUTH STATUS ENDPOINT (for frontend feature detection)
@@ -807,8 +932,23 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     # 1. Check if Discord ID is already linked to an account
     existing_by_discord = await db.users.find_one({"discord_id": discord_id}, {"_id": 0})
     if existing_by_discord:
-        if not existing_by_discord.get("is_active", True):
+        if not existing_by_discord.get("is_active", True) and not existing_by_discord.get("pre_registered", False):
             return RedirectResponse(f"{frontend_base}/login?discord_error=account_inactive")
+
+        if existing_by_discord.get("pre_registered", False):
+            await db.users.update_one(
+                {"id": existing_by_discord["id"]},
+                {"$set": {
+                    "discord_linked": True,
+                    "is_active": True,
+                    "pre_registered": False,
+                    "discord_username": discord_username or existing_by_discord.get("discord_username"),
+                    "discord_avatar": discord_avatar_url or existing_by_discord.get("discord_avatar"),
+                }}
+            )
+            existing_by_discord["is_active"] = True
+            existing_by_discord["pre_registered"] = False
+
         jwt_token = create_access_token({"sub": existing_by_discord["id"], "email": existing_by_discord["email"]})
         redirect = RedirectResponse(f"{frontend_base}/login?discord_success=true")
         set_auth_cookie(redirect, jwt_token)
@@ -818,7 +958,7 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     if discord_email:
         existing_by_email = await db.users.find_one({"email": discord_email}, {"_id": 0})
         if existing_by_email:
-            if not existing_by_email.get("is_active", True):
+            if not existing_by_email.get("is_active", True) and not existing_by_email.get("pre_registered", False):
                 return RedirectResponse(f"{frontend_base}/login?discord_error=account_inactive")
             await db.users.update_one(
                 {"id": existing_by_email["id"]},
@@ -827,6 +967,8 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
                     "discord_username": discord_username,
                     "discord_avatar": discord_avatar_url,
                     "discord_linked": True,
+                    "is_active": True,
+                    "pre_registered": False,
                     "email_verified": existing_by_email.get("email_verified", False) or discord_email_verified,
                     "email_verified_at": (
                         datetime.now(timezone.utc).isoformat()
@@ -1521,6 +1663,74 @@ async def admin_update_profile(user_id: str, profile_data: AdminProfileUpdate, c
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": "Profile updated successfully"}
+
+@api_router.post("/admin/import-users", response_model=UserImportResponse)
+async def import_users_from_google_sheet(payload: UserImportRequest, current_user: dict = Depends(get_current_admin)):
+    spreadsheet_id = parse_spreadsheet_id(payload.spreadsheetId, payload.spreadsheetUrl)
+    if not spreadsheet_id:
+        raise HTTPException(status_code=400, detail="Provide a valid spreadsheetId or spreadsheetUrl")
+
+    try:
+        resolved_sheet_name, values = await fetch_sheet_rows(spreadsheet_id, payload.sheetName)
+    except GoogleSheetsImportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    headers = values[0]
+    field_mapping = build_field_mapping(headers, payload.fieldMapping)
+
+    if "email" not in field_mapping and "discord_id" not in field_mapping:
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to map required identifiers. Include an email or discord_id column (or provide fieldMapping).",
+        )
+
+    report = UserImportResponse(
+        sheet_name=resolved_sheet_name,
+        field_mapping={field: headers[idx] for field, idx in field_mapping.items()},
+    )
+
+    for row_index, row in enumerate(values[1:], start=2):
+        mapped = row_to_mapped_fields(row, field_mapping)
+        identifier = mapped.get("email") or mapped.get("discord_id") or mapped.get("username")
+
+        if not mapped.get("email") and not mapped.get("discord_id"):
+            report.skipped += 1
+            report.results.append(
+                UserImportRowResult(
+                    row_number=row_index,
+                    action="skipped",
+                    message="Missing required identifier (email or discord_id)",
+                    identifier=identifier,
+                )
+            )
+            continue
+
+        try:
+            action, resolved_identifier = await upsert_user_from_import(mapped)
+            if action == "created":
+                report.imported += 1
+            else:
+                report.updated += 1
+            report.results.append(
+                UserImportRowResult(
+                    row_number=row_index,
+                    action=action,
+                    message=f"User {action} successfully",
+                    identifier=resolved_identifier,
+                )
+            )
+        except Exception as exc:
+            report.errors += 1
+            report.results.append(
+                UserImportRowResult(
+                    row_number=row_index,
+                    action="error",
+                    message=str(exc),
+                    identifier=identifier,
+                )
+            )
+
+    return report
 
 @api_router.post("/admin/users/{user_id}/mission-history")
 async def add_mission_history(user_id: str, entry: MissionHistoryEntry, current_user: dict = Depends(get_current_admin)):
