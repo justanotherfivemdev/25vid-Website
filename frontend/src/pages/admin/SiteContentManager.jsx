@@ -161,7 +161,8 @@ const SiteContentManager = () => {
           </div>
           <div>
             <Label>Tab Description (Meta Description)</Label>
-            <FieldHint location="Page metadata" purpose="Description used by browsers and search previews" recommended="Ready to Strike — Anywhere, Anytime" />
+            <FieldHint location="Page metadata" purpose="Description used by browsers and search previews" recommended="Official site of the 25th Infantry Division — Tropic Lightning. Ready to Strike, Anywhere, Anytime." />
+            <p className="text-xs text-gray-500 text-center mt-2">Default (25th branding): Official site of the 25th Infantry Division — Tropic Lightning. Ready to Strike, Anywhere, Anytime.</p>
             <Textarea value={get('browser.tabDescription')} onChange={e => set('browser.tabDescription', e.target.value)} rows={3} className="bg-black border-gray-700 mt-2" data-testid="browser-tab-description-input" />
           </div>
           <ImageUpload
