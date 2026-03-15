@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Shield, Home, LogOut, Users, ChevronRight, ChevronDown, Building2, LayoutList, LayoutGrid } from 'lucide-react';
+import { Search, Shield, Home, LogOut, Users, ChevronRight, ChevronDown, Building2, LayoutGrid, FileSpreadsheet } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
 
@@ -130,6 +130,66 @@ const UnitRoster = () => {
 
   const handleLogout = async () => { await logout(); navigate('/'); };
 
+  const toCsvValue = (value) => {
+    if (value === null || value === undefined) return '""';
+    const raw = String(value);
+    const trimmed = raw.trimStart();
+    const formulaSafe = /^[=+\-@]/.test(trimmed) ? `'${raw}` : raw;
+    const escaped = formulaSafe.replace(/"/g, '""');
+    return `"${escaped}"`;
+  };
+
+  const handleGoogleSheetsExport = async () => {
+    if (!members.length) return;
+
+    const headers = [
+      'Username',
+      'Rank',
+      'Billet',
+      'Specialization',
+      'Status',
+      'Company',
+      'Platoon',
+      'Squad',
+      'Role'
+    ];
+
+    const sortedMembers = [...members].sort((a, b) => a.username.localeCompare(b.username));
+    const rows = sortedMembers.map((member) => [
+      member.username,
+      member.rank,
+      member.billet,
+      member.specialization,
+      member.status,
+      member.company,
+      member.platoon,
+      member.squad,
+      member.role
+    ]);
+
+    const csvText = [headers, ...rows]
+      .map((row) => row.map(toCsvValue).join(','))
+      .join('\n');
+
+    const dateSuffix = new Date().toISOString().slice(0, 10);
+    const fileName = `roster-export-${dateSuffix}.csv`;
+    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(downloadUrl);
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(csvText).catch(() => null);
+    }
+
+    window.open('https://docs.google.com/spreadsheets/create', '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-red/30">
@@ -156,28 +216,47 @@ const UnitRoster = () => {
                 <p className="text-sm text-gray-500">{filtered.length} of {members.length} operators</p>
               </div>
             </div>
-            {/* View Toggle - 25th ID colors */}
-            <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1">
-              <Button 
-                size="sm" 
-                variant={viewMode === 'hierarchy' ? 'default' : 'ghost'}
-                className={viewMode === 'hierarchy' ? 'bg-tropic-red hover:bg-tropic-red-dark' : 'text-gray-400 hover:text-white'}
-                onClick={() => setViewMode('hierarchy')}
-                data-testid="view-hierarchy"
-              >
-                <Building2 className="w-4 h-4 mr-1" />Hierarchy
-              </Button>
-              <Button 
-                size="sm" 
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                className={viewMode === 'grid' ? 'bg-tropic-red hover:bg-tropic-red-dark' : 'text-gray-400 hover:text-white'}
-                onClick={() => setViewMode('grid')}
-                data-testid="view-grid"
-              >
-                <LayoutGrid className="w-4 h-4 mr-1" />Grid
-              </Button>
+            <div className="flex flex-wrap justify-end gap-2">
+              {user?.role === 'admin' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-green-600/60 text-green-400 hover:bg-green-900/20"
+                  onClick={handleGoogleSheetsExport}
+                  data-testid="export-google-sheets"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-1" />Export to Google Sheets
+                </Button>
+              )}
+
+              {/* View Toggle - 25th ID colors */}
+              <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1">
+                <Button 
+                  size="sm" 
+                  variant={viewMode === 'hierarchy' ? 'default' : 'ghost'}
+                  className={viewMode === 'hierarchy' ? 'bg-tropic-red hover:bg-tropic-red-dark' : 'text-gray-400 hover:text-white'}
+                  onClick={() => setViewMode('hierarchy')}
+                  data-testid="view-hierarchy"
+                >
+                  <Building2 className="w-4 h-4 mr-1" />Hierarchy
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  className={viewMode === 'grid' ? 'bg-tropic-red hover:bg-tropic-red-dark' : 'text-gray-400 hover:text-white'}
+                  onClick={() => setViewMode('grid')}
+                  data-testid="view-grid"
+                >
+                  <LayoutGrid className="w-4 h-4 mr-1" />Grid
+                </Button>
+              </div>
             </div>
           </div>
+          {user?.role === 'admin' && (
+            <p className="text-xs text-gray-500 -mt-3">
+              Export creates a CSV download and opens a new Google Sheet so you can import into any spreadsheet destination.
+            </p>
+          )}
 
           {/* Filters - only show in grid mode */}
           {viewMode === 'grid' && (
