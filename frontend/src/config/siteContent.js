@@ -7,7 +7,7 @@ export const defaultSiteContent = {
   browser: {
     tabTitle: '25th Infantry Division',
     tabIcon: '',
-    tabDescription: 'Ready to Strike — Anywhere, Anytime'
+    tabDescription: 'Official site of the 25th Infantry Division — Tropic Lightning. Ready to Strike, Anywhere, Anytime.'
   },
   hero: {
     backgroundImage: '',
