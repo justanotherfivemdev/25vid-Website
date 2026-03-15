@@ -43,7 +43,10 @@ def normalize_column_key(value: str) -> str:
 
 def parse_spreadsheet_id(spreadsheet_id: Optional[str], spreadsheet_url: Optional[str]) -> Optional[str]:
     if spreadsheet_id:
-        return spreadsheet_id.strip()
+        candidate = spreadsheet_id.strip()
+        if re.fullmatch(r"[A-Za-z0-9-_]{20,}", candidate):
+            return candidate
+        return None
     if not spreadsheet_url:
         return None
 
