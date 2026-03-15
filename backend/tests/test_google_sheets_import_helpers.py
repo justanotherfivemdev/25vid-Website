@@ -1,9 +1,4 @@
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-from google_sheets_import import (
+from backend.google_sheets_import import (
     parse_spreadsheet_id,
     build_field_mapping,
     row_to_mapped_fields,
