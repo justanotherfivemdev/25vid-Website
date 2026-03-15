@@ -323,10 +323,11 @@ class AdminProfileUpdate(BaseModel):
     billet: Optional[str] = None
 
 class UserImportRequest(BaseModel):
-    spreadsheetId: Optional[str] = None
-    spreadsheetUrl: Optional[str] = None
-    sheetName: Optional[str] = None
-    fieldMapping: Optional[Dict[str, str]] = None
+    model_config = ConfigDict(populate_by_name=True)
+    spreadsheet_id: Optional[str] = Field(default=None, alias="spreadsheetId")
+    spreadsheet_url: Optional[str] = Field(default=None, alias="spreadsheetUrl")
+    sheet_name: Optional[str] = Field(default=None, alias="sheetName")
+    field_mapping: Optional[Dict[str, str]] = Field(default=None, alias="fieldMapping")
 
 class UserImportRowResult(BaseModel):
     row_number: int
