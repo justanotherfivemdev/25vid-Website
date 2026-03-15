@@ -635,8 +635,18 @@ async def upsert_user_from_import(mapped_fields: Dict[str, str]) -> tuple[str, s
         await db.users.update_one({"id": existing["id"]}, {"$set": update_fields})
         return "updated", existing.get("email") or existing.get("discord_id") or existing.get("id")
 
+    # If we only have an email (no discord_id) and no existing account, avoid creating
+    # an unclaimable pre-registered user with a random password and is_active=False.
+    # Skipping creation here allows the user to register normally via /auth/register.
+    if email and not discord_id:
+        return "skipped_missing_discord", email
+
     generated_email = email or f"imported_discord_{discord_id}@25thid.local"
-    generated_username = update_fields.get("username") or update_fields.get("discord_username") or f"PreReg_{str(uuid.uuid4())[:8]}"
+    generated_username = (
+        update_fields.get("username")
+        or update_fields.get("discord_username")
+        or f"PreReg_{str(uuid.uuid4())[:8]}"
+    )
 
     new_user = User(
         email=generated_email,
