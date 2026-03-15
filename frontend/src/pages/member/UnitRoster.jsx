@@ -133,7 +133,8 @@ const UnitRoster = () => {
   const toCsvValue = (value) => {
     if (value === null || value === undefined) return '""';
     const raw = String(value);
-    const formulaSafe = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+    const trimmed = raw.trimStart();
+    const formulaSafe = /^[=+\-@]/.test(trimmed) ? `'${raw}` : raw;
     const escaped = formulaSafe.replace(/"/g, '""');
     return `"${escaped}"`;
   };
