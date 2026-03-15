@@ -110,10 +110,15 @@ async def fetch_sheet_rows(spreadsheet_id: str, sheet_name: Optional[str] = None
         raise GoogleSheetsImportError("GOOGLE_SHEETS_API_KEY is not configured")
 
     async with httpx.AsyncClient(timeout=20.0) as client:
-        metadata_res = await client.get(
-            f"{GOOGLE_SHEETS_API_BASE}/{spreadsheet_id}",
-            params={"key": api_key},
-        )
+        try:
+            metadata_res = await client.get(
+                f"{GOOGLE_SHEETS_API_BASE}/{spreadsheet_id}",
+                params={"key": api_key},
+            )
+        except httpx.HTTPError as exc:
+            raise GoogleSheetsImportError(
+                f"Error communicating with Google Sheets API while fetching spreadsheet metadata: {exc}"
+            ) from exc
 
         if metadata_res.status_code >= 400:
             raise GoogleSheetsImportError(
@@ -129,10 +134,15 @@ async def fetch_sheet_rows(spreadsheet_id: str, sheet_name: Optional[str] = None
         if not target_sheet:
             raise GoogleSheetsImportError("Spreadsheet has no sheets to import")
 
-        values_res = await client.get(
-            f"{GOOGLE_SHEETS_API_BASE}/{spreadsheet_id}/values/{quote(target_sheet, safe='')}",
-            params={"key": api_key},
-        )
+        try:
+            values_res = await client.get(
+                f"{GOOGLE_SHEETS_API_BASE}/{spreadsheet_id}/values/{quote(target_sheet, safe='')}",
+                params={"key": api_key},
+            )
+        except httpx.HTTPError as exc:
+            raise GoogleSheetsImportError(
+                f"Error communicating with Google Sheets API while fetching values from '{target_sheet}': {exc}"
+            ) from exc
 
         if values_res.status_code >= 400:
             raise GoogleSheetsImportError(
