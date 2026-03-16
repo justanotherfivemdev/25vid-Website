@@ -35,6 +35,7 @@ import RecruitmentManager from '@/pages/admin/RecruitmentManager';
 import IntelManager from '@/pages/admin/IntelManager';
 import CampaignManager from '@/pages/admin/CampaignManager';
 import UnitTagsManager from '@/pages/admin/UnitTagsManager';
+import JoinUs from '@/pages/JoinUs';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -753,6 +754,11 @@ const JoinUsSection = ({ content }) => {
               operations, and begin your journey with the unit.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <Link to="/join">
+                <Button variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10 px-10 py-5 text-lg tracking-wider w-full sm:w-auto" data-testid="join-threat-map-button">
+                  VIEW THREAT MAP
+                </Button>
+              </Link>
               <Link to="/login">
                 <Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button tracking-wider w-full sm:w-auto" data-testid="join-register-button">
                   <Shield className="mr-2 w-5 h-5"/>CREATE ACCOUNT
@@ -1079,6 +1085,8 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/join" element={<JoinUs />} />
+        <Route path="/join-us" element={<Navigate to="/join" replace />} />
         <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/operations" element={<ProtectedRoute adminOnly><OperationsManager /></ProtectedRoute>} />
         <Route path="/admin/site-content" element={<ProtectedRoute adminOnly><SiteContentManager /></ProtectedRoute>} />

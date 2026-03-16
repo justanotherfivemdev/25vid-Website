@@ -31,6 +31,13 @@ const ThreatFilters = ({ filters, onChange }) => {
         <option value="in_progress">In Progress</option>
         <option value="complete">Complete</option>
         <option value="failed">Failed</option>
+        <option value="planned">Planned</option>
+        <option value="ongoing">Ongoing</option>
+        <option value="completed">Completed</option>
+        <option value="routine">Routine</option>
+        <option value="priority">Priority</option>
+        <option value="immediate">Immediate</option>
+        <option value="flash">Flash</option>
       </select>
     </div>
   );

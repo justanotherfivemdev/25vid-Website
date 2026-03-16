@@ -170,7 +170,7 @@ const OperationDetail = () => {
                   {operation.theater && <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5 text-blue-400" />{operation.theater}</span>}
                   {operation.region_label && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-amber-500" />{operation.region_label}</span>}
                   {operation.grid_ref && <span className="text-gray-400">GRID {operation.grid_ref}</span>}
-                  <Link to="/hub/campaign" className="text-tropic-gold hover:underline ml-auto">View in Campaign Theater</Link>
+                  <Link to="/hub/campaign" className="text-tropic-gold hover:underline ml-auto">View in Conflict Map</Link>
                 </div>
               )}
               {/* Attendance summary */}
