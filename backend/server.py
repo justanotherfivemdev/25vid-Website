@@ -2411,11 +2411,8 @@ async def get_map_overlays(current_user: dict = Depends(get_current_user)):
             lng = obj.get("lng")
             if lat is None or lng is None:
                 continue
-            obj_id = obj.get("id")
-            if not obj_id:
-                continue
             objective_markers.append({
-                "id": obj_id,
+                "id": obj.get("id") or str(uuid.uuid4()),
                 "source_kind": "objective",
                 "campaign_id": campaign.get("id"),
                 "campaign_name": campaign.get("name"),

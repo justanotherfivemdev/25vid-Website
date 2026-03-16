@@ -21,7 +21,7 @@ A full-stack tactical operations platform for the 25th Infantry Division MilSim 
 | Backend | FastAPI (Python) |
 | Database | MongoDB |
 | Auth | JWT (+ optional Discord OAuth) |
-| Process | systemd + Nginx + Cloudflare proxy (self-hosted Linux) |
+| Process | systemd + Nginx (self-hosted Linux) |
 
 ---
 
@@ -39,7 +39,7 @@ That guide includes:
 2. Backend and frontend setup
 3. systemd service creation
 4. Nginx reverse proxy
-5. Cloudflare SSL/TCP setup (Full Strict)
+5. TLS with Let's Encrypt
 6. Admin bootstrap
 7. MongoDB hardening
 8. Backups
@@ -70,7 +70,7 @@ For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env`.
 
 ## Required Environment Variables
 
-### Backend (`backend/.env`)
+## Required Environment Variables
 
 - `MONGO_URL`
 - `DB_NAME`
@@ -83,14 +83,11 @@ Common production recommendation:
 - `COOKIE_SECURE=true`
 - `FRONTEND_URL=https://yourdomain.com`
 
-Optional map-feed scaffolding (for future provider integration):
-
-- `MAP_EXTERNAL_FEED_ENABLED=false`
-- `MAP_EXTERNAL_PROVIDER=none`
-- `MAP_INGEST_INTERVAL_SECONDS=300`
-- `MAP_EVENT_RETENTION_DAYS=30`
-
-### Frontend (`frontend/.env`)
+- `MONGO_URL`
+- `DB_NAME`
+- `JWT_SECRET`
+- `JWT_ALGORITHM` (typically `HS256`)
+- `JWT_EXPIRATION_HOURS`
 
 - `REACT_APP_BACKEND_URL=https://yourdomain.com`
 
@@ -104,16 +101,8 @@ Optional map tuning:
 
 ---
 
-## Cloudflare + Linux Hosting Notes
-
-- Use Cloudflare DNS **proxied (orange cloud)** records for your domain.
-- In Cloudflare SSL/TLS mode, use **Full (strict)**.
-- Install a Cloudflare Origin Certificate on your Linux host (Nginx) and keep `COOKIE_SECURE=true`.
-- Keep origin ports restricted to HTTPS where possible (Cloudflare proxy in front).
-
----
-
-## Admin Bootstrap
+- `COOKIE_SECURE=true`
+- `FRONTEND_URL=https://yourdomain.com`
 
 After first deployment:
 

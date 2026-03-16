@@ -116,13 +116,7 @@ const CampaignMap = () => {
   const objComplete = objectives.filter(o => o.status === 'complete').length;
   const objInProgress = objectives.filter(o => o.status === 'in_progress').length;
   const progress = objectives.length > 0 ? Math.round((objComplete / objectives.length) * 100) : 0;
-  const objectiveFallback = (campaign?.objectives || []).map((o) => ({
-    ...o,
-    source_kind: 'objective',
-    campaign_id: selectedId || campaign?.id || null,
-  }));
-  const objectiveOverlay = (overlayData.objectives || []).filter(o => !selectedId || o.campaign_id === selectedId);
-  const filteredObjectives = objectiveOverlay.length > 0 ? objectiveOverlay : objectiveFallback;
+  const filteredObjectives = (overlayData.objectives || []).filter(o => !selectedId || o.campaign_id === selectedId);
   const filteredOperations = (overlayData.operations || []).filter(o => !selectedId || o.campaign_id === selectedId);
   const filteredIntel = (overlayData.intel || []).filter(o => !selectedId || o.campaign_id === selectedId || !o.campaign_id);
 
@@ -137,7 +131,7 @@ const CampaignMap = () => {
     .filter(o => {
       const needle = filters.search.trim().toLowerCase();
       if (!needle) return true;
-      return [o.name, o.region_label, o.description, o.grid_ref, o.source_kind, o.operation_type, o.category].filter(Boolean).join(' ').toLowerCase().includes(needle);
+      return [o.name, o.region_label, o.description, o.grid_ref, o.source_kind, o.operation_type].filter(Boolean).join(' ').toLowerCase().includes(needle);
     });
 
   const handleCreateActivity = async (e) => {
