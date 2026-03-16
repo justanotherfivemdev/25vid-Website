@@ -124,9 +124,9 @@ const CampaignManager = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="campaign-manager-title">
-              CAMPAIGN THEATER
+              CONFLICT MAP
             </h1>
-            <p className="text-gray-400 mt-2">Manage campaigns, operational phases, and objectives</p>
+            <p className="text-gray-400 mt-2">Manage conflict map campaigns, phases, and objectives</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
@@ -163,18 +163,18 @@ const CampaignManager = () => {
                     <Button type="button" size="sm" onClick={addPhase} className="bg-gray-800 hover:bg-gray-700"><Plus className="w-3 h-3 mr-1" />Add Phase</Button>
                   </div>
                   {form.phases.map((p, i) => (
-                    <div key={i} className="grid grid-cols-12 gap-2 mb-2 items-end">
-                      <div className="col-span-3"><Input value={p.name} onChange={e => updatePhase(i, 'name', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Phase name" /></div>
-                      <div className="col-span-3"><Input value={p.description} onChange={e => updatePhase(i, 'description', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Description" /></div>
-                      <div className="col-span-2">
+                    <div key={i} className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2 items-end">
+                      <div className="md:col-span-2"><Input value={p.name} onChange={e => updatePhase(i, 'name', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Phase name" /></div>
+                      <div className="md:col-span-2"><Input value={p.description} onChange={e => updatePhase(i, 'description', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Description" /></div>
+                      <div className="md:col-span-2">
                         <Select value={p.status} onValueChange={v => updatePhase(i, 'status', v)}>
                           <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent className="bg-gray-900 border-gray-700">{PHASE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
-                      <div className="col-span-1.5"><Input type="date" value={p.start_date || ''} onChange={e => updatePhase(i, 'start_date', e.target.value)} className="bg-black border-gray-700 text-xs" /></div>
-                      <div className="col-span-1.5"><Input type="date" value={p.end_date || ''} onChange={e => updatePhase(i, 'end_date', e.target.value)} className="bg-black border-gray-700 text-xs" /></div>
-                      <div className="col-span-1"><Button type="button" size="sm" variant="outline" onClick={() => removePhase(i)} className="border-red-800 text-red-500 w-full"><X className="w-3 h-3" /></Button></div>
+                      <div className="md:col-span-2"><Input type="date" value={p.start_date || ''} onChange={e => updatePhase(i, 'start_date', e.target.value)} className="bg-black border-gray-700 text-sm min-w-[145px]" /></div>
+                      <div className="md:col-span-2"><Input type="date" value={p.end_date || ''} onChange={e => updatePhase(i, 'end_date', e.target.value)} className="bg-black border-gray-700 text-sm min-w-[145px]" /></div>
+                      <div className="md:col-span-2"><Button type="button" size="sm" variant="outline" onClick={() => removePhase(i)} className="border-red-800 text-red-500 w-full"><X className="w-3 h-3" /></Button></div>
                     </div>
                   ))}
                   {form.phases.length === 0 && <p className="text-xs text-gray-600">No phases defined</p>}

@@ -1,100 +1,116 @@
-# 25th Infantry Division — Production Deployment Guide
+# 25th Infantry Division — Linux Self-Hosting Deployment Guide
 
-## Prerequisites
+This guide is the **canonical production deployment path** for this project.
+It is intentionally Linux-only and focused on a single reliable stack:
 
-| Component | Minimum Version | Purpose |
-|-----------|----------------|---------|
-| Ubuntu/Debian | 22.04+ | Host OS |
-| Node.js | 18+ | Frontend build |
-| Python | 3.10+ | Backend runtime |
-| MongoDB | 6.0+ | Database |
-| Nginx | 1.18+ | Reverse proxy |
-| Cloudflare | — | DNS + SSL + CDN |
+- Ubuntu/Debian Linux
+- Python + FastAPI backend (systemd)
+- React frontend (static build)
+- MongoDB
+- Nginx reverse proxy
+- TLS via Let's Encrypt (certbot)
 
 ---
 
-## 1. Server Setup
+## 1) Prerequisites (Ubuntu/Debian)
 
 ```bash
-# Update system
 sudo apt update && sudo apt upgrade -y
+sudo apt install -y git curl build-essential nginx certbot python3-certbot-nginx \
+  python3 python3-venv python3-pip
+```
 
-# Install Node.js 18+
+Install Node.js 18+:
+
+```bash
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
-
-# Install Python 3.10+ and pip
-sudo apt install -y python3 python3-pip python3-venv
-
-# Install MongoDB
-# Follow https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/
-
-# Install Nginx
-sudo apt install -y nginx
-
-# Install Yarn
 npm install -g yarn
 ```
 
+Install MongoDB 6+ from the official MongoDB repository for your distro.
+
 ---
 
-## 2. Clone & Configure
+## 2) Clone Repository
 
 ```bash
-# Clone repository
+sudo mkdir -p /opt
 cd /opt
-git clone <your-repo-url> 25th-id
-cd 25th-id
+sudo git clone <your-repo-url> 25th-id
+sudo chown -R $USER:$USER /opt/25th-id
+cd /opt/25th-id
+```
 
-# Backend setup
-cd backend
+---
+
+## 3) Backend Setup
+
+```bash
+cd /opt/25th-id/backend
 python3 -m venv venv
 source venv/bin/activate
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Backend Environment Variables (`backend/.env`)
+Create `backend/.env`:
 
 ```env
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=25th_infantry_division
-JWT_SECRET=<GENERATE_A_STRONG_RANDOM_SECRET>
+JWT_SECRET=<GENERATE_A_STRONG_SECRET>
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
-# Local HTTP development only: set false to allow auth cookie over http://
 COOKIE_SECURE=true
 
-# Optional — Discord OAuth2 (omit all three to disable Discord login)
-# DISCORD_CLIENT_ID=<YOUR_DISCORD_APP_CLIENT_ID>
-# DISCORD_CLIENT_SECRET=<YOUR_DISCORD_APP_CLIENT_SECRET>
-# DISCORD_REDIRECT_URI=https://yourdomain.com/api/auth/discord/callback
+# Recommended for production links
+FRONTEND_URL=https://yourdomain.com
+
+# Optional email verification settings
+# EMAIL_DELIVERY_MODE=smtp
+# SMTP_HOST=
+# SMTP_PORT=587
+# SMTP_USERNAME=
+# SMTP_PASSWORD=
+# SMTP_FROM_EMAIL=
+# SMTP_FROM_NAME=
+# SMTP_USE_TLS=true
+# SMTP_USE_SSL=false
+# EMAIL_VERIFICATION_TTL_HOURS=24
 ```
 
-**Generate a strong JWT secret:**
+Generate JWT secret:
+
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
-### Frontend Environment Variables (`frontend/.env`)
+---
+
+## 4) Frontend Setup + Build
+
+```bash
+cd /opt/25th-id/frontend
+yarn install
+```
+
+Create `frontend/.env`:
 
 ```env
 REACT_APP_BACKEND_URL=https://yourdomain.com
 ```
 
----
-
-## 3. Build Frontend
+Build frontend:
 
 ```bash
-cd /opt/25th-id/frontend
-yarn install
 yarn build
-# Output: /opt/25th-id/frontend/build/
+# Output: /opt/25th-id/frontend/build
 ```
 
 ---
 
-## 4. Backend Service (systemd)
+## 5) Create systemd Service (Backend)
 
 Create `/etc/systemd/system/25th-id-backend.service`:
 
@@ -116,6 +132,8 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
+Apply service:
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable 25th-id-backend
@@ -125,43 +143,46 @@ sudo systemctl status 25th-id-backend
 
 ---
 
-## 5. Nginx Configuration
+## 6) Configure Nginx (HTTP first)
 
 Create `/etc/nginx/sites-available/25th-id`:
 
 ```nginx
 server {
     listen 80;
+    listen [::]:80;
     server_name yourdomain.com;
 
-    # Frontend — serve static build
     root /opt/25th-id/frontend/build;
     index index.html;
 
-    # Backend API proxy
-    location /api/ {
-        proxy_pass http://127.0.0.1:8001/api/;
+    location /api {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 90;
         client_max_body_size 20M;
     }
 
-    # Uploaded files
-    location /api/uploads/ {
-        proxy_pass http://127.0.0.1:8001/api/uploads/;
+    location /static/ {
+        alias /opt/25th-id/frontend/build/static/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
 
-    # SPA fallback — all non-API routes serve index.html
     location / {
         try_files $uri $uri/ /index.html;
     }
 }
 ```
 
+Enable site and reload:
+
 ```bash
-sudo ln -sf /etc/nginx/sites-available/25th-id /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/25th-id /etc/nginx/sites-enabled/25th-id
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
@@ -169,64 +190,21 @@ sudo systemctl reload nginx
 
 ---
 
-## 6. Cloudflare Configuration
-
-Since you already have Cloudflare set up:
-
-1. **DNS**: Point your domain's A record to your server's public IP. Set proxy status to **Proxied** (orange cloud).
-2. **SSL/TLS**: Go to SSL/TLS > Overview > Set mode to **Full (Strict)**.
-   - Cloudflare handles the browser-to-Cloudflare TLS.
-   - For Cloudflare-to-origin, either:
-     - Use a Cloudflare Origin Certificate (free, 15-year validity)
-     - Or use Let's Encrypt with certbot
-3. **Caching**: Under Caching > Configuration, set to "Standard".
-   - Add a Page Rule for `/api/*` → Cache Level: Bypass (ensures API calls are never cached).
-4. **Firewall**: Enable Bot Fight Mode and rate limiting on `/api/auth/*` endpoints to prevent brute force.
-
-### Cloudflare Origin Certificate (recommended)
+## 7) Enable HTTPS (Let's Encrypt)
 
 ```bash
-# Download origin cert and key from Cloudflare dashboard
-# SSL/TLS > Origin Server > Create Certificate
-# Save as:
-sudo mkdir -p /etc/ssl/cloudflare
-sudo nano /etc/ssl/cloudflare/origin.pem      # paste certificate
-sudo nano /etc/ssl/cloudflare/origin-key.pem   # paste private key
+sudo certbot --nginx -d yourdomain.com
 ```
 
-Update Nginx to listen on 443:
+Validate auto-renew:
 
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name yourdomain.com;
-
-    ssl_certificate /etc/ssl/cloudflare/origin.pem;
-    ssl_certificate_key /etc/ssl/cloudflare/origin-key.pem;
-
-    # ... same location blocks as above ...
-}
-
-server {
-    listen 80;
-    server_name yourdomain.com;
-    return 301 https://$host$request_uri;
-}
+```bash
+sudo certbot renew --dry-run
 ```
 
 ---
 
-## 7. Discord OAuth — Production Redirect
-
-1. Go to https://discord.com/developers/applications
-2. Select your application > OAuth2
-3. Add redirect URI: `https://yourdomain.com/api/auth/discord/callback`
-4. Update `DISCORD_REDIRECT_URI` in backend `.env` to match
-5. Restart backend: `sudo systemctl restart 25th-id-backend`
-
----
-
-## 8. Bootstrap Admin (Bishop)
+## 8) Bootstrap Admin Account
 
 ```bash
 cd /opt/25th-id
@@ -234,113 +212,115 @@ source backend/venv/bin/activate
 python3 scripts/create_admin.py
 ```
 
-- Enter email, username, password interactively
-- Password is hidden during input (uses `getpass`)
-- If the email already exists, the user is promoted to admin
-- Admin can log in immediately at `https://yourdomain.com/login`
-- Admin panel is at `https://yourdomain.com/admin`
+Then log in at:
+
+- `https://yourdomain.com/login`
+- Admin panel: `https://yourdomain.com/admin`
 
 ---
 
-## 9. MongoDB Security
+## 9) MongoDB Hardening (Recommended)
 
 ```bash
-# Enable MongoDB authentication
 mongosh
-> use admin
-> db.createUser({ user: "tropic_admin", pwd: "<strong_password>", roles: [{ role: "readWrite", db: "25th_infantry_division" }] })
-> exit
+```
 
-# Enable auth in /etc/mongod.conf:
-# security:
-#   authorization: enabled
+```javascript
+use admin
+db.createUser({
+  user: "tropic_admin",
+  pwd: "<strong_password>",
+  roles: [{ role: "readWrite", db: "25th_infantry_division" }]
+})
+```
 
+Enable auth in `/etc/mongod.conf`:
+
+```yaml
+security:
+  authorization: enabled
+```
+
+Restart MongoDB:
+
+```bash
 sudo systemctl restart mongod
 ```
 
-Update `MONGO_URL` in backend `.env`:
-```
+Update `MONGO_URL` in `backend/.env`:
+
+```env
 MONGO_URL=mongodb://tropic_admin:<password>@localhost:27017/25th_infantry_division?authSource=admin
+```
+
+Restart backend:
+
+```bash
+sudo systemctl restart 25th-id-backend
 ```
 
 ---
 
-## 10. Backup Strategy
+## 10) Backup (Recommended)
+
+Example cron entries:
 
 ```bash
-# Daily MongoDB backup (add to crontab)
+# Daily DB backup
 0 3 * * * mongodump --db 25th_infantry_division --out /opt/backups/mongo/$(date +\%Y\%m\%d) --gzip
 
-# Backup uploads directory
+# Daily uploads backup
 0 3 * * * tar -czf /opt/backups/uploads/$(date +\%Y\%m\%d).tar.gz /opt/25th-id/backend/uploads/
 
-# Keep 30 days of backups
+# Purge backups older than 30 days
 0 4 * * * find /opt/backups -mtime +30 -delete
 ```
 
 ---
 
-## 11. Update / Redeploy
+## 11) Update / Redeploy Procedure
 
 ```bash
 cd /opt/25th-id
 git pull
 
-# Rebuild frontend
-cd frontend && yarn install && yarn build
+cd frontend
+yarn install
+yarn build
 
-# Update backend deps
 cd ../backend
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Restart backend
 sudo systemctl restart 25th-id-backend
-
-# Nginx only needs reload if config changed
 sudo systemctl reload nginx
 ```
+
+---
+
+## 12) Operations Checklist (Hosting Party)
+
+Use this after every fresh deploy and every update:
+
+1. `sudo systemctl status 25th-id-backend` is healthy
+2. `sudo nginx -t` passes
+3. `curl -I https://yourdomain.com` returns `200` or `304`
+4. `curl -I https://yourdomain.com/api/` returns `200`
+5. Login works from `/login`
+6. Admin account can access `/admin`
+7. Image uploads work and are visible
+8. Conflict Map loads tiles and markers
+9. `sudo journalctl -u 25th-id-backend -n 100 --no-pager` has no fatal errors
 
 ---
 
 ## Quick Reference
 
 | Action | Command |
-|--------|---------|
-| Start backend | `sudo systemctl start 25th-id-backend` |
-| Stop backend | `sudo systemctl stop 25th-id-backend` |
-| View backend logs | `sudo journalctl -u 25th-id-backend -f` |
-| Restart Nginx | `sudo systemctl reload nginx` |
-| Create admin | `python3 scripts/create_admin.py` |
-| MongoDB backup | `mongodump --db 25th_infantry_division --gzip` |
-| Build frontend | `cd frontend && yarn build` |
-
----
-
-## Environment Variables Summary
-
-| Variable | Location | Required | Description |
-|----------|----------|----------|-------------|
-| `MONGO_URL` | backend/.env | Yes | MongoDB connection string |
-| `DB_NAME` | backend/.env | Yes | Database name |
-| `JWT_SECRET` | backend/.env | Yes | Strong random secret for JWT signing |
-| `JWT_ALGORITHM` | backend/.env | Yes | `HS256` |
-| `JWT_EXPIRATION_HOURS` | backend/.env | Yes | Token lifetime (24 recommended) |
-| `COOKIE_SECURE` | backend/.env | Optional | Auth cookie `Secure` flag (`true` for HTTPS production, `false` only for local HTTP dev) |
-| `FRONTEND_URL` | backend/.env | Recommended | Public frontend origin used in email verification links |
-| `EMAIL_DELIVERY_MODE` | backend/.env | Optional | `smtp` for real email delivery or `log` to write verification links to backend logs |
-| `SMTP_HOST` | backend/.env | Recommended for production | SMTP hostname for verification emails |
-| `SMTP_PORT` | backend/.env | Optional | SMTP port (default `587`) |
-| `SMTP_USERNAME` | backend/.env | Optional | SMTP username |
-| `SMTP_PASSWORD` | backend/.env | Optional | SMTP password |
-| `SMTP_FROM_EMAIL` | backend/.env | Optional | Outbound sender email address |
-| `SMTP_FROM_NAME` | backend/.env | Optional | Outbound sender display name |
-| `SMTP_USE_TLS` | backend/.env | Optional | Enable STARTTLS (default `true`) |
-| `SMTP_USE_SSL` | backend/.env | Optional | Use implicit SSL SMTP instead of STARTTLS |
-| `EMAIL_VERIFICATION_TTL_HOURS` | backend/.env | Optional | Verification link lifetime in hours |
-| `DISCORD_CLIENT_ID` | backend/.env | Optional | Discord OAuth app ID (omit to disable Discord) |
-| `DISCORD_CLIENT_SECRET` | backend/.env | Optional | Discord OAuth app secret |
-| `DISCORD_REDIRECT_URI` | backend/.env | Optional | Must match Discord portal + your domain |
-| `REACT_APP_BACKEND_URL` | frontend/.env | Yes | Your production domain (https://...) |
-
-> **Note:** Discord integration is optional. If the three `DISCORD_*` variables are not set, the site operates normally with email/password authentication only. The "Continue with Discord" button will not appear on the login page.
+|---|---|
+| Backend status | `sudo systemctl status 25th-id-backend` |
+| Backend logs | `sudo journalctl -u 25th-id-backend -f` |
+| Restart backend | `sudo systemctl restart 25th-id-backend` |
+| Test nginx config | `sudo nginx -t` |
+| Reload nginx | `sudo systemctl reload nginx` |
+| Renew certs test | `sudo certbot renew --dry-run` |
