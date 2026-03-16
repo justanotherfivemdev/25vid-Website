@@ -2587,9 +2587,13 @@ async def get_public_threat_map():
             lng = obj.get("lng")
             if lat is None or lng is None or not obj.get("is_public_recruiting", False):
                 continue
+            obj_id = obj.get("id")
+            if not obj_id:
+                # Skip objectives without a persisted id to avoid unstable marker IDs
+                continue
             linked_operation_id = obj.get("linked_operation_id")
             markers.append({
-                "id": obj.get("id") or str(uuid.uuid4()),
+                "id": obj_id,
                 "campaign_id": campaign.get("id"),
                 "campaign_name": campaign.get("name"),
                 "theater": campaign.get("theater"),
