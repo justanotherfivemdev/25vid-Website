@@ -207,6 +207,16 @@ class Operation(BaseModel):
     time: str
     max_participants: Optional[int] = None
     logo_url: Optional[str] = None
+    campaign_id: Optional[str] = None
+    objective_id: Optional[str] = None
+    theater: Optional[str] = None
+    region_label: Optional[str] = None
+    grid_ref: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    severity: Optional[Literal["low", "medium", "high", "critical"]] = None
+    is_public_recruiting: bool = False
+    activity_state: Literal["planned", "ongoing", "completed"] = "planned"
     rsvps: List[dict] = Field(default_factory=list)  # [{user_id, username, status, role_notes, rsvp_time}]
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -219,6 +229,16 @@ class OperationCreate(BaseModel):
     time: str
     max_participants: Optional[int] = None
     logo_url: Optional[str] = None  # Country/faction/region badge
+    campaign_id: Optional[str] = None
+    objective_id: Optional[str] = None
+    theater: Optional[str] = None
+    region_label: Optional[str] = None
+    grid_ref: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    severity: Optional[Literal["low", "medium", "high", "critical"]] = None
+    is_public_recruiting: bool = False
+    activity_state: Literal["planned", "ongoing", "completed"] = "planned"
 
 class RSVPSubmit(BaseModel):
     status: Literal["attending", "tentative", "not_attending"] = "attending"
@@ -2226,6 +2246,12 @@ class CampaignObjective(BaseModel):
     assigned_to: str = ""
     priority: str = "secondary"  # primary, secondary, tertiary
     notes: str = ""
+    region_label: str = ""
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    severity: Literal["low", "medium", "high", "critical"] = "medium"
+    linked_operation_id: Optional[str] = None
+    is_public_recruiting: bool = False
 
 class CampaignPhase(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -2347,6 +2373,9 @@ class OpenBilletUpdate(BaseModel):
 
 class PublicApplicationCreate(BaseModel):
     billet_id: Optional[str] = None
+    campaign_id: Optional[str] = None
+    objective_id: Optional[str] = None
+    operation_id: Optional[str] = None
     applicant_name: str
     applicant_email: EmailStr
     discord_username: Optional[str] = None
@@ -2477,6 +2506,9 @@ async def get_recruitment_stats(current_user: dict = Depends(get_current_admin))
 class RecruitApplication(BaseModel):
     """Application submitted by an authenticated recruit"""
     billet_id: Optional[str] = None
+    campaign_id: Optional[str] = None
+    objective_id: Optional[str] = None
+    operation_id: Optional[str] = None
     discord_username: Optional[str] = None
     timezone: Optional[str] = None
     experience: str
@@ -2511,6 +2543,9 @@ async def recruit_submit_application(
         "applicant_name": current_user["username"],
         "applicant_email": current_user["email"],
         "billet_id": application.billet_id,
+        "campaign_id": application.campaign_id,
+        "objective_id": application.objective_id,
+        "operation_id": application.operation_id,
         "discord_username": application.discord_username or current_user.get("discord_username"),
         "timezone": application.timezone,
         "experience": application.experience,
@@ -2533,6 +2568,44 @@ async def recruit_submit_application(
         )
     
     return {"message": "Application submitted successfully", "id": app_dict["id"]}
+
+
+@api_router.get("/public/threat-map")
+async def get_public_threat_map():
+    """Sanitized world-building threat markers for public pages."""
+    campaigns = await db.campaigns.find({}, {"_id": 0, "id": 1, "name": 1, "theater": 1, "status": 1, "objectives": 1}).to_list(200)
+    operations = await db.operations.find(
+        {"is_public_recruiting": True},
+        {"_id": 0, "id": 1, "title": 1, "operation_type": 1, "date": 1, "time": 1}
+    ).to_list(500)
+    op_map = {o.get("id"): o for o in operations}
+
+    markers = []
+    for campaign in campaigns:
+        for obj in campaign.get("objectives", []):
+            lat = obj.get("lat")
+            lng = obj.get("lng")
+            if lat is None or lng is None or not obj.get("is_public_recruiting", False):
+                continue
+            linked_operation_id = obj.get("linked_operation_id")
+            markers.append({
+                "id": obj.get("id") or str(uuid.uuid4()),
+                "campaign_id": campaign.get("id"),
+                "campaign_name": campaign.get("name"),
+                "theater": campaign.get("theater"),
+                "name": obj.get("name"),
+                "description": obj.get("description", ""),
+                "region_label": obj.get("region_label") or obj.get("grid_ref", ""),
+                "severity": obj.get("severity", "medium"),
+                "status": obj.get("status", "pending"),
+                "lat": lat,
+                "lng": lng,
+                "linked_operation_id": linked_operation_id,
+                "linked_operation": op_map.get(linked_operation_id),
+                "is_public_recruiting": True,
+            })
+
+    return {"markers": markers}
 
 # ============================================================================
 # MISC ENDPOINTS

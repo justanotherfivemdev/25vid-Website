@@ -4,8 +4,13 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Home, LogOut, Shield, MapPin, Target, Calendar, ChevronRight, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import ThreatMap from '@/components/map/ThreatMap';
+import ThreatLegend from '@/components/map/ThreatLegend';
+import ThreatFilters from '@/components/map/ThreatFilters';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -29,6 +34,18 @@ const CampaignMap = () => {
   const [allCampaigns, setAllCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [filters, setFilters] = useState({ search: '', severity: 'all', status: 'all' });
+  const [creatingActivity, setCreatingActivity] = useState(false);
+  const [activityMsg, setActivityMsg] = useState('');
+  const [activityForm, setActivityForm] = useState({
+    title: '',
+    description: '',
+    operation_type: 'combat',
+    date: '',
+    time: '',
+    activity_state: 'ongoing',
+  });
 
   useEffect(() => {
     loadData();
@@ -39,6 +56,16 @@ const CampaignMap = () => {
       axios.get(`${API}/campaigns/${selectedId}`).then(r => setCampaign(r.data)).catch(() => {});
     }
   }, [selectedId]);
+
+  useEffect(() => {
+    if (!selectedMarker) return;
+    setActivityMsg('');
+    setActivityForm((prev) => ({
+      ...prev,
+      title: prev.title || `Activity: ${selectedMarker.name || selectedMarker.region_label || 'Threat Response'}`,
+      description: prev.description || selectedMarker.description || '',
+    }));
+  }, [selectedMarker]);
 
   const loadData = async () => {
     try {
@@ -66,6 +93,45 @@ const CampaignMap = () => {
   const objComplete = objectives.filter(o => o.status === 'complete').length;
   const objInProgress = objectives.filter(o => o.status === 'in_progress').length;
   const progress = objectives.length > 0 ? Math.round((objComplete / objectives.length) * 100) : 0;
+  const mapMarkers = objectives
+    .filter(o => o.lat !== undefined && o.lat !== null && o.lng !== undefined && o.lng !== null)
+    .filter(o => filters.severity === 'all' || (o.severity || 'medium') === filters.severity)
+    .filter(o => filters.status === 'all' || o.status === filters.status)
+    .filter(o => {
+      const needle = filters.search.trim().toLowerCase();
+      if (!needle) return true;
+      return [o.name, o.region_label, o.description, o.grid_ref].filter(Boolean).join(' ').toLowerCase().includes(needle);
+    });
+
+  const handleCreateActivity = async (e) => {
+    e.preventDefault();
+    if (!selectedMarker || !selectedId) return;
+    setCreatingActivity(true);
+    setActivityMsg('');
+    try {
+      await axios.post(`${API}/operations`, {
+        ...activityForm,
+        campaign_id: selectedId,
+        objective_id: selectedMarker.id || null,
+        theater: campaign?.theater || '',
+        region_label: selectedMarker.region_label || selectedMarker.grid_ref || '',
+        grid_ref: selectedMarker.grid_ref || '',
+        lat: selectedMarker.lat ?? null,
+        lng: selectedMarker.lng ?? null,
+        severity: selectedMarker.severity || 'medium',
+        is_public_recruiting: !!selectedMarker.is_public_recruiting,
+      });
+      setActivityMsg('Activity created and linked to this map marker.');
+      setActivityForm({
+        title: '', description: '', operation_type: 'combat', date: '', time: '', activity_state: 'ongoing',
+      });
+      await loadData();
+    } catch (err) {
+      setActivityMsg(err?.response?.data?.detail || 'Failed to create activity');
+    } finally {
+      setCreatingActivity(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -114,8 +180,8 @@ const CampaignMap = () => {
                 </div>
               )}
 
-              {/* Campaign Header */}
-              <div className="bg-gray-900/80 border border-tropic-red/30 rounded-lg p-6" data-testid="campaign-header">
+                {/* Campaign Header */}
+                <div className="bg-gray-900/80 border border-tropic-red/30 rounded-lg p-6" data-testid="campaign-header">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
@@ -147,6 +213,56 @@ const CampaignMap = () => {
                     <div className="text-[10px] text-gray-500 mt-1 tracking-wider">OBJECTIVES</div>
                   </div>
                 </div>
+
+                <Card className="bg-gray-900 border-gray-800">
+                  <CardContent className="p-5 space-y-4">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <h3 className="text-xs text-tropic-gold tracking-widest">GLOBAL THREAT MAP</h3>
+                      <ThreatLegend />
+                    </div>
+                    <ThreatFilters filters={filters} onChange={setFilters} />
+                    <ThreatMap markers={mapMarkers} selectedMarkerId={selectedMarker?.id} onSelectMarker={setSelectedMarker} />
+                    {selectedMarker && (
+                      <div className="bg-black/40 border border-gray-800 rounded p-3 text-sm">
+                        <div className="font-semibold">{selectedMarker.name}</div>
+                        <div className="text-xs text-gray-400 mt-1">{selectedMarker.region_label || selectedMarker.grid_ref || 'Unknown region'} • {(selectedMarker.severity || 'medium').toUpperCase()}</div>
+                        {selectedMarker.linked_operation_id && (
+                          <Link to={`/hub/operations/${selectedMarker.linked_operation_id}`}>
+                            <Button size="sm" className="mt-2 bg-tropic-red hover:bg-tropic-red-dark">Open Linked Operation <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                          </Link>
+                        )}
+                        {user?.role === 'admin' && (
+                          <form onSubmit={handleCreateActivity} className="mt-3 space-y-2 border-t border-gray-800 pt-3">
+                            <div className="text-xs tracking-wider text-tropic-gold">CREATE EVENT / ONGOING ACTIVITY</div>
+                            <Input required value={activityForm.title} onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })} className="bg-black border-gray-700" placeholder="Activity title" />
+                            <Textarea value={activityForm.description} onChange={(e) => setActivityForm({ ...activityForm, description: e.target.value })} className="bg-black border-gray-700" rows={2} placeholder="Activity details" />
+                            <div className="grid grid-cols-2 gap-2">
+                              <select value={activityForm.operation_type} onChange={(e) => setActivityForm({ ...activityForm, operation_type: e.target.value })} className="h-9 rounded-md bg-black border border-gray-700 px-2 text-xs">
+                                <option value="combat">combat</option>
+                                <option value="training">training</option>
+                                <option value="recon">recon</option>
+                                <option value="support">support</option>
+                              </select>
+                              <select value={activityForm.activity_state} onChange={(e) => setActivityForm({ ...activityForm, activity_state: e.target.value })} className="h-9 rounded-md bg-black border border-gray-700 px-2 text-xs">
+                                <option value="planned">planned</option>
+                                <option value="ongoing">ongoing</option>
+                                <option value="completed">completed</option>
+                              </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input required type="date" value={activityForm.date} onChange={(e) => setActivityForm({ ...activityForm, date: e.target.value })} className="bg-black border-gray-700" />
+                              <Input required type="time" value={activityForm.time} onChange={(e) => setActivityForm({ ...activityForm, time: e.target.value })} className="bg-black border-gray-700" />
+                            </div>
+                            <Button type="submit" disabled={creatingActivity} size="sm" className="bg-tropic-gold hover:bg-tropic-gold-light text-black">
+                              {creatingActivity ? 'Creating...' : 'Create Activity'}
+                            </Button>
+                            {activityMsg && <div className="text-xs text-gray-400">{activityMsg}</div>}
+                          </form>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Stats Bar */}
@@ -248,8 +364,13 @@ const CampaignMap = () => {
                                   {o.description && <p className="text-xs text-gray-500 mt-1">{o.description}</p>}
                                   <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-600">
                                     {o.grid_ref && <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{o.grid_ref}</span>}
+                                    {o.region_label && <span className="text-blue-400">{o.region_label}</span>}
+                                    {o.severity && <span className="capitalize">{o.severity}</span>}
                                     {o.assigned_to && <span className="text-green-600">{o.assigned_to}</span>}
                                   </div>
+                                  {o.linked_operation_id && (
+                                    <Link to={`/hub/operations/${o.linked_operation_id}`} className="text-[10px] text-tropic-gold hover:underline mt-1 inline-block">View linked operation</Link>
+                                  )}
                                 </div>
                               </div>
                             </div>

@@ -127,7 +127,17 @@ const OperationsManager = () => {
     date: '',
     time: '',
     max_participants: '',
-    logo_url: ''
+    logo_url: '',
+    campaign_id: '',
+    objective_id: '',
+    theater: '',
+    region_label: '',
+    grid_ref: '',
+    lat: '',
+    lng: '',
+    severity: 'medium',
+    is_public_recruiting: false,
+    activity_state: 'planned',
   });
 
   useEffect(() => {
@@ -151,7 +161,9 @@ const OperationsManager = () => {
       
       const payload = {
         ...formData,
-        max_participants: formData.max_participants ? parseInt(formData.max_participants) : null
+        max_participants: formData.max_participants ? parseInt(formData.max_participants) : null,
+        lat: formData.lat === '' ? null : parseFloat(formData.lat),
+        lng: formData.lng === '' ? null : parseFloat(formData.lng),
       };
 
       if (editingOp) {
@@ -178,7 +190,17 @@ const OperationsManager = () => {
       date: op.date,
       time: op.time,
       max_participants: op.max_participants || '',
-      logo_url: op.logo_url || ''
+      logo_url: op.logo_url || '',
+      campaign_id: op.campaign_id || '',
+      objective_id: op.objective_id || '',
+      theater: op.theater || '',
+      region_label: op.region_label || '',
+      grid_ref: op.grid_ref || '',
+      lat: op.lat ?? '',
+      lng: op.lng ?? '',
+      severity: op.severity || 'medium',
+      is_public_recruiting: !!op.is_public_recruiting,
+      activity_state: op.activity_state || 'planned',
     });
     setIsDialogOpen(true);
   };
@@ -203,7 +225,17 @@ const OperationsManager = () => {
       date: '',
       time: '',
       max_participants: '',
-      logo_url: ''
+      logo_url: '',
+      campaign_id: '',
+      objective_id: '',
+      theater: '',
+      region_label: '',
+      grid_ref: '',
+      lat: '',
+      lng: '',
+      severity: 'medium',
+      is_public_recruiting: false,
+      activity_state: 'planned',
     });
     setEditingOp(null);
   };
@@ -335,6 +367,75 @@ const OperationsManager = () => {
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Campaign ID (optional)</Label>
+                    <Input value={formData.campaign_id} onChange={(e) => setFormData({...formData, campaign_id: e.target.value})} className="bg-black border-gray-700" placeholder="Campaign UUID" />
+                  </div>
+                  <div>
+                    <Label>Objective ID (optional)</Label>
+                    <Input value={formData.objective_id} onChange={(e) => setFormData({...formData, objective_id: e.target.value})} className="bg-black border-gray-700" placeholder="Objective UUID" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Theater Label</Label>
+                    <Input value={formData.theater} onChange={(e) => setFormData({...formData, theater: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Pacific AO" />
+                  </div>
+                  <div>
+                    <Label>Region Label</Label>
+                    <Input value={formData.region_label} onChange={(e) => setFormData({...formData, region_label: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Manila Corridor" />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Grid Reference</Label>
+                  <Input value={formData.grid_ref} onChange={(e) => setFormData({...formData, grid_ref: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., H7-22" />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Latitude</Label>
+                    <Input value={formData.lat} onChange={(e) => setFormData({...formData, lat: e.target.value})} className="bg-black border-gray-700" placeholder="14.5995" />
+                  </div>
+                  <div>
+                    <Label>Longitude</Label>
+                    <Input value={formData.lng} onChange={(e) => setFormData({...formData, lng: e.target.value})} className="bg-black border-gray-700" placeholder="120.9842" />
+                  </div>
+                  <div>
+                    <Label>Threat Severity</Label>
+                    <Select value={formData.severity} onValueChange={(value) => setFormData({...formData, severity: value})}>
+                      <SelectTrigger className="bg-black border-gray-700">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700">
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Activity State</Label>
+                  <Select value={formData.activity_state} onValueChange={(value) => setFormData({...formData, activity_state: value})}>
+                    <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectItem value="planned">Planned</SelectItem>
+                      <SelectItem value="ongoing">Ongoing</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <label className="flex items-center gap-2 text-sm text-gray-300">
+                  <input type="checkbox" checked={formData.is_public_recruiting} onChange={(e) => setFormData({...formData, is_public_recruiting: e.target.checked})} />
+                  Allow recruiting/public map visibility for this operation
+                </label>
                 
                 <div className="flex justify-end space-x-3 pt-4">
                   <Button
@@ -377,6 +478,9 @@ const OperationsManager = () => {
                           <span className={`${getTypeColor(op.operation_type)} px-3 py-1 rounded text-xs font-bold uppercase`}>
                             {op.operation_type}
                           </span>
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${op.activity_state === 'ongoing' ? 'bg-tropic-red/20 text-tropic-red border border-tropic-red/40' : op.activity_state === 'completed' ? 'bg-green-700/20 text-green-400 border border-green-700/40' : 'bg-gray-700/40 text-gray-300 border border-gray-700/40'}`}>
+                            {op.activity_state || 'planned'}
+                          </span>
                           <span className="text-sm text-gray-400">
                             <Users className="inline w-4 h-4 mr-1" />
                             {attendingCount}{op.max_participants ? `/${op.max_participants}` : ''} attending
@@ -387,6 +491,9 @@ const OperationsManager = () => {
                           {op.title}
                         </CardTitle>
                         <p className="text-gray-400 mt-2 whitespace-pre-wrap line-clamp-2">{op.description}</p>
+                        {(op.theater || op.region_label || op.grid_ref) && (
+                          <p className="text-xs text-gray-500 mt-2">{op.theater || 'Theater'}{op.region_label ? ` • ${op.region_label}` : ''}{op.grid_ref ? ` • Grid ${op.grid_ref}` : ''}</p>
+                        )}
                         <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
                           <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" />{op.date}</span>
                           <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{op.time}</span>
