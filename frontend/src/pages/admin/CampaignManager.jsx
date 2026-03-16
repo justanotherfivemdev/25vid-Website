@@ -62,13 +62,29 @@ const CampaignManager = () => {
     setDialogOpen(true);
   };
 
+  const normalizeCoordinate = (value) => {
+    if (value === '' || value === null || value === undefined) {
+      return null;
+    }
+    const num = typeof value === 'number' ? value : parseFloat(value);
+    return Number.isFinite(num) ? num : null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...form,
+        objectives: (form.objectives || []).map((obj) => ({
+          ...obj,
+          lat: normalizeCoordinate(obj.lat),
+          lng: normalizeCoordinate(obj.lng),
+        })),
+      };
       if (editing) {
-        await axios.put(`${API}/admin/campaigns/${editing.id}`, form);
+        await axios.put(`${API}/admin/campaigns/${editing.id}`, payload);
       } else {
-        await axios.post(`${API}/admin/campaigns`, form);
+        await axios.post(`${API}/admin/campaigns`, payload);
       }
       await fetchCampaigns();
       setDialogOpen(false);
@@ -94,7 +110,7 @@ const CampaignManager = () => {
   const removePhase = (idx) => setForm({ ...form, phases: form.phases.filter((_, i) => i !== idx) });
 
   // Objective helpers
-  const addObjective = () => setForm({ ...form, objectives: [...form.objectives, { name: '', description: '', status: 'pending', grid_ref: '', assigned_to: '', priority: 'secondary', notes: '' }] });
+  const addObjective = () => setForm({ ...form, objectives: [...form.objectives, { name: '', description: '', status: 'pending', grid_ref: '', assigned_to: '', priority: 'secondary', notes: '', region_label: '', lat: '', lng: '', severity: 'medium', linked_operation_id: '', is_public_recruiting: false }] });
   const updateObj = (idx, field, val) => {
     const ob = [...form.objectives];
     ob[idx] = { ...ob[idx], [field]: val };
@@ -193,6 +209,27 @@ const CampaignManager = () => {
                         <Input value={o.assigned_to} onChange={e => updateObj(i, 'assigned_to', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Assigned to (unit/element)" />
                         <Input value={o.description} onChange={e => updateObj(i, 'description', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Description" />
                       </div>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <Input value={o.region_label || ''} onChange={e => updateObj(i, 'region_label', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Region label (optional)" />
+                        <Input value={o.linked_operation_id || ''} onChange={e => updateObj(i, 'linked_operation_id', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Linked operation ID (optional)" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <Input value={o.lat ?? ''} onChange={e => updateObj(i, 'lat', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Latitude" />
+                        <Input value={o.lng ?? ''} onChange={e => updateObj(i, 'lng', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Longitude" />
+                        <Select value={o.severity || 'medium'} onValueChange={v => updateObj(i, 'severity', v)}>
+                          <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-gray-900 border-gray-700">
+                            <SelectItem value="low">low</SelectItem>
+                            <SelectItem value="medium">medium</SelectItem>
+                            <SelectItem value="high">high</SelectItem>
+                            <SelectItem value="critical">critical</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <label className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                        <input type="checkbox" checked={!!o.is_public_recruiting} onChange={e => updateObj(i, 'is_public_recruiting', e.target.checked)} />
+                        Public recruiting/world map marker
+                      </label>
                     </div>
                   ))}
                   {form.objectives.length === 0 && <p className="text-xs text-gray-600">No objectives defined</p>}
@@ -280,6 +317,8 @@ const CampaignManager = () => {
                                   <span className="font-medium">{o.name}</span>
                                   {o.grid_ref && <span className="text-[10px] text-gray-600"><MapPin className="inline w-2.5 h-2.5 mr-0.5" />{o.grid_ref}</span>}
                                   {o.assigned_to && <span className="text-[10px] text-green-600">{o.assigned_to}</span>}
+                                  {o.region_label && <span className="text-[10px] text-blue-400">{o.region_label}</span>}
+                                  {(o.lat !== undefined && o.lat !== null && o.lng !== undefined && o.lng !== null) && <span className="text-[10px] text-gray-500">{o.lat}, {o.lng}</span>}
                                   <span className="ml-auto text-[10px] text-gray-600 capitalize">{o.status.replace('_', ' ')}</span>
                                 </div>
                               ))}

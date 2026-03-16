@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Calendar, Clock, Users, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Users, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown, Globe, MapPin } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -157,6 +157,7 @@ const OperationDetail = () => {
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <Badge className={`${TYPE_CFG[operation.operation_type] || 'bg-gray-600'} text-white tracking-wider`}>{operation.operation_type.toUpperCase()}</Badge>
+                <Badge variant="outline" className={`${operation.activity_state === 'ongoing' ? 'border-tropic-red text-tropic-red' : operation.activity_state === 'completed' ? 'border-green-600 text-green-500' : 'border-gray-700 text-gray-400'} tracking-wider`}>{(operation.activity_state || 'planned').toUpperCase()}</Badge>
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <span className="flex items-center"><Calendar className="w-4 h-4 mr-1 text-amber-600" />{operation.date}</span>
                   <span className="flex items-center"><Clock className="w-4 h-4 mr-1 text-amber-600" />{operation.time}</span>
@@ -164,6 +165,14 @@ const OperationDetail = () => {
               </div>
               <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h2>
               <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{operation.description}</p>
+              {(operation.theater || operation.region_label || operation.grid_ref || operation.campaign_id) && (
+                <div className="bg-black/40 border border-gray-800 rounded-lg p-3 text-xs text-gray-300 flex flex-wrap items-center gap-3">
+                  {operation.theater && <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5 text-blue-400" />{operation.theater}</span>}
+                  {operation.region_label && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-amber-500" />{operation.region_label}</span>}
+                  {operation.grid_ref && <span className="text-gray-400">GRID {operation.grid_ref}</span>}
+                  <Link to="/hub/campaign" className="text-tropic-gold hover:underline ml-auto">View in Campaign Theater</Link>
+                </div>
+              )}
               {/* Attendance summary */}
               <div className="flex items-center gap-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
                 <div className="text-center"><div className="text-2xl font-bold text-green-400">{counts.attending || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">ATTENDING</div></div>

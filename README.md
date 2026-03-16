@@ -78,6 +78,11 @@ For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env` so auth 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `REACT_APP_BACKEND_URL` | Yes | Backend base URL (e.g., `https://yourdomain.com`) |
+| `REACT_APP_MAP_TILE_URL` | No | Map tile provider URL template (defaults to OpenStreetMap) |
+| `REACT_APP_MAP_ATTRIBUTION` | No | Attribution text rendered on map tiles |
+| `REACT_APP_DEFAULT_MAP_CENTER_LAT` | No | Default map latitude center (default: `20`) |
+| `REACT_APP_DEFAULT_MAP_CENTER_LNG` | No | Default map longitude center (default: `0`) |
+| `REACT_APP_DEFAULT_MAP_ZOOM` | No | Default map zoom level (default: `2`) |
 
 ## Admin Bootstrap
 
