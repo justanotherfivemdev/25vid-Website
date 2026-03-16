@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageUpload from '@/components/admin/ImageUpload';
+import ThreatMap from '@/components/map/ThreatMap';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -262,6 +263,28 @@ const OperationsManager = () => {
     return colors[type] || 'bg-gray-600';
   };
 
+  const previewLat = formData.lat === '' ? null : Number(formData.lat);
+  const previewLng = formData.lng === '' ? null : Number(formData.lng);
+  const hasPreviewCoords = Number.isFinite(previewLat) && Number.isFinite(previewLng);
+  const previewMarkers = hasPreviewCoords
+    ? [{
+        id: 'operation-preview-marker',
+        name: formData.title || 'Operation Marker',
+        description: formData.region_label || formData.theater || 'Map placement preview',
+        severity: formData.severity || 'medium',
+        lat: previewLat,
+        lng: previewLng,
+      }]
+    : [];
+
+  const handleMapPlacement = ({ lat, lng }) => {
+    setFormData((prev) => ({
+      ...prev,
+      lat: lat.toFixed(6),
+      lng: lng.toFixed(6),
+    }));
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -430,6 +453,24 @@ const OperationsManager = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="border border-gray-800 rounded-lg p-3 bg-black/30 space-y-2">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <Label className="text-tropic-gold">Conflict Map Placement Preview</Label>
+                    <span className="text-[11px] text-gray-500">Click map to set coordinates or enter lat/lng manually.</span>
+                  </div>
+                  <ThreatMap
+                    markers={previewMarkers}
+                    selectedMarkerId={previewMarkers[0]?.id || null}
+                    onMapClick={handleMapPlacement}
+                    height="280px"
+                  />
+                  {hasPreviewCoords ? (
+                    <p className="text-[11px] text-gray-500">Preview marker: {previewLat.toFixed(6)}, {previewLng.toFixed(6)}</p>
+                  ) : (
+                    <p className="text-[11px] text-gray-600">No valid coordinates yet. Click the map to place a marker.</p>
+                  )}
                 </div>
 
                 <div>

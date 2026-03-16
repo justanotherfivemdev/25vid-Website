@@ -156,7 +156,7 @@ const CampaignMap = () => {
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-widest text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="campaign-map-title">
-              CAMPAIGN THEATER
+              CONFLICT MAP
             </h1>
           </div>
           <div className="flex items-center space-x-3">
@@ -170,7 +170,7 @@ const CampaignMap = () => {
       <div className="pt-20 pb-12 px-6">
         <div className="container mx-auto max-w-6xl">
           {loading ? (
-            <div className="text-center py-20 text-gray-500">Loading campaign data...</div>
+            <div className="text-center py-20 text-gray-500">Loading conflict map data...</div>
           ) : !campaign ? (
             <div className="text-center py-20 text-gray-600">
               <MapPin className="w-16 h-16 mx-auto mb-4 opacity-20" />
