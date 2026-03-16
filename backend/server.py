@@ -2145,6 +2145,8 @@ async def get_intel_briefings(
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
+    if current_user.get("role") != "admin":
+        query["visibility_scope"] = {"$ne": "admin_only"}
     if category:
         query["category"] = category
     if classification:
@@ -2176,7 +2178,14 @@ async def get_intel_briefings(
 
 @api_router.get("/intel/tags")
 async def get_intel_tags(current_user: dict = Depends(get_current_user)):
-    pipeline = [{"$unwind": "$tags"}, {"$group": {"_id": "$tags"}}, {"$sort": {"_id": 1}}]
+    pipeline = []
+    if current_user.get("role") != "admin":
+        pipeline.append({"$match": {"visibility_scope": {"$ne": "admin_only"}}})
+    pipeline.extend([
+        {"$unwind": "$tags"},
+        {"$group": {"_id": "$tags"}},
+        {"$sort": {"_id": 1}},
+    ])
     results = await db.intel_briefings.aggregate(pipeline).to_list(200)
     return [r["_id"] for r in results]
 
@@ -2184,6 +2193,8 @@ async def get_intel_tags(current_user: dict = Depends(get_current_user)):
 async def get_intel_briefing(briefing_id: str, current_user: dict = Depends(get_current_user)):
     briefing = await db.intel_briefings.find_one({"id": briefing_id}, {"_id": 0})
     if not briefing:
+        raise HTTPException(status_code=404, detail="Briefing not found")
+    if current_user.get("role") != "admin" and briefing.get("visibility_scope") == "admin_only":
         raise HTTPException(status_code=404, detail="Briefing not found")
     _fix_dates(briefing)
     ack_count = await db.intel_acknowledgments.count_documents({"briefing_id": briefing_id})
