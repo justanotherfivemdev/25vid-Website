@@ -65,7 +65,7 @@ export default function CountryConflictsModal({ country, onClose }) {
       }
 
       // If never got "done" event, use what we have
-      if (loading) {
+      if (fullText) {
         setData({ content: fullText });
         setLoading(false);
       }
