@@ -8,7 +8,7 @@ It is intentionally Linux-only and focused on a single reliable stack:
 - React frontend (static build)
 - MongoDB
 - Nginx reverse proxy
-- Cloudflare DNS proxy + SSL/TLS (Full strict)
+- TLS via Let's Encrypt (certbot)
 
 ---
 
@@ -16,7 +16,7 @@ It is intentionally Linux-only and focused on a single reliable stack:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl build-essential nginx \
+sudo apt install -y git curl build-essential nginx certbot python3-certbot-nginx \
   python3 python3-venv python3-pip
 ```
 
@@ -78,12 +78,6 @@ FRONTEND_URL=https://yourdomain.com
 # SMTP_USE_TLS=true
 # SMTP_USE_SSL=false
 # EMAIL_VERIFICATION_TTL_HOURS=24
-
-# Optional future map feed scaffolding
-# MAP_EXTERNAL_FEED_ENABLED=false
-# MAP_EXTERNAL_PROVIDER=none
-# MAP_INGEST_INTERVAL_SECONDS=300
-# MAP_EVENT_RETENTION_DAYS=30
 ```
 
 Generate JWT secret:
@@ -196,62 +190,16 @@ sudo systemctl reload nginx
 
 ---
 
-## 7) Enable HTTPS with Cloudflare Origin Certificates
+## 7) Enable HTTPS (Let's Encrypt)
 
-Update this section for Cloudflare-managed SSL.
+```bash
+sudo certbot --nginx -d yourdomain.com
+```
 
-1) In Cloudflare DNS, point `A`/`AAAA` records to your server and enable **Proxied** mode (orange cloud).
+Validate auto-renew:
 
-2) In Cloudflare SSL/TLS settings, set mode to **Full (strict)**.
-
-3) Create a Cloudflare Origin Certificate and key:
-   - Cloudflare dashboard → SSL/TLS → Origin Server → Create Certificate
-   - Save as:
-     - `/etc/ssl/certs/cloudflare-origin.crt`
-     - `/etc/ssl/private/cloudflare-origin.key`
-
-4) Update Nginx site config to force HTTPS and serve on 443 with Cloudflare origin cert:
-
-```nginx
-server {
-    listen 80;
-    listen [::]:80;
-    server_name yourdomain.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name yourdomain.com;
-
-    ssl_certificate /etc/ssl/certs/cloudflare-origin.crt;
-    ssl_certificate_key /etc/ssl/private/cloudflare-origin.key;
-
-    root /opt/25th-id/frontend/build;
-    index index.html;
-
-    location /api {
-        proxy_pass http://127.0.0.1:8001;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 90;
-        client_max_body_size 20M;
-    }
-
-    location /static/ {
-        alias /opt/25th-id/frontend/build/static/;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-}
+```bash
+sudo certbot renew --dry-run
 ```
 
 5) Validate and reload Nginx:
@@ -260,15 +208,6 @@ server {
 sudo nginx -t
 sudo systemctl reload nginx
 ```
-
-6) Keep backend cookies secure:
-
-```env
-COOKIE_SECURE=true
-FRONTEND_URL=https://yourdomain.com
-```
-
----
 
 ## 8) Bootstrap Admin Account
 
@@ -389,4 +328,4 @@ Use this after every fresh deploy and every update:
 | Restart backend | `sudo systemctl restart 25th-id-backend` |
 | Test nginx config | `sudo nginx -t` |
 | Reload nginx | `sudo systemctl reload nginx` |
-| Validate Cloudflare SSL mode | `Cloudflare Dashboard -> SSL/TLS -> Full (strict)` |
+| Renew certs test | `sudo certbot renew --dry-run` |
