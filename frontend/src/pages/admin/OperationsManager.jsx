@@ -158,12 +158,24 @@ const OperationsManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      
+      const parsedLat = formData.lat === '' ? null : parseFloat(formData.lat);
+      const parsedLng = formData.lng === '' ? null : parseFloat(formData.lng);
+
+      const latValue =
+        parsedLat === null || Number.isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90
+          ? null
+          : parsedLat;
+
+      const lngValue =
+        parsedLng === null || Number.isNaN(parsedLng) || parsedLng < -180 || parsedLng > 180
+          ? null
+          : parsedLng;
+
       const payload = {
         ...formData,
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : null,
-        lat: formData.lat === '' ? null : parseFloat(formData.lat),
-        lng: formData.lng === '' ? null : parseFloat(formData.lng),
+        lat: latValue,
+        lng: lngValue,
       };
 
       if (editingOp) {
