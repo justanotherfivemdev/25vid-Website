@@ -2573,7 +2573,42 @@ async def recruit_submit_application(
 @api_router.get("/public/threat-map")
 async def get_public_threat_map():
     """Sanitized world-building threat markers for public pages."""
-    campaigns = await db.campaigns.find({}, {"_id": 0, "id": 1, "name": 1, "theater": 1, "status": 1, "objectives": 1}).to_list(200)
+    campaign_pipeline = [
+        {
+            "$match": {
+                "objectives": {
+                    "$elemMatch": {
+                        "is_public_recruiting": True,
+                        "lat": {"$ne": None},
+                        "lng": {"$ne": None},
+                    }
+                }
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "id": 1,
+                "name": 1,
+                "theater": 1,
+                "status": 1,
+                "objectives": {
+                    "$filter": {
+                        "input": "$objectives",
+                        "as": "obj",
+                        "cond": {
+                            "$and": [
+                                {"$eq": ["$$obj.is_public_recruiting", True]},
+                                {"$ne": ["$$obj.lat", None]},
+                                {"$ne": ["$$obj.lng", None]},
+                            ]
+                        },
+                    }
+                },
+            }
+        },
+    ]
+    campaigns = await db.campaigns.aggregate(campaign_pipeline).to_list(200)
     operations = await db.operations.find(
         {"is_public_recruiting": True},
         {"_id": 0, "id": 1, "title": 1, "operation_type": 1, "date": 1, "time": 1}
@@ -2585,6 +2620,7 @@ async def get_public_threat_map():
         for obj in campaign.get("objectives", []):
             lat = obj.get("lat")
             lng = obj.get("lng")
+            # Defensive check in case of malformed data, though the aggregation already filters.
             if lat is None or lng is None or not obj.get("is_public_recruiting", False):
                 continue
             obj_id = obj.get("id")
