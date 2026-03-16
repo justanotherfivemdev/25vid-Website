@@ -1,158 +1,133 @@
 # 25th Infantry Division — Tropic Lightning
 
-A full-stack tactical operations platform for the 25th Infantry Division MilSim unit, featuring a public recruitment site, member operations hub, and admin command center with live content editing.
+A full-stack tactical operations platform for the 25th Infantry Division MilSim unit, featuring a public recruitment site, member operations hub, Conflict Map workflows, and admin command center with live content editing.
 
 ## Features
 
-- **Public Landing Page** — Tactical recruitment site with dynamic, admin-editable content
-- **Unit History Timeline** — Chronological showcase of campaigns from WWII to present, fully editable by admins
-- **Command Center (CMS)** — Admin panel for live-editing all homepage content, images, and text without code changes
-- **Operations Management** — Create, manage, and track tactical operations with advanced RSVP (attending / tentative / waitlist / capacity)
-- **Discussion Forum** — Categorized threads with pinning, replies, and full-text search
-- **Member Hub** — Personal dashboard with schedule, reminders, search, and quick navigation
-- **Unit Roster** — Searchable, filterable member directory with full profiles
-- **Member Profiles** — Rank, specialization, bio, mission history, training history, awards, Discord status
-- **JWT Authentication** — Email/password login and registration
-- **Discord OAuth2** — Optional "Continue with Discord" login, account linking/unlinking
-- **Admin Member Editor** — Full profile management with Discord prep fields
-- **File Uploads** — Persistent image uploads served via the API
-- **Gallery & Training** — Admin-managed media gallery and training program pages
+- Public Landing Page with admin-editable content
+- Conflict Map for operations/objectives visualization
+- Operations Management with RSVP and capacity handling
+- Discussion Forum and Intel board
+- Unit Roster and detailed member profiles
+- Gallery, training management, and unit history timeline
+- JWT authentication and optional Discord OAuth
+- Backend file uploads with API serving
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Frontend | React, Tailwind CSS, Shadcn/UI |
+|---|---|
+| Frontend | React, Tailwind CSS, shadcn/ui |
 | Backend | FastAPI (Python) |
 | Database | MongoDB |
-| Auth | JWT + optional Discord OAuth2 |
-| File Storage | Backend-served uploads |
+| Auth | JWT (+ optional Discord OAuth) |
+| Process | systemd + Nginx + Cloudflare proxy (self-hosted Linux) |
 
-## Quick Start (Development)
+---
+
+## Linux Self-Hosting (Production)
+
+This project is documented for **self-hosted Linux only**.
+
+Follow the full deployment guide:
+
+- **`DEPLOYMENT.md`** → end-to-end Ubuntu/Debian production setup
+
+That guide includes:
+
+1. Package prerequisites
+2. Backend and frontend setup
+3. systemd service creation
+4. Nginx reverse proxy
+5. Cloudflare SSL/TCP setup (Full Strict)
+6. Admin bootstrap
+7. MongoDB hardening
+8. Backups
+9. Update/redeploy checklist for hosting parties
+
+---
+
+## Local Development Quick Start
 
 ```bash
 # Backend
 cd backend
-python3 -m venv venv && source venv/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # Edit with your values
+cp .env.example .env
 uvicorn server:app --host 0.0.0.0 --port 8001 --reload
 
 # Frontend
-cd frontend
+cd ../frontend
 yarn install
 yarn start
 ```
 
-For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env` so auth cookies are accepted by the browser.
+For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env`.
 
-## Environment Variables
+---
+
+## Required Environment Variables
 
 ### Backend (`backend/.env`)
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `MONGO_URL` | Yes | MongoDB connection string |
-| `DB_NAME` | Yes | Database name (e.g., `25th_infantry`) |
-| `JWT_SECRET` | Yes | Strong random secret for JWT signing |
-| `JWT_ALGORITHM` | Yes | `HS256` |
-| `JWT_EXPIRATION_HOURS` | Yes | Token lifetime in hours (recommended: `24`) |
-| `COOKIE_SECURE` | No | Cookie security flag (`false` for local HTTP dev, `true` for HTTPS production; default: `true`) |
-| `FRONTEND_URL` | No | Public frontend origin used in email verification links (recommended in production) |
-| `EMAIL_DELIVERY_MODE` | No | `smtp` for real email delivery or `log` to print verification emails in backend logs (default: `smtp` when SMTP is configured, otherwise `log`) |
-| `SMTP_HOST` | No | SMTP hostname for verification emails |
-| `SMTP_PORT` | No | SMTP port (default: `587`) |
-| `SMTP_USERNAME` | No | SMTP username/from login |
-| `SMTP_PASSWORD` | No | SMTP password |
-| `SMTP_FROM_EMAIL` | No | Outbound "from" email address |
-| `SMTP_FROM_NAME` | No | Outbound "from" display name |
-| `SMTP_USE_TLS` | No | Enable STARTTLS for SMTP (default: `true`) |
-| `SMTP_USE_SSL` | No | Use implicit SSL SMTP instead of STARTTLS (default: `false`) |
-| `EMAIL_VERIFICATION_TTL_HOURS` | No | Verification link lifetime in hours (default: `24`) |
-| `DISCORD_CLIENT_ID` | No | Discord OAuth app client ID (optional) |
-| `DISCORD_CLIENT_SECRET` | No | Discord OAuth app client secret (optional) |
-| `DISCORD_REDIRECT_URI` | No | Discord callback URL (optional) |
+- `MONGO_URL`
+- `DB_NAME`
+- `JWT_SECRET`
+- `JWT_ALGORITHM` (typically `HS256`)
+- `JWT_EXPIRATION_HOURS`
+
+Common production recommendation:
+
+- `COOKIE_SECURE=true`
+- `FRONTEND_URL=https://yourdomain.com`
+
+Optional map-feed scaffolding (for future provider integration):
+
+- `MAP_EXTERNAL_FEED_ENABLED=false`
+- `MAP_EXTERNAL_PROVIDER=none`
+- `MAP_INGEST_INTERVAL_SECONDS=300`
+- `MAP_EVENT_RETENTION_DAYS=30`
 
 ### Frontend (`frontend/.env`)
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `REACT_APP_BACKEND_URL` | Yes | Backend base URL (e.g., `https://yourdomain.com`) |
-| `REACT_APP_MAP_TILE_URL` | No | Map tile provider URL template (defaults to OpenStreetMap) |
-| `REACT_APP_MAP_ATTRIBUTION` | No | Attribution text rendered on map tiles |
-| `REACT_APP_DEFAULT_MAP_CENTER_LAT` | No | Default map latitude center (default: `20`) |
-| `REACT_APP_DEFAULT_MAP_CENTER_LNG` | No | Default map longitude center (default: `0`) |
-| `REACT_APP_DEFAULT_MAP_ZOOM` | No | Default map zoom level (default: `2`) |
+- `REACT_APP_BACKEND_URL=https://yourdomain.com`
+
+Optional map tuning:
+
+- `REACT_APP_MAP_TILE_URL`
+- `REACT_APP_MAP_ATTRIBUTION`
+- `REACT_APP_DEFAULT_MAP_CENTER_LAT`
+- `REACT_APP_DEFAULT_MAP_CENTER_LNG`
+- `REACT_APP_DEFAULT_MAP_ZOOM`
+
+---
+
+## Cloudflare + Linux Hosting Notes
+
+- Use Cloudflare DNS **proxied (orange cloud)** records for your domain.
+- In Cloudflare SSL/TLS mode, use **Full (strict)**.
+- Install a Cloudflare Origin Certificate on your Linux host (Nginx) and keep `COOKIE_SECURE=true`.
+- Keep origin ports restricted to HTTPS where possible (Cloudflare proxy in front).
+
+---
 
 ## Admin Bootstrap
 
-Create your admin account after first deploy:
+After first deployment:
 
 ```bash
-cd /path/to/project
+cd /opt/25th-id
 source backend/venv/bin/activate
 python3 scripts/create_admin.py
 ```
 
-The script accepts email, username, and password at runtime via interactive prompts. Password input is hidden. If the email already exists, the user is promoted to admin. No credentials are stored in source control.
+---
 
-## Content Management
+## Notes for Hosting Parties
 
-All homepage content is editable live through the **Admin > Command Center** panel:
-- Hero section (background image, tagline)
-- About section (logo, paragraphs, quote)
-- Operations section heading and descriptions
-- Gallery showcase images
-- Training/logistics images and text
-- Unit History timeline entries
-- Section headings and footer
-
-Default fallback values are in `frontend/src/config/siteContent.js` and are only used when no database content exists yet.
-
-## Documentation Status
-
-- ✅ `README.md` is current for the existing feature set and project layout.
-- ✅ `DEPLOYMENT.md` is relevant for production self-hosting.
-- 🔎 The key current caveat is cookie behavior during local development: if you run over plain HTTP, set `COOKIE_SECURE=false` in backend env.
-
-## Discord Integration (Optional)
-
-Discord OAuth2 is fully implemented but optional. To enable:
-
-1. Create a Discord application at https://discord.com/developers/applications
-2. Under OAuth2, add your redirect URI: `https://yourdomain.com/api/auth/discord/callback`
-3. Set `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, and `DISCORD_REDIRECT_URI` in `backend/.env`
-4. Restart the backend
-
-When enabled, users see a "Continue with Discord" button on the login page and can link/unlink Discord from their profile. Discord is never required — email/password auth always works.
-
-## Production Deployment
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete self-hosting instructions covering:
-- Server setup (Ubuntu, Python, Node, MongoDB, Nginx)
-- Environment configuration
-- Frontend build and backend service
-- Nginx reverse proxy with Cloudflare SSL
-- MongoDB security and backup strategy
-
-## Project Structure
-
-```
-├── backend/
-│   ├── server.py              # All API logic
-│   ├── uploads/               # Persistent file storage
-│   ├── requirements.txt       # Python dependencies
-│   └── .env                   # Backend configuration
-├── frontend/
-│   ├── src/
-│   │   ├── App.js             # Routing, pages, layouts
-│   │   ├── config/siteContent.js  # Default fallback content
-│   │   ├── components/        # Shared components
-│   │   └── pages/             # Admin + Member pages
-│   ├── package.json
-│   └── .env                   # Frontend configuration
-├── scripts/
-│   └── create_admin.py        # Production admin bootstrap
-├── DEPLOYMENT.md              # Self-hosting guide
-└── README.md
-```
+- Treat `DEPLOYMENT.md` as source-of-truth.
+- Keep `backend/.env` and `frontend/.env` out of source control.
+- Verify post-deploy checks after every update.
+- Keep regular backups of MongoDB and `/backend/uploads`.

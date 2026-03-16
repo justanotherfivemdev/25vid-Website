@@ -144,3 +144,15 @@
 .announcement-low { border-left: 4px solid #888888; }
 .operation-card { transition: all 0.3s ease; }
 .operation-card:hover { transform: scale(1.02); border-color: rgba(201, 162, 39, 0.5); }
+
+/* Improve dark-theme date/time input readability */
+input[type='date'],
+input[type='time'] {
+  color-scheme: dark;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+  cursor: pointer;
+}

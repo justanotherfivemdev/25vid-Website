@@ -27,7 +27,7 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/users', icon: Users, label: 'Members' },
     { path: '/admin/recruitment', icon: UserPlus, label: 'Recruitment' },
     { path: '/admin/intel', icon: Radio, label: 'Intel & Briefings' },
-    { path: '/admin/campaigns', icon: MapPin, label: 'Campaign Theater' },
+    { path: '/admin/campaigns', icon: MapPin, label: 'Conflict Map' },
     { path: '/admin/unit-config', icon: Building2, label: 'Unit Config' }
   ];
   
@@ -47,6 +47,12 @@ const AdminLayout = ({ children }) => {
               <Button variant="outline" size="sm" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10" data-testid="admin-back-to-hub">
                 <Shield className="w-4 h-4 mr-2" />
                 Member Hub
+              </Button>
+            </Link>
+            <Link to="/hub/campaign">
+              <Button variant="outline" size="sm" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10" data-testid="admin-conflict-map-btn">
+                <MapPin className="w-4 h-4 mr-2" />
+                Conflict Map
               </Button>
             </Link>
             <Link to="/">
