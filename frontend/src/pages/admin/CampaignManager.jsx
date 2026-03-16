@@ -62,6 +62,14 @@ const CampaignManager = () => {
     setDialogOpen(true);
   };
 
+  const normalizeCoordinate = (value) => {
+    if (value === '' || value === null || value === undefined) {
+      return null;
+    }
+    const num = typeof value === 'number' ? value : parseFloat(value);
+    return Number.isFinite(num) ? num : null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -69,8 +77,8 @@ const CampaignManager = () => {
         ...form,
         objectives: (form.objectives || []).map((obj) => ({
           ...obj,
-          lat: obj.lat === '' || obj.lat === null || obj.lat === undefined ? null : parseFloat(obj.lat),
-          lng: obj.lng === '' || obj.lng === null || obj.lng === undefined ? null : parseFloat(obj.lng),
+          lat: normalizeCoordinate(obj.lat),
+          lng: normalizeCoordinate(obj.lng),
         })),
       };
       if (editing) {
