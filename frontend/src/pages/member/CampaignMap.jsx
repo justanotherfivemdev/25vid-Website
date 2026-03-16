@@ -36,6 +36,8 @@ const CampaignMap = () => {
   const [selectedId, setSelectedId] = useState(null);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [filters, setFilters] = useState({ search: '', severity: 'all', status: 'all' });
+  const [overlayData, setOverlayData] = useState({ objectives: [], operations: [], intel: [] });
+  const [layerVisibility, setLayerVisibility] = useState({ objectives: true, operations: true, intel: true });
   const [creatingActivity, setCreatingActivity] = useState(false);
   const [activityMsg, setActivityMsg] = useState('');
   const [activityForm, setActivityForm] = useState({
@@ -84,10 +86,16 @@ const CampaignMap = () => {
 
   const loadData = async () => {
     try {
-      const [activeRes, allRes] = await Promise.all([
+      const [activeRes, allRes, overlaysRes] = await Promise.all([
         axios.get(`${API}/campaigns/active`),
-        axios.get(`${API}/campaigns`)
+        axios.get(`${API}/campaigns`),
+        axios.get(`${API}/map/overlays`).catch(() => ({ data: { objectives: [], operations: [], intel: [] } })),
       ]);
+      setOverlayData({
+        objectives: overlaysRes.data?.objectives || [],
+        operations: overlaysRes.data?.operations || [],
+        intel: overlaysRes.data?.intel || [],
+      });
       setAllCampaigns(allRes.data);
       if (activeRes.data) {
         setCampaign(activeRes.data);
@@ -108,14 +116,22 @@ const CampaignMap = () => {
   const objComplete = objectives.filter(o => o.status === 'complete').length;
   const objInProgress = objectives.filter(o => o.status === 'in_progress').length;
   const progress = objectives.length > 0 ? Math.round((objComplete / objectives.length) * 100) : 0;
-  const mapMarkers = objectives
+  const filteredObjectives = (overlayData.objectives || []).filter(o => !selectedId || o.campaign_id === selectedId);
+  const filteredOperations = (overlayData.operations || []).filter(o => !selectedId || o.campaign_id === selectedId);
+  const filteredIntel = (overlayData.intel || []).filter(o => !selectedId || o.campaign_id === selectedId || !o.campaign_id);
+
+  const mapMarkers = [
+    ...(layerVisibility.objectives ? filteredObjectives : []),
+    ...(layerVisibility.operations ? filteredOperations : []),
+    ...(layerVisibility.intel ? filteredIntel : []),
+  ]
     .filter(o => o.lat !== undefined && o.lat !== null && o.lng !== undefined && o.lng !== null)
     .filter(o => filters.severity === 'all' || (o.severity || 'medium') === filters.severity)
-    .filter(o => filters.status === 'all' || o.status === filters.status)
+    .filter(o => filters.status === 'all' || (o.status || '').toLowerCase() === filters.status)
     .filter(o => {
       const needle = filters.search.trim().toLowerCase();
       if (!needle) return true;
-      return [o.name, o.region_label, o.description, o.grid_ref].filter(Boolean).join(' ').toLowerCase().includes(needle);
+      return [o.name, o.region_label, o.description, o.grid_ref, o.source_kind, o.operation_type].filter(Boolean).join(' ').toLowerCase().includes(needle);
     });
 
   const handleCreateActivity = async (e) => {
@@ -127,7 +143,7 @@ const CampaignMap = () => {
       await axios.post(`${API}/operations`, {
         ...activityForm,
         campaign_id: selectedId,
-        objective_id: selectedMarker.id || null,
+        objective_id: selectedMarker.source_kind === 'objective' ? selectedMarker.id : null,
         theater: campaign?.theater || '',
         region_label: selectedMarker.region_label || selectedMarker.grid_ref || '',
         grid_ref: selectedMarker.grid_ref || '',
@@ -232,17 +248,23 @@ const CampaignMap = () => {
                 <Card className="bg-gray-900 border-gray-800">
                   <CardContent className="p-5 space-y-4">
                     <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <h3 className="text-xs text-tropic-gold tracking-widest">GLOBAL THREAT MAP</h3>
+                      <h3 className="text-xs text-tropic-gold tracking-widest">CONFLICT MAP OVERLAYS</h3>
                       <ThreatLegend />
                     </div>
                     <ThreatFilters filters={filters} onChange={setFilters} />
+                    <div className="flex items-center gap-4 text-xs text-gray-400">
+                      <label className="flex items-center gap-1.5"><input type="checkbox" checked={layerVisibility.objectives} onChange={(e) => setLayerVisibility((prev) => ({ ...prev, objectives: e.target.checked }))} /> Objectives</label>
+                      <label className="flex items-center gap-1.5"><input type="checkbox" checked={layerVisibility.operations} onChange={(e) => setLayerVisibility((prev) => ({ ...prev, operations: e.target.checked }))} /> Operations</label>
+                      <label className="flex items-center gap-1.5"><input type="checkbox" checked={layerVisibility.intel} onChange={(e) => setLayerVisibility((prev) => ({ ...prev, intel: e.target.checked }))} /> Intel</label>
+                    </div>
                     <ThreatMap markers={mapMarkers} selectedMarkerId={selectedMarker?.id} onSelectMarker={setSelectedMarker} />
                     {selectedMarker && (
                       <div className="bg-black/40 border border-gray-800 rounded p-3 text-sm">
                         <div className="font-semibold">{selectedMarker.name}</div>
+                        {selectedMarker.source_kind && <Badge variant="outline" className="mt-2 border-gray-700 text-gray-400 text-[10px] uppercase">{selectedMarker.source_kind}</Badge>}
                         <div className="text-xs text-gray-400 mt-1">{selectedMarker.region_label || selectedMarker.grid_ref || 'Unknown region'} • {(selectedMarker.severity || 'medium').toUpperCase()}</div>
-                        {selectedMarker.linked_operation_id && (
-                          <Link to={`/hub/operations/${selectedMarker.linked_operation_id}`}>
+                        {(selectedMarker.linked_operation_id || selectedMarker.source_kind === 'operation') && (
+                          <Link to={`/hub/operations/${selectedMarker.linked_operation_id || selectedMarker.id}`}>
                             <Button size="sm" className="mt-2 bg-tropic-red hover:bg-tropic-red-dark">Open Linked Operation <ChevronRight className="w-4 h-4 ml-1" /></Button>
                           </Link>
                         )}

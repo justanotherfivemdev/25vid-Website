@@ -10,6 +10,8 @@ const ThreatMarkerPopup = ({ marker, showRecruitCta = false }) => {
       <div className="font-bold">{marker.name || marker.region_label || 'Threat Marker'}</div>
       {marker.description && <div className="text-xs mt-1">{marker.description}</div>}
       <div className="text-[11px] mt-2 space-y-0.5">
+        {marker.source_kind && <div>Layer: <b className="capitalize">{marker.source_kind}</b></div>}
+        {marker.category && <div>Category: <b className="capitalize">{marker.category.replaceAll('_', ' ')}</b></div>}
         {marker.severity && <div>Severity: <b className="capitalize">{marker.severity}</b></div>}
         {marker.status && <div>Status: <b className="capitalize">{marker.status.replace('_', ' ')}</b></div>}
       </div>

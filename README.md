@@ -70,7 +70,7 @@ For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env`.
 
 ## Required Environment Variables
 
-### Backend (`backend/.env`)
+## Required Environment Variables
 
 - `MONGO_URL`
 - `DB_NAME`
@@ -83,7 +83,11 @@ Common production recommendation:
 - `COOKIE_SECURE=true`
 - `FRONTEND_URL=https://yourdomain.com`
 
-### Frontend (`frontend/.env`)
+- `MONGO_URL`
+- `DB_NAME`
+- `JWT_SECRET`
+- `JWT_ALGORITHM` (typically `HS256`)
+- `JWT_EXPIRATION_HOURS`
 
 - `REACT_APP_BACKEND_URL=https://yourdomain.com`
 
@@ -97,7 +101,8 @@ Optional map tuning:
 
 ---
 
-## Admin Bootstrap
+- `COOKIE_SECURE=true`
+- `FRONTEND_URL=https://yourdomain.com`
 
 After first deployment:
 

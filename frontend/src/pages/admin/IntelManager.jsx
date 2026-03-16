@@ -28,6 +28,11 @@ const CLASSIFICATIONS = [
   { value: 'flash', label: 'FLASH', color: 'bg-tropic-red text-white' },
 ];
 
+const VISIBILITY_SCOPES = [
+  { value: 'members', label: 'Members' },
+  { value: 'admin_only', label: 'Admin Only' },
+];
+
 const getClassBadge = (c) => CLASSIFICATIONS.find(cl => cl.value === c) || CLASSIFICATIONS[0];
 const getCatLabel = (c) => CATEGORIES.find(cat => cat.value === c)?.label || c;
 
@@ -74,7 +79,10 @@ const IntelManager = () => {
   const [tagInput, setTagInput] = useState('');
   const [expandedAck, setExpandedAck] = useState(null);
   const [form, setForm] = useState({
-    title: '', content: '', category: 'intel_update', classification: 'routine', tags: []
+    title: '', content: '', category: 'intel_update', classification: 'routine', visibility_scope: 'members', tags: [],
+    campaign_id: '', objective_id: '', operation_id: '',
+    theater: '', region_label: '', grid_ref: '',
+    lat: '', lng: '', severity: 'medium',
   });
 
   const fetchBriefings = useCallback(async () => {
@@ -91,24 +99,48 @@ const IntelManager = () => {
   useEffect(() => { fetchBriefings(); }, [fetchBriefings]);
 
   const resetForm = () => {
-    setForm({ title: '', content: '', category: 'intel_update', classification: 'routine', tags: [] });
+    setForm({
+      title: '', content: '', category: 'intel_update', classification: 'routine', visibility_scope: 'members', tags: [],
+      campaign_id: '', objective_id: '', operation_id: '', theater: '', region_label: '', grid_ref: '', lat: '', lng: '', severity: 'medium',
+    });
     setEditing(null);
     setTagInput('');
   };
 
   const handleEdit = (b) => {
     setEditing(b);
-    setForm({ title: b.title, content: b.content, category: b.category, classification: b.classification, tags: b.tags || [] });
+    setForm({
+      title: b.title,
+      content: b.content,
+      category: b.category,
+      classification: b.classification,
+      visibility_scope: b.visibility_scope || 'members',
+      tags: b.tags || [],
+      campaign_id: b.campaign_id || '',
+      objective_id: b.objective_id || '',
+      operation_id: b.operation_id || '',
+      theater: b.theater || '',
+      region_label: b.region_label || '',
+      grid_ref: b.grid_ref || '',
+      lat: b.lat ?? '',
+      lng: b.lng ?? '',
+      severity: b.severity || 'medium',
+    });
     setDialogOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...form,
+        lat: form.lat === '' ? null : Number(form.lat),
+        lng: form.lng === '' ? null : Number(form.lng),
+      };
       if (editing) {
-        await axios.put(`${API}/admin/intel/${editing.id}`, form);
+        await axios.put(`${API}/admin/intel/${editing.id}`, payload);
       } else {
-        await axios.post(`${API}/admin/intel`, form);
+        await axios.post(`${API}/admin/intel`, payload);
       }
       await fetchBriefings();
       setDialogOpen(false);
@@ -182,6 +214,43 @@ const IntelManager = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Visibility</Label>
+                    <Select value={form.visibility_scope} onValueChange={v => setForm({ ...form, visibility_scope: v })}>
+                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700">
+                        {VISIBILITY_SCOPES.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Severity</Label>
+                    <Select value={form.severity} onValueChange={v => setForm({ ...form, severity: v })}>
+                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700">
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div><Label>Campaign ID</Label><Input value={form.campaign_id} onChange={e => setForm({ ...form, campaign_id: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
+                  <div><Label>Objective ID</Label><Input value={form.objective_id} onChange={e => setForm({ ...form, objective_id: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
+                  <div><Label>Operation ID</Label><Input value={form.operation_id} onChange={e => setForm({ ...form, operation_id: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div><Label>Theater</Label><Input value={form.theater} onChange={e => setForm({ ...form, theater: e.target.value })} className="bg-black border-gray-700" placeholder="Pacific" /></div>
+                  <div><Label>Region Label</Label><Input value={form.region_label} onChange={e => setForm({ ...form, region_label: e.target.value })} className="bg-black border-gray-700" placeholder="South China Sea" /></div>
+                  <div><Label>Grid Ref</Label><Input value={form.grid_ref} onChange={e => setForm({ ...form, grid_ref: e.target.value })} className="bg-black border-gray-700" placeholder="G-17" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Latitude</Label><Input type="number" step="any" value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
+                  <div><Label>Longitude</Label><Input type="number" step="any" value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
                 </div>
                 <div>
                   <Label>Content</Label>

@@ -2080,7 +2080,17 @@ class IntelBriefing(BaseModel):
     content: str
     category: str  # intel_update, commanders_intent, operational_order, after_action_report, training_bulletin
     classification: str = "routine"  # routine, priority, immediate, flash
+    visibility_scope: Literal["members", "admin_only"] = "members"
     tags: List[str] = Field(default_factory=list)
+    campaign_id: Optional[str] = None
+    objective_id: Optional[str] = None
+    operation_id: Optional[str] = None
+    theater: Optional[str] = None
+    region_label: Optional[str] = None
+    grid_ref: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    severity: Optional[Literal["low", "medium", "high", "critical"]] = None
     author_id: str = ""
     author_name: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -2091,14 +2101,34 @@ class IntelBriefingCreate(BaseModel):
     content: str
     category: str
     classification: str = "routine"
+    visibility_scope: Literal["members", "admin_only"] = "members"
     tags: List[str] = Field(default_factory=list)
+    campaign_id: Optional[str] = None
+    objective_id: Optional[str] = None
+    operation_id: Optional[str] = None
+    theater: Optional[str] = None
+    region_label: Optional[str] = None
+    grid_ref: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    severity: Optional[Literal["low", "medium", "high", "critical"]] = None
 
 class IntelBriefingUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     category: Optional[str] = None
     classification: Optional[str] = None
+    visibility_scope: Optional[Literal["members", "admin_only"]] = None
     tags: Optional[List[str]] = None
+    campaign_id: Optional[str] = None
+    objective_id: Optional[str] = None
+    operation_id: Optional[str] = None
+    theater: Optional[str] = None
+    region_label: Optional[str] = None
+    grid_ref: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    severity: Optional[Literal["low", "medium", "high", "critical"]] = None
 
 def _fix_dates(b):
     if isinstance(b.get("created_at"), str):
@@ -2348,6 +2378,107 @@ async def delete_campaign(campaign_id: str, current_user: dict = Depends(get_cur
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return {"message": "Campaign deleted"}
+
+@api_router.get("/map/overlays")
+async def get_map_overlays(current_user: dict = Depends(get_current_user)):
+    """Unified conflict map overlays for objectives, operations, and geotagged intel.
+
+    Keeps operations as a first-class overlay while allowing incremental layer expansion.
+    """
+    campaigns = await db.campaigns.find({}, {"_id": 0, "id": 1, "name": 1, "theater": 1, "status": 1, "objectives": 1}).to_list(200)
+    operations = await db.operations.find({}, {"_id": 0}).to_list(2000)
+
+    intel_query = {}
+    if current_user.get("role") != "admin":
+        intel_query["visibility_scope"] = {"$ne": "admin_only"}
+    intel_briefings = await db.intel_briefings.find(intel_query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+
+    objective_markers = []
+    for campaign in campaigns:
+        for obj in campaign.get("objectives", []):
+            lat = obj.get("lat")
+            lng = obj.get("lng")
+            if lat is None or lng is None:
+                continue
+            objective_markers.append({
+                "id": obj.get("id") or str(uuid.uuid4()),
+                "source_kind": "objective",
+                "campaign_id": campaign.get("id"),
+                "campaign_name": campaign.get("name"),
+                "theater": campaign.get("theater"),
+                "campaign_status": campaign.get("status"),
+                "name": obj.get("name"),
+                "description": obj.get("description", ""),
+                "region_label": obj.get("region_label") or obj.get("grid_ref", ""),
+                "grid_ref": obj.get("grid_ref", ""),
+                "severity": obj.get("severity", "medium"),
+                "status": obj.get("status", "pending"),
+                "priority": obj.get("priority", "secondary"),
+                "lat": lat,
+                "lng": lng,
+                "linked_operation_id": obj.get("linked_operation_id"),
+                "is_public_recruiting": bool(obj.get("is_public_recruiting", False)),
+            })
+
+    operation_markers = []
+    for op in operations:
+        lat = op.get("lat")
+        lng = op.get("lng")
+        if lat is None or lng is None:
+            continue
+        operation_markers.append({
+            "id": op.get("id"),
+            "source_kind": "operation",
+            "name": op.get("title"),
+            "description": op.get("description", ""),
+            "severity": op.get("severity", "medium"),
+            "status": op.get("activity_state", "planned"),
+            "operation_type": op.get("operation_type"),
+            "date": op.get("date"),
+            "time": op.get("time"),
+            "campaign_id": op.get("campaign_id"),
+            "objective_id": op.get("objective_id"),
+            "theater": op.get("theater"),
+            "region_label": op.get("region_label") or op.get("grid_ref", ""),
+            "grid_ref": op.get("grid_ref", ""),
+            "lat": lat,
+            "lng": lng,
+            "is_public_recruiting": bool(op.get("is_public_recruiting", False)),
+        })
+
+    intel_markers = []
+    for intel in intel_briefings:
+        lat = intel.get("lat")
+        lng = intel.get("lng")
+        if lat is None or lng is None:
+            continue
+        intel_markers.append({
+            "id": intel.get("id"),
+            "source_kind": "intel",
+            "name": intel.get("title"),
+            "description": intel.get("content", "")[:320],
+            "severity": intel.get("severity") or "medium",
+            "status": intel.get("classification", "routine"),
+            "category": intel.get("category"),
+            "classification": intel.get("classification"),
+            "visibility_scope": intel.get("visibility_scope", "members"),
+            "campaign_id": intel.get("campaign_id"),
+            "objective_id": intel.get("objective_id"),
+            "operation_id": intel.get("operation_id"),
+            "theater": intel.get("theater"),
+            "region_label": intel.get("region_label") or intel.get("grid_ref", ""),
+            "grid_ref": intel.get("grid_ref", ""),
+            "lat": lat,
+            "lng": lng,
+            "created_at": intel.get("created_at"),
+        })
+
+    return {
+        "objectives": objective_markers,
+        "operations": operation_markers,
+        "intel": intel_markers,
+        "events": [],
+    }
 
 # ============================================================================
 # RECRUITMENT PIPELINE

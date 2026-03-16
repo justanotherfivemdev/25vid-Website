@@ -202,7 +202,12 @@ Validate auto-renew:
 sudo certbot renew --dry-run
 ```
 
----
+5) Validate and reload Nginx:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
 
 ## 8) Bootstrap Admin Account
 
