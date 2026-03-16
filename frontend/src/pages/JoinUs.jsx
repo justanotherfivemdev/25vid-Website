@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shield, Users, Target, CheckCircle, ArrowLeft, Building2, Send, Clock, Zap } from 'lucide-react';
+import ThreatMap from '@/components/map/ThreatMap';
+import ThreatLegend from '@/components/map/ThreatLegend';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -22,6 +24,8 @@ const JoinUs = () => {
   const [applicationOpen, setApplicationOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [publicThreats, setPublicThreats] = useState([]);
+  const [selectedThreat, setSelectedThreat] = useState(null);
   const [form, setForm] = useState({
     applicant_name: '',
     applicant_email: '',
@@ -41,6 +45,8 @@ const JoinUs = () => {
     try {
       const res = await axios.get(`${API}/recruitment/billets`);
       setBillets(res.data);
+      const threatRes = await axios.get(`${API}/public/threat-map`).catch(() => ({ data: { markers: [] } }));
+      setPublicThreats(threatRes.data?.markers || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -56,7 +62,10 @@ const JoinUs = () => {
     try {
       await axios.post(`${API}/recruitment/apply`, {
         ...form,
-        billet_id: selectedBillet?.id || null
+        billet_id: selectedBillet?.id || null,
+        campaign_id: selectedThreat?.campaign_id || null,
+        objective_id: selectedThreat?.id || null,
+        operation_id: selectedThreat?.linked_operation_id || null,
       });
       setSubmitted(true);
       setForm({
@@ -118,6 +127,27 @@ const JoinUs = () => {
               </div>
             </div>
           </div>
+
+          {publicThreats.length > 0 && (
+            <Card className="bg-gray-900/50 border-tropic-gold/20">
+              <CardHeader>
+                <CardTitle className="text-lg text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>GLOBAL THREAT MAP</CardTitle>
+                <CardDescription>World-building theater overview of public recruiting hotspots.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <ThreatLegend />
+                <ThreatMap markers={publicThreats} selectedMarkerId={selectedThreat?.id} onSelectMarker={setSelectedThreat} showRecruitCta height="360px" />
+                {selectedThreat && (
+                  <Alert className="border-tropic-gold/30 bg-black/30">
+                    <AlertDescription className="text-xs text-gray-300">
+                      Selected region: <span className="text-tropic-gold font-semibold">{selectedThreat.name}</span>
+                      {selectedThreat.linked_operation?.title ? ` • Linked operation: ${selectedThreat.linked_operation.title}` : ''}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Requirements Section */}
           <Card className="bg-gray-900/50 border-tropic-gold/20">
@@ -225,6 +255,9 @@ const JoinUs = () => {
                 <DialogTitle className="text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                   {submitted ? 'APPLICATION SUBMITTED' : selectedBillet ? `APPLY: ${selectedBillet.title}` : 'GENERAL APPLICATION'}
                 </DialogTitle>
+                {!submitted && selectedThreat && (
+                  <p className="text-xs text-gray-400">Threat region context: <span className="text-tropic-gold">{selectedThreat.name}</span></p>
+                )}
               </DialogHeader>
 
               {submitted ? (
