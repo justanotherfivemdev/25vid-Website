@@ -53,7 +53,22 @@ const CampaignMap = () => {
 
   useEffect(() => {
     if (selectedId) {
-      axios.get(`${API}/campaigns/${selectedId}`).then(r => setCampaign(r.data)).catch(() => {});
+      // When switching campaigns, clear any marker and activity state tied to the previous campaign
+      setSelectedMarker(null);
+      setCreatingActivity(false);
+      setActivityMsg('');
+      setActivityForm({
+        title: '',
+        description: '',
+        operation_type: 'combat',
+        date: '',
+        time: '',
+        activity_state: 'ongoing',
+      });
+      axios
+        .get(`${API}/campaigns/${selectedId}`)
+        .then((r) => setCampaign(r.data))
+        .catch(() => {});
     }
   }, [selectedId]);
 
