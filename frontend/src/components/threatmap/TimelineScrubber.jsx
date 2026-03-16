@@ -26,7 +26,7 @@ export default function TimelineScrubber() {
     }
 
     const animate = () => {
-      setViewport({ longitude: viewport.longitude + PAN_SPEED });
+      setViewport({ longitude: ((viewport.longitude + PAN_SPEED + 180) % 360) - 180 });
       animationRef.current = requestAnimationFrame(animate);
     };
 

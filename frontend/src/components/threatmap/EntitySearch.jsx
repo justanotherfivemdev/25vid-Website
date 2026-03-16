@@ -162,7 +162,10 @@ export default function EntitySearch() {
 
                 <div className="text-sm text-gray-400 max-h-40 overflow-hidden relative">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {(researchResult.summary || '').slice(0, 800) + '...'}
+                    {(() => {
+                      const text = researchResult.summary || '';
+                      return text.length > 800 ? text.slice(0, 800) + '...' : text;
+                    })()}
                   </ReactMarkdown>
                   <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-800 to-transparent" />
                 </div>

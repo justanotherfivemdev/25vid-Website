@@ -18,6 +18,7 @@ from email.message import EmailMessage
 from pydantic import BaseModel, Field, EmailStr, ConfigDict, TypeAdapter
 from typing import List, Optional, Literal, Dict, Any
 import uuid
+import asyncio
 from datetime import datetime, timezone, timedelta
 import jwt
 from passlib.context import CryptContext
@@ -3061,7 +3062,6 @@ async def get_threat_events():
         return {"events": [], "count": 0, "error": "VALYU_API_KEY not configured"}
 
     start_date = get_start_date()
-    import asyncio
 
     # Query Valyu in parallel batches
     tasks = [valyu_search(q, max_results=15, start_date=start_date) for q in THREAT_QUERIES[:15]]
@@ -3144,7 +3144,7 @@ async def get_country_conflicts(country: str, stream: Optional[str] = None):
 
         async def generate():
             try:
-                yield "data: {}\n\n".encode()  # initial heartbeat
+                yield 'data: {"type": "start"}\n\n'.encode()  # initial heartbeat
 
                 # Current conflicts
                 current = await valyu_deepsearch(
@@ -3159,7 +3159,6 @@ async def get_country_conflicts(country: str, stream: Optional[str] = None):
         return StreamingResponse(generate(), media_type="text/event-stream")
 
     # Non-streaming: fetch both current and historical
-    import asyncio
     current_task = valyu_deepsearch(
         f"current ongoing military conflicts wars tensions in {country} 2024 2025 2026",
         max_results=10,

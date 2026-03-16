@@ -14,6 +14,8 @@ import OperationPopup from './OperationPopup';
 import CountryConflictsModal from './CountryConflictsModal';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+const CLUSTER_MAX_ZOOM = 14;
+const CLUSTER_RADIUS = 50;
 
 const clusterLayer = {
   id: 'clusters',
@@ -439,8 +441,8 @@ export default function GlobalThreatMap({ operations = [] }) {
             type="geojson"
             data={eventsGeoJson}
             cluster={true}
-            clusterMaxZoom={14}
-            clusterRadius={50}
+            clusterMaxZoom={CLUSTER_MAX_ZOOM}
+            clusterRadius={CLUSTER_RADIUS}
             clusterProperties={{
               maxSeverity: ['max', ['get', 'severity']],
             }}
