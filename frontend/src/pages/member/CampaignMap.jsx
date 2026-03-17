@@ -12,7 +12,7 @@ import ThreatMap from '@/components/map/ThreatMap';
 import ThreatLegend from '@/components/map/ThreatLegend';
 import ThreatFilters from '@/components/map/ThreatFilters';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API } from '@/utils/api';
 
 const OBJ_STATUS_CFG = {
   pending: { color: 'bg-gray-700', dot: 'bg-gray-500', label: 'PENDING' },

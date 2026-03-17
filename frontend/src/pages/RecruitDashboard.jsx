@@ -12,8 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Shield, Clock, CheckCircle, Send, LogOut, User, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 const STATUS_DISPLAY = {
   pending: { label: 'PENDING REVIEW', color: 'bg-tropic-gold/20 text-tropic-gold border-tropic-gold/30', icon: Clock, message: 'Your application is awaiting review by our recruitment team.' },

@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Image as ImageIcon, Home, LogOut, Shield, User, Users, Filter, ChevronLeft, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 const resolveImg = (url) => {
   if (!url) return '';

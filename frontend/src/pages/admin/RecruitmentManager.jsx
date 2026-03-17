@@ -13,8 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2, Edit, Users, UserPlus, Clock, CheckCircle, XCircle, Eye, Building2, ExternalLink } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 const STATUS_COLORS = {
   pending: 'bg-tropic-gold/20 text-tropic-gold border-tropic-gold/30',

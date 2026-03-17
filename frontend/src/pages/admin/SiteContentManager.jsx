@@ -12,8 +12,7 @@ import ImageUpload from '@/components/admin/ImageUpload';
 import { defaultSiteContent } from '@/config/siteContent';
 import { applyBrowserMetadata } from '@/utils/browserMetadata';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 const deepMerge = (defaults, overrides) => {
   if (!overrides) return defaults;

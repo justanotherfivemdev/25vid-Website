@@ -9,8 +9,7 @@ import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home,
 
 import { useAuth } from '@/context/AuthContext';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 const MemberHub = () => {
   const { user, logout } = useAuth();

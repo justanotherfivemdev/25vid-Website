@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import MapMiniView from '@/components/MapMiniView';
 import { colors } from '@/theme/theme';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API } from '@/utils/api';
 
 const CATEGORIES = [
   { value: 'intel_update', label: 'Intel Update', short: 'INTEL', color: 'bg-tropic-red/80 text-white' },

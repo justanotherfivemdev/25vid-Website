@@ -14,8 +14,7 @@ import { Shield, Users, Target, CheckCircle, ArrowLeft, Building2, Send, Clock, 
 import ThreatMap from '@/components/map/ThreatMap';
 import ThreatLegend from '@/components/map/ThreatLegend';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 const JoinUs = () => {
   const [billets, setBillets] = useState([]);

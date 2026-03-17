@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Edit, Trash2, FileText, Search, X, Tag, Eye, ChevronDown, ChevronUp, User, Clock, MapPin } from 'lucide-react';
 import ThreatMap from '@/components/map/ThreatMap';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API } from '@/utils/api';
 
 const CATEGORIES = [
   { value: 'intel_update', label: 'Intel Update' },

@@ -11,8 +11,7 @@ import { ArrowLeft, Save, CheckCircle, AlertCircle, Home, LogOut, Link2, Unlink,
 import ImageUpload from '@/components/admin/ImageUpload';
 import { useAuth } from '@/context/AuthContext';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 const EditProfile = () => {
   const { logout } = useAuth();

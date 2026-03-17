@@ -9,8 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, X, Save, CheckCircle, AlertCircle, Building2, Users, Shield, Target, Award } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 // Tag categories configuration
 const TAG_CATEGORIES = [
