@@ -24,10 +24,9 @@ const RSVP_STATUS_CFG = {
 
 const resolveImg = (url) => {
   if (!url) return '';
-  const BU = process.env.REACT_APP_BACKEND_URL;
   if (url.startsWith('http')) return url;
-  if (url.startsWith('/uploads/')) return `${BU}/api${url}`;
-  return `${BU}${url}`;
+  if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`;
+  return `${BACKEND_URL}${url}`;
 };
 
 const RosterPanel = ({ operationId }) => {

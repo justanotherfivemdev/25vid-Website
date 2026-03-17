@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '@/context/AuthContext';
 import '@/App.css';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -256,7 +257,7 @@ const HeroSection = ({ content }) => {
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/75 to-black"></div>
       <div className="relative z-10 text-center px-6">
         <div className="mb-10 compass-logo" data-testid="unit-logo">
-          <img src={`${process.env.REACT_APP_BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th Infantry Division" className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain drop-shadow-[0_0_30px_rgba(212,160,23,0.4)]" />
+          <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th Infantry Division" className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain drop-shadow-[0_0_30px_rgba(212,160,23,0.4)]" />
         </div>
         <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-[0.08em] leading-tight" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="hero-tagline">
           <span className="block">{heroLine1}</span>
@@ -851,6 +852,7 @@ const LandingPage = () => {
 // ============================================================================
 const LoginPage = () => {
   const { content } = useSiteContent();
+  const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', password: '', username: '', rank: '', specialization: '' });
   const [error, setError] = useState('');
@@ -866,11 +868,11 @@ const LoginPage = () => {
   useEffect(() => {
     axios.get(`${API}/auth/me`)
       .then(res => {
-        localStorage.setItem('user', JSON.stringify(res.data));
+        login(res.data);
         navigate(getPostAuthRoute(res.data), { replace: true });
       })
       .catch(() => {});
-  }, [navigate]);
+  }, [navigate, login]);
 
   // Check if Discord OAuth is enabled on the backend
   useEffect(() => {
@@ -909,7 +911,7 @@ const LoginPage = () => {
       setDiscordLoading(true);
       axios.get(`${API}/auth/me`)
         .then(res => {
-          localStorage.setItem('user', JSON.stringify(res.data));
+          login(res.data);
           window.history.replaceState({}, '', '/login');
           navigate(getPostAuthRoute(res.data), { replace: true });
         })
@@ -930,7 +932,7 @@ const LoginPage = () => {
       setError(errorMessages[discordError] || `Discord error: ${discordError}`);
       window.history.replaceState({}, '', '/login');
     }
-  }, [navigate]);
+  }, [navigate, login]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -944,7 +946,7 @@ const LoginPage = () => {
         : { email: formData.email, username: formData.username, password: formData.password, rank: formData.rank || undefined, specialization: formData.specialization || undefined };
       const response = await axios.post(`${API}${endpoint}`, payload);
       if (isLogin) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        login(response.data.user);
         navigate(getPostAuthRoute(response.data.user), { replace: true });
         return;
       }

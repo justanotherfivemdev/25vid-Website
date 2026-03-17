@@ -8,7 +8,7 @@ import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
 import '@/components/threatmap/threatmap.css';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API } from '@/utils/api';
 const REFRESH_INTERVAL = 300000; // 5 minutes
 
 export default function ThreatMapPage() {
