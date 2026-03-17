@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, MapPin, Target, ChevronDown, ChevronUp, Calendar, X, Globe } from 'lucide-react';
-import ThreatMap from '@/components/map/ThreatMap';
+import CampaignLocationPicker from '@/components/map/CampaignLocationPicker';
 
 import { API } from '@/utils/api';
 
@@ -25,7 +25,39 @@ const OBJ_STATUSES = ['pending', 'in_progress', 'complete', 'failed'];
 const PHASE_STATUSES = ['planned', 'active', 'complete'];
 const PRIORITIES = ['primary', 'secondary', 'tertiary'];
 
+// Grid coordinate types supported by map.army
+const GRID_REF_TYPES = [
+  { value: 'none',  label: 'None' },
+  { value: 'wgs84', label: 'WGS84' },
+  { value: 'mgrs',  label: 'MGRS' },
+  { value: 'utm',   label: 'UTM' },
+  { value: 'gars',  label: 'GARS' },
+  { value: 'bng',   label: 'BNG (UK only)' },
+  { value: 'lv95',  label: 'LV95 (CH only)' },
+  { value: 'lv03',  label: 'LV03 (CH only)' },
+  { value: 'hex',   label: 'Hexagonal Grid' },
+];
+
+// Format hints displayed below the grid ref input
+const GRID_REF_HINTS = {
+  none:  '',
+  wgs84: 'e.g. 14.500000, 120.900000',
+  mgrs:  'e.g. 33UXP0123456789',
+  utm:   'e.g. 33U 401234 5678901',
+  gars:  'e.g. 360KK3718',
+  bng:   'e.g. TQ 30023 80397 (UK only)',
+  lv95:  'e.g. 2600000 1200000 (Switzerland only)',
+  lv03:  'e.g. 600000 200000 (Switzerland only)',
+  hex:   'e.g. A1-3 (hex grid cell reference)',
+};
+
 const statusBadge = (s) => STATUSES.find(st => st.value === s) || STATUSES[0];
+
+/** Returns a placeholder string for the grid ref input based on the selected type. */
+const getGridRefPlaceholder = (type) => {
+  if (!type || type === 'none') return 'Grid ref (optional)';
+  return GRID_REF_HINTS[type] || 'Grid ref';
+};
 
 const CampaignManager = () => {
   const [campaigns, setCampaigns] = useState([]);
@@ -116,7 +148,7 @@ const CampaignManager = () => {
   const removePhase = (idx) => setForm({ ...form, phases: form.phases.filter((_, i) => i !== idx) });
 
   // Objective helpers
-  const addObjective = () => setForm({ ...form, objectives: [...form.objectives, { name: '', description: '', status: 'pending', grid_ref: '', assigned_to: '', priority: 'secondary', notes: '', region_label: '', lat: '', lng: '', severity: 'medium', linked_operation_id: '', is_public_recruiting: false }] });
+  const addObjective = () => setForm({ ...form, objectives: [...form.objectives, { name: '', description: '', status: 'pending', grid_ref: '', grid_ref_type: 'none', assigned_to: '', priority: 'secondary', notes: '', region_label: '', lat: '', lng: '', severity: 'medium', linked_operation_id: '', is_public_recruiting: false }] });
   const updateObj = (idx, field, val) => {
     const ob = [...form.objectives];
     ob[idx] = { ...ob[idx], [field]: val };
@@ -169,18 +201,41 @@ const CampaignManager = () => {
                     <Button type="button" size="sm" onClick={addPhase} className="bg-gray-800 hover:bg-gray-700"><Plus className="w-3 h-3 mr-1" />Add Phase</Button>
                   </div>
                   {form.phases.map((p, i) => (
-                    <div key={i} className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2 items-end">
-                      <div className="md:col-span-2"><Input value={p.name} onChange={e => updatePhase(i, 'name', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Phase name" /></div>
-                      <div className="md:col-span-2"><Input value={p.description} onChange={e => updatePhase(i, 'description', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Description" /></div>
-                      <div className="md:col-span-2">
-                        <Select value={p.status} onValueChange={v => updatePhase(i, 'status', v)}>
-                          <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-gray-900 border-gray-700">{PHASE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                        </Select>
+                    <div key={i} className="bg-black/30 rounded p-3 mb-2 space-y-2">
+                      {/* Row 1: Name, Description, Status */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Phase Name</Label>
+                          <Input value={p.name} onChange={e => updatePhase(i, 'name', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Phase name" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Description</Label>
+                          <Input value={p.description} onChange={e => updatePhase(i, 'description', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Description" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Status</Label>
+                          <Select value={p.status} onValueChange={v => updatePhase(i, 'status', v)}>
+                            <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent className="bg-gray-900 border-gray-700">{PHASE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="md:col-span-2"><Input type="date" value={p.start_date || ''} onChange={e => updatePhase(i, 'start_date', e.target.value)} className="bg-black border-gray-700 text-sm min-w-[145px]" /></div>
-                      <div className="md:col-span-2"><Input type="date" value={p.end_date || ''} onChange={e => updatePhase(i, 'end_date', e.target.value)} className="bg-black border-gray-700 text-sm min-w-[145px]" /></div>
-                      <div className="md:col-span-2"><Button type="button" size="sm" variant="outline" onClick={() => removePhase(i)} className="border-red-800 text-red-500 w-full"><X className="w-3 h-3" /></Button></div>
+                      {/* Row 2: Start Date, End Date, Remove */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Start Date</Label>
+                          <Input type="date" value={p.start_date || ''} onChange={e => updatePhase(i, 'start_date', e.target.value)} className="bg-black border-gray-700 text-sm w-full" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">End Date</Label>
+                          <Input type="date" value={p.end_date || ''} onChange={e => updatePhase(i, 'end_date', e.target.value)} className="bg-black border-gray-700 text-sm w-full" />
+                        </div>
+                        <div className="flex items-end">
+                          <Button type="button" size="sm" variant="outline" onClick={() => removePhase(i)} className="border-red-800 text-red-500 w-full mt-auto">
+                            <X className="w-3 h-3 mr-1" />Remove Phase
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                   {form.phases.length === 0 && <p className="text-xs text-gray-600">No phases defined</p>}
@@ -193,49 +248,110 @@ const CampaignManager = () => {
                     <Button type="button" size="sm" onClick={addObjective} className="bg-gray-800 hover:bg-gray-700"><Plus className="w-3 h-3 mr-1" />Add Objective</Button>
                   </div>
                   {form.objectives.map((o, i) => (
-                    <div key={i} className="bg-black/30 rounded p-3 mb-2">
-                      <div className="grid grid-cols-12 gap-2 items-end">
-                        <div className="col-span-4"><Input value={o.name} onChange={e => updateObj(i, 'name', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Objective name" /></div>
-                        <div className="col-span-2"><Input value={o.grid_ref} onChange={e => updateObj(i, 'grid_ref', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Grid ref" /></div>
-                        <div className="col-span-2">
-                          <Select value={o.status} onValueChange={v => updateObj(i, 'status', v)}>
+                    <div key={i} className="bg-black/30 rounded p-3 mb-2 space-y-2">
+                      {/* Row 1: Name, Grid Ref Type, Status, Priority, Remove */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Objective Name</Label>
+                          <Input value={o.name} onChange={e => updateObj(i, 'name', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Objective name" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] text-gray-500 mb-0.5 block">Status</Label>
+                            <Select value={o.status} onValueChange={v => updateObj(i, 'status', v)}>
+                              <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent className="bg-gray-900 border-gray-700">{OBJ_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-gray-500 mb-0.5 block">Priority</Label>
+                            <Select value={o.priority} onValueChange={v => updateObj(i, 'priority', v)}>
+                              <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent className="bg-gray-900 border-gray-700">{PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Row 2: Grid Ref Type + Grid Ref */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Coordinate Type</Label>
+                          <Select value={o.grid_ref_type || 'none'} onValueChange={v => updateObj(i, 'grid_ref_type', v)}>
                             <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent className="bg-gray-900 border-gray-700">{OBJ_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                            <SelectContent className="bg-gray-900 border-gray-700">
+                              {GRID_REF_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                            </SelectContent>
                           </Select>
                         </div>
-                        <div className="col-span-2">
-                          <Select value={o.priority} onValueChange={v => updateObj(i, 'priority', v)}>
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Grid Reference</Label>
+                          <Input
+                            value={o.grid_ref}
+                            onChange={e => updateObj(i, 'grid_ref', e.target.value)}
+                            className="bg-black border-gray-700 text-sm"
+                            placeholder={getGridRefPlaceholder(o.grid_ref_type)}
+                            disabled={!o.grid_ref_type || o.grid_ref_type === 'none'}
+                          />
+                          {o.grid_ref_type && o.grid_ref_type !== 'none' && GRID_REF_HINTS[o.grid_ref_type] && (
+                            <p className="text-[10px] text-gray-600 mt-0.5">{GRID_REF_HINTS[o.grid_ref_type]}</p>
+                          )}
+                        </div>
+                      </div>
+                      {/* Row 3: Assigned To, Description */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Assigned To</Label>
+                          <Input value={o.assigned_to} onChange={e => updateObj(i, 'assigned_to', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Unit / element" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Description</Label>
+                          <Input value={o.description} onChange={e => updateObj(i, 'description', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Description" />
+                        </div>
+                      </div>
+                      {/* Row 4: Region Label, Linked Op */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Region Label</Label>
+                          <Input value={o.region_label || ''} onChange={e => updateObj(i, 'region_label', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Region label (optional)" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Linked Operation ID</Label>
+                          <Input value={o.linked_operation_id || ''} onChange={e => updateObj(i, 'linked_operation_id', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Linked operation ID (optional)" />
+                        </div>
+                      </div>
+                      {/* Row 5: Lat, Lng, Severity */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Latitude</Label>
+                          <Input value={o.lat ?? ''} onChange={e => updateObj(i, 'lat', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Latitude" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Longitude</Label>
+                          <Input value={o.lng ?? ''} onChange={e => updateObj(i, 'lng', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Longitude" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-gray-500 mb-0.5 block">Severity</Label>
+                          <Select value={o.severity || 'medium'} onValueChange={v => updateObj(i, 'severity', v)}>
                             <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent className="bg-gray-900 border-gray-700">{PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                            <SelectContent className="bg-gray-900 border-gray-700">
+                              <SelectItem value="low">low</SelectItem>
+                              <SelectItem value="medium">medium</SelectItem>
+                              <SelectItem value="high">high</SelectItem>
+                              <SelectItem value="critical">critical</SelectItem>
+                            </SelectContent>
                           </Select>
                         </div>
-                        <div className="col-span-2"><Button type="button" size="sm" variant="outline" onClick={() => removeObj(i)} className="border-red-800 text-red-500 w-full"><X className="w-3 h-3" /></Button></div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <Input value={o.assigned_to} onChange={e => updateObj(i, 'assigned_to', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Assigned to (unit/element)" />
-                        <Input value={o.description} onChange={e => updateObj(i, 'description', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Description" />
+                      {/* Row 6: Public recruiting + Remove */}
+                      <div className="flex items-center justify-between pt-1">
+                        <label className="flex items-center gap-2 text-xs text-gray-400">
+                          <input type="checkbox" checked={!!o.is_public_recruiting} onChange={e => updateObj(i, 'is_public_recruiting', e.target.checked)} />
+                          Public recruiting / world map marker
+                        </label>
+                        <Button type="button" size="sm" variant="outline" onClick={() => removeObj(i)} className="border-red-800 text-red-500 hover:bg-red-950/30">
+                          <X className="w-3 h-3 mr-1" />Remove
+                        </Button>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <Input value={o.region_label || ''} onChange={e => updateObj(i, 'region_label', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Region label (optional)" />
-                        <Input value={o.linked_operation_id || ''} onChange={e => updateObj(i, 'linked_operation_id', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Linked operation ID (optional)" />
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 mt-2">
-                        <Input value={o.lat ?? ''} onChange={e => updateObj(i, 'lat', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Latitude" />
-                        <Input value={o.lng ?? ''} onChange={e => updateObj(i, 'lng', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Longitude" />
-                        <Select value={o.severity || 'medium'} onValueChange={v => updateObj(i, 'severity', v)}>
-                          <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-gray-900 border-gray-700">
-                            <SelectItem value="low">low</SelectItem>
-                            <SelectItem value="medium">medium</SelectItem>
-                            <SelectItem value="high">high</SelectItem>
-                            <SelectItem value="critical">critical</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <label className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                        <input type="checkbox" checked={!!o.is_public_recruiting} onChange={e => updateObj(i, 'is_public_recruiting', e.target.checked)} />
-                        Public recruiting/world map marker
-                      </label>
                     </div>
                   ))}
                   {form.objectives.length === 0 && <p className="text-xs text-gray-600">No objectives defined</p>}
@@ -279,15 +395,14 @@ const CampaignManager = () => {
                     <Label className="text-xs">Map Description</Label>
                     <Input value={form.map_description} onChange={e => setForm({ ...form, map_description: e.target.value })} className="bg-black border-gray-700 text-sm" placeholder="Brief description shown on map popup" />
                   </div>
-                  {/* Mini map preview */}
-                  <ThreatMap
-                    height="240px"
-                    markers={
-                      form.lat !== '' && form.lng !== '' && !isNaN(Number(form.lat)) && !isNaN(Number(form.lng))
-                        ? [{ id: '__campaign_preview__', lat: Number(form.lat), lng: Number(form.lng), severity: form.threat_level || 'medium', name: form.name || 'Campaign marker' }]
-                        : []
-                    }
+                  {/* Mini map preview – Mapbox (Global Threat Map style) */}
+                  <CampaignLocationPicker
+                    lat={form.lat}
+                    lng={form.lng}
+                    severity={form.threat_level || 'medium'}
+                    label={form.name || 'Campaign marker'}
                     onMapClick={({ lat, lng }) => setForm(f => ({ ...f, lat: lat.toFixed(5), lng: lng.toFixed(5) }))}
+                    height="240px"
                   />
                   {form.lat !== '' && form.lng !== '' && (
                     <p className="text-xs text-tropic-gold/70 flex items-center gap-2">
@@ -379,7 +494,14 @@ const CampaignManager = () => {
                                   <div className={`w-2 h-2 rounded-full ${o.status === 'in_progress' ? 'bg-tropic-gold animate-pulse' : o.status === 'complete' ? 'bg-green-500' : o.status === 'failed' ? 'bg-tropic-red' : 'bg-gray-600'}`}></div>
                                   <Badge variant="outline" className={`text-[9px] ${o.priority === 'primary' ? 'border-tropic-red text-tropic-red' : o.priority === 'secondary' ? 'border-tropic-gold text-tropic-gold' : 'border-gray-600 text-gray-400'}`}>{o.priority}</Badge>
                                   <span className="font-medium">{o.name}</span>
-                                  {o.grid_ref && <span className="text-[10px] text-gray-600"><MapPin className="inline w-2.5 h-2.5 mr-0.5" />{o.grid_ref}</span>}
+                                  {o.grid_ref && (
+                                    <span className="text-[10px] text-gray-600 flex items-center gap-0.5">
+                                      <MapPin className="inline w-2.5 h-2.5" />
+                                      {o.grid_ref_type && o.grid_ref_type !== 'none'
+                                        ? `${(GRID_REF_TYPES.find(t => t.value === o.grid_ref_type) || {}).label || o.grid_ref_type}: `
+                                        : ''}{o.grid_ref}
+                                    </span>
+                                  )}
                                   {o.assigned_to && <span className="text-[10px] text-green-600">{o.assigned_to}</span>}
                                   {o.region_label && <span className="text-[10px] text-blue-400">{o.region_label}</span>}
                                   {(o.lat !== undefined && o.lat !== null && o.lng !== undefined && o.lng !== null) && <span className="text-[10px] text-gray-500">{o.lat}, {o.lng}</span>}

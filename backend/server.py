@@ -1436,21 +1436,46 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
     unique_name = f"{uuid.uuid4().hex}{ext}"
     file_path = UPLOAD_DIR / unique_name
     max_size = 10 * 1024 * 1024
-    written = 0
 
+    # Read all bytes first so we can write to both disk and MongoDB atomically.
+    chunks = []
+    written = 0
     try:
-        with open(file_path, "wb") as buffer:
-            while chunk := file.file.read(1024 * 1024):
-                written += len(chunk)
-                if written > max_size:
-                    raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
-                buffer.write(chunk)
+        while chunk := file.file.read(1024 * 1024):
+            written += len(chunk)
+            if written > max_size:
+                raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+            chunks.append(chunk)
     except HTTPException:
-        if file_path.exists():
-            file_path.unlink()
         raise
     finally:
         await file.close()
+
+    file_bytes = b"".join(chunks)
+
+    # Write to the local uploads directory (served via StaticFiles for speed).
+    try:
+        with open(file_path, "wb") as buf:
+            buf.write(file_bytes)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {exc}")
+
+    # Persist to MongoDB so the file can be restored after a container restart.
+    try:
+        await db.uploads.update_one(
+            {"filename": unique_name},
+            {"$set": {
+                "filename": unique_name,
+                "data": file_bytes,
+                "content_type": file.content_type or "application/octet-stream",
+                "original_name": file.filename,
+                "uploaded_at": datetime.now(timezone.utc).isoformat(),
+            }},
+            upsert=True,
+        )
+    except Exception as exc:
+        # Non-fatal: file is already on disk; log and continue.
+        logger.warning(f"Could not persist upload to MongoDB (file still served from disk): {exc}")
 
     file_url = f"/api/uploads/{unique_name}"
     return {"url": file_url, "filename": unique_name}
@@ -2296,6 +2321,9 @@ class CampaignObjective(BaseModel):
     description: str = ""
     status: str = "pending"  # pending, in_progress, complete, failed
     grid_ref: str = ""
+    # Coordinate system used for grid_ref.
+    # Supported: none | wgs84 | mgrs | utm | gars | bng | lv95 | lv03 | hex
+    grid_ref_type: str = "none"
     assigned_to: str = ""
     priority: str = "secondary"  # primary, secondary, tertiary
     notes: str = ""
@@ -2927,10 +2955,18 @@ async def backfill_map_events():
 
 VALYU_API_KEY = os.environ.get("VALYU_API_KEY", "")
 VALYU_BASE_URL = "https://api.valyu.ai/v1"
-VALYU_CACHE_TTL_MINUTES = int(os.environ.get("VALYU_CACHE_TTL_MINUTES", 30))
-VALYU_EVENT_REFRESH_MINUTES = int(os.environ.get("VALYU_EVENT_REFRESH_MINUTES", 10))
+# Cache TTL: 6 h default so we never hammer the API between restarts.
+VALYU_CACHE_TTL_MINUTES = int(os.environ.get("VALYU_CACHE_TTL_MINUTES", 360))
+# Background refresh: 6 h default – checks DB first, only calls API when needed.
+VALYU_EVENT_REFRESH_MINUTES = int(os.environ.get("VALYU_EVENT_REFRESH_MINUTES", 360))
 VALYU_RATE_LIMIT_SECONDS = int(os.environ.get("VALYU_RATE_LIMIT_SECONDS", 30))
 VALYU_COUNTRY_CACHE_HOURS = int(os.environ.get("VALYU_COUNTRY_CACHE_HOURS", 24))
+# Minimum number of recently-ingested Valyu events before we skip a refresh call.
+VALYU_MIN_EVENTS_THRESHOLD = int(os.environ.get("VALYU_MIN_EVENTS_THRESHOLD", 20))
+# How many days to keep events before pruning them from external_events.
+EVENT_PRUNE_DAYS = int(os.environ.get("EVENT_PRUNE_DAYS", 15))
+# OpenAI supplemental ingestion: at most once every N hours to keep costs low.
+OPENAI_INGESTION_INTERVAL_HOURS = int(os.environ.get("OPENAI_INGESTION_INTERVAL_HOURS", 24))
 
 # In-memory rate limiting and deduplication state
 _valyu_last_call_time: float = 0.0
@@ -3730,57 +3766,268 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Background Valyu ingestion task
+# Background ingestion task handle
 _background_ingestion_task = None
 
-async def _valyu_background_ingestion():
-    """Periodically fetch Valyu threat events and store them normalized in MongoDB."""
+# Queries used when OpenAI supplemental ingestion runs.
+# Kept intentionally short to minimize token usage.
+_OPENAI_THREAT_QUERIES = [
+    "Summarize the top 5 active global military conflicts and security threats right now",
+    "What are the most urgent geopolitical crises and diplomatic tensions worldwide today",
+    "List recent significant terrorist attacks or extremist activity with affected regions",
+]
+
+# Max number of Valyu THREAT_QUERIES sent per background refresh cycle.
+# Keeping this below the full THREAT_QUERIES list limits per-cycle API cost.
+MAX_VALYU_QUERIES_PER_CYCLE = int(os.environ.get("MAX_VALYU_QUERIES_PER_CYCLE", 8))
+
+
+async def _prune_old_events():
+    """Delete external_events documents older than EVENT_PRUNE_DAYS days."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=EVENT_PRUNE_DAYS)
+    result = await db.external_events.delete_many({"ingested_at": {"$lt": cutoff.isoformat()}})
+    if result.deleted_count:
+        logging.getLogger("valyu").info(
+            f"Pruned {result.deleted_count} events older than {EVENT_PRUNE_DAYS} days"
+        )
+
+
+def _ra_result_to_external_event_format(result: dict) -> list:
+    """
+    Convert a research-agent result dict into a list of external_events-format
+    dicts (same schema as process_search_results output) so OpenAI-sourced events
+    appear on the Global Threat Map alongside Valyu events.
+    """
+    threat_map = {"LOW": "low", "MEDIUM": "medium", "HIGH": "high", "CRITICAL": "critical"}
+    threat_level = threat_map.get(
+        str(result.get("threat_level", "medium")).upper(), "medium"
+    )
+    # Truncate to 500 chars – same limit used for event summaries throughout
+    # process_search_results so display components don't receive oversized text.
+    summary = (result.get("summary") or "")[:500]
+    regions = result.get("regions") or []
+    events = []
+    for i, coord in enumerate(result.get("coordinates") or []):
+        lat = coord.get("lat")
+        lng = coord.get("lng")
+        if lat is None or lng is None:
+            continue
+        region_label = (
+            regions[i] if i < len(regions) else (regions[0] if regions else "Unknown Region")
+        )
+        country, _, _ = extract_country(region_label)
+        place_name = region_label or country or "Unknown"
+        title = f"{region_label[:60]} – Intelligence Assessment"
+        events.append({
+            "id": f"evt_{uuid.uuid4().hex[:12]}",
+            "title": title,
+            "summary": summary or title,
+            "category": classify_category(summary),
+            "threatLevel": threat_level,
+            "location": {
+                "latitude": float(lat),
+                "longitude": float(lng),
+                "placeName": place_name,
+                "country": country or place_name,
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "openai",
+            "sourceUrl": "",
+            "keywords": extract_keywords_from_text(summary),
+            "rawContent": (result.get("full_report") or summary)[:1000],
+        })
+    return events
+
+
+async def _run_valyu_ingestion():
+    """
+    Fetch Valyu threat events and persist them in external_events.
+
+    Skips the API call entirely when the DB already contains enough recently-
+    ingested Valyu events (VALYU_MIN_EVENTS_THRESHOLD within the last refresh
+    window), so we never waste quota on data we already have.
+    """
     vlog = logging.getLogger("valyu")
-    vlog.info("Background ingestion service started")
-    while True:
+    if not VALYU_API_KEY:
+        return
+
+    # Only call the API when we're running low on recent Valyu events.
+    cutoff_dt = datetime.now(timezone.utc) - timedelta(minutes=VALYU_EVENT_REFRESH_MINUTES)
+    recent_count = await db.external_events.count_documents(
+        {"ingested_at": {"$gte": cutoff_dt.isoformat()}, "provider": "valyu"}
+    )
+    if recent_count >= VALYU_MIN_EVENTS_THRESHOLD:
+        vlog.info(
+            f"Valyu ingestion: {recent_count} recent events present, skipping API call"
+        )
+        return
+
+    vlog.info("Valyu ingestion: fetching fresh events…")
+    start_date = get_start_date()
+    tasks = [
+        valyu_search(q, max_results=10, start_date=start_date)
+        for q in THREAT_QUERIES[:MAX_VALYU_QUERIES_PER_CYCLE]
+    ]
+    results_arrays = await asyncio.gather(*tasks, return_exceptions=True)
+
+    all_results = []
+    for r in results_arrays:
+        if isinstance(r, list):
+            all_results.extend(r)
+
+    events = process_search_results(all_results)
+
+    inserted = 0
+    for evt in events:
+        content_hash = _event_content_hash(evt)
+        evt["content_hash"] = content_hash
+        evt["ingested_at"] = datetime.now(timezone.utc).isoformat()
+        evt["provider"] = "valyu"
+        op = await db.external_events.update_one(
+            {"content_hash": content_hash},
+            {"$setOnInsert": evt},
+            upsert=True,
+        )
+        if op.upserted_id:
+            inserted += 1
+
+    if events:
+        await _set_cached_response("threat_events_global", {
+            "events": events[:200],
+            "count": min(len(events), 200),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+    _mark_valyu_called()
+    vlog.info(
+        f"Valyu ingestion complete: {inserted} new events stored, {len(events)} total processed"
+    )
+
+
+async def _run_openai_ingestion():
+    """
+    Run the OpenAI research agent to supplement threat events with AI intelligence.
+
+    Hard-capped to once every OPENAI_INGESTION_INTERVAL_HOURS hours so the
+    OpenAI API is called as infrequently as possible.  Results are stored in
+    external_events with provider='openai' and will persist across restarts.
+    """
+    vlog = logging.getLogger("valyu")
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
+    if not openai_key:
+        return
+
+    # Check whether we ran within the interval – use the Valyu cache as a TTL store.
+    ttl_minutes = OPENAI_INGESTION_INTERVAL_HOURS * 60
+    if await _get_cached_response("openai_ingestion_last_run", ttl_minutes):
+        vlog.info("OpenAI ingestion: within rate window, skipping")
+        return
+
+    vlog.info("OpenAI ingestion: starting supplemental threat intelligence pull…")
+    try:
+        run_query, _, _, _ = _get_research_agent()
+    except (ImportError, RuntimeError) as exc:
+        vlog.warning(f"OpenAI ingestion unavailable: {exc}")
+        return
+
+    inserted = 0
+    for query in _OPENAI_THREAT_QUERIES:
         try:
-            await asyncio.sleep(VALYU_EVENT_REFRESH_MINUTES * 60)
-            if not VALYU_API_KEY:
-                continue
-
-            vlog.info("Background refresh: fetching Valyu events...")
-            start_date = get_start_date()
-            tasks = [valyu_search(q, max_results=10, start_date=start_date) for q in THREAT_QUERIES[:10]]
-            results_arrays = await asyncio.gather(*tasks, return_exceptions=True)
-
-            all_results = []
-            for r in results_arrays:
-                if isinstance(r, list):
-                    all_results.extend(r)
-
-            events = process_search_results(all_results)
-
-            # Store normalized events in external_events
-            inserted = 0
-            for evt in events:
+            result = await run_query(query)
+            new_events = _ra_result_to_external_event_format(result)
+            for evt in new_events:
                 content_hash = _event_content_hash(evt)
                 evt["content_hash"] = content_hash
                 evt["ingested_at"] = datetime.now(timezone.utc).isoformat()
-                evt["provider"] = "valyu"
-                result = await db.external_events.update_one(
+                evt["provider"] = "openai"
+                op = await db.external_events.update_one(
                     {"content_hash": content_hash},
                     {"$setOnInsert": evt},
                     upsert=True,
                 )
-                if result.upserted_id:
+                if op.upserted_id:
                     inserted += 1
+        except Exception as exc:
+            vlog.error(f"OpenAI ingestion error for query '{query[:60]}': {exc}")
 
-            # Update the cache as well
-            await _set_cached_response("threat_events_global", {
-                "events": events[:200],
-                "count": min(len(events), 200),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-            _mark_valyu_called()
+    # Mark the last-run timestamp so we don't call again until the interval expires.
+    await _set_cached_response(
+        "openai_ingestion_last_run",
+        {"ran_at": datetime.now(timezone.utc).isoformat()},
+    )
+    vlog.info(f"OpenAI ingestion complete: {inserted} new events stored")
 
-            vlog.info(f"Background refresh completed: {inserted} new events stored, {len(events)} total processed")
-        except Exception as e:
-            vlog.error(f"Background ingestion error: {e}")
+
+async def _restore_uploads_from_mongodb():
+    """
+    Recreate any uploaded files that are missing from the local filesystem by
+    reading their binary data from the MongoDB `uploads` collection.
+
+    This makes image/media uploads survive container restarts, because the
+    bytes are durably stored in MongoDB even when the local uploads/ directory
+    is wiped on restart.
+    """
+    vlog = logging.getLogger(__name__)
+    try:
+        restored = 0
+        async for doc in db.uploads.find({}, {"filename": 1, "data": 1}):
+            filename = doc.get("filename")
+            data = doc.get("data")
+            if not filename or not data:
+                continue
+            file_path = UPLOAD_DIR / filename
+            if not file_path.exists():
+                try:
+                    with open(file_path, "wb") as fh:
+                        # data is stored as BSON Binary (subclass of bytes) – write directly.
+                        fh.write(data)
+                    restored += 1
+                except Exception as exc:
+                    vlog.warning(f"Could not restore upload '{filename}': {exc}")
+        if restored:
+            vlog.info(f"Restored {restored} uploaded file(s) from MongoDB")
+    except Exception as exc:
+        vlog.error(f"Upload restore error: {exc}")
+
+
+async def _valyu_background_ingestion():
+    """
+    Periodically fetch threat events from Valyu and OpenAI, storing them
+    persistently in MongoDB so they survive environment restarts.
+
+    Design principles (to keep API costs low):
+      * The very first iteration runs immediately with NO sleep, so the map
+        is populated as soon as the server starts.
+      * _run_valyu_ingestion skips the Valyu API when the DB already has
+        VALYU_MIN_EVENTS_THRESHOLD recent events.
+      * _run_openai_ingestion fires at most once per OPENAI_INGESTION_INTERVAL_HOURS.
+      * Events older than EVENT_PRUNE_DAYS days are pruned each cycle.
+    """
+    vlog = logging.getLogger("valyu")
+    vlog.info("Background ingestion service started")
+    while True:
+        try:
+            # Remove stale events first
+            await _prune_old_events()
+
+            # Valyu ingestion (self-throttles when recent data already exists)
+            if VALYU_API_KEY:
+                await _run_valyu_ingestion()
+
+            # OpenAI supplemental ingestion (hard rate-limited to once per day)
+            if os.environ.get("OPENAI_API_KEY", ""):
+                await _run_openai_ingestion()
+
+            # Sleep at the END so the first iteration runs immediately on startup.
+            await asyncio.sleep(VALYU_EVENT_REFRESH_MINUTES * 60)
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            vlog.error(f"Background ingestion error: {exc}")
+            # Brief pause before retrying after an unexpected error.
+            try:
+                await asyncio.sleep(60)
+            except asyncio.CancelledError:
+                break
 
 
 @app.on_event("startup")
@@ -3802,10 +4049,24 @@ async def startup_event():
         await db.map_events.create_index("id", unique=True)
         await db.map_events.create_index("type")
         await db.map_events.create_index("related_entity_id")
+        # Index for upload persistence
+        await db.uploads.create_index("filename", unique=True)
     except Exception as e:
         vlog.warning(f"Index creation note: {e}")
 
-    # Start background ingestion
+    # Restore any uploaded files that were lost on container restart
+    try:
+        await _restore_uploads_from_mongodb()
+    except Exception as e:
+        vlog.error(f"Upload restore error: {e}")
+
+    # Prune external_events older than EVENT_PRUNE_DAYS on every startup
+    try:
+        await _prune_old_events()
+    except Exception as e:
+        vlog.error(f"Event pruning error: {e}")
+
+    # Start background ingestion (first iteration runs immediately, no sleep)
     _background_ingestion_task = asyncio.create_task(_valyu_background_ingestion())
     vlog.info("Startup complete – background ingestion scheduled")
 
