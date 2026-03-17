@@ -2920,32 +2920,37 @@ async def remove_map_event(entity_type: str, entity_id: str):
 
 async def backfill_map_events():
     """Backfill map_events from existing operations, intel, campaigns on startup."""
-    count = await db.map_events.count_documents({})
-    if count > 0:
-        return  # Already backfilled
-
     valyu_logger = logging.getLogger("valyu")
-    valyu_logger.info("Backfilling map_events from existing entities...")
 
-    ops = await db.operations.find({}, {"_id": 0}).to_list(2000)
-    for op in ops:
-        await upsert_map_event("operation", op, op.get("id", ""))
+    # Check each entity type independently so a partial backfill doesn't skip campaigns
+    existing_types = set()
+    async for doc in db.map_events.find({}, {"type": 1, "_id": 0}):
+        existing_types.add(doc.get("type"))
 
-    intels = await db.intel_briefings.find({}, {"_id": 0}).to_list(1000)
-    for intel in intels:
-        await upsert_map_event("intel", intel, intel.get("id", ""))
+    valyu_logger.info(f"Backfilling map_events – existing types: {existing_types}")
 
-    campaigns = await db.campaigns.find({}, {"_id": 0}).to_list(200)
-    for camp in campaigns:
-        camp_lat = camp.get("lat") or camp.get("latitude")
-        camp_lng = camp.get("lng") or camp.get("longitude")
-        if camp_lat and camp_lng:
-            await upsert_map_event("campaign", camp, camp.get("id", ""))
-        # Also create events for campaign objectives
-        for obj in camp.get("objectives", []):
-            if obj.get("lat") and obj.get("lng"):
-                obj_data = {**obj, "name": obj.get("name", "Objective"), "campaign_id": camp.get("id", "")}
-                await upsert_map_event("campaign", obj_data, obj.get("id", ""))
+    if "operation" not in existing_types:
+        ops = await db.operations.find({}, {"_id": 0}).to_list(2000)
+        for op in ops:
+            await upsert_map_event("operation", op, op.get("id", ""))
+
+    if "intel" not in existing_types:
+        intels = await db.intel_briefings.find({}, {"_id": 0}).to_list(1000)
+        for intel in intels:
+            await upsert_map_event("intel", intel, intel.get("id", ""))
+
+    if "campaign" not in existing_types:
+        campaigns = await db.campaigns.find({}, {"_id": 0}).to_list(200)
+        for camp in campaigns:
+            camp_lat = camp.get("lat") or camp.get("latitude")
+            camp_lng = camp.get("lng") or camp.get("longitude")
+            if camp_lat and camp_lng:
+                await upsert_map_event("campaign", camp, camp.get("id", ""))
+            # Also create events for campaign objectives
+            for obj in camp.get("objectives", []):
+                if obj.get("lat") and obj.get("lng"):
+                    obj_data = {**obj, "name": obj.get("name", "Objective"), "campaign_id": camp.get("id", "")}
+                    await upsert_map_event("campaign", obj_data, obj.get("id", ""))
 
     valyu_logger.info("Map events backfill complete")
 

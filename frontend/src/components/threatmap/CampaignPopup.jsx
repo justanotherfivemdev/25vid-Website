@@ -1,0 +1,64 @@
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
+import { Flag, ExternalLink } from 'lucide-react';
+
+const THREAT_LEVEL_COLORS = {
+  low: 'bg-green-700/20 text-green-400',
+  medium: 'bg-tropic-gold/20 text-tropic-gold',
+  high: 'bg-orange-700/20 text-orange-400',
+  critical: 'bg-tropic-red/20 text-tropic-red',
+};
+
+export default function CampaignPopup({ campaign }) {
+  const threatColor = THREAT_LEVEL_COLORS[campaign.threat_level] || THREAT_LEVEL_COLORS.medium;
+
+  return (
+    <div className="min-w-[220px] max-w-[300px] p-3">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Flag className="h-3.5 w-3.5 shrink-0" style={{ color: '#556B2F' }} />
+          <h3 className="text-sm font-semibold text-tropic-gold line-clamp-2">
+            {campaign.title}
+          </h3>
+        </div>
+        {campaign.threat_level && (
+          <Badge
+            variant="outline"
+            className={`shrink-0 text-[10px] uppercase tracking-wider border-none ${threatColor}`}
+          >
+            {campaign.threat_level}
+          </Badge>
+        )}
+      </div>
+
+      {campaign.description && (
+        <p className="text-xs text-gray-400 mb-2 line-clamp-3">{campaign.description}</p>
+      )}
+
+      <div className="flex flex-col gap-1 text-xs text-gray-400">
+        {campaign.theater && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-500">Theater:</span>
+            <span>{campaign.theater}</span>
+          </div>
+        )}
+        {campaign.status && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-500">Status:</span>
+            <span className="capitalize">{campaign.status}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 pt-2 border-t border-gray-700">
+        <Link
+          to="/hub/campaigns"
+          className="inline-flex items-center gap-1 text-xs text-tropic-gold hover:text-tropic-gold-light transition-colors"
+        >
+          View Campaigns <ExternalLink className="h-3 w-3" />
+        </Link>
+      </div>
+    </div>
+  );
+}
