@@ -2321,6 +2321,9 @@ class CampaignObjective(BaseModel):
     description: str = ""
     status: str = "pending"  # pending, in_progress, complete, failed
     grid_ref: str = ""
+    # Coordinate system used for grid_ref.
+    # Supported: none | wgs84 | mgrs | utm | gars | bng | lv95 | lv03 | hex
+    grid_ref_type: str = "none"
     assigned_to: str = ""
     priority: str = "secondary"  # primary, secondary, tertiary
     notes: str = ""
