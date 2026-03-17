@@ -27,7 +27,7 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/users', icon: Users, label: 'Members' },
     { path: '/admin/recruitment', icon: UserPlus, label: 'Recruitment' },
     { path: '/admin/intel', icon: Radio, label: 'Intel & Briefings' },
-    { path: '/admin/campaigns', icon: MapPin, label: 'Conflict Map' },
+    { path: '/admin/campaigns', icon: MapPin, label: 'Campaigns' },
     { path: '/admin/unit-config', icon: Building2, label: 'Unit Config' }
   ];
   
@@ -50,9 +50,9 @@ const AdminLayout = ({ children }) => {
               </Button>
             </Link>
             <Link to="/hub/campaign">
-              <Button variant="outline" size="sm" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10" data-testid="admin-conflict-map-btn">
+              <Button variant="outline" size="sm" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10" data-testid="admin-campaigns-btn">
                 <MapPin className="w-4 h-4 mr-2" />
-                Conflict Map
+                Campaigns
               </Button>
             </Link>
             <Link to="/">

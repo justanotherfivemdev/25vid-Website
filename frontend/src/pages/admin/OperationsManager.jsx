@@ -457,7 +457,7 @@ const OperationsManager = () => {
 
                 <div className="border border-gray-800 rounded-lg p-3 bg-black/30 space-y-2">
                   <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <Label className="text-tropic-gold">Conflict Map Placement Preview</Label>
+                    <Label className="text-tropic-gold">Campaign Map Placement Preview</Label>
                     <span className="text-[11px] text-gray-500">Click map to set coordinates or enter lat/lng manually.</span>
                   </div>
                   <ThreatMap

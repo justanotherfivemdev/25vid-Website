@@ -90,7 +90,7 @@ const MemberHub = () => {
             <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
             <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
             <Link to="/hub/gallery"><Button size="sm" variant="outline" className="border-gray-700"><Image className="w-4 h-4 mr-1" />Gallery</Button></Link>
-            <Link to="/hub/campaign"><Button size="sm" variant="outline" className="border-gray-700"><MapPin className="w-4 h-4 mr-1" />Campaigns</Button></Link>
+            <Link to="/hub/threat-map"><Button size="sm" variant="outline" className="border-gray-700"><Globe className="w-4 h-4 mr-1" />Global Threat Map</Button></Link>
             {user?.role === 'admin' && (
               <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
             )}
@@ -267,7 +267,7 @@ const MemberHub = () => {
           )}
 
           {/* Quick nav - 25th ID colors */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <Link to="/hub/discussions" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-discussions">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Discussions</span>
             </Link>
@@ -282,9 +282,6 @@ const MemberHub = () => {
             </Link>
             <Link to="/hub/campaign" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-gold/50 transition-colors text-center" data-testid="hub-nav-campaign">
               <MapPin className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Campaigns</span>
-            </Link>
-            <Link to="/hub/threat-map" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-gold/50 transition-colors text-center" data-testid="hub-nav-threat-map">
-              <Globe className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Global Threats</span>
             </Link>
             <Link to="/hub/gallery" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-gallery">
               <Image className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Gallery</span>
