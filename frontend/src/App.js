@@ -27,6 +27,7 @@ import MemberProfile from '@/pages/member/MemberProfile';
 import EditProfile from '@/pages/member/EditProfile';
 import IntelBoard from '@/pages/member/IntelBoard';
 import CampaignMap from '@/pages/member/CampaignMap';
+import ThreatMapPage from '@/pages/member/ThreatMapPage';
 import GalleryHub from '@/pages/member/GalleryHub';
 import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
 import HistoryManager from '@/pages/admin/HistoryManager';
@@ -1108,6 +1109,7 @@ function App() {
         <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
         <Route path="/hub/intel" element={<ProtectedRoute><IntelBoard /></ProtectedRoute>} />
         <Route path="/hub/campaign" element={<ProtectedRoute><CampaignMap /></ProtectedRoute>} />
+        <Route path="/hub/threat-map" element={<ProtectedRoute><ThreatMapPage /></ProtectedRoute>} />
         <Route path="/hub/gallery" element={<ProtectedRoute><GalleryHub /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />

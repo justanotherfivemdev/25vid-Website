@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image, Globe } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -282,6 +282,9 @@ const MemberHub = () => {
             </Link>
             <Link to="/hub/campaign" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-campaign">
               <MapPin className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Conflict Map</span>
+            </Link>
+            <Link to="/hub/threat-map" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-blue-500/50 transition-colors text-center" data-testid="hub-nav-threat-map">
+              <Globe className="w-8 h-8 mx-auto mb-2 text-blue-400" /><span className="font-medium text-sm">Global Threats</span>
             </Link>
             <Link to="/hub/gallery" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-gallery">
               <Image className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Gallery</span>
