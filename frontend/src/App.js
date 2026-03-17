@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Users, Shield, Megaphone, Clock, ChevronRight } from 'lucide-react';
+import { Calendar, Users, Shield, Megaphone, Clock, ChevronRight, Globe } from 'lucide-react';
 import { defaultSiteContent } from '@/config/siteContent';
 import { applyBrowserMetadata } from '@/utils/browserMetadata';
 
@@ -754,20 +754,20 @@ const JoinUsSection = ({ content }) => {
               teamwork, and the Tropic Lightning tradition. Create an account to access the Member Hub, view upcoming
               operations, and begin your journey with the unit.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Link to="/join">
-                <Button variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10 px-10 py-5 text-lg tracking-wider w-full sm:w-auto" data-testid="join-threat-map-button">
-                  VIEW THREAT MAP
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center items-stretch pt-4">
+              <Link to="/join" className="w-full sm:w-auto">
+                <Button variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10 px-8 py-5 text-base sm:text-lg tracking-wider w-full" data-testid="join-threat-map-button">
+                  <Globe className="mr-2 w-5 h-5 flex-shrink-0"/>GLOBAL THREAT MAP
                 </Button>
               </Link>
-              <Link to="/login">
-                <Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button tracking-wider w-full sm:w-auto" data-testid="join-register-button">
-                  <Shield className="mr-2 w-5 h-5"/>CREATE ACCOUNT
+              <Link to="/login" className="w-full sm:w-auto">
+                <Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-8 py-5 text-base sm:text-lg tactical-button tracking-wider w-full" data-testid="join-register-button">
+                  <Shield className="mr-2 w-5 h-5 flex-shrink-0"/>CREATE ACCOUNT
                 </Button>
               </Link>
               {content.footer?.discord && (
-                <a href={content.footer.discord} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10 px-10 py-5 text-lg tracking-wider w-full sm:w-auto" data-testid="join-discord-button">
+                <a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                  <Button variant="outline" className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10 px-8 py-5 text-base sm:text-lg tracking-wider w-full" data-testid="join-discord-button">
                     JOIN OUR DISCORD
                   </Button>
                 </a>
