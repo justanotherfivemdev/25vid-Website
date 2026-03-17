@@ -106,7 +106,7 @@ const AnnouncementsManager = () => {
 
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-amber-700 hover:bg-amber-800" data-testid="new-announcement-btn">
+              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-announcement-btn">
                 <Plus className="w-4 h-4 mr-2" />
                 New Announcement
               </Button>
@@ -176,7 +176,7 @@ const AnnouncementsManager = () => {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-700">
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="announcement-submit-btn">
+                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="announcement-submit-btn">
                     {editingAnn ? 'Update' : 'Create'} Announcement
                   </Button>
                 </div>
@@ -225,7 +225,7 @@ const AnnouncementsManager = () => {
                       <Button size="sm" variant="outline" onClick={() => handleEdit(ann)} className="border-gray-700" data-testid={`edit-announcement-${ann.id}`}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(ann.id)} className="border-amber-700 text-amber-500 hover:bg-amber-700/10" data-testid={`delete-announcement-${ann.id}`}>
+                      <Button size="sm" variant="outline" onClick={() => handleDelete(ann.id)} className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10" data-testid={`delete-announcement-${ann.id}`}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

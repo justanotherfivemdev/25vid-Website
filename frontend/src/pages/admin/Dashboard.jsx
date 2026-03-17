@@ -222,7 +222,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Link to="/admin/operations" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
-              <Calendar className="w-8 h-8 mx-auto mb-2 text-amber-500" />
+              <Calendar className="w-8 h-8 mx-auto mb-2 text-tropic-gold" />
               <div className="font-medium">Manage Operations</div>
             </Link>
             <Link to="/admin/announcements" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">

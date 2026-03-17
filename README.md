@@ -1,11 +1,11 @@
 # 25th Infantry Division — Tropic Lightning
 
-A full-stack tactical operations platform for the 25th Infantry Division MilSim unit, featuring a public recruitment site, member operations hub, Conflict Map workflows, and admin command center with live content editing.
+A full-stack tactical operations platform for the 25th Infantry Division MilSim unit, featuring a public recruitment site, member operations hub, Campaigns workflows, and admin command center with live content editing.
 
 ## Features
 
 - Public Landing Page with admin-editable content
-- Conflict Map for operations/objectives visualization
+- Campaigns for operations/objectives visualization
 - Operations Management with RSVP and capacity handling
 - Discussion Forum and Intel board
 - Unit Roster and detailed member profiles

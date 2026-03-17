@@ -11,6 +11,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapStore, useEventsStore, threatLevelColors } from '@/stores/threatMapStore';
 import EventPopup from './EventPopup';
 import OperationPopup from './OperationPopup';
+import IntelPopup from './IntelPopup';
 import CountryConflictsModal from './CountryConflictsModal';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
@@ -210,7 +211,37 @@ const severityToNumber = {
   critical: 5,
 };
 
-export default function GlobalThreatMap({ operations = [] }) {
+/* Intel overlay - red markers */
+const intelLayer = {
+  id: 'intel-markers',
+  type: 'circle',
+  paint: {
+    'circle-color': '#B01C2E',
+    'circle-radius': 9,
+    'circle-stroke-width': 2,
+    'circle-stroke-color': '#7E1420',
+  },
+};
+
+const intelLabelLayer = {
+  id: 'intel-labels',
+  type: 'symbol',
+  layout: {
+    'text-field': ['get', 'title'],
+    'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+    'text-size': 10,
+    'text-offset': [0, 1.6],
+    'text-anchor': 'top',
+    'text-max-width': 12,
+  },
+  paint: {
+    'text-color': '#D33A4C',
+    'text-halo-color': '#1e293b',
+    'text-halo-width': 1,
+  },
+};
+
+export default function GlobalThreatMap({ operations = [], intelEvents = [] }) {
   const mapRef = useRef(null);
   const {
     viewport, showHeatmap, showClusters, showMilitaryBases,
@@ -220,6 +251,7 @@ export default function GlobalThreatMap({ operations = [] }) {
 
   const [popupInfo, setPopupInfo] = useState(null);
   const [operationPopup, setOperationPopup] = useState(null);
+  const [intelPopup, setIntelPopup] = useState(null);
   const [countryModal, setCountryModal] = useState(null);
   const [cursor, setCursor] = useState('');
 
@@ -291,6 +323,26 @@ export default function GlobalThreatMap({ operations = [] }) {
         },
       })),
   }), [operations]);
+
+  // Build GeoJSON for intel events overlay
+  const intelGeoJson = useMemo(() => ({
+    type: 'FeatureCollection',
+    features: intelEvents
+      .filter((ev) => ev.latitude != null && ev.longitude != null)
+      .map((ev) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [ev.longitude, ev.latitude] },
+        properties: {
+          id: ev.id,
+          title: ev.title,
+          description: ev.description || '',
+          region_label: ev.region_label || '',
+          theater: ev.theater || '',
+          severity: ev.threat_level || ev.severity || 'medium',
+          classification: ev.classification || 'routine',
+        },
+      })),
+  }), [intelEvents]);
 
   // Fly to selected event from sidebar
   useEffect(() => {
@@ -365,6 +417,17 @@ export default function GlobalThreatMap({ operations = [] }) {
       return;
     }
 
+    // Check for intel click
+    const intelFeature = features.find((f) => f.layer.id === 'intel-markers');
+    if (intelFeature) {
+      setIntelPopup({
+        longitude: intelFeature.geometry.coordinates[0],
+        latitude: intelFeature.geometry.coordinates[1],
+        intel: intelFeature.properties,
+      });
+      return;
+    }
+
     // Check for country polygon click (for conflicts modal)
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -381,6 +444,7 @@ export default function GlobalThreatMap({ operations = [] }) {
 
     setPopupInfo(null);
     setOperationPopup(null);
+    setIntelPopup(null);
   }, [selectEvent]);
 
   const onMouseEnter = useCallback(() => setCursor('pointer'), []);
@@ -391,7 +455,7 @@ export default function GlobalThreatMap({ operations = [] }) {
   }, [setViewport]);
 
   const interactiveLayerIds = useMemo(() => {
-    const ids = ['clusters', 'unclustered-point', 'operations-markers'];
+    const ids = ['clusters', 'unclustered-point', 'operations-markers', 'intel-markers'];
     return ids;
   }, []);
 
@@ -478,6 +542,14 @@ export default function GlobalThreatMap({ operations = [] }) {
           </Source>
         )}
 
+        {/* Intel events overlay */}
+        {intelEvents.length > 0 && (
+          <Source id="intel-events" type="geojson" data={intelGeoJson}>
+            <Layer {...intelLayer} />
+            <Layer {...intelLabelLayer} />
+          </Source>
+        )}
+
         {/* Event popup */}
         {popupInfo && (
           <Popup
@@ -503,6 +575,20 @@ export default function GlobalThreatMap({ operations = [] }) {
             className="threat-map-popup"
           >
             <OperationPopup operation={operationPopup.operation} />
+          </Popup>
+        )}
+
+        {/* Intel popup */}
+        {intelPopup && (
+          <Popup
+            longitude={intelPopup.longitude}
+            latitude={intelPopup.latitude}
+            closeOnClick={false}
+            onClose={() => setIntelPopup(null)}
+            maxWidth="320px"
+            className="threat-map-popup"
+          >
+            <IntelPopup intel={intelPopup.intel} />
           </Popup>
         )}
       </Map>

@@ -34,10 +34,10 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
             <div className="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500">{r.username?.[0]?.toUpperCase()}</div>
           )}
           <div>
-            <Link to={`/roster/${r.user_id}`} className="font-medium text-sm hover:text-amber-400 transition-colors" onClick={e => e.stopPropagation()}>{r.username}</Link>
+            <Link to={`/roster/${r.user_id}`} className="font-medium text-sm hover:text-tropic-gold transition-colors" onClick={e => e.stopPropagation()}>{r.username}</Link>
             {r.rank && <span className="text-xs text-gray-500 ml-2">{r.rank}</span>}
           </div>
-          {r.role_notes && <span className="text-xs text-amber-500/80 border border-amber-700/30 px-1.5 py-0.5 rounded bg-amber-900/20">{r.role_notes}</span>}
+          {r.role_notes && <span className="text-xs text-tropic-gold/80 border border-tropic-gold/30 px-1.5 py-0.5 rounded bg-tropic-gold/10">{r.role_notes}</span>}
         </div>
         <div className="flex items-center gap-2">
           {r.specialization && <span className="text-[10px] text-tropic-gold hidden sm:inline">{r.specialization}</span>}
@@ -52,7 +52,7 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
           {r.company && <div><span className="text-gray-600">Company:</span> <span className="text-tropic-gold">{r.company}</span></div>}
           {r.platoon && <div><span className="text-gray-600">Platoon:</span> <span className="text-green-400">{r.platoon}</span></div>}
           {r.squad && <div><span className="text-gray-600">Squad:</span> <span className="text-gray-400">{r.squad}</span></div>}
-          {r.billet && <div><span className="text-gray-600">Billet:</span> <span className="text-amber-400">{r.billet}</span></div>}
+          {r.billet && <div><span className="text-gray-600">Billet:</span> <span className="text-tropic-gold">{r.billet}</span></div>}
           {r.member_status && <div><span className="text-gray-600">Status:</span> <span className="text-gray-400 capitalize">{r.member_status}</span></div>}
           {r.rsvp_time && <div><span className="text-gray-600">RSVPed:</span> <span className="text-gray-500">{new Date(r.rsvp_time).toLocaleDateString()}</span></div>}
         </div>
@@ -137,14 +137,14 @@ const OperationDetail = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-gold/25">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-widest truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin/operations"><Button size="sm" variant="outline" className="border-amber-700 text-amber-500"><Shield className="w-4 h-4" /></Button></Link>}
+            {user?.role === 'admin' && <Link to="/admin/operations"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4" /></Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -161,8 +161,8 @@ const OperationDetail = () => {
                 <Badge className={`${TYPE_CFG[operation.operation_type] || 'bg-gray-600'} text-white tracking-wider`}>{operation.operation_type.toUpperCase()}</Badge>
                 <Badge variant="outline" className={`${operation.activity_state === 'ongoing' ? 'border-tropic-red text-tropic-red' : operation.activity_state === 'completed' ? 'border-green-600 text-green-500' : 'border-gray-700 text-gray-400'} tracking-wider`}>{(operation.activity_state || 'planned').toUpperCase()}</Badge>
                 <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-1 text-amber-600" />{operation.date}</span>
-                  <span className="flex items-center"><Clock className="w-4 h-4 mr-1 text-amber-600" />{operation.time}</span>
+                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-1 text-tropic-gold" />{operation.date}</span>
+                  <span className="flex items-center"><Clock className="w-4 h-4 mr-1 text-tropic-gold" />{operation.time}</span>
                 </div>
               </div>
               <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h2>
@@ -219,7 +219,7 @@ const OperationDetail = () => {
               <div className="flex flex-wrap gap-3">
                 <Button onClick={() => handleRSVP('attending')} disabled={submitting} className={`${currentStatus === 'attending' ? 'bg-green-700 ring-2 ring-green-500' : 'bg-green-800/60 hover:bg-green-700'}`} data-testid="rsvp-attending"><CheckCircle className="w-4 h-4 mr-2" />Attending</Button>
                 <Button onClick={() => handleRSVP('tentative')} disabled={submitting} className={`${currentStatus === 'tentative' ? 'bg-yellow-700 ring-2 ring-yellow-500' : 'bg-yellow-800/60 hover:bg-yellow-700'}`} data-testid="rsvp-tentative"><HelpCircle className="w-4 h-4 mr-2" />Tentative</Button>
-                {currentStatus && <Button onClick={handleCancel} disabled={submitting} variant="outline" className="border-amber-700 text-amber-500 hover:bg-amber-700/10" data-testid="rsvp-cancel"><XCircle className="w-4 h-4 mr-2" />Cancel RSVP</Button>}
+                {currentStatus && <Button onClick={handleCancel} disabled={submitting} variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10" data-testid="rsvp-cancel"><XCircle className="w-4 h-4 mr-2" />Cancel RSVP</Button>}
               </div>
             </CardContent>
           </Card>

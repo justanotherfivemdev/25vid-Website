@@ -75,7 +75,7 @@ const TrainingManager = () => {
           </div>
           <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-amber-700 hover:bg-amber-800" data-testid="new-training-btn"><Plus className="w-4 h-4 mr-2" />New Training</Button>
+              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-training-btn"><Plus className="w-4 h-4 mr-2" />New Training</Button>
             </DialogTrigger>
             <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -94,7 +94,7 @@ const TrainingManager = () => {
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
-                  <Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="training-submit-btn">{editing ? 'Update' : 'Create'}</Button>
+                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="training-submit-btn">{editing ? 'Update' : 'Create'}</Button>
                 </div>
               </form>
             </DialogContent>
@@ -120,7 +120,7 @@ const TrainingManager = () => {
                     </div>
                     <div className="flex space-x-2 ml-4">
                       <Button size="sm" variant="outline" onClick={() => handleEdit(t)} className="border-gray-700"><Edit className="w-4 h-4" /></Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(t.id)} className="border-amber-700 text-amber-500 hover:bg-amber-700/10"><Trash2 className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDelete(t.id)} className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </div>
                 </CardHeader>

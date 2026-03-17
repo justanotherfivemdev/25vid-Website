@@ -105,7 +105,7 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
           <Button
             type="button"
             variant="outline"
-            className="border-amber-700 text-amber-500 hover:bg-amber-700/10 shrink-0"
+            className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10 shrink-0"
             onClick={handleClear}
           >
             <X className="w-4 h-4" />
@@ -121,7 +121,7 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
         className="hidden"
       />
 
-      {error && <p className="text-sm text-amber-400">{error}</p>}
+      {error && <p className="text-sm text-tropic-red">{error}</p>}
 
       {value && (
         <div className="mt-2 border border-gray-700 rounded-lg overflow-hidden inline-block">

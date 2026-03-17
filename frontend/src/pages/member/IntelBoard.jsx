@@ -15,7 +15,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const CATEGORIES = [
   { value: 'intel_update', label: 'Intel Update', short: 'INTEL', color: 'bg-tropic-red/80 text-white' },
-  { value: 'commanders_intent', label: "Commander's Intent", short: 'CDR INTENT', color: 'bg-amber-700 text-white' },
+  { value: 'commanders_intent', label: "Commander's Intent", short: 'CDR INTENT', color: 'bg-tropic-gold text-black' },
   { value: 'operational_order', label: 'Operational Order', short: 'OPORD', color: 'bg-tropic-gold-dark text-white' },
   { value: 'after_action_report', label: 'After Action Report', short: 'AAR', color: 'bg-emerald-700 text-white' },
   { value: 'training_bulletin', label: 'Training Bulletin', short: 'TNG BUL', color: 'bg-gray-600 text-white' },
@@ -86,7 +86,7 @@ const IntelBoard = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-gold/25">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
@@ -95,7 +95,7 @@ const IntelBoard = () => {
             </h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin/intel"><Button size="sm" variant="outline" className="border-amber-700 text-amber-500"><Shield className="w-4 h-4 mr-1" />Manage</Button></Link>}
+            {user?.role === 'admin' && <Link to="/admin/intel"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold"><Shield className="w-4 h-4 mr-1" />Manage</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -123,7 +123,7 @@ const IntelBoard = () => {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant={!filterCat ? 'default' : 'outline'} onClick={() => setFilterCat('')}
-                className={!filterCat ? 'bg-amber-700 text-white' : 'border-gray-700 text-gray-400'} data-testid="filter-all">
+                className={!filterCat ? 'bg-tropic-gold text-black' : 'border-gray-700 text-gray-400'} data-testid="filter-all">
                 ALL
               </Button>
               {CATEGORIES.map(c => (
@@ -176,7 +176,7 @@ const IntelBoard = () => {
                 const cls = getCls(b.classification);
                 return (
                   <button key={b.id} onClick={() => setSelected(b)} className="w-full text-left group" data-testid={`briefing-${idx}`}>
-                    <Card className={`bg-gray-900/80 border-gray-800 hover:border-amber-700/40 transition-all duration-300 overflow-hidden ${b.user_acknowledged ? 'border-l-2 border-l-green-600' : ''}`}>
+                    <Card className={`bg-gray-900/80 border-gray-800 hover:border-tropic-gold/40 transition-all duration-300 overflow-hidden ${b.user_acknowledged ? 'border-l-2 border-l-green-600' : ''}`}>
                       <div className={`h-0.5 ${cat.color.split(' ')[0]}`}></div>
                       <CardContent className="p-5">
                         <div className="flex items-start gap-4">
@@ -203,7 +203,7 @@ const IntelBoard = () => {
                               )}
                             </div>
                           </div>
-                          <ChevronRight className="w-5 h-5 text-gray-700 group-hover:text-amber-500 transition-colors shrink-0 mt-2" />
+                          <ChevronRight className="w-5 h-5 text-gray-700 group-hover:text-tropic-gold transition-colors shrink-0 mt-2" />
                         </div>
                       </CardContent>
                     </Card>
@@ -229,7 +229,7 @@ const IntelBoard = () => {
                 <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
                   <span className="flex items-center gap-1"><User className="w-3 h-3" />{selected.author_name}</span>
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(selected.created_at).toLocaleString()}</span>
-                  {selected.updated_at && <span className="text-amber-600">(Updated: {new Date(selected.updated_at).toLocaleString()})</span>}
+                  {selected.updated_at && <span className="text-tropic-gold/80">(Updated: {new Date(selected.updated_at).toLocaleString()})</span>}
                 </div>
               </DialogHeader>
               <div className="mt-4 border-t border-gray-800 pt-4">
@@ -271,7 +271,7 @@ const IntelBoard = () => {
                     onClick={(e) => { e.stopPropagation(); handleAcknowledge(selected.id, selected.user_acknowledged); }}
                     className={selected.user_acknowledged
                       ? 'bg-green-800/40 border border-green-700 text-green-400 hover:bg-red-900/30 hover:text-red-400 hover:border-red-700'
-                      : 'bg-amber-700 hover:bg-amber-800 text-white'}
+                      : 'bg-tropic-gold hover:bg-tropic-gold-dark text-black'}
                     data-testid="acknowledge-btn"
                   >
                     <CheckCircle className="w-4 h-4 mr-1.5" />

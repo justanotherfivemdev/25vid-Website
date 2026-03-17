@@ -108,7 +108,7 @@ const HistoryManager = () => {
           </div>
           <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-amber-700 hover:bg-amber-800" data-testid="new-history-btn">
+              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-history-btn">
                 <Plus className="w-4 h-4 mr-2" />Add Entry
               </Button>
             </DialogTrigger>
@@ -194,7 +194,7 @@ const HistoryManager = () => {
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
-                  <Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="history-submit-btn">
+                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="history-submit-btn">
                     {editing ? 'Update' : 'Add Entry'}
                   </Button>
                 </div>
@@ -232,7 +232,7 @@ const HistoryManager = () => {
                         <Badge className={`${typeColor(entry.campaign_type)} text-white text-xs`}>
                           {entry.campaign_type.toUpperCase()}
                         </Badge>
-                        <span className="text-amber-500 font-bold text-sm">{entry.year}</span>
+                        <span className="text-tropic-gold font-bold text-sm">{entry.year}</span>
                       </div>
                       <h3 className="font-bold text-lg">{entry.title}</h3>
                       <p className="text-gray-400 text-sm line-clamp-2 mt-1 whitespace-pre-wrap">{entry.description}</p>
@@ -243,7 +243,7 @@ const HistoryManager = () => {
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleDelete(entry.id)}
-                        className="border-amber-700 text-amber-500" data-testid={`history-delete-${entry.id}`}>
+                        className="border-tropic-red/60 text-tropic-red" data-testid={`history-delete-${entry.id}`}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

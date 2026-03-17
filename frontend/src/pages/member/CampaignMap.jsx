@@ -202,7 +202,7 @@ const CampaignMap = () => {
                     <Button key={c.id} size="sm"
                       variant={selectedId === c.id ? 'default' : 'outline'}
                       onClick={() => setSelectedId(c.id)}
-                      className={selectedId === c.id ? 'bg-amber-700 text-white' : 'border-gray-700 text-gray-400'}
+                      className={selectedId === c.id ? 'bg-tropic-gold text-black' : 'border-gray-700 text-gray-400'}
                       data-testid={`select-campaign-${c.id}`}>
                       {c.name}
                       {c.status === 'active' && <div className="w-1.5 h-1.5 bg-tropic-red rounded-full ml-2 animate-pulse"></div>}

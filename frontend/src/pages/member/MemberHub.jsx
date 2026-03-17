@@ -90,7 +90,7 @@ const MemberHub = () => {
             <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
             <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
             <Link to="/hub/gallery"><Button size="sm" variant="outline" className="border-gray-700"><Image className="w-4 h-4 mr-1" />Gallery</Button></Link>
-            <Link to="/hub/threat-map"><Button size="sm" variant="outline" className="border-gray-700"><Globe className="w-4 h-4 mr-1" />Global Threat Map</Button></Link>
+            <Link to="/hub/threat-map"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Globe className="w-4 h-4 mr-1" />Global Threat Map</Button></Link>
             {user?.role === 'admin' && (
               <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
             )}
@@ -275,7 +275,7 @@ const MemberHub = () => {
               <Calendar className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Operations</span>
             </a>
             <a href="#training" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center">
-              <BookOpen className="w-8 h-8 mx-auto mb-2 text-green-500" /><span className="font-medium text-sm">Training</span>
+              <BookOpen className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Training</span>
             </a>
             <Link to="/hub/intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-intel">
               <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Intel Board</span>

@@ -171,10 +171,10 @@ const AdminMemberDetail = () => {
               <p className="text-sm text-gray-500">{member.email}</p>
             </div>
           </div>
-          <Button onClick={handleSaveProfile} disabled={saving} className="bg-amber-700 hover:bg-amber-800" data-testid="admin-save-profile-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>
+          <Button onClick={handleSaveProfile} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="admin-save-profile-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>
         </div>
 
-        {message.text && <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-amber-900/20 border-red-700'}>{message.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}<AlertDescription>{message.text}</AlertDescription></Alert>}
+        {message.text && <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-tropic-red/10 border-tropic-red/60'}>{message.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}<AlertDescription>{message.text}</AlertDescription></Alert>}
 
         {/* Profile fields */}
         <Card className="bg-gray-900 border-gray-800">
@@ -268,9 +268,9 @@ const AdminMemberDetail = () => {
         <Card className="bg-gray-900 border-gray-800" data-testid="admin-mission-history">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg tracking-wider flex items-center gap-2"><Target className="w-5 h-5 text-amber-500" /> MISSION HISTORY</CardTitle>
+              <CardTitle className="text-lg tracking-wider flex items-center gap-2"><Target className="w-5 h-5 text-tropic-gold" /> MISSION HISTORY</CardTitle>
               <Dialog open={missionDialogOpen} onOpenChange={setMissionDialogOpen}>
-                <DialogTrigger asChild><Button size="sm" className="bg-amber-700 hover:bg-amber-800" data-testid="add-mission-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
+                <DialogTrigger asChild><Button size="sm" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="add-mission-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
                 <DialogContent className="bg-gray-900 text-white border-gray-800">
                   <DialogHeader><DialogTitle>Add Mission Record</DialogTitle></DialogHeader>
                   <form onSubmit={addMission} className="space-y-3">
@@ -280,7 +280,7 @@ const AdminMemberDetail = () => {
                       <div><Label>Role Performed</Label><Input required value={missionForm.role_performed} onChange={e => setMissionForm({...missionForm, role_performed: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Squad Lead" /></div>
                     </div>
                     <div><Label>Notes</Label><Input value={missionForm.notes} onChange={e => setMissionForm({...missionForm, notes: e.target.value})} className="bg-black border-gray-700" /></div>
-                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setMissionDialogOpen(false)} className="border-gray-700">Cancel</Button><Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="mission-submit-btn">Add</Button></div>
+                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setMissionDialogOpen(false)} className="border-gray-700">Cancel</Button><Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="mission-submit-btn">Add</Button></div>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -292,7 +292,7 @@ const AdminMemberDetail = () => {
                 {member.mission_history.map((m, i) => (
                   <div key={m.id || i} className="flex items-center justify-between bg-black/30 rounded p-3 border border-gray-800/50">
                     <div><div className="font-medium text-sm">{m.operation_name}</div><div className="text-xs text-gray-500">{m.date} — {m.role_performed}{m.notes ? ` — ${m.notes}` : ''}</div></div>
-                    <Button size="sm" variant="ghost" onClick={() => removeMission(m.id)} className="text-amber-500 hover:bg-amber-700/10 shrink-0"><Trash2 className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => removeMission(m.id)} className="text-tropic-red hover:bg-tropic-red/10 shrink-0"><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 ))}
               </div>
@@ -306,7 +306,7 @@ const AdminMemberDetail = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg tracking-wider flex items-center gap-2"><Calendar className="w-5 h-5 text-tropic-gold" /> TRAINING HISTORY</CardTitle>
               <Dialog open={trainingDialogOpen} onOpenChange={setTrainingDialogOpen}>
-                <DialogTrigger asChild><Button size="sm" className="bg-amber-700 hover:bg-amber-800" data-testid="add-training-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
+                <DialogTrigger asChild><Button size="sm" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="add-training-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
                 <DialogContent className="bg-gray-900 text-white border-gray-800">
                   <DialogHeader><DialogTitle>Add Training Record</DialogTitle></DialogHeader>
                   <form onSubmit={addTraining} className="space-y-3">
@@ -316,7 +316,7 @@ const AdminMemberDetail = () => {
                       <div><Label>Instructor</Label><Input value={trainingForm.instructor} onChange={e => setTrainingForm({...trainingForm, instructor: e.target.value})} className="bg-black border-gray-700" /></div>
                     </div>
                     <div><Label>Notes / Certification</Label><Input value={trainingForm.notes} onChange={e => setTrainingForm({...trainingForm, notes: e.target.value})} className="bg-black border-gray-700" /></div>
-                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setTrainingDialogOpen(false)} className="border-gray-700">Cancel</Button><Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="training-submit-btn">Add</Button></div>
+                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setTrainingDialogOpen(false)} className="border-gray-700">Cancel</Button><Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="training-submit-btn">Add</Button></div>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -328,7 +328,7 @@ const AdminMemberDetail = () => {
                 {member.training_history.map((t, i) => (
                   <div key={t.id || i} className="flex items-center justify-between bg-black/30 rounded p-3 border border-gray-800/50">
                     <div><div className="font-medium text-sm">{t.course_name}</div><div className="text-xs text-gray-500">{t.completion_date}{t.instructor ? ` — ${t.instructor}` : ''}{t.notes ? ` — ${t.notes}` : ''}</div></div>
-                    <Button size="sm" variant="ghost" onClick={() => removeTraining(t.id)} className="text-amber-500 hover:bg-amber-700/10 shrink-0"><Trash2 className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => removeTraining(t.id)} className="text-tropic-red hover:bg-tropic-red/10 shrink-0"><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 ))}
               </div>
@@ -342,14 +342,14 @@ const AdminMemberDetail = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg tracking-wider flex items-center gap-2"><Award className="w-5 h-5 text-yellow-500" /> AWARDS & QUALIFICATIONS</CardTitle>
               <Dialog open={awardDialogOpen} onOpenChange={setAwardDialogOpen}>
-                <DialogTrigger asChild><Button size="sm" className="bg-amber-700 hover:bg-amber-800" data-testid="add-award-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
+                <DialogTrigger asChild><Button size="sm" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="add-award-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
                 <DialogContent className="bg-gray-900 text-white border-gray-800">
                   <DialogHeader><DialogTitle>Add Award / Qualification</DialogTitle></DialogHeader>
                   <form onSubmit={addAward} className="space-y-3">
                     <div><Label>Award Name</Label><Input required value={awardForm.name} onChange={e => setAwardForm({...awardForm, name: e.target.value})} className="bg-black border-gray-700" data-testid="award-name-input" /></div>
                     <div><Label>Date</Label><Input value={awardForm.date} onChange={e => setAwardForm({...awardForm, date: e.target.value})} className="bg-black border-gray-700" placeholder="2026-01-15" /></div>
                     <div><Label>Description</Label><Input value={awardForm.description} onChange={e => setAwardForm({...awardForm, description: e.target.value})} className="bg-black border-gray-700" /></div>
-                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setAwardDialogOpen(false)} className="border-gray-700">Cancel</Button><Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="award-submit-btn">Add</Button></div>
+                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setAwardDialogOpen(false)} className="border-gray-700">Cancel</Button><Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="award-submit-btn">Add</Button></div>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -361,7 +361,7 @@ const AdminMemberDetail = () => {
                 {member.awards.map((a, i) => (
                   <div key={a.id || i} className="flex items-center justify-between bg-black/30 rounded p-3 border border-gray-800/50">
                     <div className="flex items-center gap-2"><Award className="w-4 h-4 text-yellow-600 shrink-0" /><div><div className="font-medium text-sm">{a.name}</div>{a.description && <div className="text-xs text-gray-500">{a.description}</div>}</div></div>
-                    <div className="flex items-center gap-2">{a.date && <span className="text-xs text-gray-600">{a.date}</span>}<Button size="sm" variant="ghost" onClick={() => removeAward(a.id)} className="text-amber-500 hover:bg-amber-700/10"><Trash2 className="w-4 h-4" /></Button></div>
+                    <div className="flex items-center gap-2">{a.date && <span className="text-xs text-gray-600">{a.date}</span>}<Button size="sm" variant="ghost" onClick={() => removeAward(a.id)} className="text-tropic-red hover:bg-tropic-red/10"><Trash2 className="w-4 h-4" /></Button></div>
                   </div>
                 ))}
               </div>
