@@ -12,6 +12,7 @@ import { useMapStore, useEventsStore, threatLevelColors } from '@/stores/threatM
 import EventPopup from './EventPopup';
 import OperationPopup from './OperationPopup';
 import IntelPopup from './IntelPopup';
+import CampaignPopup from './CampaignPopup';
 import CountryConflictsModal from './CountryConflictsModal';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
@@ -241,7 +242,37 @@ const intelLabelLayer = {
   },
 };
 
-export default function GlobalThreatMap({ operations = [], intelEvents = [] }) {
+/* Campaign overlay - olive/green markers */
+const campaignLayer = {
+  id: 'campaign-markers',
+  type: 'circle',
+  paint: {
+    'circle-color': '#556B2F',
+    'circle-radius': 10,
+    'circle-stroke-width': 2,
+    'circle-stroke-color': '#3d4f22',
+  },
+};
+
+const campaignLabelLayer = {
+  id: 'campaign-labels',
+  type: 'symbol',
+  layout: {
+    'text-field': ['get', 'title'],
+    'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+    'text-size': 10,
+    'text-offset': [0, 1.6],
+    'text-anchor': 'top',
+    'text-max-width': 12,
+  },
+  paint: {
+    'text-color': '#7a9a42',
+    'text-halo-color': '#1e293b',
+    'text-halo-width': 1,
+  },
+};
+
+export default function GlobalThreatMap({ operations = [], intelEvents = [], campaignEvents = [] }) {
   const mapRef = useRef(null);
   const {
     viewport, showHeatmap, showClusters, showMilitaryBases,
@@ -252,6 +283,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [] }) {
   const [popupInfo, setPopupInfo] = useState(null);
   const [operationPopup, setOperationPopup] = useState(null);
   const [intelPopup, setIntelPopup] = useState(null);
+  const [campaignPopup, setCampaignPopup] = useState(null);
   const [countryModal, setCountryModal] = useState(null);
   const [cursor, setCursor] = useState('');
 
@@ -344,6 +376,26 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [] }) {
       })),
   }), [intelEvents]);
 
+  // Build GeoJSON for campaign events overlay
+  const campaignGeoJson = useMemo(() => ({
+    type: 'FeatureCollection',
+    features: campaignEvents
+      .filter((ev) => ev.latitude !== null && ev.latitude !== undefined && ev.longitude !== null && ev.longitude !== undefined)
+      .map((ev) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [ev.longitude, ev.latitude] },
+        properties: {
+          id: ev.id,
+          title: ev.title,
+          description: ev.description || '',
+          theater: ev.metadata?.theater || '',
+          status: ev.metadata?.status || '',
+          threat_level: ev.threat_level || 'medium',
+          related_entity_id: ev.related_entity_id || '',
+        },
+      })),
+  }), [campaignEvents]);
+
   // Fly to selected event from sidebar
   useEffect(() => {
     if (selectedEvent && mapRef.current) {
@@ -428,6 +480,17 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [] }) {
       return;
     }
 
+    // Check for campaign click
+    const campaignFeature = features.find((f) => f.layer.id === 'campaign-markers');
+    if (campaignFeature) {
+      setCampaignPopup({
+        longitude: campaignFeature.geometry.coordinates[0],
+        latitude: campaignFeature.geometry.coordinates[1],
+        campaign: campaignFeature.properties,
+      });
+      return;
+    }
+
     // Check for country polygon click (for conflicts modal)
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -445,6 +508,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [] }) {
     setPopupInfo(null);
     setOperationPopup(null);
     setIntelPopup(null);
+    setCampaignPopup(null);
   }, [selectEvent]);
 
   const onMouseEnter = useCallback(() => setCursor('pointer'), []);
@@ -455,7 +519,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [] }) {
   }, [setViewport]);
 
   const interactiveLayerIds = useMemo(() => {
-    const ids = ['clusters', 'unclustered-point', 'operations-markers', 'intel-markers'];
+    const ids = ['clusters', 'unclustered-point', 'operations-markers', 'intel-markers', 'campaign-markers'];
     return ids;
   }, []);
 
@@ -550,6 +614,14 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [] }) {
           </Source>
         )}
 
+        {/* Campaign events overlay */}
+        {campaignEvents.length > 0 && (
+          <Source id="campaign-events" type="geojson" data={campaignGeoJson}>
+            <Layer {...campaignLayer} />
+            <Layer {...campaignLabelLayer} />
+          </Source>
+        )}
+
         {/* Event popup */}
         {popupInfo && (
           <Popup
@@ -589,6 +661,20 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [] }) {
             className="threat-map-popup"
           >
             <IntelPopup intel={intelPopup.intel} />
+          </Popup>
+        )}
+
+        {/* Campaign popup */}
+        {campaignPopup && (
+          <Popup
+            longitude={campaignPopup.longitude}
+            latitude={campaignPopup.latitude}
+            closeOnClick={false}
+            onClose={() => setCampaignPopup(null)}
+            maxWidth="320px"
+            className="threat-map-popup"
+          >
+            <CampaignPopup campaign={campaignPopup.campaign} />
           </Popup>
         )}
       </Map>

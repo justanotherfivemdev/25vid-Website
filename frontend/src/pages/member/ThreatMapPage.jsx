@@ -16,6 +16,7 @@ export default function ThreatMapPage() {
   const { setMilitaryBases, setMilitaryBasesLoading } = useMapStore();
   const [operations, setOperations] = useState([]);
   const [intelEvents, setIntelEvents] = useState([]);
+  const [campaignEvents, setCampaignEvents] = useState([]);
 
   // Fetch threat events from our backend (Valyu-powered)
   const fetchEvents = useCallback(async () => {
@@ -65,25 +66,37 @@ export default function ThreatMapPage() {
     }
   }, []);
 
+  // Fetch internal campaign map events
+  const fetchCampaignEvents = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/map/events?event_type=campaign`, { withCredentials: true });
+      setCampaignEvents(res.data.events || []);
+    } catch (err) {
+      console.error('Failed to fetch campaign map events:', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchEvents();
     fetchMilitaryBases();
     fetchOperations();
     fetchIntelEvents();
+    fetchCampaignEvents();
 
     const interval = setInterval(() => {
       fetchEvents();
       fetchIntelEvents();
+      fetchCampaignEvents();
     }, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchEvents, fetchMilitaryBases, fetchOperations, fetchIntelEvents]);
+  }, [fetchEvents, fetchMilitaryBases, fetchOperations, fetchIntelEvents, fetchCampaignEvents]);
 
   return (
     <div className="flex h-screen flex-col bg-black threat-map-page">
       <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          <GlobalThreatMap operations={operations} intelEvents={intelEvents} />
+          <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
           <TimelineScrubber />
           <ThreatMapControls />
         </div>
