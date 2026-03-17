@@ -2327,6 +2327,7 @@ class CampaignCreate(BaseModel):
     lng: Optional[float] = None
     region: str = ""
     map_description: str = ""
+    threat_level: str = "medium"  # low, medium, high, critical
 
 class CampaignUpdate(BaseModel):
     name: Optional[str] = None
@@ -2341,6 +2342,7 @@ class CampaignUpdate(BaseModel):
     lng: Optional[float] = None
     region: Optional[str] = None
     map_description: Optional[str] = None
+    threat_level: Optional[str] = None
 
 @api_router.get("/campaigns")
 async def get_campaigns(current_user: dict = Depends(get_current_user)):

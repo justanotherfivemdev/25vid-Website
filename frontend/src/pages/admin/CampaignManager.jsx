@@ -34,7 +34,8 @@ const CampaignManager = () => {
   const [expanded, setExpanded] = useState(null);
   const [form, setForm] = useState({
     name: '', description: '', theater: '', status: 'planning',
-    situation: '', commander_notes: '', phases: [], objectives: []
+    situation: '', commander_notes: '', phases: [], objectives: [],
+    lat: '', lng: '', region: '', map_description: '', threat_level: 'medium'
   });
 
   useEffect(() => { fetchCampaigns(); }, []);
@@ -48,7 +49,7 @@ const CampaignManager = () => {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', theater: '', status: 'planning', situation: '', commander_notes: '', phases: [], objectives: [] });
+    setForm({ name: '', description: '', theater: '', status: 'planning', situation: '', commander_notes: '', phases: [], objectives: [], lat: '', lng: '', region: '', map_description: '', threat_level: 'medium' });
     setEditing(null);
   };
 
@@ -57,7 +58,9 @@ const CampaignManager = () => {
     setForm({
       name: c.name, description: c.description || '', theater: c.theater || '',
       status: c.status, situation: c.situation || '', commander_notes: c.commander_notes || '',
-      phases: c.phases || [], objectives: c.objectives || []
+      phases: c.phases || [], objectives: c.objectives || [],
+      lat: c.lat ?? '', lng: c.lng ?? '', region: c.region || '',
+      map_description: c.map_description || '', threat_level: c.threat_level || 'medium'
     });
     setDialogOpen(true);
   };
@@ -75,6 +78,8 @@ const CampaignManager = () => {
     try {
       const payload = {
         ...form,
+        lat: normalizeCoordinate(form.lat),
+        lng: normalizeCoordinate(form.lng),
         objectives: (form.objectives || []).map((obj) => ({
           ...obj,
           lat: normalizeCoordinate(obj.lat),
