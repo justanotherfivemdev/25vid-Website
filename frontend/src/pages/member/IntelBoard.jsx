@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, Search, FileText, Shield, Home, LogOut, Tag, Clock, User, ChevronRight, X, Filter, CheckCircle, Eye } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import MapMiniView from '@/components/MapMiniView';
+import { colors } from '@/theme/theme';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -241,6 +243,20 @@ const IntelBoard = () => {
                         <Tag className="w-2.5 h-2.5 mr-1" />{t}
                       </Badge>
                     ))}
+                  </div>
+                )}
+                {/* Mini-Map for geo-tagged intel */}
+                {selected.lat != null && selected.lng != null && (
+                  <div className="mt-4 pt-4 border-t border-gray-800">
+                    <MapMiniView
+                      latitude={selected.lat}
+                      longitude={selected.lng}
+                      zoom={7}
+                      height="180px"
+                      markers={[
+                        { id: selected.id, latitude: selected.lat, longitude: selected.lng, color: colors.markerIntel, label: selected.title },
+                      ]}
+                    />
                   </div>
                 )}
                 {/* Acknowledge Bar */}

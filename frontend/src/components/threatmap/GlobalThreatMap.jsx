@@ -172,15 +172,15 @@ const militaryBaseLabelLayer = {
   },
 };
 
-/* Operations overlay (our internal ops) - distinct green markers */
+/* Operations overlay (our internal ops) - gold markers */
 const operationsLayer = {
   id: 'operations-markers',
   type: 'circle',
   paint: {
-    'circle-color': '#10b981',
+    'circle-color': '#C9A227',
     'circle-radius': 10,
     'circle-stroke-width': 3,
-    'circle-stroke-color': '#065f46',
+    'circle-stroke-color': '#8F701A',
   },
 };
 
@@ -196,7 +196,7 @@ const operationsLabelLayer = {
     'text-max-width': 12,
   },
   paint: {
-    'text-color': '#10b981',
+    'text-color': '#C9A227',
     'text-halo-color': '#1e293b',
     'text-halo-width': 1,
   },

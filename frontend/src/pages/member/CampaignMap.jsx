@@ -167,12 +167,12 @@ const CampaignMap = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-red/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-gold/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-widest text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="campaign-map-title">
-              CONFLICT MAP
+              CAMPAIGNS
             </h1>
           </div>
           <div className="flex items-center space-x-3">
@@ -186,7 +186,7 @@ const CampaignMap = () => {
       <div className="pt-20 pb-12 px-6">
         <div className="container mx-auto max-w-6xl">
           {loading ? (
-            <div className="text-center py-20 text-gray-500">Loading conflict map data...</div>
+            <div className="text-center py-20 text-gray-500">Loading campaign data...</div>
           ) : !campaign ? (
             <div className="text-center py-20 text-gray-600">
               <MapPin className="w-16 h-16 mx-auto mb-4 opacity-20" />
@@ -229,6 +229,13 @@ const CampaignMap = () => {
                       </div>
                     </div>
                     {campaign.description && <p className="text-sm text-gray-400 ml-4 mt-2 max-w-2xl">{campaign.description}</p>}
+                    <div className="ml-4 mt-3">
+                      <Link to="/hub/threat-map">
+                        <Button size="sm" variant="outline" className="border-tropic-gold/40 text-tropic-gold hover:bg-tropic-gold/10 text-xs">
+                          <Target className="w-3.5 h-3.5 mr-1.5" />View on Global Threat Map
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                   {/* Progress Ring */}
                   <div className="text-center shrink-0">
@@ -248,7 +255,7 @@ const CampaignMap = () => {
                 <Card className="bg-gray-900 border-gray-800">
                   <CardContent className="p-5 space-y-4">
                     <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <h3 className="text-xs text-tropic-gold tracking-widest">CONFLICT MAP OVERLAYS</h3>
+                      <h3 className="text-xs text-tropic-gold tracking-widest">CAMPAIGN MAP OVERLAYS</h3>
                       <ThreatLegend />
                     </div>
                     <ThreatFilters filters={filters} onChange={setFilters} />

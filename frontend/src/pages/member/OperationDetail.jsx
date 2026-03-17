@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Calendar, Clock, Users, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown, Globe, MapPin } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import MapMiniView from '@/components/MapMiniView';
+import { colors } from '@/theme/theme';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -170,7 +172,7 @@ const OperationDetail = () => {
                   {operation.theater && <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5 text-blue-400" />{operation.theater}</span>}
                   {operation.region_label && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-amber-500" />{operation.region_label}</span>}
                   {operation.grid_ref && <span className="text-gray-400">GRID {operation.grid_ref}</span>}
-                  <Link to="/hub/campaign" className="text-tropic-gold hover:underline ml-auto">View in Conflict Map</Link>
+                  <Link to="/hub/campaign" className="text-tropic-gold hover:underline ml-auto">View on Campaign Map</Link>
                 </div>
               )}
               {/* Attendance summary */}
@@ -182,6 +184,23 @@ const OperationDetail = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Mini-Map */}
+          {operation.lat != null && operation.lng != null && (
+            <Card className="bg-gray-900/80 border-gray-800 overflow-hidden">
+              <CardContent className="p-0">
+                <MapMiniView
+                  latitude={operation.lat}
+                  longitude={operation.lng}
+                  zoom={8}
+                  height="220px"
+                  markers={[
+                    { id: operation.id, latitude: operation.lat, longitude: operation.lng, color: colors.markerOperation, label: operation.title },
+                  ]}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* RSVP Actions */}
           <Card className="bg-gray-900/80 border-gray-800" data-testid="rsvp-actions">
