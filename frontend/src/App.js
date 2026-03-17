@@ -754,24 +754,26 @@ const JoinUsSection = ({ content }) => {
               teamwork, and the Tropic Lightning tradition. Create an account to access the Member Hub, view upcoming
               operations, and begin your journey with the unit.
             </p>
-            <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-center pt-4">
-              <Link to="/join" className="w-full sm:w-auto">
-                <Button variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10 px-5 py-3 text-sm tracking-wider whitespace-nowrap w-full" data-testid="join-threat-map-button">
-                  <Globe className="mr-2 w-4 h-4 flex-shrink-0" />GLOBAL THREAT MAP
-                </Button>
-              </Link>
-              <Link to="/login" className="w-full sm:w-auto">
-                <Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-5 py-3 text-sm tactical-button tracking-wider whitespace-nowrap w-full" data-testid="join-register-button">
-                  <Shield className="mr-2 w-4 h-4 flex-shrink-0" />CREATE ACCOUNT
-                </Button>
-              </Link>
-              {content.footer?.discord && (
-                <a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-                  <Button variant="outline" className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10 px-5 py-3 text-sm tracking-wider whitespace-nowrap w-full" data-testid="join-discord-button">
-                    JOIN OUR DISCORD
+            <div className="pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-2xl mx-auto">
+                <Link to="/join" className="w-full">
+                  <Button variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10 px-4 py-3 text-sm tracking-wider w-full" data-testid="join-threat-map-button">
+                    <Globe className="mr-2 w-4 h-4 flex-shrink-0" />GLOBAL THREAT MAP
                   </Button>
-                </a>
-              )}
+                </Link>
+                <Link to="/login" className="w-full">
+                  <Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-4 py-3 text-sm tactical-button tracking-wider w-full" data-testid="join-register-button">
+                    <Shield className="mr-2 w-4 h-4 flex-shrink-0" />CREATE ACCOUNT
+                  </Button>
+                </Link>
+                {content.footer?.discord && (
+                  <a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="w-full sm:col-span-2 lg:col-span-1">
+                    <Button variant="outline" className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10 px-4 py-3 text-sm tracking-wider w-full">
+                      JOIN OUR DISCORD
+                    </Button>
+                  </a>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
