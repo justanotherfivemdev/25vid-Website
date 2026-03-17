@@ -323,7 +323,7 @@ Use this after every fresh deploy and every update:
 5. Login works from `/login`
 6. Admin account can access `/admin`
 7. Image uploads work and are visible
-8. Conflict Map loads tiles and markers
+8. Campaigns page loads correctly
 9. `sudo journalctl -u 25th-id-backend -n 100 --no-pager` has no fatal errors
 
 ---
