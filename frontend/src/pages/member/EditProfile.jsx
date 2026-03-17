@@ -140,7 +140,7 @@ const EditProfile = () => {
       <div className="pt-20 pb-12 px-6">
         <div className="container mx-auto max-w-2xl space-y-6">
           {message.text && (
-            <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-amber-900/20 border-red-700'}>
+            <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-tropic-red/10 border-tropic-red/60'}>
               {message.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
               <AlertDescription>{message.text}</AlertDescription>
             </Alert>

@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, FileText, Search, X, Tag, Eye, ChevronDown, ChevronUp, User, Clock } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Search, X, Tag, Eye, ChevronDown, ChevronUp, User, Clock, MapPin } from 'lucide-react';
+import ThreatMap from '@/components/map/ThreatMap';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -180,7 +181,7 @@ const IntelManager = () => {
           </div>
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-amber-700 hover:bg-amber-800" data-testid="new-briefing-btn">
+              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-briefing-btn">
                 <Plus className="w-4 h-4 mr-2" />New Briefing
               </Button>
             </DialogTrigger>
@@ -249,8 +250,38 @@ const IntelManager = () => {
                   <div><Label>Grid Ref</Label><Input value={form.grid_ref} onChange={e => setForm({ ...form, grid_ref: e.target.value })} className="bg-black border-gray-700" placeholder="G-17" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Latitude</Label><Input type="number" step="any" value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
-                  <div><Label>Longitude</Label><Input type="number" step="any" value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
+                  <div>
+                    <Label>Latitude</Label>
+                    <Input type="number" step="any" value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" />
+                  </div>
+                  <div>
+                    <Label>Longitude</Label>
+                    <Input type="number" step="any" value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" />
+                  </div>
+                </div>
+                {/* Mini map preview — click to place marker */}
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-1.5 text-tropic-gold">
+                    <MapPin className="w-3.5 h-3.5" />
+                    Map Placement Preview — click map to set coordinates
+                  </Label>
+                  <ThreatMap
+                    height="260px"
+                    markers={
+                      form.lat !== '' && form.lng !== '' && !isNaN(Number(form.lat)) && !isNaN(Number(form.lng))
+                        ? [{ id: '__preview__', lat: Number(form.lat), lng: Number(form.lng), severity: form.severity || 'medium', name: form.title || 'Intel marker' }]
+                        : []
+                    }
+                    onMapClick={({ lat, lng }) => setForm(f => ({ ...f, lat: lat.toFixed(5), lng: lng.toFixed(5) }))}
+                  />
+                  {form.lat !== '' && form.lng !== '' && (
+                    <p className="text-xs text-tropic-gold/70">
+                      Pinned at {Number(form.lat).toFixed(4)}, {Number(form.lng).toFixed(4)}
+                      <button type="button" className="ml-2 text-tropic-red/70 hover:text-tropic-red" onClick={() => setForm(f => ({ ...f, lat: '', lng: '' }))}>
+                        <X className="w-3 h-3 inline" /> Clear
+                      </button>
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label>Content</Label>
@@ -264,7 +295,7 @@ const IntelManager = () => {
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {form.tags.map(t => (
-                      <Badge key={t} variant="outline" className="bg-amber-900/30 border-amber-700/50 text-amber-300 px-2 py-1 text-xs">
+                      <Badge key={t} variant="outline" className="bg-tropic-gold/10 border-tropic-gold/50 text-tropic-gold px-2 py-1 text-xs">
                         {t} <button type="button" onClick={() => removeTag(t)} className="ml-1 hover:text-red-400"><X className="w-3 h-3" /></button>
                       </Badge>
                     ))}
@@ -272,7 +303,7 @@ const IntelManager = () => {
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="border-gray-700">Cancel</Button>
-                  <Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="intel-submit-btn">{editing ? 'Update' : 'Publish'} Briefing</Button>
+                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="intel-submit-btn">{editing ? 'Update' : 'Publish'} Briefing</Button>
                 </div>
               </form>
             </DialogContent>
@@ -328,7 +359,7 @@ const IntelManager = () => {
                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
                           <span>By {b.author_name}</span>
                           <span>{new Date(b.created_at).toLocaleDateString()}</span>
-                          {b.updated_at && <span className="text-amber-600">(edited)</span>}
+                          {b.updated_at && <span className="text-tropic-gold/70">(edited)</span>}
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0 items-center">
@@ -340,7 +371,7 @@ const IntelManager = () => {
                           {isAckExpanded ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => handleEdit(b)} className="border-gray-700" data-testid={`edit-intel-${b.id}`}><Edit className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDelete(b.id)} className="border-amber-700 text-amber-500 hover:bg-amber-700/10" data-testid={`delete-intel-${b.id}`}><Trash2 className="w-4 h-4" /></Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDelete(b.id)} className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10" data-testid={`delete-intel-${b.id}`}><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </div>
                     {isAckExpanded && (

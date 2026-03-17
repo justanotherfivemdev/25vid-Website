@@ -92,15 +92,15 @@ const RosterPanel = ({ operationId }) => {
                           ) : (
                             <div className="w-6 h-6 rounded bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-500">{r.username?.[0]?.toUpperCase()}</div>
                           )}
-                          <Link to={`/admin/users/${r.user_id}`} className="hover:text-amber-400 transition-colors font-medium">{r.username}</Link>
+                          <Link to={`/admin/users/${r.user_id}`} className="hover:text-tropic-gold transition-colors font-medium">{r.username}</Link>
                         </div>
                       </td>
                       <td className="py-2 px-2 text-gray-400">{r.rank || '—'}</td>
                       <td className="py-2 px-2 text-tropic-gold">{r.company || '—'}</td>
                       <td className="py-2 px-2 text-green-400">{r.platoon || '—'}</td>
-                      <td className="py-2 px-2 text-amber-400">{r.billet || '—'}</td>
+                      <td className="py-2 px-2 text-tropic-gold">{r.billet || '—'}</td>
                       <td className="py-2 px-2">
-                        {r.role_notes ? <Badge variant="outline" className="border-amber-700/40 text-amber-500 text-[10px]">{r.role_notes}</Badge> : <span className="text-gray-700">—</span>}
+                        {r.role_notes ? <Badge variant="outline" className="border-tropic-gold/40 text-tropic-gold text-[10px]">{r.role_notes}</Badge> : <span className="text-gray-700">—</span>}
                       </td>
                       <td className="py-2 px-2 text-gray-500 capitalize text-xs">{r.member_status || '—'}</td>
                     </tr>
@@ -255,7 +255,7 @@ const OperationsManager = () => {
 
   const getTypeColor = (type) => {
     const colors = {
-      combat: 'bg-amber-700',
+      combat: 'bg-tropic-gold text-black',
       training: 'bg-tropic-gold-dark',
       recon: 'bg-green-600',
       support: 'bg-yellow-600'
@@ -301,7 +301,7 @@ const OperationsManager = () => {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button className="bg-amber-700 hover:bg-amber-800">
+              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black">
                 <Plus className="w-4 h-4 mr-2" />
                 New Operation
               </Button>
@@ -499,7 +499,7 @@ const OperationsManager = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-amber-700 hover:bg-amber-800">
+                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black">
                     {editingOp ? 'Update' : 'Create'} Operation
                   </Button>
                 </div>
@@ -558,7 +558,7 @@ const OperationsManager = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => setExpandedOp(isExpanded ? null : op.id)}
-                          className={`border-gray-700 ${isExpanded ? 'bg-amber-700/10 text-amber-500 border-amber-700/50' : ''}`}
+                          className={`border-gray-700 ${isExpanded ? 'bg-tropic-gold/10 text-tropic-gold border-tropic-gold/40' : ''}`}
                           data-testid={`toggle-roster-${op.id}`}
                         >
                           <Users className="w-4 h-4 mr-1" />
@@ -576,7 +576,7 @@ const OperationsManager = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDelete(op.id)}
-                          className="border-amber-700 text-amber-500 hover:bg-amber-700/10"
+                          className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

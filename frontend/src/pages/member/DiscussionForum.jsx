@@ -98,14 +98,14 @@ const DiscussionForum = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-amber-700/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-gold/25">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>DISCUSSION FORUM</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-amber-700 text-amber-500 hover:bg-amber-700/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>}
+            {user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -121,7 +121,7 @@ const DiscussionForum = () => {
             </div>
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-amber-700 hover:bg-amber-800" data-testid="new-discussion-btn"><Plus className="w-4 h-4 mr-2" />New Thread</Button>
+                <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-discussion-btn"><Plus className="w-4 h-4 mr-2" />New Thread</Button>
               </DialogTrigger>
               <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-lg">
                 <DialogHeader><DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>Start New Discussion</DialogTitle></DialogHeader>
@@ -138,7 +138,7 @@ const DiscussionForum = () => {
                   <div><Label>Content</Label><Textarea required rows={4} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="bg-black border-gray-700" placeholder="Share your thoughts..." data-testid="discussion-content-input" /></div>
                   <div className="flex justify-end gap-3">
                     <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
-                    <Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="discussion-submit-btn">Post</Button>
+                    <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="discussion-submit-btn">Post</Button>
                   </div>
                 </form>
               </DialogContent>
@@ -157,7 +157,7 @@ const DiscussionForum = () => {
                 data-testid="discussion-search-input"
               />
             </div>
-            <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-amber-700 hover:bg-amber-800" data-testid="discussion-search-btn">
+            <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="discussion-search-btn">
               {searching ? '...' : 'Search'}
             </Button>
             {searchResults && <Button type="button" variant="outline" onClick={clearSearch} className="border-gray-700" data-testid="discussion-search-clear">Clear</Button>}
@@ -165,7 +165,7 @@ const DiscussionForum = () => {
 
           {/* Category filter */}
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} className={filter === 'all' ? 'bg-amber-700' : 'border-gray-700'} data-testid="disc-filter-all">All</Button>
+            <Button size="sm" variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} className={filter === 'all' ? 'bg-tropic-gold text-black' : 'border-gray-700'} data-testid="disc-filter-all">All</Button>
             {CATEGORIES.map(c => (
               <Button key={c.value} size="sm" variant={filter === c.value ? 'default' : 'outline'} onClick={() => setFilter(c.value)} className={filter === c.value ? 'bg-gray-700' : 'border-gray-700'} data-testid={`disc-filter-${c.value}`}>{c.label}</Button>
             ))}
@@ -181,7 +181,7 @@ const DiscussionForum = () => {
                 {searchResults.map((d) => (
                   <div key={d.id} className="flex items-center gap-2">
                     <Link to={`/hub/discussions/${d.id}`} className="flex-1">
-                      <Card className={`bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors ${d.pinned ? 'border-l-2 border-l-yellow-600' : ''}`} data-testid={`search-discussion-${d.id}`}>
+                      <Card className={`bg-gray-900 border-gray-800 hover:border-tropic-gold/30 transition-colors ${d.pinned ? 'border-l-2 border-l-tropic-gold' : ''}`} data-testid={`search-discussion-${d.id}`}>
                         <CardContent className="py-4 flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             {d.pinned && <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
@@ -206,7 +206,7 @@ const DiscussionForum = () => {
               {filtered.map((d) => (
                 <div key={d.id} className="flex items-center gap-2">
                   <Link to={`/hub/discussions/${d.id}`} className="flex-1">
-                    <Card className={`bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors ${d.pinned ? 'border-l-2 border-l-yellow-600 bg-gray-900/90' : ''}`} data-testid={`discussion-item-${d.id}`}>
+                    <Card className={`bg-gray-900 border-gray-800 hover:border-tropic-gold/30 transition-colors ${d.pinned ? 'border-l-2 border-l-tropic-gold bg-gray-900/90' : ''}`} data-testid={`discussion-item-${d.id}`}>
                       <CardContent className="py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {d.pinned && <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
@@ -227,7 +227,7 @@ const DiscussionForum = () => {
                       <Button size="sm" variant="outline" onClick={() => handleTogglePin(d.id)} className={`${d.pinned ? 'border-yellow-700 text-yellow-500 hover:bg-yellow-700/10' : 'border-gray-700 text-gray-400 hover:bg-gray-700/10'}`} title={d.pinned ? 'Unpin thread' : 'Pin thread'} data-testid={`pin-discussion-${d.id}`}>
                         {d.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(d.id)} className="border-amber-700 text-amber-500 hover:bg-amber-700/10" data-testid={`delete-discussion-${d.id}`}>Del</Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDelete(d.id)} className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10" data-testid={`delete-discussion-${d.id}`}>Del</Button>
                     </div>
                   )}
                 </div>

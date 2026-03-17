@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, MapPin, Target, ChevronDown, ChevronUp, Calendar, X } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Target, ChevronDown, ChevronUp, Calendar, X, Globe } from 'lucide-react';
+import ThreatMap from '@/components/map/ThreatMap';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -135,7 +136,7 @@ const CampaignManager = () => {
           </div>
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-amber-700 hover:bg-amber-800" data-testid="new-campaign-btn">
+              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-campaign-btn">
                 <Plus className="w-4 h-4 mr-2" />New Campaign
               </Button>
             </DialogTrigger>
@@ -240,9 +241,67 @@ const CampaignManager = () => {
                   {form.objectives.length === 0 && <p className="text-xs text-gray-600">No objectives defined</p>}
                 </div>
 
+                {/* Global Threat Map Placement */}
+                <div className="border border-tropic-gold/30 rounded-lg p-4 space-y-3">
+                  <Label className="text-tropic-gold tracking-wider flex items-center gap-2">
+                    <Globe className="w-4 h-4" />GLOBAL THREAT MAP PLACEMENT
+                  </Label>
+                  <p className="text-xs text-gray-500">Set coordinates to pin this campaign on the Global Threat Map. Click the map to place, or enter manually.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Latitude</Label>
+                      <Input value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} className="bg-black border-gray-700 text-sm" placeholder="e.g. 14.5" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Longitude</Label>
+                      <Input value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} className="bg-black border-gray-700 text-sm" placeholder="e.g. 120.9" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Region Label</Label>
+                      <Input value={form.region} onChange={e => setForm({ ...form, region: e.target.value })} className="bg-black border-gray-700 text-sm" placeholder="e.g. Pacific AO" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Threat Level</Label>
+                      <Select value={form.threat_level} onValueChange={v => setForm({ ...form, threat_level: v })}>
+                        <SelectTrigger className="bg-black border-gray-700 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700">
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="critical">Critical</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Map Description</Label>
+                    <Input value={form.map_description} onChange={e => setForm({ ...form, map_description: e.target.value })} className="bg-black border-gray-700 text-sm" placeholder="Brief description shown on map popup" />
+                  </div>
+                  {/* Mini map preview */}
+                  <ThreatMap
+                    height="240px"
+                    markers={
+                      form.lat !== '' && form.lng !== '' && !isNaN(Number(form.lat)) && !isNaN(Number(form.lng))
+                        ? [{ id: '__campaign_preview__', lat: Number(form.lat), lng: Number(form.lng), severity: form.threat_level || 'medium', name: form.name || 'Campaign marker' }]
+                        : []
+                    }
+                    onMapClick={({ lat, lng }) => setForm(f => ({ ...f, lat: lat.toFixed(5), lng: lng.toFixed(5) }))}
+                  />
+                  {form.lat !== '' && form.lng !== '' && (
+                    <p className="text-xs text-tropic-gold/70 flex items-center gap-2">
+                      <MapPin className="w-3 h-3" />Pinned at {Number(form.lat).toFixed(4)}, {Number(form.lng).toFixed(4)}
+                      <button type="button" className="text-tropic-red/70 hover:text-tropic-red" onClick={() => setForm(f => ({ ...f, lat: '', lng: '' }))}>
+                        <X className="w-3 h-3 inline" /> Clear
+                      </button>
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex justify-end gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="border-gray-700">Cancel</Button>
-                  <Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="campaign-submit-btn">{editing ? 'Update' : 'Create'} Campaign</Button>
+                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="campaign-submit-btn">{editing ? 'Update' : 'Create'} Campaign</Button>
                 </div>
               </form>
             </DialogContent>
@@ -284,11 +343,11 @@ const CampaignManager = () => {
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
-                        <Button size="sm" variant="outline" onClick={() => setExpanded(isExpanded ? null : c.id)} className={`border-gray-700 ${isExpanded ? 'bg-amber-700/10 border-amber-700/50' : ''}`} data-testid={`expand-campaign-${c.id}`}>
+                        <Button size="sm" variant="outline" onClick={() => setExpanded(isExpanded ? null : c.id)} className={`border-gray-700 ${isExpanded ? 'bg-tropic-gold/10 border-tropic-gold/50' : ''}`} data-testid={`expand-campaign-${c.id}`}>
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => handleEdit(c)} className="border-gray-700"><Edit className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDelete(c.id)} className="border-amber-700 text-amber-500 hover:bg-amber-700/10"><Trash2 className="w-4 h-4" /></Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDelete(c.id)} className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </div>
                     {isExpanded && (
@@ -317,7 +376,7 @@ const CampaignManager = () => {
                             <div className="space-y-1">
                               {c.objectives.map((o, i) => (
                                 <div key={i} className="flex items-center gap-3 bg-black/30 rounded px-3 py-2 text-sm">
-                                  <div className={`w-2 h-2 rounded-full ${o.status === 'in_progress' ? 'bg-amber-500 animate-pulse' : o.status === 'complete' ? 'bg-green-500' : o.status === 'failed' ? 'bg-red-500' : 'bg-gray-600'}`}></div>
+                                  <div className={`w-2 h-2 rounded-full ${o.status === 'in_progress' ? 'bg-tropic-gold animate-pulse' : o.status === 'complete' ? 'bg-green-500' : o.status === 'failed' ? 'bg-tropic-red' : 'bg-gray-600'}`}></div>
                                   <Badge variant="outline" className={`text-[9px] ${o.priority === 'primary' ? 'border-tropic-red text-tropic-red' : o.priority === 'secondary' ? 'border-tropic-gold text-tropic-gold' : 'border-gray-600 text-gray-400'}`}>{o.priority}</Badge>
                                   <span className="font-medium">{o.name}</span>
                                   {o.grid_ref && <span className="text-[10px] text-gray-600"><MapPin className="inline w-2.5 h-2.5 mr-0.5" />{o.grid_ref}</span>}

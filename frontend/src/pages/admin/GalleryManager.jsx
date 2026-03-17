@@ -95,7 +95,7 @@ const GalleryManager = () => {
           </div>
           <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-amber-700 hover:bg-amber-800" data-testid="new-gallery-btn"><Plus className="w-4 h-4 mr-2" />Add Image</Button>
+              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-gallery-btn"><Plus className="w-4 h-4 mr-2" />Add Image</Button>
             </DialogTrigger>
             <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -114,7 +114,7 @@ const GalleryManager = () => {
                 <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Image" description="Upload or paste URL. Recommended: 600x600px or larger." previewClass="w-full h-48 object-cover" />
                 <div className="flex justify-end space-x-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
-                  <Button type="submit" className="bg-amber-700 hover:bg-amber-800" data-testid="gallery-submit-btn">{editing ? 'Update' : 'Add'}</Button>
+                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="gallery-submit-btn">{editing ? 'Update' : 'Add'}</Button>
                 </div>
               </form>
             </DialogContent>
@@ -123,7 +123,7 @@ const GalleryManager = () => {
 
         {/* Category filter */}
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} className={filter === 'all' ? 'bg-amber-700' : 'border-gray-700'} data-testid="gallery-filter-all">All</Button>
+          <Button size="sm" variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} className={filter === 'all' ? 'bg-tropic-gold text-black' : 'border-gray-700'} data-testid="gallery-filter-all">All</Button>
           {CATEGORIES.map(c => (
             <Button key={c.value} size="sm" variant={filter === c.value ? 'default' : 'outline'} onClick={() => setFilter(c.value)} className={filter === c.value ? getCatColor(c.value) : 'border-gray-700'} data-testid={`gallery-filter-${c.value}`}>{c.label}</Button>
           ))}
@@ -139,7 +139,7 @@ const GalleryManager = () => {
                   <img src={resolveImg(img.image_url)} alt={img.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <Button size="sm" variant="outline" onClick={() => handleEdit(img)} className="border-white/50 text-white"><Edit className="w-4 h-4" /></Button>
-                    <Button size="sm" variant="outline" onClick={() => handleDelete(img.id)} className="border-amber-500 text-amber-500"><Trash2 className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="outline" onClick={() => handleDelete(img.id)} className="border-tropic-red/60 text-tropic-red"><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 </div>
                 <CardContent className="p-3">

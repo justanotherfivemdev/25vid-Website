@@ -60,7 +60,7 @@ const UsersManager = () => {
           <div className="grid gap-2">
             {filtered.map((u) => (
               <Link to={`/admin/users/${u.id}`} key={u.id}>
-                <Card className="bg-gray-900 border-gray-800 hover:border-amber-700/30 transition-colors group" data-testid={`user-card-${u.id}`}>
+                <Card className="bg-gray-900 border-gray-800 hover:border-tropic-gold/25 transition-colors group" data-testid={`user-card-${u.id}`}>
                   <CardContent className="py-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -70,16 +70,16 @@ const UsersManager = () => {
                           <div className="w-9 h-9 rounded-lg bg-gray-800 flex items-center justify-center text-sm font-bold text-gray-500 border border-gray-700">{u.username[0]?.toUpperCase()}</div>
                         )}
                         <div>
-                          <div className="font-bold text-sm tracking-wide group-hover:text-amber-400 transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{u.username}</div>
+                          <div className="font-bold text-sm tracking-wide group-hover:text-tropic-gold transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{u.username}</div>
                           <div className="text-xs text-gray-500">{u.email}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {u.rank && <span className="text-xs text-gray-400 hidden sm:block">{u.rank}</span>}
                         <Badge className={`${STATUS_COLORS[u.status] || 'bg-gray-700'} text-white text-[10px] px-2`}>{(u.status || 'recruit').toUpperCase()}</Badge>
-                        {u.role === 'admin' && <Badge className="bg-amber-900/50 text-amber-400 text-[10px]">ADMIN</Badge>}
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteUser(u.id); }} className="text-amber-500 hover:bg-amber-700/10 shrink-0" data-testid={`delete-user-${u.id}`}><Trash2 className="w-3 h-3" /></Button>
-                        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-amber-500 transition-colors" />
+                        {u.role === 'admin' && <Badge className="bg-tropic-gold/20 text-tropic-gold text-[10px]">ADMIN</Badge>}
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteUser(u.id); }} className="text-tropic-red hover:bg-tropic-red/10 shrink-0" data-testid={`delete-user-${u.id}`}><Trash2 className="w-3 h-3" /></Button>
+                        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-tropic-gold transition-colors" />
                       </div>
                     </div>
                   </CardContent>

@@ -14,7 +14,7 @@ const API = `${BACKEND_URL}/api`;
 
 // Tag categories configuration
 const TAG_CATEGORIES = [
-  { key: 'ranks', label: 'Ranks', icon: Shield, color: 'text-amber-500', description: 'Military ranks for the unit hierarchy' },
+  { key: 'ranks', label: 'Ranks', icon: Shield, color: 'text-tropic-gold', description: 'Military ranks for the unit hierarchy' },
   { key: 'companies', label: 'Companies', icon: Building2, color: 'text-tropic-gold', description: 'Company-level units (e.g., Alpha, Bravo, HQ)' },
   { key: 'platoons', label: 'Platoons', icon: Users, color: 'text-green-500', description: 'Platoon-level units within companies' },
   { key: 'squads', label: 'Squads', icon: Target, color: 'text-purple-500', description: 'Squad-level teams within platoons' },
@@ -62,7 +62,7 @@ const TagCategoryCard = ({ category, tags, customTags, onAddTag, onRemoveCustomT
           <Button 
             onClick={handleAdd} 
             disabled={!newTag.trim()}
-            className="bg-amber-700 hover:bg-amber-800"
+            className="bg-tropic-gold hover:bg-tropic-gold-dark text-black"
             data-testid={`add-${category.key}-btn`}
           >
             <Plus className="w-4 h-4" />
@@ -77,7 +77,7 @@ const TagCategoryCard = ({ category, tags, customTags, onAddTag, onRemoveCustomT
               <Badge 
                 key={tag} 
                 variant="outline" 
-                className={`${isCustom ? 'bg-amber-900/30 border-amber-700/50 text-amber-300' : 'bg-gray-800/50 border-gray-700 text-gray-300'} px-2 py-1 text-xs flex items-center gap-1`}
+                className={`${isCustom ? 'bg-tropic-gold/20 border-tropic-gold/40 text-tropic-gold' : 'bg-gray-800/50 border-gray-700 text-gray-300'} px-2 py-1 text-xs flex items-center gap-1`}
               >
                 {tag}
                 {isCustom && (
@@ -100,7 +100,7 @@ const TagCategoryCard = ({ category, tags, customTags, onAddTag, onRemoveCustomT
             <span className="w-2 h-2 rounded-full bg-gray-600"></span> Default
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-amber-600"></span> Custom (removable)
+            <span className="w-2 h-2 rounded-full bg-tropic-gold"></span> Custom (removable)
           </span>
         </div>
       </CardContent>
@@ -209,7 +209,7 @@ const UnitTagsManager = () => {
               Manage ranks, units, billets, and other organizational tags. Custom tags extend the defaults.
             </p>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="bg-amber-700 hover:bg-amber-800" data-testid="save-tags-btn">
+          <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="save-tags-btn">
             <Save className="w-4 h-4 mr-2" />
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -217,7 +217,7 @@ const UnitTagsManager = () => {
 
         {/* Message */}
         {message.text && (
-          <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-amber-900/20 border-red-700'}>
+          <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-tropic-red/10 border-tropic-red/60'}>
             {message.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
             <AlertDescription>{message.text}</AlertDescription>
           </Alert>

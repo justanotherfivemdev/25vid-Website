@@ -49,10 +49,10 @@ const SectionCard = ({ number, icon: Icon, title, subtitle, children }) => (
   <Card className="bg-gray-900 border-gray-800 overflow-hidden" data-testid={`section-${number}`}>
     <CardHeader className="bg-gray-900/80 border-b border-gray-800/60">
       <div className="flex items-center gap-4">
-        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-900/30 text-amber-500 font-bold text-sm shrink-0">{number}</div>
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-tropic-gold/20 text-tropic-gold font-bold text-sm shrink-0">{number}</div>
         <div className="flex-1">
           <CardTitle className="text-xl flex items-center gap-2">
-            <Icon className="w-5 h-5 text-amber-500" />{title}
+            <Icon className="w-5 h-5 text-tropic-gold" />{title}
           </CardTitle>
           <CardDescription className="mt-0.5">{subtitle}</CardDescription>
         </div>
@@ -140,13 +140,13 @@ const SiteContentManager = () => {
             <h1 className="text-3xl font-bold tracking-wider" data-testid="site-content-title">COMMAND CENTER</h1>
             <p className="text-sm text-gray-500 mt-1">Edit all website branding, text, and imagery. Changes are live after saving.</p>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="bg-amber-700 hover:bg-amber-800 px-8" data-testid="save-content-btn">
+          <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black px-8" data-testid="save-content-btn">
             <Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save All'}
           </Button>
         </div>
 
         {message.text && (
-          <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-amber-900/20 border-red-700'}>
+          <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-tropic-red/10 border-tropic-red/60'}>
             {message.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
             <AlertDescription>{message.text}</AlertDescription>
           </Alert>
@@ -399,7 +399,7 @@ const SiteContentManager = () => {
         {/* Bottom save */}
         <div className="flex justify-between items-center pt-8 border-t border-gray-800">
           <p className="text-sm text-gray-600">All fields are optional. Empty fields fall back to defaults.</p>
-          <Button onClick={handleSave} disabled={saving} className="bg-amber-700 hover:bg-amber-800 px-10 py-5 text-base" data-testid="save-content-btn-bottom">
+          <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black px-10 py-5 text-base" data-testid="save-content-btn-bottom">
             <Save className="w-5 h-5 mr-2" />{saving ? 'Saving...' : 'Save All Changes'}
           </Button>
         </div>
