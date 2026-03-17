@@ -2933,6 +2933,7 @@ VALYU_COUNTRY_CACHE_HOURS = int(os.environ.get("VALYU_COUNTRY_CACHE_HOURS", 24))
 # In-memory rate limiting and deduplication state
 _valyu_last_call_time: float = 0.0
 _valyu_pending_requests: Dict[str, asyncio.Task] = {}
+_valyu_rate_lock = asyncio.Lock()
 
 valyu_logger = logging.getLogger("valyu")
 
@@ -3561,9 +3562,12 @@ async def _valyu_background_ingestion():
                 evt["content_hash"] = content_hash
                 evt["ingested_at"] = datetime.now(timezone.utc).isoformat()
                 evt["provider"] = "valyu"
-                exists = await db.external_events.find_one({"content_hash": content_hash})
-                if not exists:
-                    await db.external_events.insert_one(evt)
+                result = await db.external_events.update_one(
+                    {"content_hash": content_hash},
+                    {"$setOnInsert": evt},
+                    upsert=True,
+                )
+                if result.upserted_id:
                     inserted += 1
 
             # Update the cache as well
