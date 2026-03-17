@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Edit, Trash2, MapPin, Target, ChevronDown, ChevronUp, Calendar, X, Globe } from 'lucide-react';
 import ThreatMap from '@/components/map/ThreatMap';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API } from '@/utils/api';
 
 const STATUSES = [
   { value: 'planning', label: 'PLANNING', color: 'bg-gray-700 text-gray-300' },

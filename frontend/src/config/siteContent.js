@@ -1,7 +1,7 @@
 // Default site content — fallback values when no database content exists yet.
 // All values here can be overridden live via Admin > Command Center.
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL } from '@/utils/api';
 
 export const defaultSiteContent = {
   browser: {

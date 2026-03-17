@@ -10,8 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import MapMiniView from '@/components/MapMiniView';
 import { colors } from '@/theme/theme';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
 
 const STATUS_ICON = { attending: CheckCircle, tentative: HelpCircle, waitlisted: Clock };

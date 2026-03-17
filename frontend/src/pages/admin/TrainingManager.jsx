@@ -10,8 +10,7 @@ import { Plus, Edit, Trash2, Clock, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ImageUpload from '@/components/admin/ImageUpload';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 const TrainingManager = () => {
   const [items, setItems] = useState([]);

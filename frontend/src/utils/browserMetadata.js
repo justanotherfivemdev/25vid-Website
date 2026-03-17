@@ -1,4 +1,4 @@
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL } from '@/utils/api';
 
 const textOrFallback = (value, fallback = '') => {
   if (typeof value !== 'string') return fallback;

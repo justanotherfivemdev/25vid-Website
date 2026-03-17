@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield, Building2, UserPlus, Radio, MapPin } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL } from '@/utils/api';
 
 const AdminLayout = ({ children }) => {
   const location = useLocation();

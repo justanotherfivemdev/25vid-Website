@@ -14,8 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ImageUpload from '@/components/admin/ImageUpload';
 import ThreatMap from '@/components/map/ThreatMap';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API } from '@/utils/api';
 
 const RSVP_STATUS_CFG = {
   attending: { label: 'ATTENDING', color: 'text-green-400', icon: CheckCircle },
@@ -25,10 +24,9 @@ const RSVP_STATUS_CFG = {
 
 const resolveImg = (url) => {
   if (!url) return '';
-  const BU = process.env.REACT_APP_BACKEND_URL;
   if (url.startsWith('http')) return url;
-  if (url.startsWith('/uploads/')) return `${BU}/api${url}`;
-  return `${BU}${url}`;
+  if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`;
+  return `${BACKEND_URL}${url}`;
 };
 
 const RosterPanel = ({ operationId }) => {
