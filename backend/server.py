@@ -3707,12 +3707,18 @@ app.include_router(api_router)
 app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 cors_origins_raw = os.environ.get('CORS_ORIGINS', '')
-cors_origins = [o.strip() for o in cors_origins_raw.split(',') if o.strip() and o.strip() != '*']
+cors_origins = [o.strip().rstrip('/') for o in cors_origins_raw.split(',') if o.strip() and o.strip() != '*']
+# Always honour FRONTEND_URL so operators only need to set one variable
+if FRONTEND_URL and FRONTEND_URL not in cors_origins:
+    cors_origins.insert(0, FRONTEND_URL)
+# Development fallback when nothing is configured
+if not cors_origins:
+    cors_origins = ["http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=cors_origins if cors_origins else ["http://localhost:3000"],
+    allow_origins=cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -1,7 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatRelativeTime } from '@/utils/threatMapUtils';
+import { formatRelativeTime, stripUrls } from '@/utils/threatMapUtils';
 import { useMapStore } from '@/stores/threatMapStore';
 import {
   MapPin, Clock, Swords, Users, CloudLightning, Landmark,
@@ -70,8 +70,8 @@ const EventCard = memo(function EventCard({ event, isSelected, onClick, style })
               </Badge>
             </div>
 
-            <div className="mt-1 text-xs text-gray-400 line-clamp-2">
-              {event.summary}
+            <div className="mt-1 text-xs text-gray-400 line-clamp-2 break-words">
+              {stripUrls(event.summary)}
             </div>
 
             <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">

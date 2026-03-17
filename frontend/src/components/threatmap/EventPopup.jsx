@@ -1,7 +1,30 @@
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
-import { formatRelativeTime } from '@/utils/threatMapUtils';
+import { formatRelativeTime, stripUrls, parseUrlSegments } from '@/utils/threatMapUtils';
+
+function LinkifiedText({ text }) {
+  const segments = parseUrlSegments(text);
+  return (
+    <>
+      {segments.map((seg, i) =>
+        seg.type === 'url' ? (
+          <a
+            key={i}
+            href={seg.value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 underline break-all hover:text-blue-300"
+          >
+            {seg.value}
+          </a>
+        ) : (
+          <span key={i}>{seg.value}</span>
+        )
+      )}
+    </>
+  );
+}
 
 export default function EventPopup({ event }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -38,13 +61,13 @@ export default function EventPopup({ event }) {
       </div>
 
       {!isExpanded ? (
-        <div className="mb-2 text-xs text-gray-300 line-clamp-3">
-          {event.summary}
+        <div className="mb-2 text-xs text-gray-300 line-clamp-3 break-words">
+          {stripUrls(event.summary)}
         </div>
       ) : (
         <div className="mb-2 max-h-[400px] overflow-y-auto rounded-md bg-gray-800/50 p-3">
-          <div className="text-xs text-gray-200 whitespace-pre-wrap">
-            {event.rawContent || event.summary}
+          <div className="text-xs text-gray-200 whitespace-pre-wrap break-words">
+            <LinkifiedText text={event.rawContent || event.summary} />
           </div>
         </div>
       )}

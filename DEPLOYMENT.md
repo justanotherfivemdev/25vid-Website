@@ -64,8 +64,14 @@ JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
 COOKIE_SECURE=true
 
-# Recommended for production links
+# Required — set to the public URL of your frontend (no trailing slash).
+# This controls both CORS allowed origins and OAuth redirect URLs.
 FRONTEND_URL=https://yourdomain.com
+
+# Optional — additional CORS origins (comma-separated) when the frontend
+# is served from more than one domain.  FRONTEND_URL is always included
+# automatically.
+# CORS_ORIGINS=https://www.yourdomain.com,https://staging.yourdomain.com
 
 # Optional — Valyu API (powers Global Threat Map intelligence features)
 # VALYU_API_KEY=valyu_your_api_key_here
