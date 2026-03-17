@@ -91,6 +91,11 @@ const UnitRoster = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('25th'); // '25th' | 'partners'
+  const [partnerUnits, setPartnerUnits] = useState([]);
+  const [selectedPartnerUnit, setSelectedPartnerUnit] = useState(null);
+  const [partnerMembers, setPartnerMembers] = useState([]);
+  const [loadingPartnerMembers, setLoadingPartnerMembers] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -98,21 +103,33 @@ const UnitRoster = () => {
 
   const fetchData = async () => {
     try {
-      const [rosterRes, hierarchyRes] = await Promise.all([
+      const [rosterRes, hierarchyRes, partnerRes] = await Promise.all([
         axios.get(`${API}/roster`),
         axios.get(`${API}/roster/hierarchy`).catch(err => {
           console.error('Hierarchy endpoint failed:', err.response?.status || err.message);
           setHierarchyError(true);
           return { data: null };
-        })
+        }),
+        axios.get(`${API}/partner-units`).catch((err) => { console.error('Partner units fetch failed:', err); return { data: [] }; }),
       ]);
       setMembers(rosterRes.data);
       if (hierarchyRes.data) {
         setHierarchy(hierarchyRes.data);
         setHierarchyError(false);
       }
+      setPartnerUnits(partnerRes.data || []);
     } catch (e) { console.error('Roster fetch failed:', e); }
     finally { setLoading(false); }
+  };
+
+  const viewPartnerUnit = async (unit) => {
+    setSelectedPartnerUnit(unit);
+    setLoadingPartnerMembers(true);
+    try {
+      const res = await axios.get(`${API}/partner-units/${unit.id}/members`);
+      setPartnerMembers(res.data);
+    } catch { setPartnerMembers([]); }
+    finally { setLoadingPartnerMembers(false); }
   };
 
   const ranks = [...new Set(members.map(m => m.rank).filter(Boolean))].sort();
@@ -257,6 +274,25 @@ const UnitRoster = () => {
             </p>
           )}
 
+          {/* Tab Bar */}
+          <div className="flex border-b border-gray-800 mb-6">
+            <button
+              onClick={() => setActiveTab('25th')}
+              className={`px-6 py-3 text-sm font-bold tracking-widest transition-colors ${activeTab === '25th' ? 'text-tropic-gold border-b-2 border-tropic-gold' : 'text-gray-500 hover:text-gray-300'}`}
+              style={{ fontFamily: 'Rajdhani, sans-serif' }}
+            >
+              25TH MEMBERS
+            </button>
+            <button
+              onClick={() => { setActiveTab('partners'); setSelectedPartnerUnit(null); }}
+              className={`px-6 py-3 text-sm font-bold tracking-widest transition-colors ${activeTab === 'partners' ? 'text-tropic-gold border-b-2 border-tropic-gold' : 'text-gray-500 hover:text-gray-300'}`}
+              style={{ fontFamily: 'Rajdhani, sans-serif' }}
+            >
+              PARTNER UNITS {partnerUnits.length > 0 && <span className="ml-1 text-xs text-gray-500">({partnerUnits.length})</span>}
+            </button>
+          </div>
+
+          {activeTab === '25th' && (<>
           {/* Filters - only show in grid mode */}
           {viewMode === 'grid' && (
             <div className="flex flex-wrap gap-3 bg-gray-900/50 border border-gray-800 rounded-lg p-4">
@@ -372,6 +408,78 @@ const UnitRoster = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" data-testid="grid-view">
               {filtered.map(m => <MemberCard key={m.id} member={m} />)}
+            </div>
+          )}
+          </>)}
+
+          {activeTab === 'partners' && (
+            <div>
+              {selectedPartnerUnit ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Button size="sm" variant="outline" className="border-gray-700" onClick={() => setSelectedPartnerUnit(null)}>← Back</Button>
+                    <div>
+                      <h2 className="font-bold text-tropic-gold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{selectedPartnerUnit.name}</h2>
+                      {selectedPartnerUnit.abbreviation && <span className="text-gray-500 text-xs">{selectedPartnerUnit.abbreviation}</span>}
+                    </div>
+                    <Badge className="bg-tropic-gold/10 text-tropic-gold border border-tropic-gold/30 text-[10px]">PARTNER UNIT</Badge>
+                  </div>
+                  {selectedPartnerUnit.description && <p className="text-gray-400 text-sm">{selectedPartnerUnit.description}</p>}
+                  {loadingPartnerMembers ? (
+                    <div className="text-center py-8 text-gray-500">Loading members...</div>
+                  ) : partnerMembers.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">No members listed for this unit.</div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {partnerMembers.map(m => (
+                        <div key={m.id} className="bg-gray-900/80 border border-gray-800 rounded-lg p-3 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-base border border-gray-700" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                            {m.username?.[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-bold text-sm tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{m.username}</div>
+                            {m.rank && <div className="text-xs text-gray-400">{m.rank}</div>}
+                          </div>
+                          {m.partner_role === 'partner_admin' && <Badge className="ml-auto bg-tropic-gold/20 text-tropic-gold border border-tropic-gold/40 text-[10px]">ADMIN</Badge>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  {partnerUnits.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>No partner units enrolled yet.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {partnerUnits.map(unit => (
+                        <Card key={unit.id} className="bg-gray-900/80 border-gray-800 hover:border-tropic-gold/40 transition-all duration-300 hover:-translate-y-1 cursor-pointer group" onClick={() => viewPartnerUnit(unit)}>
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-tropic-gold/10 flex items-center justify-center border border-tropic-gold/30">
+                                <Building2 className="w-5 h-5 text-tropic-gold" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-bold text-sm tracking-wide truncate group-hover:text-tropic-gold transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{unit.name}</div>
+                                {unit.abbreviation && <div className="text-xs text-gray-500">{unit.abbreviation}</div>}
+                                {unit.description && <div className="text-xs text-gray-600 line-clamp-2 mt-1">{unit.description}</div>}
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-tropic-gold transition-colors shrink-0 mt-1" />
+                            </div>
+                            <div className="flex items-center justify-between mt-3">
+                              <Badge className="bg-gray-800 text-gray-400 border border-gray-700 text-[10px]">PARTNER UNIT</Badge>
+                              <span className="text-xs text-gray-500">{unit.member_count} member{unit.member_count !== 1 ? 's' : ''}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

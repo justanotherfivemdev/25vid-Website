@@ -142,6 +142,8 @@ class User(BaseModel):
     company: Optional[str] = None     # e.g., "Alpha", "Bravo", "HQ"
     platoon: Optional[str] = None     # e.g., "1st Platoon", "2nd Platoon"
     billet: Optional[str] = None      # e.g., "Company Commander", "Squad Leader", "Rifleman"
+    partner_unit_id: Optional[str] = None
+    partner_role: Optional[str] = None  # "partner_admin" | "partner_member"
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -183,6 +185,8 @@ class UserResponse(BaseModel):
     company: Optional[str] = None
     platoon: Optional[str] = None
     billet: Optional[str] = None
+    partner_unit_id: Optional[str] = None
+    partner_role: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -246,6 +250,61 @@ class OperationCreate(BaseModel):
 class RSVPSubmit(BaseModel):
     status: Literal["attending", "tentative", "not_attending"] = "attending"
     role_notes: Optional[str] = None
+
+# Partner Unit models
+class PartnerUnit(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    abbreviation: Optional[str] = None
+    description: Optional[str] = None
+    logo_url: Optional[str] = None
+    contact_email: Optional[str] = None
+    is_active: bool = True
+    created_by: str  # 25th admin user id
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    permissions: List[str] = Field(default_factory=lambda: ["discussions", "operations", "training", "intel", "campaigns"])
+    invite_token: Optional[str] = None
+    invite_token_expires: Optional[str] = None
+
+class PartnerUnitCreate(BaseModel):
+    name: str
+    abbreviation: Optional[str] = None
+    description: Optional[str] = None
+    logo_url: Optional[str] = None
+    contact_email: Optional[str] = None
+    permissions: List[str] = Field(default_factory=lambda: ["discussions", "operations", "training", "intel", "campaigns"])
+
+class PartnerUnitResponse(BaseModel):
+    id: str
+    name: str
+    abbreviation: Optional[str] = None
+    description: Optional[str] = None
+    logo_url: Optional[str] = None
+    contact_email: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime
+    permissions: List[str] = Field(default_factory=list)
+    member_count: int = 0
+
+class PartnerRegister(BaseModel):
+    invite_token: str
+    email: EmailStr
+    username: str
+    password: str = Field(min_length=8)
+    rank: Optional[str] = None
+
+class PartnerUnitSelfUpdate(BaseModel):
+    description: Optional[str] = None
+    logo_url: Optional[str] = None
+    contact_email: Optional[str] = None
+    abbreviation: Optional[str] = None
+
+class PartnerMemberUpdate(BaseModel):
+    rank: Optional[str] = None
+    billet: Optional[str] = None
+    partner_role: Optional[str] = None
+    status: Optional[str] = None
 
 class Announcement(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -555,6 +614,22 @@ async def get_current_admin(current_user: dict = Depends(get_current_user)) -> d
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
+async def get_current_partner_user(current_user: dict = Depends(get_current_user)) -> dict:
+    """Require the user to be a partner member or admin."""
+    if current_user.get("partner_role") not in ("partner_member", "partner_admin"):
+        raise HTTPException(status_code=403, detail="Partner access required")
+    if not current_user.get("partner_unit_id"):
+        raise HTTPException(status_code=403, detail="Partner unit assignment required")
+    return current_user
+
+async def get_current_partner_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    """Require the user to be a partner admin."""
+    if current_user.get("partner_role") != "partner_admin":
+        raise HTTPException(status_code=403, detail="Partner admin access required")
+    if not current_user.get("partner_unit_id"):
+        raise HTTPException(status_code=403, detail="Partner unit assignment required")
+    return current_user
+
 def create_discord_state(flow: str, user_id: str = None) -> str:
     """Create a signed JWT state parameter for Discord CSRF protection."""
     payload = {
@@ -595,7 +670,9 @@ def user_to_response(u: dict) -> UserResponse:
         discord_id=u.get("discord_id"), discord_username=u.get("discord_username"),
         discord_avatar=u.get("discord_avatar"), discord_linked=u.get("discord_linked", False),
         pre_registered=u.get("pre_registered", False), permissions=u.get("permissions", []), unit=u.get("unit"),
-        company=u.get("company"), platoon=u.get("platoon"), billet=u.get("billet")
+        company=u.get("company"), platoon=u.get("platoon"), billet=u.get("billet"),
+        partner_unit_id=u.get("partner_unit_id"),
+        partner_role=u.get("partner_role"),
     )
 
 def validate_import_email(raw_email: str) -> str:
@@ -3781,6 +3858,270 @@ async def research_agent_post_briefing(
 @api_router.get("/")
 async def root():
     return {"message": "25th Infantry Division API", "status": "operational"}
+
+# ============================================================================
+# PARTNER UNIT ENDPOINTS — 25th Admin manages partner units
+# ============================================================================
+
+@api_router.get("/admin/partner-units", response_model=List[PartnerUnitResponse])
+async def list_partner_units(current_admin: dict = Depends(get_current_admin)):
+    """25th admin: list all partner units."""
+    docs = await db.partner_units.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    results = []
+    for doc in docs:
+        count = await db.users.count_documents({"partner_unit_id": doc["id"], "is_active": True})
+        doc["member_count"] = count
+        if isinstance(doc.get("created_at"), str):
+            doc["created_at"] = datetime.fromisoformat(doc["created_at"])
+        results.append(PartnerUnitResponse(**doc))
+    return results
+
+@api_router.post("/admin/partner-units", response_model=PartnerUnitResponse, status_code=201)
+async def create_partner_unit(data: PartnerUnitCreate, current_admin: dict = Depends(get_current_admin)):
+    """25th admin: create a new partner unit."""
+    unit = PartnerUnit(
+        name=data.name,
+        abbreviation=data.abbreviation,
+        description=data.description,
+        logo_url=data.logo_url,
+        contact_email=data.contact_email,
+        permissions=data.permissions,
+        created_by=current_admin["id"],
+    )
+    doc = unit.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.partner_units.insert_one(doc)
+    await db.audit_logs.insert_one({
+        "action": "partner_unit_created", "actor_id": current_admin["id"],
+        "actor_username": current_admin.get("username"), "target_id": unit.id,
+        "target_name": unit.name, "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return PartnerUnitResponse(id=unit.id, name=unit.name, abbreviation=unit.abbreviation,
+                               description=unit.description, logo_url=unit.logo_url,
+                               contact_email=unit.contact_email, is_active=unit.is_active,
+                               created_at=unit.created_at, permissions=unit.permissions, member_count=0)
+
+@api_router.put("/admin/partner-units/{unit_id}", response_model=PartnerUnitResponse)
+async def update_partner_unit(unit_id: str, data: PartnerUnitCreate, current_admin: dict = Depends(get_current_admin)):
+    """25th admin: update a partner unit."""
+    doc = await db.partner_units.find_one({"id": unit_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Partner unit not found")
+    update = {k: v for k, v in data.model_dump().items() if v is not None}
+    await db.partner_units.update_one({"id": unit_id}, {"$set": update})
+    await db.audit_logs.insert_one({
+        "action": "partner_unit_updated", "actor_id": current_admin["id"],
+        "actor_username": current_admin.get("username"), "target_id": unit_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    updated = await db.partner_units.find_one({"id": unit_id}, {"_id": 0})
+    count = await db.users.count_documents({"partner_unit_id": unit_id, "is_active": True})
+    updated["member_count"] = count
+    if isinstance(updated.get("created_at"), str):
+        updated["created_at"] = datetime.fromisoformat(updated["created_at"])
+    return PartnerUnitResponse(**updated)
+
+@api_router.delete("/admin/partner-units/{unit_id}")
+async def delete_partner_unit(unit_id: str, current_admin: dict = Depends(get_current_admin)):
+    """25th admin: delete a partner unit (deactivate)."""
+    doc = await db.partner_units.find_one({"id": unit_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Partner unit not found")
+    await db.partner_units.update_one({"id": unit_id}, {"$set": {"is_active": False}})
+    await db.audit_logs.insert_one({
+        "action": "partner_unit_deleted", "actor_id": current_admin["id"],
+        "actor_username": current_admin.get("username"), "target_id": unit_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"message": "Partner unit deactivated"}
+
+@api_router.post("/admin/partner-units/{unit_id}/invite")
+async def generate_partner_invite(unit_id: str, current_admin: dict = Depends(get_current_admin)):
+    """25th admin: generate a one-time invite token for a partner unit."""
+    doc = await db.partner_units.find_one({"id": unit_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Partner unit not found")
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    await db.partner_units.update_one({"id": unit_id}, {"$set": {"invite_token": token, "invite_token_expires": expires}})
+    await db.audit_logs.insert_one({
+        "action": "partner_invite_generated", "actor_id": current_admin["id"],
+        "actor_username": current_admin.get("username"), "target_id": unit_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"invite_token": token, "expires": expires, "unit_id": unit_id}
+
+@api_router.get("/partner-units", response_model=List[PartnerUnitResponse])
+async def list_active_partner_units(current_user: dict = Depends(get_current_user)):
+    """Authenticated users: list active partner units (for roster display)."""
+    docs = await db.partner_units.find({"is_active": True}, {"_id": 0, "invite_token": 0}).sort("name", 1).to_list(200)
+    results = []
+    for doc in docs:
+        count = await db.users.count_documents({"partner_unit_id": doc["id"], "is_active": True})
+        doc["member_count"] = count
+        if isinstance(doc.get("created_at"), str):
+            doc["created_at"] = datetime.fromisoformat(doc["created_at"])
+        results.append(PartnerUnitResponse(**doc))
+    return results
+
+@api_router.get("/partner-units/{unit_id}/members")
+async def get_partner_unit_members(unit_id: str, current_user: dict = Depends(get_current_user)):
+    """Authenticated users: view members of a partner unit (limited info)."""
+    unit = await db.partner_units.find_one({"id": unit_id, "is_active": True})
+    if not unit:
+        raise HTTPException(status_code=404, detail="Partner unit not found")
+    members = await db.users.find(
+        {"partner_unit_id": unit_id, "is_active": True}, {"_id": 0, "password_hash": 0}
+    ).to_list(500)
+    return [{"id": m["id"], "username": m["username"], "rank": m.get("rank"),
+             "partner_role": m.get("partner_role"), "avatar_url": m.get("avatar_url"),
+             "status": m.get("status", "active")} for m in members]
+
+# ============================================================================
+# PARTNER REGISTRATION — invite-based onboarding
+# ============================================================================
+
+@api_router.post("/partner/register", response_model=TokenResponse, status_code=201)
+async def partner_register(data: PartnerRegister, response: Response):
+    """Register a new partner user using a unit invite token."""
+    unit = await db.partner_units.find_one({"invite_token": data.invite_token, "is_active": True}, {"_id": 0})
+    if not unit:
+        raise HTTPException(status_code=400, detail="Invalid or expired invite token")
+    expires = unit.get("invite_token_expires")
+    if expires:
+        exp_dt = datetime.fromisoformat(expires)
+        if exp_dt.tzinfo is None:
+            exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > exp_dt:
+            raise HTTPException(status_code=400, detail="Invite token has expired")
+    normalized_email = normalize_email(data.email)
+    existing = await db.users.find_one({"email": normalized_email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user_obj = User(
+        email=normalized_email,
+        username=data.username,
+        password_hash=hash_password(data.password),
+        role="member",
+        rank=data.rank,
+        email_verified=True,
+        email_verified_at=datetime.now(timezone.utc).isoformat(),
+        partner_unit_id=unit["id"],
+        partner_role="partner_member",
+        status="active",
+    )
+    doc = user_obj.model_dump()
+    doc["join_date"] = doc["join_date"].isoformat()
+    await db.users.insert_one(doc)
+    await db.audit_logs.insert_one({
+        "action": "partner_user_registered", "actor_id": user_obj.id,
+        "actor_username": user_obj.username, "target_id": unit["id"],
+        "target_name": unit.get("name"), "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    access_token = create_access_token({"sub": user_obj.id, "email": str(user_obj.email)})
+    set_auth_cookie(response, access_token)
+    return TokenResponse(access_token=access_token, token_type="bearer", user=user_to_response(doc))
+
+# ============================================================================
+# PARTNER HUB — scoped data endpoints
+# ============================================================================
+
+@api_router.get("/partner/hub")
+async def partner_hub_summary(current_user: dict = Depends(get_current_partner_user)):
+    """Partner hub: summary data for partner dashboard."""
+    unit = await db.partner_units.find_one({"id": current_user["partner_unit_id"]}, {"_id": 0, "invite_token": 0})
+    [ops, ann, train, disc, intel, camp] = await asyncio.gather(
+        db.operations.find({}, {"_id": 0}).sort("date", -1).limit(4).to_list(4),
+        db.announcements.find({}, {"_id": 0}).sort("created_at", -1).limit(4).to_list(4),
+        db.training.find({}, {"_id": 0}).sort("created_at", -1).limit(4).to_list(4),
+        db.discussions.find({}, {"_id": 0}).sort("last_reply_at", -1).limit(4).to_list(4),
+        db.intel.find({}, {"_id": 0}).sort("created_at", -1).limit(4).to_list(4),
+        db.campaigns.find({}, {"_id": 0}).sort("created_at", -1).limit(4).to_list(4),
+    )
+    return {
+        "unit": unit,
+        "operations": ops,
+        "announcements": ann,
+        "training": train,
+        "discussions": disc,
+        "intel": intel,
+        "campaigns": camp,
+    }
+
+# ============================================================================
+# PARTNER ADMIN — manage own unit
+# ============================================================================
+
+@api_router.get("/partner/admin/unit")
+async def partner_admin_get_unit(current_user: dict = Depends(get_current_partner_admin)):
+    """Partner admin: get own unit details."""
+    unit = await db.partner_units.find_one({"id": current_user["partner_unit_id"]}, {"_id": 0, "invite_token": 0})
+    if not unit:
+        raise HTTPException(status_code=404, detail="Partner unit not found")
+    if isinstance(unit.get("created_at"), str):
+        unit["created_at"] = datetime.fromisoformat(unit["created_at"])
+    count = await db.users.count_documents({"partner_unit_id": unit["id"], "is_active": True})
+    unit["member_count"] = count
+    return unit
+
+@api_router.put("/partner/admin/unit")
+async def partner_admin_update_unit(data: PartnerUnitSelfUpdate, current_user: dict = Depends(get_current_partner_admin)):
+    """Partner admin: update own unit (limited fields only)."""
+    update = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update:
+        raise HTTPException(status_code=400, detail="No allowed fields to update")
+    await db.partner_units.update_one({"id": current_user["partner_unit_id"]}, {"$set": update})
+    await db.audit_logs.insert_one({
+        "action": "partner_unit_self_updated", "actor_id": current_user["id"],
+        "actor_username": current_user.get("username"), "target_id": current_user["partner_unit_id"],
+        "timestamp": datetime.now(timezone.utc).isoformat(), "fields_updated": list(update.keys()),
+    })
+    unit = await db.partner_units.find_one({"id": current_user["partner_unit_id"]}, {"_id": 0, "invite_token": 0})
+    return unit
+
+@api_router.get("/partner/admin/members")
+async def partner_admin_list_members(current_user: dict = Depends(get_current_partner_admin)):
+    """Partner admin: list own unit's members."""
+    members = await db.users.find(
+        {"partner_unit_id": current_user["partner_unit_id"], "is_active": True},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(500)
+    return members
+
+@api_router.put("/partner/admin/members/{member_id}")
+async def partner_admin_update_member(member_id: str, data: PartnerMemberUpdate, current_user: dict = Depends(get_current_partner_admin)):
+    """Partner admin: update a member's rank/role in own unit only."""
+    target = await db.users.find_one({"id": member_id, "partner_unit_id": current_user["partner_unit_id"]})
+    if not target:
+        raise HTTPException(status_code=404, detail="Member not found in your unit")
+    update = {k: v for k, v in data.model_dump().items() if v is not None}
+    if "partner_role" in update and update["partner_role"] not in ("partner_admin", "partner_member"):
+        raise HTTPException(status_code=400, detail="Invalid partner_role value")
+    if not update:
+        raise HTTPException(status_code=400, detail="No allowed fields to update")
+    await db.users.update_one({"id": member_id}, {"$set": update})
+    await db.audit_logs.insert_one({
+        "action": "partner_member_updated", "actor_id": current_user["id"],
+        "actor_username": current_user.get("username"), "target_id": member_id,
+        "target_unit_id": current_user["partner_unit_id"],
+        "timestamp": datetime.now(timezone.utc).isoformat(), "fields_updated": list(update.keys()),
+    })
+    return {"message": "Member updated"}
+
+@api_router.delete("/partner/admin/members/{member_id}")
+async def partner_admin_remove_member(member_id: str, current_user: dict = Depends(get_current_partner_admin)):
+    """Partner admin: remove a member from own unit."""
+    target = await db.users.find_one({"id": member_id, "partner_unit_id": current_user["partner_unit_id"]})
+    if not target:
+        raise HTTPException(status_code=404, detail="Member not found in your unit")
+    await db.users.update_one({"id": member_id}, {"$set": {"is_active": False}})
+    await db.audit_logs.insert_one({
+        "action": "partner_member_removed", "actor_id": current_user["id"],
+        "actor_username": current_user.get("username"), "target_id": member_id,
+        "target_unit_id": current_user["partner_unit_id"],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"message": "Member removed from unit"}
 
 # Include the router in the main app
 app.include_router(api_router)

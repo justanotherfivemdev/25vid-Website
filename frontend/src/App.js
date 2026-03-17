@@ -38,6 +38,9 @@ import IntelManager from '@/pages/admin/IntelManager';
 import CampaignManager from '@/pages/admin/CampaignManager';
 import UnitTagsManager from '@/pages/admin/UnitTagsManager';
 import JoinUs from '@/pages/JoinUs';
+import PartnerLoginPage from '@/pages/partner/PartnerLoginPage';
+import PartnerHub from '@/pages/partner/PartnerHub';
+import PartnerAdminPage from '@/pages/partner/PartnerAdminPage';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
 const API = `${BACKEND_URL}/api`;
@@ -45,6 +48,7 @@ const API = `${BACKEND_URL}/api`;
 const getPostAuthRoute = (user) => {
   if (!user) return '/login';
   if (user.role === 'admin') return '/admin';
+  if (user.partner_role) return '/partner';
   if (user.status === 'recruit') return '/recruit';
   return '/hub';
 };
@@ -199,6 +203,32 @@ const ProtectedRoute = ({ children, adminOnly = false, allowRecruit = false }) =
   if (authState.user.role !== 'admin' && authState.user.status === 'recruit' && !allowRecruit) {
     return <Navigate to="/recruit" replace />;
   }
+
+  return children;
+};
+
+const PartnerRoute = ({ children, adminOnly = false }) => {
+  const [authState, setAuthState] = useState({ loading: true, user: null });
+
+  useEffect(() => {
+    axios.get(`${API}/auth/me`)
+      .then(res => {
+        localStorage.setItem('user', JSON.stringify(res.data));
+        setAuthState({ loading: false, user: res.data });
+      })
+      .catch(() => {
+        localStorage.removeItem('user');
+        setAuthState({ loading: false, user: null });
+      });
+  }, []);
+
+  if (authState.loading) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+  }
+
+  if (!authState.user) return <Navigate to="/partner-login" replace />;
+  if (!authState.user.partner_role) return <Navigate to="/hub" replace />;
+  if (adminOnly && authState.user.partner_role !== 'partner_admin') return <Navigate to="/partner" replace />;
 
   return children;
 };
@@ -1075,7 +1105,10 @@ const LoginPage = () => {
             </div>
           </CardContent>
         </Card>
-        <div className="mt-6 text-center"><Link to="/" className="text-sm text-gray-500 hover:text-tropic-gold transition-colors">&larr; Back to Home</Link></div>
+        <div className="mt-6 text-center space-y-3">
+          <Link to="/" className="block text-sm text-gray-500 hover:text-tropic-gold transition-colors">&larr; Back to Home</Link>
+          <Link to="/partner-login" className="block text-sm text-gray-600 hover:text-tropic-gold/70 transition-colors border border-gray-800 rounded px-3 py-2 hover:border-tropic-gold/30">Partner Unit? <span className="text-tropic-gold/70">Access S-5 Liaison Area →</span></Link>
+        </div>
       </div>
     </div>
   );
@@ -1117,6 +1150,9 @@ function App() {
         <Route path="/hub/gallery" element={<ProtectedRoute><GalleryHub /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
+        <Route path="/partner-login" element={<PartnerLoginPage />} />
+        <Route path="/partner" element={<PartnerRoute><PartnerHub /></PartnerRoute>} />
+        <Route path="/partner-admin" element={<PartnerRoute adminOnly><PartnerAdminPage /></PartnerRoute>} />
       </Routes>
     </BrowserRouter>
   );
