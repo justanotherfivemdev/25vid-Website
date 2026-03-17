@@ -1,11 +1,16 @@
-const URL_REGEX = /https?:\/\/[^\s)>\]"']+/g;
+// Matches http(s) URLs, stopping at whitespace or HTML-context delimiters.
+// A separate trim step strips trailing bare punctuation so that URLs such as
+//   https://example.com/page_(disambiguation)
+// are captured whole while a sentence-final full stop is not included.
+const URL_REGEX = /https?:\/\/[^\s<>"']+/g;
+const TRAILING_PUNCT = /[.,;:!?)>\]]+$/;
 
 /**
  * Remove raw URLs from a text string so that feed summaries remain readable.
  * Trailing punctuation left by the removal is also cleaned up.
  */
 export function stripUrls(text) {
-  if (!text) return text;
+  if (!text) return '';
   return text
     .replace(URL_REGEX, '')
     .replace(/\s{2,}/g, ' ')
@@ -24,11 +29,19 @@ export function parseUrlSegments(text) {
   let match;
   const re = new RegExp(URL_REGEX.source, 'g');
   while ((match = re.exec(text)) !== null) {
+    // Strip trailing punctuation from the matched URL
+    const rawUrl = match[0];
+    const url = rawUrl.replace(TRAILING_PUNCT, '');
+    const trailingPunct = rawUrl.slice(url.length);
+
     if (match.index > lastIndex) {
       segments.push({ type: 'text', value: text.slice(lastIndex, match.index) });
     }
-    segments.push({ type: 'url', value: match[0] });
-    lastIndex = match.index + match[0].length;
+    segments.push({ type: 'url', value: url });
+    if (trailingPunct) {
+      segments.push({ type: 'text', value: trailingPunct });
+    }
+    lastIndex = match.index + rawUrl.length;
   }
   if (lastIndex < text.length) {
     segments.push({ type: 'text', value: text.slice(lastIndex) });
