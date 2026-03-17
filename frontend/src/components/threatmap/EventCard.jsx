@@ -2,7 +2,6 @@ import React, { memo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatRelativeTime, stripUrls } from '@/utils/threatMapUtils';
-import { useMapStore } from '@/stores/threatMapStore';
 import {
   MapPin, Clock, Swords, Users, CloudLightning, Landmark,
   TrendingDown, AlertTriangle, Shield, Heart, Leaf, Target,
@@ -35,13 +34,11 @@ const threatBg = {
 };
 
 const EventCard = memo(function EventCard({ event, isSelected, onClick, style }) {
-  const flyTo = useMapStore((state) => state.flyTo);
   const CategoryIcon = categoryIconMap[event.category] || AlertTriangle;
 
   const handleClick = useCallback(() => {
     onClick();
-    flyTo(event.location.longitude, event.location.latitude, 6);
-  }, [onClick, flyTo, event.location.longitude, event.location.latitude]);
+  }, [onClick]);
 
   return (
     <Card

@@ -3072,6 +3072,13 @@ COUNTRY_COORDS = {
     "Yemen": [15.55, 48.52], "Zimbabwe": [-19.02, 29.15],
 }
 
+# Pre-compiled word-boundary regex patterns for each country – built once at
+# import time so that extract_country() pays no repeated compilation cost.
+_COUNTRY_PATTERNS: dict[str, re.Pattern] = {
+    country: re.compile(r'\b' + re.escape(country.lower()) + r'\b')
+    for country in COUNTRY_COORDS
+}
+
 
 def classify_category(text):
     lower = text.lower()
@@ -3092,12 +3099,46 @@ def classify_threat_level(text):
     return "medium"
 
 
-def extract_country(text):
-    """Extract a country name from text and return its coordinates."""
+def extract_country(text, title=None):
+    """Extract the most prominently mentioned country from text.
+
+    Strategy:
+    1. If a *title* string is supplied, find all countries mentioned in it and
+       return the one that appears earliest (smallest index) – the subject of a
+       headline is almost always named first.
+    2. Otherwise count how many times each country name appears in the full
+       text and return the one with the highest count.  This prevents a story
+       *about* Spain from being geocoded to Brazil just because Brazil is
+       mentioned once in the body copy.
+
+    Word-boundary matching (\\b) is used throughout to avoid false positives
+    such as 'Austria' matching inside 'Australia' or 'Iran' inside 'Ukraine'.
+    """
+    if title:
+        lower_title = title.lower()
+        title_matches = []
+        for country, coords in COUNTRY_COORDS.items():
+            m = _COUNTRY_PATTERNS[country].search(lower_title)
+            if m:
+                title_matches.append((m.start(), country, coords))
+        if title_matches:
+            title_matches.sort(key=lambda x: x[0])
+            _, best_country, coords = title_matches[0]
+            return best_country, coords[0], coords[1]
+
+    lower_text = text.lower()
+    scores: dict[str, int] = {}
     for country, coords in COUNTRY_COORDS.items():
-        if country.lower() in text.lower():
-            return country, coords[0], coords[1]
-    return None, None, None
+        count = len(_COUNTRY_PATTERNS[country].findall(lower_text))
+        if count > 0:
+            scores[country] = count
+
+    if not scores:
+        return None, None, None
+
+    best_country = max(scores, key=scores.get)
+    coords = COUNTRY_COORDS[best_country]
+    return best_country, coords[0], coords[1]
 
 
 def extract_keywords_from_text(text):
@@ -3274,7 +3315,7 @@ def process_search_results(results):
         seen_titles.add(title)
 
         full_text = f"{title} {content}"
-        country, lat, lng = extract_country(full_text)
+        country, lat, lng = extract_country(full_text, title=title)
         if lat is None or lng is None:
             continue
 

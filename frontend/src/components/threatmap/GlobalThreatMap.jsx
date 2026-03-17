@@ -396,15 +396,11 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       })),
   }), [campaignEvents]);
 
-  // Fly to selected event from sidebar
+  // Pan to selected event from sidebar (no zoom change)
   useEffect(() => {
     if (selectedEvent && mapRef.current) {
       const map = mapRef.current.getMap();
-      map.flyTo({
-        center: [selectedEvent.location.longitude, selectedEvent.location.latitude],
-        zoom: 6,
-        duration: 1500,
-      });
+      map.panTo([selectedEvent.location.longitude, selectedEvent.location.latitude]);
     }
   }, [selectedEvent]);
 
