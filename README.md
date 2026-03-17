@@ -70,7 +70,7 @@ For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env`.
 
 ## Required Environment Variables
 
-## Required Environment Variables
+### Backend (`backend/.env`)
 
 - `MONGO_URL`
 - `DB_NAME`
@@ -78,31 +78,32 @@ For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env`.
 - `JWT_ALGORITHM` (typically `HS256`)
 - `JWT_EXPIRATION_HOURS`
 
-Common production recommendation:
+**Production:**
 
 - `COOKIE_SECURE=true`
 - `FRONTEND_URL=https://yourdomain.com`
 
-- `MONGO_URL`
-- `DB_NAME`
-- `JWT_SECRET`
-- `JWT_ALGORITHM` (typically `HS256`)
-- `JWT_EXPIRATION_HOURS`
+**Optional — Discord OAuth2:**
+
+- `DISCORD_CLIENT_ID`
+- `DISCORD_CLIENT_SECRET`
+- `DISCORD_REDIRECT_URI`
+
+**Optional — Valyu API (Global Threat Map intelligence):**
+
+- `VALYU_API_KEY`
+- `VALYU_CACHE_TTL_MINUTES` (default `30`)
+- `VALYU_EVENT_REFRESH_MINUTES` (default `10`)
+- `VALYU_RATE_LIMIT_SECONDS` (default `30`)
+- `VALYU_COUNTRY_CACHE_HOURS` (default `24`)
+
+### Frontend (`frontend/.env`)
 
 - `REACT_APP_BACKEND_URL=https://yourdomain.com`
-
-Optional map tuning:
-
-- `REACT_APP_MAP_TILE_URL`
-- `REACT_APP_MAP_ATTRIBUTION`
-- `REACT_APP_DEFAULT_MAP_CENTER_LAT`
-- `REACT_APP_DEFAULT_MAP_CENTER_LNG`
-- `REACT_APP_DEFAULT_MAP_ZOOM`
+- `REACT_APP_MAPBOX_TOKEN` (required for Global Threat Map)
+- `REACT_APP_MAP_STYLE` (optional, defaults to `mapbox://styles/mapbox/dark-v11`)
 
 ---
-
-- `COOKIE_SECURE=true`
-- `FRONTEND_URL=https://yourdomain.com`
 
 After first deployment:
 

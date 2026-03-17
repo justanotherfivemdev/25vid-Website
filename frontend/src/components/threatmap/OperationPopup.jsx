@@ -5,7 +5,7 @@ import { MapPin, Calendar, Users, ExternalLink } from 'lucide-react';
 
 export default function OperationPopup({ operation }) {
   const stateColors = {
-    planned: 'bg-blue-500/20 text-blue-400',
+    planned: 'bg-tropic-gold/20 text-tropic-gold',
     ongoing: 'bg-green-500/20 text-green-400',
     completed: 'bg-gray-500/20 text-gray-400',
   };
@@ -13,7 +13,7 @@ export default function OperationPopup({ operation }) {
   return (
     <div className="min-w-[220px] max-w-[300px] p-3">
       <div className="mb-2 flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-emerald-400 line-clamp-2">
+        <h3 className="text-sm font-semibold text-tropic-gold line-clamp-2">
           {operation.title}
         </h3>
         <Badge

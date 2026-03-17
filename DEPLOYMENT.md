@@ -67,6 +67,13 @@ COOKIE_SECURE=true
 # Recommended for production links
 FRONTEND_URL=https://yourdomain.com
 
+# Optional — Valyu API (powers Global Threat Map intelligence features)
+# VALYU_API_KEY=valyu_your_api_key_here
+# VALYU_CACHE_TTL_MINUTES=30
+# VALYU_EVENT_REFRESH_MINUTES=10
+# VALYU_RATE_LIMIT_SECONDS=30
+# VALYU_COUNTRY_CACHE_HOURS=24
+
 # Optional email verification settings
 # EMAIL_DELIVERY_MODE=smtp
 # SMTP_HOST=
@@ -99,6 +106,8 @@ Create `frontend/.env`:
 
 ```env
 REACT_APP_BACKEND_URL=https://yourdomain.com
+REACT_APP_MAPBOX_TOKEN=pk.your_mapbox_public_token_here
+# REACT_APP_MAP_STYLE=mapbox://styles/mapbox/dark-v11
 ```
 
 Build frontend:

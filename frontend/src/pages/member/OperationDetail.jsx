@@ -169,8 +169,8 @@ const OperationDetail = () => {
               <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{operation.description}</p>
               {(operation.theater || operation.region_label || operation.grid_ref || operation.campaign_id) && (
                 <div className="bg-black/40 border border-gray-800 rounded-lg p-3 text-xs text-gray-300 flex flex-wrap items-center gap-3">
-                  {operation.theater && <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5 text-blue-400" />{operation.theater}</span>}
-                  {operation.region_label && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-amber-500" />{operation.region_label}</span>}
+                  {operation.theater && <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5 text-tropic-gold" />{operation.theater}</span>}
+                  {operation.region_label && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-tropic-gold-light" />{operation.region_label}</span>}
                   {operation.grid_ref && <span className="text-gray-400">GRID {operation.grid_ref}</span>}
                   <Link to="/hub/campaign" className="text-tropic-gold hover:underline ml-auto">View on Campaign Map</Link>
                 </div>
