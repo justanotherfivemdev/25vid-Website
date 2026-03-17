@@ -757,12 +757,12 @@ const JoinUsSection = ({ content }) => {
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center items-stretch pt-4">
               <Link to="/join" className="w-full sm:w-auto">
                 <Button variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10 px-8 py-5 text-base sm:text-lg tracking-wider w-full" data-testid="join-threat-map-button">
-                  <Globe className="mr-2 w-5 h-5 flex-shrink-0"/>GLOBAL THREAT MAP
+                  <Globe className="mr-2 w-5 h-5 flex-shrink-0" />GLOBAL THREAT MAP
                 </Button>
               </Link>
               <Link to="/login" className="w-full sm:w-auto">
                 <Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-8 py-5 text-base sm:text-lg tactical-button tracking-wider w-full" data-testid="join-register-button">
-                  <Shield className="mr-2 w-5 h-5 flex-shrink-0"/>CREATE ACCOUNT
+                  <Shield className="mr-2 w-5 h-5 flex-shrink-0" />CREATE ACCOUNT
                 </Button>
               </Link>
               {content.footer?.discord && (
