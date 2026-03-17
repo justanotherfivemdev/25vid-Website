@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Calendar, Clock, Users, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown, Globe, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown, Globe, MapPin } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import MapMiniView from '@/components/MapMiniView';
 import { colors } from '@/theme/theme';
