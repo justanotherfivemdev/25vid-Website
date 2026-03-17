@@ -3501,6 +3501,198 @@ async def get_military_bases():
     }
 
 # ============================================================================
+# RESEARCH AGENT – OpenAI Responses API + Valyu
+# ============================================================================
+
+# Lazy import so the server still starts even if openai/valyu are not installed
+def _get_research_agent():
+    from backend.services.research_agent import (  # type: ignore
+        run_research_query,
+        result_to_campaign_intel,
+        result_to_map_events,
+        result_to_intel_briefing,
+    )
+    return run_research_query, result_to_campaign_intel, result_to_map_events, result_to_intel_briefing
+
+
+class ResearchQueryRequest(BaseModel):
+    query: str
+    attach_to_campaign_id: Optional[str] = None
+    post_to_intel_board: bool = False
+    add_to_threat_map: bool = False
+
+
+@api_router.post("/research-agent/query")
+async def research_agent_query(
+    data: ResearchQueryRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Run the 25th ID Research Agent.
+
+    Performs multi-step intelligence research using the OpenAI Responses API
+    with Valyu as a tool provider.  Optionally:
+      - attaches the result as an intel briefing to a campaign
+      - posts the result as a standalone Intel Board briefing
+      - creates Global Threat Map markers from extracted coordinates
+
+    Returns the structured intelligence output plus any entity IDs created.
+    """
+    query = data.query.strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="query is required")
+
+    try:
+        run_query, to_campaign_intel, to_map_events, to_intel_briefing = _get_research_agent()
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Research agent service unavailable: {exc}",
+        )
+
+    # Run the research agent
+    try:
+        result = await run_query(query)
+    except Exception as exc:
+        logging.error("Research agent error: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Research agent error: {exc}")
+
+    created_briefing_id: Optional[str] = None
+    created_map_event_ids: list = []
+
+    # Optional: attach intel briefing to campaign
+    if data.attach_to_campaign_id:
+        campaign = await db.campaigns.find_one({"id": data.attach_to_campaign_id})
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        briefing_doc = to_campaign_intel(
+            result,
+            campaign_id=data.attach_to_campaign_id,
+            author_id=current_user["id"],
+            author_name=current_user.get("username", "Research Agent"),
+        )
+        await db.intel_briefings.insert_one(briefing_doc)
+        briefing_doc.pop("_id", None)
+        await upsert_map_event("intel", briefing_doc, briefing_doc["id"])
+        created_briefing_id = briefing_doc["id"]
+
+    # Optional: post as standalone Intel Board briefing
+    elif data.post_to_intel_board:
+        briefing_doc = to_intel_briefing(
+            result,
+            author_id=current_user["id"],
+            author_name=current_user.get("username", "Research Agent"),
+        )
+        await db.intel_briefings.insert_one(briefing_doc)
+        briefing_doc.pop("_id", None)
+        await upsert_map_event("intel", briefing_doc, briefing_doc["id"])
+        created_briefing_id = briefing_doc["id"]
+
+    # Optional: add markers to Global Threat Map
+    if data.add_to_threat_map:
+        now = datetime.now(timezone.utc).isoformat()
+        map_events = to_map_events(result)
+        for evt in map_events:
+            await db.map_events.update_one(
+                {"id": evt["id"]},
+                {"$set": evt, "$setOnInsert": {"created_at": now}},
+                upsert=True,
+            )
+            created_map_event_ids.append(evt["id"])
+
+    return {
+        "result": result,
+        "created_briefing_id": created_briefing_id,
+        "created_map_event_ids": created_map_event_ids,
+    }
+
+
+@api_router.post("/research-agent/attach-to-campaign/{campaign_id}")
+async def research_agent_attach_campaign(
+    campaign_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Run the research agent for a specific query and attach the result
+    as an intel briefing to the specified campaign.
+    """
+    body = await request.json()
+    query = (body.get("query") or "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="query is required")
+
+    campaign = await db.campaigns.find_one({"id": campaign_id})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    try:
+        run_query, to_campaign_intel, _, _ = _get_research_agent()
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail=f"Research agent service unavailable: {exc}")
+
+    try:
+        result = await run_query(query)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Research agent error: {exc}")
+
+    briefing_doc = to_campaign_intel(
+        result,
+        campaign_id=campaign_id,
+        author_id=current_user["id"],
+        author_name=current_user.get("username", "Research Agent"),
+    )
+    await db.intel_briefings.insert_one(briefing_doc)
+    briefing_doc.pop("_id", None)
+    await upsert_map_event("intel", briefing_doc, briefing_doc["id"])
+
+    return {
+        "message": "Intel attached to campaign",
+        "briefing_id": briefing_doc["id"],
+        "result": result,
+    }
+
+
+@api_router.post("/research-agent/post-briefing")
+async def research_agent_post_briefing(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Run the research agent and post the result as a new Intel Board briefing.
+    """
+    body = await request.json()
+    query = (body.get("query") or "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="query is required")
+
+    try:
+        run_query, _, _, to_intel_briefing = _get_research_agent()
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail=f"Research agent service unavailable: {exc}")
+
+    try:
+        result = await run_query(query)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Research agent error: {exc}")
+
+    briefing_doc = to_intel_briefing(
+        result,
+        author_id=current_user["id"],
+        author_name=current_user.get("username", "Research Agent"),
+    )
+    await db.intel_briefings.insert_one(briefing_doc)
+    briefing_doc.pop("_id", None)
+    await upsert_map_event("intel", briefing_doc, briefing_doc["id"])
+
+    return {
+        "message": "Intel briefing posted to board",
+        "briefing_id": briefing_doc["id"],
+        "result": result,
+    }
+
+
+# ============================================================================
 # MISC ENDPOINTS
 # ============================================================================
 
