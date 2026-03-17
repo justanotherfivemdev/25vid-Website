@@ -38,7 +38,7 @@ import CampaignManager from '@/pages/admin/CampaignManager';
 import UnitTagsManager from '@/pages/admin/UnitTagsManager';
 import JoinUs from '@/pages/JoinUs';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
 const API = `${BACKEND_URL}/api`;
 
 const getPostAuthRoute = (user) => {
