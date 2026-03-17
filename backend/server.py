@@ -10,6 +10,8 @@ import logging
 import secrets
 import json
 import re
+import hashlib
+import time as _time_mod
 import urllib.parse
 import smtplib
 import httpx
@@ -1146,6 +1148,7 @@ async def create_operation(operation_data: OperationCreate, current_user: dict =
     doc = operation_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.operations.insert_one(doc)
+    await upsert_map_event("operation", doc, doc["id"])
     
     return operation_obj
 
@@ -1472,6 +1475,7 @@ async def delete_operation(operation_id: str, current_user: dict = Depends(get_c
     result = await db.operations.delete_one({"id": operation_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Operation not found")
+    await remove_map_event("operation", operation_id)
     return {"message": "Operation deleted successfully"}
 
 @api_router.put("/admin/operations/{operation_id}")
@@ -1482,6 +1486,9 @@ async def update_operation(operation_id: str, operation_data: OperationCreate, c
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Operation not found")
+    updated_op = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+    if updated_op:
+        await upsert_map_event("operation", updated_op, operation_id)
     return {"message": "Operation updated successfully"}
 
 @api_router.delete("/admin/announcements/{announcement_id}")
@@ -2247,6 +2254,7 @@ async def create_intel_briefing(data: IntelBriefingCreate, current_user: dict = 
     briefing_dict["created_at"] = datetime.now(timezone.utc).isoformat()
     briefing_dict["updated_at"] = None
     await db.intel_briefings.insert_one(briefing_dict)
+    await upsert_map_event("intel", briefing_dict, briefing_dict["id"])
     briefing_dict.pop("_id", None)
     briefing_dict["created_at"] = datetime.fromisoformat(briefing_dict["created_at"])
     return briefing_dict
@@ -2264,6 +2272,8 @@ async def update_intel_briefing(briefing_id: str, data: IntelBriefingUpdate, cur
         updated["created_at"] = datetime.fromisoformat(updated["created_at"])
     if updated.get("updated_at") and isinstance(updated["updated_at"], str):
         updated["updated_at"] = datetime.fromisoformat(updated["updated_at"])
+    if updated:
+        await upsert_map_event("intel", updated, briefing_id)
     return updated
 
 @api_router.delete("/admin/intel/{briefing_id}")
@@ -2273,6 +2283,7 @@ async def delete_intel_briefing(briefing_id: str, current_user: dict = Depends(g
         raise HTTPException(status_code=404, detail="Briefing not found")
     # Also remove acknowledgments
     await db.intel_acknowledgments.delete_many({"briefing_id": briefing_id})
+    await remove_map_event("intel", briefing_id)
     return {"message": "Briefing deleted"}
 
 # ============================================================================
@@ -2312,6 +2323,10 @@ class CampaignCreate(BaseModel):
     objectives: List[dict] = Field(default_factory=list)
     situation: str = ""
     commander_notes: str = ""
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    region: str = ""
+    map_description: str = ""
 
 class CampaignUpdate(BaseModel):
     name: Optional[str] = None
@@ -2322,6 +2337,10 @@ class CampaignUpdate(BaseModel):
     objectives: Optional[List[dict]] = None
     situation: Optional[str] = None
     commander_notes: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    region: Optional[str] = None
+    map_description: Optional[str] = None
 
 @api_router.get("/campaigns")
 async def get_campaigns(current_user: dict = Depends(get_current_user)):
@@ -2361,6 +2380,7 @@ async def create_campaign(data: CampaignCreate, current_user: dict = Depends(get
         if not o.get("id"):
             o["id"] = str(uuid.uuid4())
     await db.campaigns.insert_one(d)
+    await upsert_map_event("campaign", d, d["id"])
     d.pop("_id", None)
     _fix_dates(d)
     return d
@@ -2381,6 +2401,8 @@ async def update_campaign(campaign_id: str, data: CampaignUpdate, current_user: 
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db.campaigns.update_one({"id": campaign_id}, {"$set": updates})
     updated = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    if updated:
+        await upsert_map_event("campaign", updated, campaign_id)
     _fix_dates(updated)
     return updated
 
@@ -2389,6 +2411,7 @@ async def delete_campaign(campaign_id: str, current_user: dict = Depends(get_cur
     result = await db.campaigns.delete_one({"id": campaign_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Campaign not found")
+    await remove_map_event("campaign", campaign_id)
     return {"message": "Campaign deleted"}
 
 @api_router.get("/map/overlays")
@@ -2490,6 +2513,28 @@ async def get_map_overlays(current_user: dict = Depends(get_current_user)):
         "operations": operation_markers,
         "intel": intel_markers,
         "events": [],
+    }
+
+@api_router.get("/map/events")
+async def get_map_events(event_type: Optional[str] = None):
+    """Get unified map events for the Global Threat Map. Includes internal + external events."""
+    query = {}
+    if event_type:
+        query["type"] = event_type
+
+    events = await db.map_events.find(query, {"_id": 0}).sort("updated_at", -1).to_list(500)
+    return {"events": events, "count": len(events)}
+
+
+@api_router.get("/external-events")
+async def get_external_events():
+    """Get stored external threat events from the ingestion pipeline."""
+    events = await db.external_events.find({}, {"_id": 0}).sort("ingested_at", -1).to_list(200)
+    return {
+        "events": events,
+        "count": len(events),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "source": "stored",
     }
 
 # ============================================================================
@@ -2791,11 +2836,106 @@ async def get_public_threat_map():
     return {"markers": markers}
 
 # ============================================================================
+# MAP EVENTS – Unified collection for map display
+# ============================================================================
+
+async def upsert_map_event(entity_type: str, entity: dict, entity_id: str):
+    """Create or update a map_event when an operation, intel, or campaign is created/updated."""
+    lat = entity.get("lat") or entity.get("latitude")
+    lng = entity.get("lng") or entity.get("longitude")
+
+    if lat is None or lng is None:
+        return  # No coordinates, skip
+
+    title = entity.get("title") or entity.get("name") or "Untitled"
+    description = entity.get("description") or entity.get("content", "")
+    if len(description) > 500:
+        description = description[:500]
+
+    threat_level = entity.get("severity") or entity.get("threat_level") or "medium"
+    source = "internal"
+    now = datetime.now(timezone.utc).isoformat()
+
+    doc = {
+        "id": f"me_{entity_type}_{entity_id}",
+        "type": entity_type,
+        "title": title,
+        "description": description,
+        "latitude": float(lat),
+        "longitude": float(lng),
+        "threat_level": threat_level,
+        "source": source,
+        "related_entity_id": entity_id,
+        "updated_at": now,
+        "metadata": {
+            "entity_type": entity_type,
+            "status": entity.get("status") or entity.get("activity_state") or entity.get("classification", ""),
+            "campaign_id": entity.get("campaign_id", ""),
+            "operation_type": entity.get("operation_type", ""),
+            "category": entity.get("category", ""),
+        },
+    }
+
+    await db.map_events.update_one(
+        {"id": doc["id"]},
+        {"$set": doc, "$setOnInsert": {"created_at": now}},
+        upsert=True,
+    )
+
+
+async def remove_map_event(entity_type: str, entity_id: str):
+    """Remove map_event when entity is deleted."""
+    await db.map_events.delete_one({"id": f"me_{entity_type}_{entity_id}"})
+
+
+async def backfill_map_events():
+    """Backfill map_events from existing operations, intel, campaigns on startup."""
+    count = await db.map_events.count_documents({})
+    if count > 0:
+        return  # Already backfilled
+
+    valyu_logger = logging.getLogger("valyu")
+    valyu_logger.info("Backfilling map_events from existing entities...")
+
+    ops = await db.operations.find({}, {"_id": 0}).to_list(2000)
+    for op in ops:
+        await upsert_map_event("operation", op, op.get("id", ""))
+
+    intels = await db.intel_briefings.find({}, {"_id": 0}).to_list(1000)
+    for intel in intels:
+        await upsert_map_event("intel", intel, intel.get("id", ""))
+
+    campaigns = await db.campaigns.find({}, {"_id": 0}).to_list(200)
+    for camp in campaigns:
+        camp_lat = camp.get("lat") or camp.get("latitude")
+        camp_lng = camp.get("lng") or camp.get("longitude")
+        if camp_lat and camp_lng:
+            await upsert_map_event("campaign", camp, camp.get("id", ""))
+        # Also create events for campaign objectives
+        for obj in camp.get("objectives", []):
+            if obj.get("lat") and obj.get("lng"):
+                obj_data = {**obj, "name": obj.get("name", "Objective"), "campaign_id": camp.get("id", "")}
+                await upsert_map_event("campaign", obj_data, obj.get("id", ""))
+
+    valyu_logger.info("Map events backfill complete")
+
+# ============================================================================
 # GLOBAL THREAT MAP – VALYU-POWERED ENDPOINTS
 # ============================================================================
 
 VALYU_API_KEY = os.environ.get("VALYU_API_KEY", "")
 VALYU_BASE_URL = "https://api.valyu.ai/v1"
+VALYU_CACHE_TTL_MINUTES = int(os.environ.get("VALYU_CACHE_TTL_MINUTES", 30))
+VALYU_EVENT_REFRESH_MINUTES = int(os.environ.get("VALYU_EVENT_REFRESH_MINUTES", 10))
+VALYU_RATE_LIMIT_SECONDS = int(os.environ.get("VALYU_RATE_LIMIT_SECONDS", 30))
+VALYU_COUNTRY_CACHE_HOURS = int(os.environ.get("VALYU_COUNTRY_CACHE_HOURS", 24))
+
+# In-memory rate limiting and deduplication state
+_valyu_last_call_time: float = 0.0
+_valyu_pending_requests: Dict[str, asyncio.Task] = {}
+_valyu_rate_lock = asyncio.Lock()
+
+valyu_logger = logging.getLogger("valyu")
 
 THREAT_QUERIES = [
     "breaking news conflict military",
@@ -2928,6 +3068,74 @@ def extract_keywords_from_text(text):
     return list(set(found))[:10]
 
 
+# ---------------------------------------------------------------------------
+# Valyu caching & rate-limiting helpers
+# ---------------------------------------------------------------------------
+
+async def _get_cached_response(cache_key: str, ttl_minutes: int):
+    """Return cached Valyu response from MongoDB if still fresh."""
+    doc = await db.valyu_cache.find_one({"key": cache_key}, {"_id": 0})
+    if doc:
+        cached_at = doc.get("cached_at")
+        if cached_at:
+            if isinstance(cached_at, str):
+                cached_at = datetime.fromisoformat(cached_at)
+            age = (datetime.now(timezone.utc) - cached_at).total_seconds()
+            if age < ttl_minutes * 60:
+                valyu_logger.info(f"Cache HIT for key={cache_key} (age={int(age)}s)")
+                return doc.get("data")
+    valyu_logger.info(f"Cache MISS for key={cache_key}")
+    return None
+
+
+async def _set_cached_response(cache_key: str, data):
+    """Store a Valyu response in MongoDB cache."""
+    await db.valyu_cache.update_one(
+        {"key": cache_key},
+        {"$set": {"key": cache_key, "data": data, "cached_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+
+
+def _rate_limit_ok() -> bool:
+    """Check whether we are allowed to call Valyu (rate limit)."""
+    global _valyu_last_call_time
+    now = _time_mod.time()
+    if now - _valyu_last_call_time < VALYU_RATE_LIMIT_SECONDS:
+        valyu_logger.info("Rate-limited – returning cached data instead of calling Valyu")
+        return False
+    return True
+
+
+def _mark_valyu_called():
+    global _valyu_last_call_time
+    _valyu_last_call_time = _time_mod.time()
+
+
+def _event_content_hash(evt: dict) -> str:
+    """Produce a deterministic hash for deduplication of external events."""
+    raw = f"{evt.get('title', '')}|{evt.get('description', '')[:200]}|{evt.get('date', '')}|{evt.get('source', '')}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:24]
+
+
+async def _deduplicated_request(key: str, coro_factory):
+    """Ensure only one in-flight Valyu request per logical key. Others await the same result."""
+    if key in _valyu_pending_requests:
+        task = _valyu_pending_requests[key]
+        valyu_logger.info(f"Dedup – reusing in-flight request for key={key}")
+        return await task
+
+    async def _run():
+        try:
+            return await coro_factory()
+        finally:
+            _valyu_pending_requests.pop(key, None)
+
+    task = asyncio.ensure_future(_run())
+    _valyu_pending_requests[key] = task
+    return await task
+
+
 async def valyu_search(query, max_results=20, start_date=None):
     """Call Valyu search API to find events."""
     if not VALYU_API_KEY:
@@ -3057,27 +3265,73 @@ def process_search_results(results):
 
 @api_router.post("/threat-events")
 async def get_threat_events():
-    """Fetch global threat events from Valyu. No auth required for data, auth optional."""
+    """Fetch global threat events. Returns cached data when available."""
+    # 1. Try cache first
+    cached = await _get_cached_response("threat_events_global", VALYU_CACHE_TTL_MINUTES)
+    if cached:
+        return cached
+
+    # 2. Try stored events from external_events collection
+    stored_events = await db.external_events.find(
+        {}, {"_id": 0}
+    ).sort("ingested_at", -1).to_list(200)
+    if stored_events:
+        result = {
+            "events": stored_events[:200],
+            "count": len(stored_events[:200]),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "stored",
+        }
+        await _set_cached_response("threat_events_global", result)
+        return result
+
+    # 3. Only if no cache and no stored data, fetch live from Valyu
     if not VALYU_API_KEY:
         return {"events": [], "count": 0, "error": "VALYU_API_KEY not configured"}
 
-    start_date = get_start_date()
+    if not _rate_limit_ok():
+        return {"events": [], "count": 0, "source": "rate_limited"}
 
-    # Query Valyu in parallel batches
-    tasks = [valyu_search(q, max_results=15, start_date=start_date) for q in THREAT_QUERIES[:15]]
-    results_arrays = await asyncio.gather(*tasks, return_exceptions=True)
+    async def _fetch_live():
+        valyu_logger.info("Valyu request STARTED: threat-events")
+        start_date = get_start_date()
+        tasks = [valyu_search(q, max_results=15, start_date=start_date) for q in THREAT_QUERIES[:15]]
+        results_arrays = await asyncio.gather(*tasks, return_exceptions=True)
+        all_results = []
+        for r in results_arrays:
+            if isinstance(r, list):
+                all_results.extend(r)
+        events = process_search_results(all_results)
+        _mark_valyu_called()
+        valyu_logger.info(f"Valyu request SUCCEEDED: threat-events ({len(events)} events)")
+        result = {
+            "events": events[:200],
+            "count": len(events[:200]),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "live",
+        }
+        await _set_cached_response("threat_events_global", result)
+        # Also persist events
+        for evt in events:
+            content_hash = _event_content_hash(evt)
+            evt["content_hash"] = content_hash
+            evt["ingested_at"] = datetime.now(timezone.utc).isoformat()
+            evt["provider"] = "valyu"
+            try:
+                await db.external_events.update_one(
+                    {"content_hash": content_hash},
+                    {"$set": evt},
+                    upsert=True,
+                )
+            except Exception:
+                pass
+        return result
 
-    all_results = []
-    for r in results_arrays:
-        if isinstance(r, list):
-            all_results.extend(r)
-
-    events = process_search_results(all_results)
-    return {
-        "events": events[:200],
-        "count": len(events[:200]),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
+    try:
+        return await _deduplicated_request("threat_events_global", _fetch_live)
+    except Exception as e:
+        valyu_logger.error(f"Valyu request FAILED: threat-events: {e}")
+        return {"events": [], "count": 0, "error": str(e)}
 
 
 @api_router.post("/entity-search")
@@ -3131,34 +3385,58 @@ async def entity_search(request: Request):
 
 @api_router.get("/countries/conflicts")
 async def get_country_conflicts(country: str, stream: Optional[str] = None):
-    """Fetch conflict intelligence for a country using Valyu."""
+    """Fetch conflict intelligence for a country. Cached for VALYU_COUNTRY_CACHE_HOURS."""
     if not country:
         raise HTTPException(status_code=400, detail="Country parameter is required")
+
+    cache_key = f"country_conflicts_{country.lower().strip()}"
+    ttl_minutes = VALYU_COUNTRY_CACHE_HOURS * 60
+
+    # Check cache first (for both streaming and non-streaming)
+    cached = await _get_cached_response(cache_key, ttl_minutes)
+    if cached:
+        if stream == "true":
+            from starlette.responses import StreamingResponse
+            async def generate_cached():
+                yield 'data: {"type": "start"}\n\n'.encode()
+                yield f'data: {json.dumps({"type": "text", "text": cached.get("current", {}).get("conflicts", "")})}\n\n'.encode()
+                yield f'data: {json.dumps({"type": "done", "data": cached})}\n\n'.encode()
+            return StreamingResponse(generate_cached(), media_type="text/event-stream")
+        return cached
 
     if not VALYU_API_KEY:
         raise HTTPException(status_code=503, detail="VALYU_API_KEY not configured")
 
     if stream == "true":
-        # SSE streaming response
         from starlette.responses import StreamingResponse
 
         async def generate():
             try:
-                yield 'data: {"type": "start"}\n\n'.encode()  # initial heartbeat
-
-                # Current conflicts
+                yield 'data: {"type": "start"}\n\n'.encode()
+                valyu_logger.info(f"Valyu request STARTED: country-conflicts ({country})")
                 current = await valyu_deepsearch(
                     f"current ongoing military conflicts wars tensions in {country} 2024 2025 2026",
                     max_results=10,
                 )
                 yield f'data: {json.dumps({"type": "text", "text": current.get("summary", "")})}\n\n'.encode()
-                yield f'data: {json.dumps({"type": "done", "data": {"current": {"conflicts": current.get("summary", ""), "sources": current.get("sources", [])}, "past": {"conflicts": "", "sources": []}}})}\n\n'.encode()
+                result = {
+                    "country": country,
+                    "current": {"conflicts": current.get("summary", ""), "sources": current.get("sources", [])},
+                    "past": {"conflicts": "", "sources": []},
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+                yield f'data: {json.dumps({"type": "done", "data": result})}\n\n'.encode()
+                await _set_cached_response(cache_key, result)
+                _mark_valyu_called()
+                valyu_logger.info(f"Valyu request SUCCEEDED: country-conflicts ({country})")
             except Exception as e:
+                valyu_logger.error(f"Valyu request FAILED: country-conflicts ({country}): {e}")
                 yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'.encode()
 
         return StreamingResponse(generate(), media_type="text/event-stream")
 
     # Non-streaming: fetch both current and historical
+    valyu_logger.info(f"Valyu request STARTED: country-conflicts ({country})")
     current_task = valyu_deepsearch(
         f"current ongoing military conflicts wars tensions in {country} 2024 2025 2026",
         max_results=10,
@@ -3169,7 +3447,7 @@ async def get_country_conflicts(country: str, stream: Optional[str] = None):
     )
     current, past = await asyncio.gather(current_task, past_task)
 
-    return {
+    result = {
         "country": country,
         "current": {
             "conflicts": current.get("summary", ""),
@@ -3181,6 +3459,10 @@ async def get_country_conflicts(country: str, stream: Optional[str] = None):
         },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+    await _set_cached_response(cache_key, result)
+    _mark_valyu_called()
+    valyu_logger.info(f"Valyu request SUCCEEDED: country-conflicts ({country})")
+    return result
 
 
 # ---- Military bases (static data, ported from upstream) ----
@@ -3248,6 +3530,87 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Background Valyu ingestion task
+_background_ingestion_task = None
+
+async def _valyu_background_ingestion():
+    """Periodically fetch Valyu threat events and store them normalized in MongoDB."""
+    vlog = logging.getLogger("valyu")
+    vlog.info("Background ingestion service started")
+    while True:
+        try:
+            await asyncio.sleep(VALYU_EVENT_REFRESH_MINUTES * 60)
+            if not VALYU_API_KEY:
+                continue
+
+            vlog.info("Background refresh: fetching Valyu events...")
+            start_date = get_start_date()
+            tasks = [valyu_search(q, max_results=10, start_date=start_date) for q in THREAT_QUERIES[:10]]
+            results_arrays = await asyncio.gather(*tasks, return_exceptions=True)
+
+            all_results = []
+            for r in results_arrays:
+                if isinstance(r, list):
+                    all_results.extend(r)
+
+            events = process_search_results(all_results)
+
+            # Store normalized events in external_events
+            inserted = 0
+            for evt in events:
+                content_hash = _event_content_hash(evt)
+                evt["content_hash"] = content_hash
+                evt["ingested_at"] = datetime.now(timezone.utc).isoformat()
+                evt["provider"] = "valyu"
+                result = await db.external_events.update_one(
+                    {"content_hash": content_hash},
+                    {"$setOnInsert": evt},
+                    upsert=True,
+                )
+                if result.upserted_id:
+                    inserted += 1
+
+            # Update the cache as well
+            await _set_cached_response("threat_events_global", {
+                "events": events[:200],
+                "count": min(len(events), 200),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+            _mark_valyu_called()
+
+            vlog.info(f"Background refresh completed: {inserted} new events stored, {len(events)} total processed")
+        except Exception as e:
+            vlog.error(f"Background ingestion error: {e}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    global _background_ingestion_task
+    vlog = logging.getLogger("valyu")
+
+    # Backfill map_events from existing entities
+    try:
+        await backfill_map_events()
+    except Exception as e:
+        vlog.error(f"Map events backfill error: {e}")
+
+    # Create MongoDB indexes
+    try:
+        await db.valyu_cache.create_index("key", unique=True)
+        await db.external_events.create_index("content_hash", unique=True)
+        await db.external_events.create_index("ingested_at")
+        await db.map_events.create_index("id", unique=True)
+        await db.map_events.create_index("type")
+        await db.map_events.create_index("related_entity_id")
+    except Exception as e:
+        vlog.warning(f"Index creation note: {e}")
+
+    # Start background ingestion
+    _background_ingestion_task = asyncio.create_task(_valyu_background_ingestion())
+    vlog.info("Startup complete – background ingestion scheduled")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    if _background_ingestion_task and not _background_ingestion_task.done():
+        _background_ingestion_task.cancel()
     client.close()

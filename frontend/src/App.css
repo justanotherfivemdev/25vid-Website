@@ -62,7 +62,7 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.42);
 }
 .intel-urgent { border-left: 3px solid var(--brand-red); }
-.intel-high { border-left: 3px solid #c96d1f; }
+.intel-high { border-left: 3px solid var(--brand-gold-light); }
 .intel-normal { border-left: 3px solid var(--brand-gold); }
 .intel-low { border-left: 3px solid #555; }
 
@@ -139,7 +139,7 @@
 
 /* keep backwards compat */
 .announcement-urgent { border-left: 4px solid var(--brand-red); }
-.announcement-high { border-left: 4px solid #c96d1f; }
+.announcement-high { border-left: 4px solid var(--brand-gold-light); }
 .announcement-normal { border-left: 4px solid var(--brand-gold); }
 .announcement-low { border-left: 4px solid #888888; }
 .operation-card { transition: all 0.3s ease; }
