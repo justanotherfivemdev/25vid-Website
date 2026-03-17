@@ -16,8 +16,8 @@ export default function ThreatMapControls() {
         onClick={toggleClusters}
         className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
           showClusters
-            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/30'
-            : 'bg-gray-800/90 text-gray-200 hover:bg-gray-700 border border-gray-600/50'
+            ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light shadow-tropic-gold/30'
+            : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
         } backdrop-blur-md`}
         title={showClusters ? 'Hide Event Markers' : 'Show Event Markers'}
       >
@@ -28,8 +28,8 @@ export default function ThreatMapControls() {
         onClick={toggleHeatmap}
         className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
           showHeatmap
-            ? 'bg-orange-600 text-white hover:bg-orange-700 shadow-orange-600/30'
-            : 'bg-gray-800/90 text-gray-200 hover:bg-gray-700 border border-gray-600/50'
+            ? 'bg-tropic-red text-white hover:bg-tropic-red-light shadow-tropic-red/30'
+            : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
         } backdrop-blur-md`}
         title={showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
       >
@@ -40,8 +40,8 @@ export default function ThreatMapControls() {
         onClick={toggleMilitaryBases}
         className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
           showMilitaryBases
-            ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-blue-500/30'
-            : 'bg-gray-800/90 text-gray-200 hover:bg-gray-700 border border-gray-600/50'
+            ? 'bg-tropic-gold-dark text-white hover:bg-tropic-gold shadow-tropic-gold-dark/30'
+            : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
         } backdrop-blur-md`}
         title={showMilitaryBases ? `Hide Military Bases (${militaryBases.length})` : 'Show Military Bases'}
       >

@@ -14,22 +14,22 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
   }, {});
 
   return (
-    <header className="relative flex h-14 items-center justify-between border-b border-gray-700 bg-gray-900 px-4">
+    <header className="relative flex h-14 items-center justify-between border-b border-tropic-gold-dark/30 bg-black px-4">
       <div className="flex items-center gap-3">
         <Link
           to="/hub"
-          className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors mr-2"
+          className="flex items-center gap-1 text-tropic-gold/70 hover:text-tropic-gold transition-colors mr-2"
           title="Back to Hub"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex items-center gap-2">
-          <Globe className="h-6 w-6 text-blue-400" />
-          <h1 className="text-lg font-bold text-white">
+          <Globe className="h-6 w-6 text-tropic-gold" />
+          <h1 className="text-lg font-bold text-tropic-gold-light">
             Global Threat Map
           </h1>
         </div>
-        <Badge variant="outline" className="hidden md:flex border-green-600 text-green-400">
+        <Badge variant="outline" className="hidden md:flex border-tropic-gold/40 text-tropic-gold bg-tropic-gold/10">
           <Activity className="mr-1 h-3 w-3" />
           Live
         </Badge>
@@ -41,7 +41,7 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
           href="https://www.valyu.ai"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-bold text-white hover:underline"
+          className="font-bold text-tropic-gold hover:text-tropic-gold-light hover:underline"
         >
           Valyu
         </a>
@@ -50,16 +50,16 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
       <div className="flex items-center gap-4">
         <div className="hidden items-center gap-2 md:flex">
           {threatCounts.critical > 0 && (
-            <Badge variant="outline" className="border-red-500 text-red-400 bg-red-500/10">
+            <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10">
               {threatCounts.critical} Critical
             </Badge>
           )}
           {threatCounts.high > 0 && (
-            <Badge variant="outline" className="border-orange-500 text-orange-400 bg-orange-500/10">
+            <Badge variant="outline" className="border-orange-500/50 text-orange-400 bg-orange-500/10">
               {threatCounts.high} High
             </Badge>
           )}
-          <Badge variant="outline" className="border-gray-600 text-gray-300">
+          <Badge variant="outline" className="border-tropic-gold-dark/50 text-tropic-gold bg-tropic-gold/5">
             {filteredEvents.length} Events
           </Badge>
         </div>
@@ -70,7 +70,7 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
           onClick={onRefresh}
           disabled={isLoading}
           title="Refresh events"
-          className="text-gray-400 hover:text-white"
+          className="text-tropic-gold/70 hover:text-tropic-gold hover:bg-tropic-gold/10"
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         </Button>

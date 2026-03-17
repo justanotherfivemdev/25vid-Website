@@ -45,8 +45,8 @@ export default function TimelineScrubber() {
         onClick={handlePlayToggle}
         className={`flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
           isAutoPlaying
-            ? 'bg-blue-600 text-white hover:bg-blue-700'
-            : 'bg-gray-800/95 text-gray-200 hover:bg-gray-700 border border-gray-600'
+            ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light shadow-tropic-gold/30'
+            : 'bg-black/95 text-tropic-gold hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
         } backdrop-blur-sm`}
         title={isAutoPlaying ? 'Pause auto-pan' : 'Start auto-pan'}
       >

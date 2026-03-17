@@ -397,10 +397,10 @@ export default function GlobalThreatMap({ operations = [] }) {
 
   if (!MAPBOX_TOKEN) {
     return (
-      <div className="flex h-full items-center justify-center bg-gray-900 text-gray-400">
+      <div className="flex h-full items-center justify-center bg-black text-tropic-gold-dark">
         <div className="text-center p-8">
-          <p className="text-lg font-semibold mb-2">Mapbox Token Required</p>
-          <p className="text-sm">Set <code className="bg-gray-800 px-2 py-1 rounded">REACT_APP_MAPBOX_TOKEN</code> in your environment.</p>
+          <p className="text-lg font-semibold mb-2 text-tropic-gold">Mapbox Token Required</p>
+          <p className="text-sm">Set <code className="bg-gray-900 text-tropic-gold-light px-2 py-1 rounded border border-tropic-gold-dark/30">REACT_APP_MAPBOX_TOKEN</code> in your environment.</p>
         </div>
       </div>
     );

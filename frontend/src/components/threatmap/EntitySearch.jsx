@@ -77,49 +77,49 @@ export default function EntitySearch() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-gray-700 p-4">
-        <h2 className="text-lg font-semibold text-gray-100">Build Dossier</h2>
-        <p className="text-sm text-gray-400">Deep research on any actor with sourced analysis</p>
+      <div className="border-b border-tropic-gold-dark/20 p-4">
+        <h2 className="text-lg font-semibold text-tropic-gold-light">Build Dossier</h2>
+        <p className="text-sm text-tropic-gold-dark">Deep research on any actor with sourced analysis</p>
       </div>
 
       <div className="p-4 space-y-3">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tropic-gold-dark" />
             <Input
               placeholder="e.g. Wagner Group, Hezbollah, North Korea..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="pl-9 bg-gray-800 border-gray-600 text-gray-200 placeholder:text-gray-500"
+              className="pl-9 bg-black border-tropic-gold-dark/30 text-gray-200 placeholder:text-gray-600 focus:border-tropic-gold/50 focus:ring-tropic-gold/20"
             />
           </div>
           <Button
             onClick={handleSearch}
             disabled={isLoading || !query.trim()}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-tropic-gold hover:bg-tropic-gold-light text-black font-semibold"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Research'}
           </Button>
         </div>
 
         {isLoading && (
-          <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 text-sm">
-            <div className="flex items-center gap-2 text-gray-200 font-medium mb-2">
-              <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+          <div className="rounded-lg bg-tropic-gold/10 border border-tropic-gold/20 p-3 text-sm">
+            <div className="flex items-center gap-2 text-tropic-gold-light font-medium mb-2">
+              <Loader2 className="h-4 w-4 animate-spin text-tropic-gold" />
               Generating Intelligence Report
             </div>
-            <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500/50 animate-pulse w-1/3" />
+            <div className="h-1.5 bg-gray-900 rounded-full overflow-hidden">
+              <div className="h-full bg-tropic-gold/50 animate-pulse w-1/3" />
             </div>
-            <p className="text-gray-400 text-xs mt-2">
-              This may take a moment. Powered by Valyu intelligence.
+            <p className="text-gray-500 text-xs mt-2">
+              This may take a moment. Powered by <span className="text-tropic-gold">Valyu</span> intelligence.
             </p>
           </div>
         )}
 
         {error && (
-          <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
+          <div className="rounded-lg bg-tropic-red/10 border border-tropic-red/20 p-3 text-sm text-tropic-red-light">
             {error}
           </div>
         )}
@@ -127,15 +127,15 @@ export default function EntitySearch() {
 
       <ScrollArea className="flex-1 p-4">
         {entity && researchResult && (
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-black border-tropic-gold-dark/20">
             <CardHeader className="pb-3">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
-                  <TypeIcon className="h-5 w-5 text-blue-400" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tropic-gold/20">
+                  <TypeIcon className="h-5 w-5 text-tropic-gold" />
                 </div>
                 <div className="flex-1">
-                  <CardTitle className="text-lg text-gray-100">{entity.name}</CardTitle>
-                  <Badge variant="outline" className="mt-1 capitalize text-gray-400 border-gray-600">
+                  <CardTitle className="text-lg text-tropic-gold-light">{entity.name}</CardTitle>
+                  <Badge variant="outline" className="mt-1 capitalize text-tropic-gold-dark border-tropic-gold-dark/30">
                     {entity.type}
                   </Badge>
                 </div>
@@ -145,7 +145,7 @@ export default function EntitySearch() {
               {/* Report preview */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="flex items-center gap-2 text-sm font-medium text-gray-200">
+                  <h4 className="flex items-center gap-2 text-sm font-medium text-tropic-gold-light">
                     <FileText className="h-4 w-4" />
                     Intelligence Report
                   </h4>
@@ -153,7 +153,7 @@ export default function EntitySearch() {
                     variant="outline"
                     size="sm"
                     onClick={() => setShowFullReport(true)}
-                    className="h-7 text-xs border-gray-600 text-gray-300 hover:text-white"
+                    className="h-7 text-xs border-tropic-gold-dark/30 text-tropic-gold hover:text-tropic-gold-light hover:bg-tropic-gold/10"
                   >
                     <Maximize2 className="mr-1 h-3 w-3" />
                     View Full Report
@@ -167,14 +167,14 @@ export default function EntitySearch() {
                       return text.length > 800 ? text.slice(0, 800) + '...' : text;
                     })()}
                   </ReactMarkdown>
-                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-800 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black to-transparent" />
                 </div>
               </div>
 
               {/* Locations */}
               {entity.locations && entity.locations.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-sm font-medium text-gray-200 flex items-center gap-2">
+                  <h4 className="mb-2 text-sm font-medium text-tropic-gold-light flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     Known Locations ({entity.locations.length})
                   </h4>
@@ -183,7 +183,7 @@ export default function EntitySearch() {
                       <button
                         key={i}
                         onClick={() => handleFlyToLocation(loc.longitude, loc.latitude)}
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-blue-400 transition-colors w-full text-left"
+                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-tropic-gold transition-colors w-full text-left"
                       >
                         <MapPin className="h-3 w-3 shrink-0" />
                         <span className="truncate">{loc.placeName || loc.country || `${loc.latitude.toFixed(2)}, ${loc.longitude.toFixed(2)}`}</span>
@@ -196,7 +196,7 @@ export default function EntitySearch() {
               {/* Sources */}
               {researchResult.sources && researchResult.sources.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-sm font-medium text-gray-200">
+                  <h4 className="mb-2 text-sm font-medium text-tropic-gold-light">
                     Sources ({researchResult.sources.length})
                   </h4>
                   <div className="space-y-1">
@@ -206,7 +206,7 @@ export default function EntitySearch() {
                         href={source.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-blue-400 transition-colors"
+                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-tropic-gold transition-colors"
                       >
                         <ExternalLink className="h-3 w-3 shrink-0" />
                         <span className="truncate">{source.title || source.url}</span>
@@ -221,7 +221,7 @@ export default function EntitySearch() {
 
         {!entity && !isLoading && (
           <div className="py-8 text-center">
-            <FileText className="mx-auto h-12 w-12 text-gray-600" />
+            <FileText className="mx-auto h-12 w-12 text-tropic-gold-dark/50" />
             <p className="mt-4 text-sm text-gray-400">
               Enter any actor to compile an intelligence dossier
             </p>
@@ -229,22 +229,22 @@ export default function EntitySearch() {
               <p>Wagner Group, Houthis, Hezbollah, North Korea</p>
               <p>Nations, militias, PMCs, cartels, political figures</p>
             </div>
-            <div className="mt-4 p-3 rounded-lg bg-gray-800/50 text-xs text-gray-500">
-              Reports are powered by <span className="text-blue-400 font-medium">Valyu</span> intelligence and provide sourced analysis.
+            <div className="mt-4 p-3 rounded-lg bg-tropic-gold/5 border border-tropic-gold-dark/20 text-xs text-gray-500">
+              Reports are powered by <span className="text-tropic-gold font-medium">Valyu</span> intelligence and provide sourced analysis.
             </div>
           </div>
         )}
 
         {entity && isLoading && (
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-black border-tropic-gold-dark/20">
             <CardHeader className="pb-3">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
-                  <TypeIcon className="h-5 w-5 text-blue-400" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tropic-gold/20">
+                  <TypeIcon className="h-5 w-5 text-tropic-gold" />
                 </div>
                 <div className="flex-1">
-                  <CardTitle className="text-lg text-gray-100">{entity.name}</CardTitle>
-                  <Badge variant="outline" className="mt-1 capitalize text-gray-400 border-gray-600">
+                  <CardTitle className="text-lg text-tropic-gold-light">{entity.name}</CardTitle>
+                  <Badge variant="outline" className="mt-1 capitalize text-tropic-gold-dark border-tropic-gold-dark/30">
                     {entity.type}
                   </Badge>
                 </div>
@@ -252,9 +252,9 @@ export default function EntitySearch() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="h-4 bg-gray-700 rounded animate-pulse w-3/4" />
-                <div className="h-4 bg-gray-700 rounded animate-pulse w-full" />
-                <div className="h-4 bg-gray-700 rounded animate-pulse w-5/6" />
+                <div className="h-4 bg-tropic-gold-dark/20 rounded animate-pulse w-3/4" />
+                <div className="h-4 bg-tropic-gold-dark/20 rounded animate-pulse w-full" />
+                <div className="h-4 bg-tropic-gold-dark/20 rounded animate-pulse w-5/6" />
               </div>
             </CardContent>
           </Card>
@@ -264,15 +264,15 @@ export default function EntitySearch() {
       {/* Full Report Dialog */}
       {showFullReport && researchResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+          <div className="bg-black border border-tropic-gold-dark/30 rounded-lg shadow-2xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-tropic-gold-dark/20">
+              <h2 className="text-lg font-bold text-tropic-gold-light flex items-center gap-2">
+                <FileText className="h-5 w-5 text-tropic-gold" />
                 Intelligence Report: {entity?.name}
               </h2>
               <button
                 onClick={() => setShowFullReport(false)}
-                className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-700"
+                className="text-tropic-gold-dark hover:text-tropic-gold transition-colors p-1 rounded hover:bg-tropic-gold/10"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -284,8 +284,8 @@ export default function EntitySearch() {
                 </ReactMarkdown>
               </div>
               {researchResult.sources && researchResult.sources.length > 0 && (
-                <div className="mt-8 pt-4 border-t border-gray-700">
-                  <h4 className="text-sm font-medium text-gray-300 mb-3">
+                <div className="mt-8 pt-4 border-t border-tropic-gold-dark/20">
+                  <h4 className="text-sm font-medium text-tropic-gold-light mb-3">
                     Sources ({researchResult.sources.length})
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
@@ -295,7 +295,7 @@ export default function EntitySearch() {
                         href={source.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-xs text-gray-400 hover:text-blue-400 truncate"
+                        className="flex items-center gap-2 text-xs text-gray-400 hover:text-tropic-gold truncate"
                       >
                         <ExternalLink className="h-3 w-3 shrink-0" />
                         <span className="truncate">{source.title || source.url}</span>

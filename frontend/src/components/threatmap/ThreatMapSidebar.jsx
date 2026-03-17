@@ -15,14 +15,14 @@ export default function ThreatMapSidebar() {
 
   return (
     <div
-      className={`relative flex h-full flex-col border-l border-gray-700 bg-gray-900 transition-all duration-300 ${
+      className={`relative flex h-full flex-col border-l border-tropic-gold-dark/20 bg-black transition-all duration-300 ${
         isCollapsed ? 'w-12' : 'w-96'
       }`}
     >
       <Button
         variant="ghost"
         size="icon"
-        className="absolute -left-3 top-4 z-10 h-6 w-6 rounded-full border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white"
+        className="absolute -left-3 top-4 z-10 h-6 w-6 rounded-full border border-tropic-gold-dark/40 bg-black text-tropic-gold hover:bg-tropic-gold/10 hover:text-tropic-gold-light"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         {isCollapsed ? (
@@ -34,15 +34,15 @@ export default function ThreatMapSidebar() {
 
       {!isCollapsed && (
         <>
-          <div className="flex border-b border-gray-700">
+          <div className="flex border-b border-tropic-gold-dark/20">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
                   activeTab === tab.id
-                    ? 'border-b-2 border-blue-500 text-blue-400'
-                    : 'text-gray-400 hover:text-gray-200'
+                    ? 'border-b-2 border-tropic-gold text-tropic-gold'
+                    : 'text-gray-500 hover:text-tropic-gold-light'
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
@@ -69,8 +69,8 @@ export default function ThreatMapSidebar() {
                 setActiveTab(tab.id);
                 setIsCollapsed(false);
               }}
-              className={`h-8 w-8 text-gray-400 hover:text-white ${
-                activeTab === tab.id ? 'bg-blue-500/20 text-blue-400' : ''
+              className={`h-8 w-8 text-gray-500 hover:text-tropic-gold ${
+                activeTab === tab.id ? 'bg-tropic-gold/10 text-tropic-gold' : ''
               }`}
             >
               <tab.icon className="h-4 w-4" />

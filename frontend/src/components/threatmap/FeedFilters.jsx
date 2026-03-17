@@ -39,19 +39,19 @@ export default function FeedFilters() {
   };
 
   return (
-    <div className="border-b border-gray-700 p-4 space-y-3">
+    <div className="border-b border-tropic-gold-dark/20 p-4 space-y-3">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tropic-gold-dark" />
         <Input
           placeholder="Search events..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 pr-9 bg-gray-800 border-gray-600 text-gray-200 placeholder:text-gray-500"
+          className="pl-9 pr-9 bg-black border-tropic-gold-dark/30 text-gray-200 placeholder:text-gray-600 focus:border-tropic-gold/50 focus:ring-tropic-gold/20"
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-200"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-tropic-gold"
           >
             <X className="h-4 w-4" />
           </button>
@@ -59,7 +59,7 @@ export default function FeedFilters() {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-medium text-gray-500">Threat Level</p>
+        <p className="mb-2 text-xs font-medium text-tropic-gold-dark">Threat Level</p>
         <div className="flex flex-wrap gap-1">
           {THREAT_LEVELS.map((level) => (
             <Badge
@@ -79,7 +79,7 @@ export default function FeedFilters() {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-medium text-gray-500">Category</p>
+        <p className="mb-2 text-xs font-medium text-tropic-gold-dark">Category</p>
         <div className="flex flex-wrap gap-1">
           {EVENT_CATEGORIES.map((category) => (
             <Badge
@@ -87,8 +87,8 @@ export default function FeedFilters() {
               variant="outline"
               className={`cursor-pointer capitalize text-xs ${
                 categoryFilters.includes(category)
-                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                  : 'border-gray-600 text-gray-400 hover:text-gray-200'
+                  ? 'bg-tropic-gold/20 text-tropic-gold border-tropic-gold/30'
+                  : 'border-tropic-gold-dark/20 text-gray-500 hover:text-tropic-gold-light hover:border-tropic-gold-dark/40'
               }`}
               onClick={() => toggleCategory(category)}
             >
@@ -103,7 +103,7 @@ export default function FeedFilters() {
           variant="ghost"
           size="sm"
           onClick={clearFilters}
-          className="w-full text-gray-400 hover:text-gray-200"
+          className="w-full text-tropic-gold-dark hover:text-tropic-gold hover:bg-tropic-gold/10"
         >
           <X className="mr-2 h-4 w-4" />
           Clear Filters

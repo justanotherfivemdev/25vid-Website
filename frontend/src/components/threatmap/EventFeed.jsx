@@ -10,9 +10,9 @@ export default function EventFeed() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-gray-700 p-4">
-        <h2 className="text-lg font-semibold text-gray-100">Event Feed</h2>
-        <p className="text-sm text-gray-400">{filteredEvents.length} events</p>
+      <div className="border-b border-tropic-gold-dark/20 p-4">
+        <h2 className="text-lg font-semibold text-tropic-gold-light">Event Feed</h2>
+        <p className="text-sm text-tropic-gold-dark">{filteredEvents.length} events</p>
       </div>
 
       <FeedFilters />
@@ -20,14 +20,14 @@ export default function EventFeed() {
       <ScrollArea className="flex-1 p-4">
         {isLoading && (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
-            <span className="ml-2 text-sm text-gray-400">Loading events...</span>
+            <Loader2 className="h-6 w-6 animate-spin text-tropic-gold" />
+            <span className="ml-2 text-sm text-tropic-gold-dark">Loading events...</span>
           </div>
         )}
 
         {error && (
-          <div className="rounded-lg bg-red-500/10 p-4 text-center">
-            <p className="text-sm text-red-400">{error}</p>
+          <div className="rounded-lg bg-tropic-red/10 border border-tropic-red/20 p-4 text-center">
+            <p className="text-sm text-tropic-red-light">{error}</p>
           </div>
         )}
 

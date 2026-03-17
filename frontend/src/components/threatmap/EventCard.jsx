@@ -45,8 +45,8 @@ const EventCard = memo(function EventCard({ event, isSelected, onClick, style })
 
   return (
     <Card
-      className={`cursor-pointer transition-all duration-200 hover:bg-gray-700/50 border-gray-700 bg-gray-800/80 ${
-        isSelected ? 'ring-2 ring-blue-500 bg-gray-700/50' : ''
+      className={`cursor-pointer transition-all duration-200 hover:bg-tropic-gold/5 border-tropic-gold-dark/15 bg-black/80 ${
+        isSelected ? 'ring-2 ring-tropic-gold bg-tropic-gold/10' : ''
       }`}
       style={style}
       onClick={handleClick}
@@ -59,7 +59,7 @@ const EventCard = memo(function EventCard({ event, isSelected, onClick, style })
 
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="text-sm font-medium text-gray-100 line-clamp-2">
+              <h3 className="text-sm font-medium text-tropic-gold-light line-clamp-2">
                 {event.title}
               </h3>
               <Badge
