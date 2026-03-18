@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Home, LogOut, Shield, MapPin, Target, Calendar, ChevronRight, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import ThreatMap from '@/components/map/ThreatMap';
-import ThreatLegend from '@/components/map/ThreatLegend';
-import ThreatFilters from '@/components/map/ThreatFilters';
+import Map, { NavigationControl, Source, Layer, Popup } from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 import { API } from '@/utils/api';
+
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const OBJ_STATUS_CFG = {
   pending: { color: 'bg-gray-700', dot: 'bg-gray-500', label: 'PENDING' },
@@ -27,14 +28,56 @@ const PRIORITY_CFG = {
   tertiary: { border: 'border-gray-600', text: 'text-gray-400' },
 };
 
+const overlayLayer = {
+  id: 'campaign-overlay-markers',
+  type: 'circle',
+  paint: {
+    'circle-color': ['match', ['get', 'source_kind'],
+      'objective', '#C9A227',
+      'operation', '#B01C2E',
+      'intel', '#556B2F',
+      '#C9A227',
+    ],
+    'circle-radius': 9,
+    'circle-stroke-width': 2,
+    'circle-stroke-color': ['match', ['get', 'source_kind'],
+      'objective', '#8F701A',
+      'operation', '#7E1420',
+      'intel', '#3d4f22',
+      '#8F701A',
+    ],
+  },
+};
+
+const overlayLabelLayer = {
+  id: 'campaign-overlay-labels',
+  type: 'symbol',
+  layout: {
+    'text-field': ['get', 'name'],
+    'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+    'text-size': 10,
+    'text-offset': [0, 1.4],
+    'text-anchor': 'top',
+    'text-max-width': 12,
+  },
+  paint: {
+    'text-color': '#C9A227',
+    'text-halo-color': '#1e293b',
+    'text-halo-width': 1,
+  },
+};
+
 const CampaignMap = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mapRef = useRef(null);
   const [campaign, setCampaign] = useState(null);
   const [allCampaigns, setAllCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedMarker, setSelectedMarker] = useState(null);
+  const [markerPopup, setMarkerPopup] = useState(null);
   const [filters, setFilters] = useState({ search: '', severity: 'all', status: 'all' });
   const [overlayData, setOverlayData] = useState({ objectives: [], operations: [], intel: [] });
   const [layerVisibility, setLayerVisibility] = useState({ objectives: true, operations: true, intel: true });
@@ -48,15 +91,51 @@ const CampaignMap = () => {
     time: '',
     activity_state: 'ongoing',
   });
+  const [mapViewport, setMapViewport] = useState({
+    longitude: 0,
+    latitude: 20,
+    zoom: 2,
+  });
+
+  const loadData = useCallback(async () => {
+    try {
+      const [activeRes, allRes, overlaysRes] = await Promise.all([
+        axios.get(`${API}/campaigns/active`),
+        axios.get(`${API}/campaigns`),
+        axios.get(`${API}/map/overlays`).catch(() => ({ data: { objectives: [], operations: [], intel: [] } })),
+      ]);
+      setOverlayData({
+        objectives: overlaysRes.data?.objectives || [],
+        operations: overlaysRes.data?.operations || [],
+        intel: overlaysRes.data?.intel || [],
+      });
+      setAllCampaigns(allRes.data);
+      const urlCampaignId = searchParams.get('id');
+      const targetCampaign = urlCampaignId
+        ? allRes.data.find(c => c.id === urlCampaignId)
+        : null;
+      if (targetCampaign) {
+        setCampaign(targetCampaign);
+        setSelectedId(targetCampaign.id);
+      } else if (activeRes.data) {
+        setCampaign(activeRes.data);
+        setSelectedId(activeRes.data.id);
+      } else if (allRes.data.length > 0) {
+        setCampaign(allRes.data[0]);
+        setSelectedId(allRes.data[0].id);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [searchParams]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   useEffect(() => {
     if (selectedId) {
-      // When switching campaigns, clear any marker and activity state tied to the previous campaign
       setSelectedMarker(null);
+      setMarkerPopup(null);
       setCreatingActivity(false);
       setActivityMsg('');
       setActivityForm({
@@ -84,30 +163,6 @@ const CampaignMap = () => {
     }));
   }, [selectedMarker]);
 
-  const loadData = async () => {
-    try {
-      const [activeRes, allRes, overlaysRes] = await Promise.all([
-        axios.get(`${API}/campaigns/active`),
-        axios.get(`${API}/campaigns`),
-        axios.get(`${API}/map/overlays`).catch(() => ({ data: { objectives: [], operations: [], intel: [] } })),
-      ]);
-      setOverlayData({
-        objectives: overlaysRes.data?.objectives || [],
-        operations: overlaysRes.data?.operations || [],
-        intel: overlaysRes.data?.intel || [],
-      });
-      setAllCampaigns(allRes.data);
-      if (activeRes.data) {
-        setCampaign(activeRes.data);
-        setSelectedId(activeRes.data.id);
-      } else if (allRes.data.length > 0) {
-        setCampaign(allRes.data[0]);
-        setSelectedId(allRes.data[0].id);
-      }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
-
   const handleLogout = async () => { await logout(); navigate('/'); };
 
   const phases = campaign?.phases || [];
@@ -133,6 +188,48 @@ const CampaignMap = () => {
       if (!needle) return true;
       return [o.name, o.region_label, o.description, o.grid_ref, o.source_kind, o.operation_type].filter(Boolean).join(' ').toLowerCase().includes(needle);
     });
+
+  const overlayGeoJson = useMemo(() => ({
+    type: 'FeatureCollection',
+    features: mapMarkers.map((m) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [Number(m.lng), Number(m.lat)] },
+      properties: {
+        id: m.id || '',
+        name: m.name || m.title || '',
+        source_kind: m.source_kind || 'objective',
+        severity: m.severity || 'medium',
+        region_label: m.region_label || '',
+        description: m.description || '',
+      },
+    })),
+  }), [mapMarkers]);
+
+  const onMapClick = useCallback((event) => {
+    const features = event.features || [];
+    const clickedFeature = features.find(f => f.layer.id === 'campaign-overlay-markers');
+    if (clickedFeature) {
+      const props = clickedFeature.properties;
+      const marker = mapMarkers.find(m => m.id === props.id) || {
+        id: props.id,
+        name: props.name,
+        source_kind: props.source_kind,
+        severity: props.severity,
+        region_label: props.region_label,
+        description: props.description,
+        lat: clickedFeature.geometry.coordinates[1],
+        lng: clickedFeature.geometry.coordinates[0],
+      };
+      setSelectedMarker(marker);
+      setMarkerPopup({
+        longitude: clickedFeature.geometry.coordinates[0],
+        latitude: clickedFeature.geometry.coordinates[1],
+        marker,
+      });
+    } else {
+      setMarkerPopup(null);
+    }
+  }, [mapMarkers]);
 
   const handleCreateActivity = async (e) => {
     e.preventDefault();
@@ -167,7 +264,7 @@ const CampaignMap = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-gold/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
@@ -256,15 +353,67 @@ const CampaignMap = () => {
                   <CardContent className="p-5 space-y-4">
                     <div className="flex items-center justify-between gap-4 flex-wrap">
                       <h3 className="text-xs text-tropic-gold tracking-widest">CAMPAIGN MAP OVERLAYS</h3>
-                      <ThreatLegend />
+                      <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#C9A227] inline-block"></span>Objectives</span>
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#B01C2E] inline-block"></span>Operations</span>
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#556B2F] inline-block"></span>Intel</span>
+                      </div>
                     </div>
-                    <ThreatFilters filters={filters} onChange={setFilters} />
-                    <div className="flex items-center gap-4 text-xs text-gray-400">
-                      <label className="flex items-center gap-1.5"><input type="checkbox" checked={layerVisibility.objectives} onChange={(e) => setLayerVisibility((prev) => ({ ...prev, objectives: e.target.checked }))} /> Objectives</label>
-                      <label className="flex items-center gap-1.5"><input type="checkbox" checked={layerVisibility.operations} onChange={(e) => setLayerVisibility((prev) => ({ ...prev, operations: e.target.checked }))} /> Operations</label>
-                      <label className="flex items-center gap-1.5"><input type="checkbox" checked={layerVisibility.intel} onChange={(e) => setLayerVisibility((prev) => ({ ...prev, intel: e.target.checked }))} /> Intel</label>
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <Input
+                        placeholder="Search overlays..."
+                        value={filters.search}
+                        onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                        className="bg-black border-gray-700 h-8 text-xs max-w-[200px]"
+                      />
+                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                        <label className="flex items-center gap-1.5"><input type="checkbox" checked={layerVisibility.objectives} onChange={(e) => setLayerVisibility((prev) => ({ ...prev, objectives: e.target.checked }))} /> Objectives</label>
+                        <label className="flex items-center gap-1.5"><input type="checkbox" checked={layerVisibility.operations} onChange={(e) => setLayerVisibility((prev) => ({ ...prev, operations: e.target.checked }))} /> Operations</label>
+                        <label className="flex items-center gap-1.5"><input type="checkbox" checked={layerVisibility.intel} onChange={(e) => setLayerVisibility((prev) => ({ ...prev, intel: e.target.checked }))} /> Intel</label>
+                      </div>
                     </div>
-                    <ThreatMap markers={mapMarkers} selectedMarkerId={selectedMarker?.id} onSelectMarker={setSelectedMarker} />
+                    <div className="rounded-lg overflow-hidden border border-gray-800" style={{ height: '420px' }} data-testid="threat-map-canvas">
+                      {MAPBOX_TOKEN ? (
+                        <Map
+                          ref={mapRef}
+                          {...mapViewport}
+                          onMove={(evt) => setMapViewport(evt.viewState)}
+                          onClick={onMapClick}
+                          interactiveLayerIds={['campaign-overlay-markers']}
+                          mapStyle="mapbox://styles/mapbox/dark-v11"
+                          mapboxAccessToken={MAPBOX_TOKEN}
+                          style={{ width: '100%', height: '100%' }}
+                          attributionControl={false}
+                          reuseMaps
+                        >
+                          <NavigationControl position="top-right" />
+                          <Source id="campaign-overlays" type="geojson" data={overlayGeoJson}>
+                            <Layer {...overlayLayer} />
+                            <Layer {...overlayLabelLayer} />
+                          </Source>
+                          {markerPopup && (
+                            <Popup
+                              longitude={markerPopup.longitude}
+                              latitude={markerPopup.latitude}
+                              closeOnClick={false}
+                              onClose={() => setMarkerPopup(null)}
+                              maxWidth="280px"
+                              className="threat-map-popup"
+                            >
+                              <div className="p-2 min-w-[180px]">
+                                <div className="font-semibold text-sm text-tropic-gold">{markerPopup.marker.name}</div>
+                                {markerPopup.marker.source_kind && <Badge variant="outline" className="mt-1 border-gray-700 text-gray-400 text-[10px] uppercase">{markerPopup.marker.source_kind}</Badge>}
+                                <div className="text-xs text-gray-400 mt-1">{markerPopup.marker.region_label || 'Unknown region'} • {(markerPopup.marker.severity || 'medium').toUpperCase()}</div>
+                              </div>
+                            </Popup>
+                          )}
+                        </Map>
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-gray-900 text-gray-500 text-sm">
+                          Map unavailable — REACT_APP_MAPBOX_TOKEN not set
+                        </div>
+                      )}
+                    </div>
                     {selectedMarker && (
                       <div className="bg-black/40 border border-gray-800 rounded p-3 text-sm">
                         <div className="font-semibold">{selectedMarker.name}</div>

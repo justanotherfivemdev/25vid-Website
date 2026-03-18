@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import {
   Search, Loader2, Building2, User, Globe, Users,
-  FileText, MapPin, ExternalLink, Maximize2, X,
+  FileText, MapPin, ExternalLink, Maximize2, X, Send,
 } from 'lucide-react';
 import { useMapStore } from '@/stores/threatMapStore';
 import ReactMarkdown from 'react-markdown';
@@ -29,6 +29,8 @@ export default function EntitySearch() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showFullReport, setShowFullReport] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+  const [deployMsg, setDeployMsg] = useState(null);
 
   const { flyTo, setEntityLocations, clearEntityLocations } = useMapStore();
 
@@ -71,6 +73,24 @@ export default function EntitySearch() {
 
   const handleFlyToLocation = (longitude, latitude) => {
     flyTo(longitude, latitude, 8);
+  };
+
+  const handleDeployReport = async () => {
+    if (!researchResult || deploying) return;
+    setDeploying(true);
+    setDeployMsg(null);
+    try {
+      await axios.post(`${API}/research-agent/query`, {
+        query,
+        post_to_intel_board: true,
+        add_to_threat_map: true,
+      }, { withCredentials: true });
+      setDeployMsg({ type: 'success', text: 'Report deployed to Intel Board & Threat Map' });
+    } catch (err) {
+      setDeployMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to deploy report' });
+    } finally {
+      setDeploying(false);
+    }
   };
 
   const TypeIcon = entity ? (typeIcons[entity.type] || Building2) : Building2;
@@ -144,21 +164,39 @@ export default function EntitySearch() {
             <CardContent className="space-y-4">
               {/* Report preview */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <h4 className="flex items-center gap-2 text-sm font-medium text-tropic-gold-light">
                     <FileText className="h-4 w-4" />
                     Intelligence Report
                   </h4>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowFullReport(true)}
-                    className="h-7 text-xs border-tropic-gold-dark/30 text-tropic-gold hover:text-tropic-gold-light hover:bg-tropic-gold/10"
-                  >
-                    <Maximize2 className="mr-1 h-3 w-3" />
-                    View Full Report
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFullReport(true)}
+                      className="h-7 text-xs border-tropic-gold-dark/30 text-tropic-gold hover:text-tropic-gold-light hover:bg-tropic-gold/10"
+                    >
+                      <Maximize2 className="mr-1 h-3 w-3" />
+                      Full Report
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDeployReport}
+                      disabled={deploying}
+                      className="h-7 text-xs border-tropic-gold-dark/30 text-tropic-gold hover:text-tropic-gold-light hover:bg-tropic-gold/10"
+                    >
+                      <Send className="mr-1 h-3 w-3" />
+                      {deploying ? 'Deploying...' : 'Deploy'}
+                    </Button>
+                  </div>
                 </div>
+
+                {deployMsg && (
+                  <div className={`text-xs rounded p-2 ${deployMsg.type === 'success' ? 'bg-green-900/30 text-green-400 border border-green-800/30' : 'bg-tropic-red/10 text-tropic-red-light border border-tropic-red/20'}`}>
+                    {deployMsg.text}
+                  </div>
+                )}
 
                 <div className="text-sm text-gray-400 max-h-40 overflow-hidden relative">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>

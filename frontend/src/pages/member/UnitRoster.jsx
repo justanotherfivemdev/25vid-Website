@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Shield, Home, LogOut, Users, ChevronRight, ChevronDown, Building2, LayoutGrid, FileSpreadsheet } from 'lucide-react';
+import { Search, Shield, Home, LogOut, Users, ChevronRight, ChevronDown, Building2, LayoutGrid, FileSpreadsheet, Upload, X, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
 
@@ -93,6 +93,12 @@ const UnitRoster = () => {
   const [rankFilter, setRankFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importSheetName, setImportSheetName] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [importError, setImportError] = useState('');
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -140,6 +146,33 @@ const UnitRoster = () => {
     } catch (err) {
       console.error('Failed to fetch partner unit members:', err);
     }
+  };
+
+  const handleGoogleSheetsImport = async () => {
+    if (!importUrl.trim()) return;
+    setImporting(true);
+    setImportError('');
+    setImportResult(null);
+    try {
+      const payload = { spreadsheetUrl: importUrl.trim() };
+      if (importSheetName.trim()) payload.sheetName = importSheetName.trim();
+      const res = await axios.post(`${API}/admin/import-users`, payload);
+      setImportResult(res.data);
+      await fetchData();
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      setImportError(typeof detail === 'string' ? detail : (detail?.message || err.message || 'Import failed'));
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleOpenImportDialog = () => {
+    setImportDialogOpen(true);
+    setImportResult(null);
+    setImportError('');
+    setImportUrl('');
+    setImportSheetName('');
   };
 
   const ranks = [...new Set(members.map(m => m.rank).filter(Boolean))].sort();
@@ -218,7 +251,7 @@ const UnitRoster = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-red/30">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700">Hub</Button></Link>
@@ -244,6 +277,16 @@ const UnitRoster = () => {
             </div>
             <div className="flex flex-wrap justify-end gap-2">
               {user?.role === 'admin' && (
+                <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-blue-600/60 text-blue-400 hover:bg-blue-900/20"
+                  onClick={handleOpenImportDialog}
+                  data-testid="import-google-sheets"
+                >
+                  <Upload className="w-4 h-4 mr-1" />Import from Google Sheets
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -253,6 +296,7 @@ const UnitRoster = () => {
                 >
                   <FileSpreadsheet className="w-4 h-4 mr-1" />Export to Google Sheets
                 </Button>
+                </>
               )}
 
               {/* View Toggle - 25th ID colors */}
@@ -498,6 +542,88 @@ const UnitRoster = () => {
           )}
         </div>
       </div>
+
+      {/* Google Sheets Import Dialog */}
+      {importDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-tropic-gold/30 rounded-lg shadow-2xl max-w-lg w-full mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+              <h2 className="text-lg font-bold text-tropic-gold tracking-wider flex items-center gap-2" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                <Upload className="w-5 h-5" />IMPORT FROM GOOGLE SHEETS
+              </h2>
+              <button onClick={() => setImportDialogOpen(false)} className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-gray-400">
+                Paste a Google Spreadsheet URL or ID. The spreadsheet must be shared publicly or accessible via a Google API key.
+                Columns will be auto-mapped based on headers (username, email, discord_id, rank, role, status, etc.).
+              </p>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-gray-300">Spreadsheet URL or ID</label>
+                <Input
+                  type="text"
+                  placeholder="https://docs.google.com/spreadsheets/d/..."
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  className="bg-black border-gray-700"
+                  data-testid="import-sheet-url"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-gray-300">Sheet Name <span className="text-gray-600">(optional)</span></label>
+                <Input
+                  type="text"
+                  placeholder="Sheet1"
+                  value={importSheetName}
+                  onChange={(e) => setImportSheetName(e.target.value)}
+                  className="bg-black border-gray-700"
+                  data-testid="import-sheet-name"
+                />
+              </div>
+
+              {importError && (
+                <div className="bg-tropic-red/10 border border-tropic-red/20 rounded p-3 text-sm text-tropic-red-light" data-testid="import-error">
+                  {importError}
+                </div>
+              )}
+
+              {importResult && (
+                <div className="bg-green-900/20 border border-green-800/30 rounded p-3 space-y-2" data-testid="import-result">
+                  <div className="text-sm font-medium text-green-400">Import Complete</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
+                    <div>Imported: <span className="text-green-400 font-bold">{importResult.imported}</span></div>
+                    <div>Updated: <span className="text-blue-400 font-bold">{importResult.updated}</span></div>
+                    <div>Skipped: <span className="text-yellow-400 font-bold">{importResult.skipped}</span></div>
+                    <div>Errors: <span className="text-red-400 font-bold">{importResult.errors}</span></div>
+                  </div>
+                  {importResult.sheet_name && (
+                    <div className="text-[10px] text-gray-500">Sheet: {importResult.sheet_name}</div>
+                  )}
+                  {importResult.field_mapping && Object.keys(importResult.field_mapping).length > 0 && (
+                    <div className="text-[10px] text-gray-500">
+                      Mapped: {Object.entries(importResult.field_mapping).map(([field, col]) => `${field}→${col}`).join(', ')}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setImportDialogOpen(false)} className="border-gray-700">Cancel</Button>
+                <Button
+                  onClick={handleGoogleSheetsImport}
+                  disabled={importing || !importUrl.trim()}
+                  className="bg-tropic-gold hover:bg-tropic-gold-dark text-black"
+                  data-testid="import-submit"
+                >
+                  {importing ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Importing...</> : <><Upload className="w-4 h-4 mr-1" />Import Members</>}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

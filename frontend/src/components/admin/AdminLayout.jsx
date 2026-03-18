@@ -40,11 +40,11 @@ const AdminLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Top Bar - 25th ID colors: gold-forward with red as secondary accent */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-tropic-gold/25">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center space-x-4">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
-            <h1 className="text-2xl font-bold text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+            <h1 className="text-2xl font-bold text-tropic-gold tracking-[0.1em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
               {authUser?.role === 's5_liaison' ? 'S-5 LIAISON CENTER' : '25TH ID COMMAND CENTER'}
             </h1>
           </div>
@@ -82,7 +82,7 @@ const AdminLayout = ({ children }) => {
       
       <div className="flex pt-16">
         {/* Sidebar - 25th ID colors */}
-        <div className="fixed left-0 top-16 bottom-0 w-64 bg-gray-900 border-r border-tropic-gold/15 overflow-y-auto">
+        <div className="fixed left-0 top-16 bottom-0 w-64 bg-black/95 border-r border-tropic-gold/10 overflow-y-auto">
           <nav className="p-4 space-y-2">
             {visibleMenuItems.map((item) => {
               const Icon = item.icon;

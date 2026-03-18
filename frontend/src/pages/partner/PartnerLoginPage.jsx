@@ -7,13 +7,27 @@ import { Input } from '@/components/ui/input';
 import { Shield } from 'lucide-react';
 import { BACKEND_URL, API } from '@/utils/api';
 
+const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
+
 const PartnerLoginPage = () => {
   const [mode, setMode] = useState('login'); // login | register
   const [formData, setFormData] = useState({ email: '', password: '', username: '', invite_code: '', rank: '' });
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [bgConfig, setBgConfig] = useState(null);
   const navigate = useNavigate();
+
+  // Fetch site content for partner login background
+  useEffect(() => {
+    axios.get(`${API}/site-content`)
+      .then(res => {
+        if (res.data?.partnerLogin) {
+          setBgConfig(res.data.partnerLogin);
+        }
+      })
+      .catch(err => console.error('Failed to fetch partner login config:', err));
+  }, []);
 
   // If already authenticated as partner, redirect
   useEffect(() => {
@@ -58,8 +72,16 @@ const PartnerLoginPage = () => {
     }
   };
 
+  const partnerBg = bgConfig?.showBackground && bgConfig?.backgroundImage ? {
+    backgroundImage: `url('${resolveImg(bgConfig.backgroundImage)}')`,
+    backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed'
+  } : {};
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 bg-black">
+    <div className="min-h-screen flex items-center justify-center px-6 relative" style={partnerBg}>
+      {bgConfig?.showBackground && bgConfig?.backgroundImage && (
+        <div className="absolute inset-0 bg-black" style={{ opacity: bgConfig.overlayOpacity || 0.85 }}></div>
+      )}
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">

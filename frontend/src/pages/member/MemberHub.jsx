@@ -78,11 +78,11 @@ const MemberHub = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Top bar - 25th ID colors */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-red/30" data-testid="member-nav">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="member-nav">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
-            <h1 className="text-xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH ID HUB</h1>
+            <h1 className="text-xl font-bold tracking-[0.12em] text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH ID HUB</h1>
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-400 hidden sm:block">Welcome, <span className="text-tropic-gold font-bold">{user?.username}</span></span>
@@ -103,11 +103,11 @@ const MemberHub = () => {
       <div className="pt-20 pb-12 px-6">
         <div className="container mx-auto max-w-7xl space-y-8">
           {/* Welcome banner with search - 25th ID colors */}
-          <div className="bg-gradient-to-r from-tropic-red/20 to-gray-900 border border-tropic-red/30 rounded-lg p-6" data-testid="member-welcome-banner">
+          <div className="bg-gradient-to-r from-tropic-red/15 via-gray-900/80 to-gray-900 border border-tropic-gold/15 rounded-lg p-6" data-testid="member-welcome-banner">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h2 className="text-3xl font-bold text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>OPERATIONS HUB</h2>
-                <p className="text-gray-400 mt-1">Your tactical command overview — stay informed, stay ready.</p>
+                <h2 className="text-3xl font-bold text-tropic-gold tracking-[0.1em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>OPERATIONS HUB</h2>
+                <p className="text-gray-400 mt-1 text-sm tracking-wide">Your tactical command overview — stay informed, stay ready.</p>
               </div>
               <form onSubmit={handleSearch} className="flex gap-2 w-full md:w-auto">
                 <div className="relative flex-1 md:w-72">

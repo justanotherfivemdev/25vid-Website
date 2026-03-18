@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, AlertCircle, CheckCircle, Globe, Type, Image as ImageIcon, Layout, FileText, Hash, Monitor } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageUpload from '@/components/admin/ImageUpload';
 import { defaultSiteContent } from '@/config/siteContent';
 import { applyBrowserMetadata } from '@/utils/browserMetadata';
@@ -372,6 +373,32 @@ const SiteContentManager = () => {
           <ImageUpload value={get('login.backgroundImage')} onChange={url => set('login.backgroundImage', url)} label="Login Background Image"
             description="Appears on: Full-screen background on /login. Purpose: Branded login experience. Recommended: 1920x1080px."
             previewClass="w-full h-44 object-cover rounded" />
+        </SectionCard>
+
+        {/* 8b — PARTNER LOGIN PAGE */}
+        <SectionCard number="08b" icon={ImageIcon} title="Partner Login Page Background" subtitle="Background image for the S-5 Liaison / Partner login page">
+          <ImageUpload value={get('partnerLogin.backgroundImage')} onChange={url => set('partnerLogin.backgroundImage', url)} label="Partner Login Background Image"
+            description="Appears on: Full-screen background on /partner-login. Purpose: Branded partner login experience. Recommended: 1920x1080px."
+            previewClass="w-full h-44 object-cover rounded" />
+          <div className="grid grid-cols-2 gap-4 mt-3">
+            <div>
+              <Label>Show Background</Label>
+              <Select value={get('partnerLogin.showBackground') === false ? 'no' : 'yes'} onValueChange={v => set('partnerLogin.showBackground', v === 'yes')}>
+                <SelectTrigger className="bg-black border-gray-700 mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectItem value="yes">Yes</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Overlay Opacity</Label>
+              <Input type="number" min="0" max="1" step="0.05"
+                value={get('partnerLogin.overlayOpacity') ?? 0.85}
+                onChange={e => set('partnerLogin.overlayOpacity', parseFloat(e.target.value) || 0.85)}
+                className="bg-black border-gray-700 mt-1" />
+            </div>
+          </div>
         </SectionCard>
 
         {/* 9 — FOOTER */}

@@ -53,10 +53,10 @@ export default function CampaignPopup({ campaign }) {
 
       <div className="mt-3 pt-2 border-t border-gray-700">
         <Link
-          to="/hub/campaigns"
+          to={campaign.related_entity_id ? `/hub/campaign?id=${campaign.related_entity_id}` : '/hub/campaign'}
           className="inline-flex items-center gap-1 text-xs text-tropic-gold hover:text-tropic-gold-light transition-colors"
         >
-          View Campaigns <ExternalLink className="h-3 w-3" />
+          View Campaign <ExternalLink className="h-3 w-3" />
         </Link>
       </div>
     </div>
