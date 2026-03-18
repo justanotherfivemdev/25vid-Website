@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MessageSquare, Shield, LogOut, Home, BookOpen, Globe, Target, Radio, ChevronRight, Users } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, Shield, LogOut, Home, BookOpen, Globe, Target, Radio, ChevronRight, Users, Map } from 'lucide-react';
 import { BACKEND_URL, API } from '@/utils/api';
 
 const PartnerHub = () => {
@@ -120,13 +120,14 @@ const PartnerHub = () => {
           </div>
 
           {/* Quick links */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
             {[
               { icon: MessageSquare, label: 'Discussions', color: 'text-blue-400', href: '/partner/discussions' },
               { icon: Calendar, label: 'Operations', color: 'text-tropic-red', section: 'ops' },
               { icon: BookOpen, label: 'Training', color: 'text-tropic-gold', section: 'training' },
               { icon: Radio, label: 'Intel Board', color: 'text-green-400', section: 'intel' },
               { icon: Target, label: 'Campaigns', color: 'text-purple-400', section: 'campaigns' },
+              { icon: Map, label: 'Threat Map', color: 'text-orange-400', href: '/partner/threat-map' },
             ].map((item) => {
               const content = (
                 <Card key={item.label} className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors cursor-pointer">

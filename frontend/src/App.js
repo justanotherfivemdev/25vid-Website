@@ -41,6 +41,9 @@ import PartnerUnitsManager from '@/pages/admin/PartnerUnitsManager';
 import PartnerLoginPage from '@/pages/partner/PartnerLoginPage';
 import PartnerHub from '@/pages/partner/PartnerHub';
 import PartnerAdmin from '@/pages/partner/PartnerAdmin';
+import PartnerApply from '@/pages/partner/PartnerApply';
+import PartnerThreatMap from '@/pages/partner/PartnerThreatMap';
+import PartnerApplicationsReview from '@/pages/admin/PartnerApplicationsReview';
 import JoinUs from '@/pages/JoinUs';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
@@ -1087,6 +1090,9 @@ const LoginPage = () => {
             <Link to="/partner-login" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-tropic-olive/40 text-tropic-olive hover:bg-tropic-olive/10 hover:border-tropic-olive/60 transition-all text-sm" data-testid="partner-login-link">
               <Shield className="w-4 h-4" /> S-5 Liaison / Partner Login
             </Link>
+            <Link to="/partner-apply" className="block mt-2 text-xs text-gray-500 hover:text-tropic-olive transition-colors">
+              Apply as a Partner Unit →
+            </Link>
           </div>
         </div>
       </div>
@@ -1105,7 +1111,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/join" element={<JoinUs />} />
         <Route path="/join-us" element={<Navigate to="/join" replace />} />
-        <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/operations" element={<ProtectedRoute adminOnly><OperationsManager /></ProtectedRoute>} />
         <Route path="/admin/site-content" element={<ProtectedRoute adminOnly><SiteContentManager /></ProtectedRoute>} />
         <Route path="/admin/announcements" element={<ProtectedRoute adminOnly><AnnouncementsManager /></ProtectedRoute>} />
@@ -1118,6 +1124,7 @@ function App() {
         <Route path="/admin/campaigns" element={<ProtectedRoute adminOnly><CampaignManager /></ProtectedRoute>} />
         <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
         <Route path="/admin/partner-units" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerUnitsManager /></ProtectedRoute>} />
+        <Route path="/admin/partner-applications" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerApplicationsReview /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
@@ -1132,10 +1139,12 @@ function App() {
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
         <Route path="/partner-login" element={<PartnerLoginPage />} />
+        <Route path="/partner-apply" element={<PartnerApply />} />
         <Route path="/partner" element={<PartnerHub />} />
         <Route path="/partner-admin" element={<PartnerAdmin />} />
         <Route path="/partner/discussions" element={<DiscussionForum />} />
         <Route path="/partner/discussions/:id" element={<DiscussionThread />} />
+        <Route path="/partner/threat-map" element={<PartnerThreatMap />} />
       </Routes>
     </BrowserRouter>
   );
