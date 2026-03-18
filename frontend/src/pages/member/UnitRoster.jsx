@@ -85,6 +85,10 @@ const UnitRoster = () => {
   const [hierarchyError, setHierarchyError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('hierarchy'); // 'hierarchy' or 'grid'
+  const [rosterTab, setRosterTab] = useState('25th'); // '25th' or 'partners'
+  const [partnerUnits, setPartnerUnits] = useState([]);
+  const [expandedPartner, setExpandedPartner] = useState(null);
+  const [partnerMembers, setPartnerMembers] = useState([]);
   const [search, setSearch] = useState('');
   const [rankFilter, setRankFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
@@ -113,6 +117,29 @@ const UnitRoster = () => {
       }
     } catch (e) { console.error('Roster fetch failed:', e); }
     finally { setLoading(false); }
+  };
+
+  const fetchPartnerUnits = async () => {
+    try {
+      const res = await axios.get(`${API}/roster/partner-units`);
+      setPartnerUnits(res.data);
+    } catch (err) {
+      console.error('Failed to fetch partner units:', err);
+    }
+  };
+
+  const expandPartnerUnit = async (unitId) => {
+    if (expandedPartner === unitId) {
+      setExpandedPartner(null);
+      return;
+    }
+    try {
+      const res = await axios.get(`${API}/roster/partner-units/${unitId}/members`);
+      setPartnerMembers(res.data.members || []);
+      setExpandedPartner(unitId);
+    } catch (err) {
+      console.error('Failed to fetch partner unit members:', err);
+    }
   };
 
   const ranks = [...new Set(members.map(m => m.rank).filter(Boolean))].sort();
@@ -212,7 +239,7 @@ const UnitRoster = () => {
               <Users className="w-8 h-8 text-tropic-gold" />
               <div>
                 <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="roster-title">PERSONNEL DIRECTORY</h2>
-                <p className="text-sm text-gray-500">{filtered.length} of {members.length} operators</p>
+                <p className="text-sm text-gray-500">{rosterTab === '25th' ? `${filtered.length} of ${members.length} operators` : `${partnerUnits.length} partner units`}</p>
               </div>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
@@ -257,8 +284,30 @@ const UnitRoster = () => {
             </p>
           )}
 
-          {/* Filters - only show in grid mode */}
-          {viewMode === 'grid' && (
+          {/* Roster Tab: 25th Members vs Partner Units */}
+          <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1 w-fit">
+            <Button
+              size="sm"
+              variant={rosterTab === '25th' ? 'default' : 'ghost'}
+              className={rosterTab === '25th' ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light' : 'text-gray-400 hover:text-white'}
+              onClick={() => setRosterTab('25th')}
+              data-testid="roster-tab-25th"
+            >
+              <Users className="w-4 h-4 mr-1" />25th Members
+            </Button>
+            <Button
+              size="sm"
+              variant={rosterTab === 'partners' ? 'default' : 'ghost'}
+              className={rosterTab === 'partners' ? 'bg-tropic-olive text-white hover:bg-tropic-olive/80' : 'text-gray-400 hover:text-white'}
+              onClick={() => { setRosterTab('partners'); fetchPartnerUnits(); }}
+              data-testid="roster-tab-partners"
+            >
+              <Shield className="w-4 h-4 mr-1" />Partner Units
+            </Button>
+          </div>
+
+          {/* Filters - only show in grid mode for 25th tab */}
+          {rosterTab === '25th' && viewMode === 'grid' && (
             <div className="flex flex-wrap gap-3 bg-gray-900/50 border border-gray-800 rounded-lg p-4">
               <div className="flex-1 min-w-[200px]">
                 <div className="relative">
@@ -287,7 +336,9 @@ const UnitRoster = () => {
             </div>
           )}
 
-          {/* Content */}
+          {/* 25th Members Content */}
+          {rosterTab === '25th' && (
+            <>
           {loading ? (
             <div className="text-center py-12 text-gray-500">Loading roster...</div>
           ) : viewMode === 'hierarchy' && hierarchy ? (
@@ -372,6 +423,77 @@ const UnitRoster = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" data-testid="grid-view">
               {filtered.map(m => <MemberCard key={m.id} member={m} />)}
+            </div>
+          )}
+            </>
+          )}
+
+          {/* Partner Units Content */}
+          {rosterTab === 'partners' && (
+            <div className="space-y-3" data-testid="partner-units-view">
+              {partnerUnits.length === 0 ? (
+                <Card className="bg-gray-900/50 border-gray-800">
+                  <CardContent className="p-12 text-center text-gray-500">
+                    <Shield className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <p>No enrolled partner units</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                partnerUnits.map(pu => (
+                  <div key={pu.id}>
+                    <Card className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors cursor-pointer"
+                      onClick={() => expandPartnerUnit(pu.id)}>
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {expandedPartner === pu.id ? <ChevronDown className="w-4 h-4 text-tropic-olive" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
+                          <div className="w-10 h-10 rounded-lg bg-tropic-olive/20 flex items-center justify-center">
+                            <Shield className="w-5 h-5 text-tropic-olive" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-sm">{pu.name}</div>
+                            {pu.abbreviation && <span className="text-xs text-gray-500">{pu.abbreviation}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-tropic-olive/20 text-tropic-olive border-tropic-olive/30 text-[10px]">
+                            PARTNER UNIT
+                          </Badge>
+                          <span className="text-xs text-gray-500"><Users className="w-3 h-3 inline mr-1" />{pu.member_count || 0}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    {expandedPartner === pu.id && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {partnerMembers.length === 0 ? (
+                          <Card className="bg-gray-800/50 border-gray-700">
+                            <CardContent className="p-4 text-center text-gray-500 text-sm">No members in this unit</CardContent>
+                          </Card>
+                        ) : (
+                          partnerMembers.map(pm => (
+                            <Card key={pm.id} className="bg-gray-800/50 border-gray-700">
+                              <CardContent className="p-3 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center text-sm font-bold text-tropic-olive">
+                                    {pm.username?.[0]?.toUpperCase() || '?'}
+                                  </div>
+                                  <div>
+                                    <span className="text-sm font-medium">{pm.username}</span>
+                                    {pm.rank && <span className="text-xs text-gray-500 ml-2">{pm.rank}</span>}
+                                    {pm.billet && <span className="text-xs text-tropic-olive ml-2">{pm.billet}</span>}
+                                  </div>
+                                </div>
+                                <Badge className={`text-[10px] ${pm.partner_role === 'partner_admin' ? 'bg-tropic-gold/20 text-tropic-gold' : 'bg-gray-700'}`}>
+                                  {pm.partner_role === 'partner_admin' ? 'ADMIN' : 'MEMBER'}
+                                </Badge>
+                              </CardContent>
+                            </Card>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>

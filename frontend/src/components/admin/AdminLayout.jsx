@@ -28,7 +28,8 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/recruitment', icon: UserPlus, label: 'Recruitment' },
     { path: '/admin/intel', icon: Radio, label: 'Intel & Briefings' },
     { path: '/admin/campaigns', icon: MapPin, label: 'Campaigns' },
-    { path: '/admin/unit-config', icon: Building2, label: 'Unit Config' }
+    { path: '/admin/unit-config', icon: Building2, label: 'Unit Config' },
+    { path: '/admin/partner-units', icon: Shield, label: 'Partner Units' }
   ];
   
   return (

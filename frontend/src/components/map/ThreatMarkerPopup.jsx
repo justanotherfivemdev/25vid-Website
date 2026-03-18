@@ -14,6 +14,13 @@ const ThreatMarkerPopup = ({ marker, showRecruitCta = false }) => {
         {marker.category && <div>Category: <b className="capitalize">{marker.category.replaceAll('_', ' ')}</b></div>}
         {marker.severity && <div>Severity: <b className="capitalize">{marker.severity}</b></div>}
         {marker.status && <div>Status: <b className="capitalize">{marker.status.replace('_', ' ')}</b></div>}
+        {marker.origin_type && (
+          <div>
+            Origin: <b style={{ color: marker.origin_type === 'partner_unit' ? '#556B2F' : '#C9A227' }}>
+              {marker.origin_unit_name || (marker.origin_type === '25id' ? '25th Infantry Division' : 'Partner Unit')}
+            </b>
+          </div>
+        )}
       </div>
       {marker.linked_operation_id && (
         <Link to={`/hub/operations/${marker.linked_operation_id}`}>
