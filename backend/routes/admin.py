@@ -703,6 +703,7 @@ async def admin_precreate_member(data: AdminPreCreateMember, current_user: dict 
     new_user = User(
         email=normalized_email,
         username=data.username,
+        # Random placeholder password; cannot be used to log in until the member claims the account
         password_hash=pwd_context.hash(secrets.token_urlsafe(32)),
         role=data.role,
         rank=data.rank,
