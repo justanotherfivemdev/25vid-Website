@@ -9,7 +9,7 @@ import { BACKEND_URL } from '@/utils/api';
 const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user: authUser } = useAuth();
   
   const handleLogout = async () => {
     await logout();
@@ -32,6 +32,10 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/partner-units', icon: Shield, label: 'Partner Units' }
   ];
   
+  const visibleMenuItems = authUser?.role === 's5_liaison' 
+    ? menuItems.filter(item => item.path === '/admin' || item.path === '/admin/partner-units')
+    : menuItems;
+  
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Top Bar - 25th ID colors: gold-forward with red as secondary accent */}
@@ -40,7 +44,7 @@ const AdminLayout = ({ children }) => {
           <div className="flex items-center space-x-4">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
             <h1 className="text-2xl font-bold text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-              25TH ID COMMAND CENTER
+              {authUser?.role === 's5_liaison' ? 'S-5 LIAISON CENTER' : '25TH ID COMMAND CENTER'}
             </h1>
           </div>
           <div className="flex items-center space-x-3">
@@ -79,7 +83,7 @@ const AdminLayout = ({ children }) => {
         {/* Sidebar - 25th ID colors */}
         <div className="fixed left-0 top-16 bottom-0 w-64 bg-gray-900 border-r border-tropic-gold/15 overflow-y-auto">
           <nav className="p-4 space-y-2">
-            {menuItems.map((item) => {
+            {visibleMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               
