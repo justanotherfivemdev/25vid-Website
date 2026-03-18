@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,18 +37,10 @@ const PartnerApply = () => {
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`${API}/partner-applications`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || 'Submission failed');
-      }
+      await axios.post(`${API}/partner-applications`, form);
       setSubmitted(true);
     } catch (err) {
-      setError(err.message || 'Failed to submit application.');
+      setError(err.response?.data?.detail || 'Failed to submit application.');
     } finally {
       setSubmitting(false);
     }

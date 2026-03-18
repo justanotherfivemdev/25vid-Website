@@ -26,7 +26,7 @@ export default function PartnerThreatMap() {
 
   // Auth check
   useEffect(() => {
-    axios.get(`${API}/auth/partner/me`)
+    axios.get(`${API}/auth/partner/me`, { withCredentials: true })
       .then(res => {
         if (res.data?.account_type !== 'partner') {
           navigate('/partner-login', { replace: true });
