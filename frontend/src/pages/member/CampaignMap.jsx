@@ -28,14 +28,6 @@ const PRIORITY_CFG = {
   tertiary: { border: 'border-gray-600', text: 'text-gray-400' },
 };
 
-const SEVERITY_COLORS = {
-  info: '#3b82f6',
-  low: '#22c55e',
-  medium: '#eab308',
-  high: '#f97316',
-  critical: '#ef4444',
-};
-
 const overlayLayer = {
   id: 'campaign-overlay-markers',
   type: 'circle',
@@ -105,42 +97,7 @@ const CampaignMap = () => {
     zoom: 2,
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (selectedId) {
-      // When switching campaigns, clear any marker and activity state tied to the previous campaign
-      setSelectedMarker(null);
-      setCreatingActivity(false);
-      setActivityMsg('');
-      setActivityForm({
-        title: '',
-        description: '',
-        operation_type: 'combat',
-        date: '',
-        time: '',
-        activity_state: 'ongoing',
-      });
-      axios
-        .get(`${API}/campaigns/${selectedId}`)
-        .then((r) => setCampaign(r.data))
-        .catch(() => {});
-    }
-  }, [selectedId]);
-
-  useEffect(() => {
-    if (!selectedMarker) return;
-    setActivityMsg('');
-    setActivityForm((prev) => ({
-      ...prev,
-      title: prev.title || `Activity: ${selectedMarker.name || selectedMarker.region_label || 'Threat Response'}`,
-      description: prev.description || selectedMarker.description || '',
-    }));
-  }, [selectedMarker]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [activeRes, allRes, overlaysRes] = await Promise.all([
         axios.get(`${API}/campaigns/active`),
@@ -169,7 +126,43 @@ const CampaignMap = () => {
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    if (selectedId) {
+      setSelectedMarker(null);
+      setMarkerPopup(null);
+      setCreatingActivity(false);
+      setActivityMsg('');
+      setActivityForm({
+        title: '',
+        description: '',
+        operation_type: 'combat',
+        date: '',
+        time: '',
+        activity_state: 'ongoing',
+      });
+      axios
+        .get(`${API}/campaigns/${selectedId}`)
+        .then((r) => setCampaign(r.data))
+        .catch(() => {});
+    }
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!selectedMarker) return;
+    setActivityMsg('');
+    setActivityForm((prev) => ({
+      ...prev,
+      title: prev.title || `Activity: ${selectedMarker.name || selectedMarker.region_label || 'Threat Response'}`,
+      description: prev.description || selectedMarker.description || '',
+    }));
+  }, [selectedMarker]);
 
   const handleLogout = async () => { await logout(); navigate('/'); };
 
