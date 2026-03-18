@@ -6,9 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Shield, Users } from 'lucide-react';
-
-const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
-const API = `${BACKEND_URL}/api`;
+import { API } from '@/utils/api';
 
 const PartnerLoginPage = () => {
   const { login } = useAuth();

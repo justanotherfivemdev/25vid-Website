@@ -6,9 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Shield, Users, MessageSquare, Crosshair, BookOpen, Globe, LogOut, Home, ChevronRight, Megaphone, Map, Settings } from 'lucide-react';
-
-const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
-const API = `${BACKEND_URL}/api`;
+import { API } from '@/utils/api';
 
 const PartnerHub = () => {
   const { user, logout } = useAuth();

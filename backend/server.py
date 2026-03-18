@@ -74,6 +74,10 @@ SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").lower() == "true"
 SMTP_USE_SSL = os.environ.get("SMTP_USE_SSL", "false").lower() == "true"
 EMAIL_DELIVERY_MODE = os.environ.get("EMAIL_DELIVERY_MODE", "smtp" if SMTP_HOST else "log").strip().lower()
 
+# Partner unit invite token settings
+PARTNER_INVITE_TOKEN_BYTES = 32  # 256-bit random token for invite links
+PARTNER_INVITE_EXPIRY_DAYS = int(os.environ.get("PARTNER_INVITE_EXPIRY_DAYS", 7))
+
 def set_auth_cookie(response, token: str):
     response.set_cookie(
         key=COOKIE_NAME, value=token,
@@ -3941,8 +3945,8 @@ async def generate_partner_invite(unit_id: str, current_admin: dict = Depends(ge
     doc = await db.partner_units.find_one({"id": unit_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Partner unit not found")
-    token = secrets.token_urlsafe(32)
-    expires = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    token = secrets.token_urlsafe(PARTNER_INVITE_TOKEN_BYTES)
+    expires = (datetime.now(timezone.utc) + timedelta(days=PARTNER_INVITE_EXPIRY_DAYS)).isoformat()
     await db.partner_units.update_one({"id": unit_id}, {"$set": {"invite_token": token, "invite_token_expires": expires}})
     await db.audit_logs.insert_one({
         "action": "partner_invite_generated", "actor_id": current_admin["id"],

@@ -7,9 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Shield, Users, ArrowLeft, LogOut, Save, Trash2, Crown } from 'lucide-react';
-
-const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
-const API = `${BACKEND_URL}/api`;
+import { API } from '@/utils/api';
 
 const PartnerAdminPage = () => {
   const { user, logout } = useAuth();
