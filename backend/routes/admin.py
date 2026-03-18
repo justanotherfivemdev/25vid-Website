@@ -1,22 +1,24 @@
 import uuid
+import secrets
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Query
+from pydantic import BaseModel, EmailStr
 
-from config import UPLOAD_DIR
+from config import UPLOAD_DIR, pwd_context
 from database import db
 from models.user import (
-    UserUpdate, AdminProfileUpdate, UserImportRequest, UserImportResponse,
+    User, UserUpdate, AdminProfileUpdate, UserImportRequest, UserImportResponse,
     UserImportRowResult, MissionHistoryEntry, TrainingHistoryEntry, AwardEntry,
 )
 from models.operations import OperationCreate
 from models.content import AnnouncementCreate, GalleryImageCreate, TrainingCreate
 from models.common import HistoryEntry, HistoryEntryCreate
 from middleware.auth import get_current_user, get_current_admin
-from services.auth_service import user_to_response
+from services.auth_service import user_to_response, normalize_email
 from services.audit_service import log_audit
 from services.map_service import upsert_map_event, remove_map_event
 from services.import_service import upsert_user_from_import
@@ -664,4 +666,75 @@ async def get_audit_stats(current_user: dict = Depends(get_current_admin)):
         "recent_24h": recent_count,
         "by_action": {item["_id"]: item["count"] for item in action_counts if item["_id"]},
         "by_resource": {item["_id"]: item["count"] for item in resource_counts if item["_id"]},
+    }
+
+
+class AdminPreCreateMember(BaseModel):
+    username: str
+    email: EmailStr
+    rank: Optional[str] = None
+    specialization: Optional[str] = None
+    status: str = "member"
+    role: str = "member"
+    company: Optional[str] = None
+    platoon: Optional[str] = None
+    squad: Optional[str] = None
+    billet: Optional[str] = None
+    discord_id: Optional[str] = None
+    discord_username: Optional[str] = None
+
+
+@router.post("/admin/users/precreate")
+async def admin_precreate_member(data: AdminPreCreateMember, current_user: dict = Depends(get_current_admin)):
+    """Pre-create a member account for an existing unit member who hasn't registered yet."""
+    normalized_email = normalize_email(data.email)
+
+    # Check for existing user by email
+    existing = await db.users.find_one({"email": normalized_email})
+    if existing:
+        raise HTTPException(status_code=400, detail="A user with this email already exists")
+
+    # Check for existing user by discord_id if provided
+    if data.discord_id:
+        existing_discord = await db.users.find_one({"discord_id": data.discord_id})
+        if existing_discord:
+            raise HTTPException(status_code=400, detail="A user with this Discord ID already exists")
+
+    new_user = User(
+        email=normalized_email,
+        username=data.username,
+        password_hash=pwd_context.hash(secrets.token_urlsafe(32)),
+        role=data.role,
+        rank=data.rank,
+        specialization=data.specialization,
+        status=data.status,
+        company=data.company,
+        platoon=data.platoon,
+        squad=data.squad,
+        billet=data.billet,
+        discord_id=data.discord_id,
+        discord_username=data.discord_username,
+        discord_linked=bool(data.discord_id),
+        pre_registered=True,
+        is_active=True,
+        email_verified=True,
+        email_verified_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+    doc = new_user.model_dump()
+    doc["join_date"] = doc["join_date"].isoformat()
+    await db.users.insert_one(doc)
+
+    await log_audit(
+        user_id=current_user["id"],
+        action_type="precreate_member",
+        resource_type="user",
+        resource_id=new_user.id,
+        after={"username": data.username, "email": normalized_email, "status": data.status},
+    )
+
+    return {
+        "message": f"Member '{data.username}' pre-created successfully",
+        "id": new_user.id,
+        "claim_method": "The member can claim this account by logging in with this email via 'Claim Account' on the login page, or by logging in with Discord if their Discord ID was provided.",
     }
