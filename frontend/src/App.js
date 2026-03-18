@@ -37,6 +37,10 @@ import RecruitmentManager from '@/pages/admin/RecruitmentManager';
 import IntelManager from '@/pages/admin/IntelManager';
 import CampaignManager from '@/pages/admin/CampaignManager';
 import UnitTagsManager from '@/pages/admin/UnitTagsManager';
+import PartnerUnitsManager from '@/pages/admin/PartnerUnitsManager';
+import PartnerLoginPage from '@/pages/partner/PartnerLoginPage';
+import PartnerHub from '@/pages/partner/PartnerHub';
+import PartnerAdmin from '@/pages/partner/PartnerAdmin';
 import JoinUs from '@/pages/JoinUs';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
@@ -1075,7 +1079,12 @@ const LoginPage = () => {
             </div>
           </CardContent>
         </Card>
-        <div className="mt-6 text-center"><Link to="/" className="text-sm text-gray-500 hover:text-tropic-gold transition-colors">&larr; Back to Home</Link></div>
+        <div className="mt-6 text-center space-y-2">
+          <Link to="/" className="text-sm text-gray-500 hover:text-tropic-gold transition-colors block">&larr; Back to Home</Link>
+          <Link to="/partner-login" className="text-sm text-gray-600 hover:text-tropic-olive transition-colors flex items-center justify-center gap-1" data-testid="partner-login-link">
+            <Shield className="w-3 h-3" /> Partner Unit Login
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -1104,6 +1113,7 @@ function App() {
         <Route path="/admin/intel" element={<ProtectedRoute adminOnly><IntelManager /></ProtectedRoute>} />
         <Route path="/admin/campaigns" element={<ProtectedRoute adminOnly><CampaignManager /></ProtectedRoute>} />
         <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
+        <Route path="/admin/partner-units" element={<ProtectedRoute adminOnly><PartnerUnitsManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
@@ -1117,6 +1127,9 @@ function App() {
         <Route path="/hub/gallery" element={<ProtectedRoute><GalleryHub /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
+        <Route path="/partner-login" element={<PartnerLoginPage />} />
+        <Route path="/partner" element={<PartnerHub />} />
+        <Route path="/partner-admin" element={<PartnerAdmin />} />
       </Routes>
     </BrowserRouter>
   );
