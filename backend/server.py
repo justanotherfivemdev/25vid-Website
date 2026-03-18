@@ -115,6 +115,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 _background_ingestion_task = None
+_loa_expiration_task = None
 
 _OPENAI_THREAT_QUERIES = [
     "Summarize the top 5 active global military conflicts and security threats right now",
@@ -323,13 +324,46 @@ async def _valyu_background_ingestion():
                 break
 
 
+async def _expire_loa_requests():
+    """Mark active LOA requests as expired when their end_date has passed, and clear user loa_status."""
+    vlog = logging.getLogger("loa")
+    while True:
+        try:
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            expired_cursor = db.loa_requests.find(
+                {"status": "active", "end_date": {"$lt": today}},
+                {"_id": 0}
+            )
+            expired_loas = await expired_cursor.to_list(500)
+            for loa in expired_loas:
+                await db.loa_requests.update_one(
+                    {"id": loa["id"]},
+                    {"$set": {"status": "expired"}}
+                )
+                await db.users.update_one(
+                    {"id": loa["user_id"]},
+                    {"$set": {"loa_status": None}}
+                )
+            if expired_loas:
+                vlog.info(f"Expired {len(expired_loas)} LOA request(s)")
+            await asyncio.sleep(3600)  # Check every hour
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            vlog.error(f"LOA expiration check error: {exc}")
+            try:
+                await asyncio.sleep(300)
+            except asyncio.CancelledError:
+                break
+
+
 # ============================================================================
 # LIFECYCLE EVENTS
 # ============================================================================
 
 @app.on_event("startup")
 async def startup_event():
-    global _background_ingestion_task
+    global _background_ingestion_task, _loa_expiration_task
     vlog = logging.getLogger("valyu")
 
     # Backfill map_events from existing entities
@@ -371,6 +405,7 @@ async def startup_event():
 
     # Start background ingestion
     _background_ingestion_task = asyncio.create_task(_valyu_background_ingestion())
+    _loa_expiration_task = asyncio.create_task(_expire_loa_requests())
     vlog.info("Startup complete – background ingestion scheduled")
 
 
@@ -378,4 +413,6 @@ async def startup_event():
 async def shutdown_db_client():
     if _background_ingestion_task and not _background_ingestion_task.done():
         _background_ingestion_task.cancel()
+    if _loa_expiration_task and not _loa_expiration_task.done():
+        _loa_expiration_task.cancel()
     client.close()

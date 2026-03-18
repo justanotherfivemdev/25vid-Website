@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date as date_type
 
 from fastapi import APIRouter, HTTPException, Depends
 
@@ -10,10 +10,39 @@ from services.audit_service import log_audit
 router = APIRouter()
 
 
+def _parse_date(val: str) -> date_type:
+    """Parse an ISO date string to a date object."""
+    return datetime.fromisoformat(val).date() if isinstance(val, str) else val
+
+
+def _validate_loa_dates(start_date: str, end_date: str):
+    """Validate LOA date range."""
+    try:
+        start = _parse_date(start_date)
+        end = _parse_date(end_date)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid date format")
+    if end <= start:
+        raise HTTPException(status_code=400, detail="End date must be after start date")
+
+
 # ── Member endpoints ─────────────────────────────────────────────────────────
 
 @router.post("/loa/request")
 async def submit_loa_request(data: LOASubmit, current_user: dict = Depends(get_current_user)):
+    _validate_loa_dates(data.start_date, data.end_date)
+
+    # Check for existing active or pending LOA
+    existing = await db.loa_requests.find_one(
+        {"user_id": current_user["id"], "status": {"$in": ["pending", "approved", "active"]}},
+        {"_id": 0},
+    )
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="You already have a pending, approved, or active LOA request",
+        )
+
     loa = LOARequest(
         user_id=current_user["id"],
         username=current_user.get("username", ""),
@@ -109,7 +138,10 @@ async def admin_activate_loa(loa_id: str, current_user: dict = Depends(get_curre
     loa = await db.loa_requests.find_one({"id": loa_id}, {"_id": 0})
     if not loa:
         raise HTTPException(status_code=404, detail="LOA request not found")
+    if loa["status"] != "approved":
+        raise HTTPException(status_code=400, detail="Only approved LOA requests can be activated")
 
+    now = datetime.now(timezone.utc).isoformat()
     await db.loa_requests.update_one({"id": loa_id}, {"$set": {"status": "active"}})
     await db.users.update_one({"id": loa["user_id"]}, {"$set": {"loa_status": "on_loa"}})
     await log_audit(
@@ -128,6 +160,8 @@ async def admin_return_loa(loa_id: str, current_user: dict = Depends(get_current
     loa = await db.loa_requests.find_one({"id": loa_id}, {"_id": 0})
     if not loa:
         raise HTTPException(status_code=404, detail="LOA request not found")
+    if loa["status"] != "active":
+        raise HTTPException(status_code=400, detail="Only active LOA requests can be returned")
 
     now = datetime.now(timezone.utc).isoformat()
     await db.loa_requests.update_one(
@@ -148,6 +182,8 @@ async def admin_return_loa(loa_id: str, current_user: dict = Depends(get_current
 
 @router.post("/admin/loa/place")
 async def admin_place_loa(data: LOAAdminCreate, current_user: dict = Depends(get_current_admin)):
+    _validate_loa_dates(data.start_date, data.end_date)
+
     user = await db.users.find_one({"id": data.user_id}, {"_id": 0, "password_hash": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

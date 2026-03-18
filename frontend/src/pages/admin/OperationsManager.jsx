@@ -43,7 +43,7 @@ const RosterPanel = ({ operationId }) => {
   if (loading) return <div className="text-sm text-gray-500 py-3 text-center">Loading roster...</div>;
   if (!data) return <div className="text-sm text-gray-600 py-3 text-center">Failed to load roster</div>;
 
-  const { rsvps, counts } = data;
+  const { rsvps, counts, mos_summary } = data;
 
   return (
     <div className="space-y-4 pt-2" data-testid={`roster-panel-${operationId}`}>
@@ -54,6 +54,21 @@ const RosterPanel = ({ operationId }) => {
         <div className="text-center"><div className="text-xl font-bold text-orange-400">{counts.waitlisted}</div><div className="text-[9px] text-gray-500 tracking-wider">WAITLISTED</div></div>
         <div className="text-center ml-auto"><div className="text-xl font-bold text-gray-300">{counts.total}</div><div className="text-[9px] text-gray-500 tracking-wider">TOTAL</div></div>
       </div>
+
+      {/* MOS Summary */}
+      {mos_summary && Object.keys(mos_summary).length > 0 && (
+        <div className="bg-black/40 rounded-lg p-3 border border-gray-800/50">
+          <div className="text-[10px] text-tropic-gold tracking-wider font-bold mb-2">MANPOWER BY MOS</div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(mos_summary).sort((a, b) => b[1] - a[1]).map(([mos, count]) => (
+              <div key={mos} className="bg-black/40 border border-gray-800 rounded px-3 py-1.5 text-xs">
+                <span className="font-mono text-tropic-gold">{mos}</span>
+                <span className="text-white ml-2 font-bold">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Roster Groups */}
       {['attending', 'tentative', 'waitlisted'].map(status => {
@@ -73,6 +88,7 @@ const RosterPanel = ({ operationId }) => {
                   <tr className="text-[10px] text-gray-600 tracking-wider border-b border-gray-800">
                     <th className="text-left py-1.5 px-2">OPERATOR</th>
                     <th className="text-left py-1.5 px-2">RANK</th>
+                    <th className="text-left py-1.5 px-2">MOS</th>
                     <th className="text-left py-1.5 px-2">COMPANY</th>
                     <th className="text-left py-1.5 px-2">PLATOON</th>
                     <th className="text-left py-1.5 px-2">BILLET</th>
@@ -94,6 +110,7 @@ const RosterPanel = ({ operationId }) => {
                         </div>
                       </td>
                       <td className="py-2 px-2 text-gray-400">{r.rank || '—'}</td>
+                      <td className="py-2 px-2">{r.mos_code ? <span className="text-[10px] text-tropic-gold bg-tropic-gold/10 border border-tropic-gold/30 px-1.5 py-0.5 rounded font-mono">{r.mos_code}</span> : <span className="text-gray-700">—</span>}</td>
                       <td className="py-2 px-2 text-tropic-gold">{r.company || '—'}</td>
                       <td className="py-2 px-2 text-green-400">{r.platoon || '—'}</td>
                       <td className="py-2 px-2 text-tropic-gold">{r.billet || '—'}</td>

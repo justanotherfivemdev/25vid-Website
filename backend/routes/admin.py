@@ -475,18 +475,36 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_current_adm
     return {"message": "User deleted successfully"}
 
 
-# Member of the week
+# Soldier of the Month
 
-@router.get("/member-of-the-week")
-async def get_member_of_the_week():
-    doc = await db.member_of_the_week.find_one({"id": "current"}, {"_id": 0})
+@router.get("/soldier-of-the-month")
+async def get_soldier_of_the_month():
+    doc = await db.soldier_of_the_month.find_one({"id": "current"}, {"_id": 0})
     if not doc:
         return None
+    # Auto-expire: clear if set_at is more than 1 month ago
+    set_at = doc.get("set_at")
+    if set_at:
+        try:
+            set_date = datetime.fromisoformat(set_at)
+            now = datetime.now(timezone.utc)
+            # Expired if more than ~30 days old
+            if (now - set_date).days >= 30:
+                await db.soldier_of_the_month.delete_one({"id": "current"})
+                return None
+        except (ValueError, TypeError):
+            pass
     return doc
 
 
-@router.put("/admin/member-of-the-week")
-async def set_member_of_the_week(data: dict, current_user: dict = Depends(get_current_admin)):
+# Legacy alias so any cached frontend still works during rollout
+@router.get("/member-of-the-week")
+async def get_member_of_the_week_legacy():
+    return await get_soldier_of_the_month()
+
+
+@router.put("/admin/soldier-of-the-month")
+async def set_soldier_of_the_month(data: dict, current_user: dict = Depends(get_current_admin)):
     user_id = data.get("user_id")
     reason = data.get("reason", "")
     if not user_id:
@@ -494,7 +512,7 @@ async def set_member_of_the_week(data: dict, current_user: dict = Depends(get_cu
     member = await db.users.find_one({"id": user_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
-    motw = {
+    sotm = {
         "id": "current",
         "user_id": user_id,
         "username": member.get("username", "Unknown"),
@@ -503,14 +521,26 @@ async def set_member_of_the_week(data: dict, current_user: dict = Depends(get_cu
         "rank": member.get("rank", ""),
         "set_at": datetime.now(timezone.utc).isoformat()
     }
-    await db.member_of_the_week.replace_one({"id": "current"}, motw, upsert=True)
-    return motw
+    await db.soldier_of_the_month.replace_one({"id": "current"}, sotm, upsert=True)
+    return sotm
 
 
+# Legacy alias
+@router.put("/admin/member-of-the-week")
+async def set_member_of_the_week_legacy(data: dict, current_user: dict = Depends(get_current_admin)):
+    return await set_soldier_of_the_month(data, current_user)
+
+
+@router.delete("/admin/soldier-of-the-month")
+async def clear_soldier_of_the_month(current_user: dict = Depends(get_current_admin)):
+    await db.soldier_of_the_month.delete_one({"id": "current"})
+    return {"message": "Soldier of the Month cleared"}
+
+
+# Legacy alias
 @router.delete("/admin/member-of-the-week")
-async def clear_member_of_the_week(current_user: dict = Depends(get_current_admin)):
-    await db.member_of_the_week.delete_one({"id": "current"})
-    return {"message": "Member of the Week cleared"}
+async def clear_member_of_the_week_legacy(current_user: dict = Depends(get_current_admin)):
+    return await clear_soldier_of_the_month(current_user)
 
 
 # Unit history
