@@ -271,6 +271,14 @@ class PartnerTokenResponse(BaseModel):
     token_type: str
     user: PartnerUserResponse
 
+class PartnerUnitStatusUpdate(BaseModel):
+    status: Literal["active", "inactive", "pending"]
+
+class PartnerMemberUpdate(BaseModel):
+    rank: Optional[str] = None
+    billet: Optional[str] = None
+    status: Optional[Literal["active", "inactive", "pending"]] = None
+
 class PartnerInvite(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -279,7 +287,7 @@ class PartnerInvite(BaseModel):
     created_by: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     used: bool = False
-    used_by: Optional[str] = None
+    last_used_by: Optional[str] = None
     max_uses: int = 1
     use_count: int = 0
 
@@ -4275,19 +4283,17 @@ async def update_partner_unit(unit_id: str, data: PartnerUnitCreate, current_use
     return {"message": "Partner unit updated"}
 
 @api_router.put("/partner-units/{unit_id}/status")
-async def set_partner_unit_status(unit_id: str, status: str, current_user: dict = Depends(get_current_admin)):
+async def set_partner_unit_status(unit_id: str, data: PartnerUnitStatusUpdate, current_user: dict = Depends(get_current_admin)):
     """Activate or deactivate a partner unit (25th admin only)."""
-    if status not in ("active", "inactive", "pending"):
-        raise HTTPException(status_code=400, detail="Invalid status")
-    result = await db.partner_units.update_one({"id": unit_id}, {"$set": {"status": status}})
+    result = await db.partner_units.update_one({"id": unit_id}, {"$set": {"status": data.status}})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Partner unit not found")
     await db.partner_audit_log.insert_one({
         "action": "set_partner_unit_status", "unit_id": unit_id,
         "performed_by": current_user["id"], "performed_by_type": "admin",
-        "details": {"status": status}, "timestamp": datetime.now(timezone.utc).isoformat()
+        "details": {"status": data.status}, "timestamp": datetime.now(timezone.utc).isoformat()
     })
-    return {"message": f"Partner unit status set to {status}"}
+    return {"message": f"Partner unit status set to {data.status}"}
 
 @api_router.get("/partner-units/{unit_id}")
 async def get_partner_unit(unit_id: str, current_user: dict = Depends(get_current_admin)):
@@ -4350,12 +4356,20 @@ async def list_partner_invites(unit_id: str, current_user: dict = Depends(get_cu
 @api_router.post("/auth/partner/register")
 async def partner_register(data: PartnerUserRegister, response: Response):
     """Register a new partner user using an invite code."""
-    # Validate invite code
-    invite = await db.partner_invites.find_one({"code": data.invite_code}, {"_id": 0})
-    if not invite:
-        raise HTTPException(status_code=400, detail="Invalid invite code")
-    if invite.get("use_count", 0) >= invite.get("max_uses", 1):
+    # Atomically claim invite slot (prevents race condition)
+    claim_result = await db.partner_invites.find_one_and_update(
+        {"code": data.invite_code, "$expr": {"$lt": ["$use_count", "$max_uses"]}},
+        {"$inc": {"use_count": 1}},
+        return_document=False,
+    )
+    if not claim_result:
+        # Either code doesn't exist or all slots used
+        invite = await db.partner_invites.find_one({"code": data.invite_code}, {"_id": 0})
+        if not invite:
+            raise HTTPException(status_code=400, detail="Invalid invite code")
         raise HTTPException(status_code=400, detail="Invite code has been used")
+
+    invite = await db.partner_invites.find_one({"code": data.invite_code}, {"_id": 0})
 
     unit = await db.partner_units.find_one({"id": invite["partner_unit_id"]}, {"_id": 0})
     if not unit:
@@ -4390,10 +4404,10 @@ async def partner_register(data: PartnerUserRegister, response: Response):
     doc["join_date"] = doc["join_date"].isoformat()
     await db.partner_users.insert_one(doc)
 
-    # Mark invite as used
+    # Record who last used the invite
     await db.partner_invites.update_one(
         {"code": data.invite_code},
-        {"$inc": {"use_count": 1}, "$set": {"used_by": partner_user.id}}
+        {"$set": {"last_used_by": partner_user.id}}
     )
 
     await db.partner_audit_log.insert_one({
@@ -4611,14 +4625,13 @@ async def partner_admin_get_unit(partner_user: dict = Depends(get_current_partne
     return unit
 
 @api_router.put("/partner/admin/members/{member_id}")
-async def partner_admin_update_member(member_id: str, data: dict, partner_user: dict = Depends(get_current_partner_admin)):
+async def partner_admin_update_member(member_id: str, data: PartnerMemberUpdate, partner_user: dict = Depends(get_current_partner_admin)):
     """Update a member in own partner unit (partner admin only)."""
     member = await db.partner_users.find_one({"id": member_id, "partner_unit_id": partner_user["partner_unit_id"]}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found in your unit")
 
-    allowed_fields = {"rank", "billet", "status"}
-    update = {k: v for k, v in data.items() if k in allowed_fields}
+    update = {k: v for k, v in data.model_dump(exclude_none=True).items()}
     if not update:
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
