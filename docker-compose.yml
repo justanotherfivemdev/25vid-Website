@@ -1,0 +1,91 @@
+# ============================================================
+# 25th Infantry Division — Production Docker Compose
+# ============================================================
+# Usage:
+#   cp .env.example .env  # then edit .env with your values
+#   docker compose up -d --build
+#
+# This starts three services:
+#   1. backend  — FastAPI on port 8000 (internal)
+#   2. frontend — Nginx serving the React build on port 80/443
+#   3. mongo    — MongoDB on port 27017 (internal only)
+# ============================================================
+
+services:
+
+  # ── MongoDB ───────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: 25vid-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: ${DB_NAME:-25th_infantry_division}
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # ── Backend (FastAPI + Uvicorn) ───────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: 25vid-backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      DB_NAME: ${DB_NAME:-25th_infantry_division}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      FRONTEND_URL: ${FRONTEND_URL:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+      DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI:-}
+      VALYU_API_KEY: ${VALYU_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - backend_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - internal
+
+  # ── Frontend (React build served by Nginx) ────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-}
+        REACT_APP_MAPBOX_TOKEN: ${REACT_APP_MAPBOX_TOKEN:-}
+    container_name: 25vid-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${HOST_PORT:-80}:80"
+    networks:
+      - internal
+
+volumes:
+  mongo_data:
+  backend_uploads:
+
+networks:
+  internal:
+    driver: bridge

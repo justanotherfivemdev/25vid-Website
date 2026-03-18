@@ -44,6 +44,7 @@ import PartnerAdmin from '@/pages/partner/PartnerAdmin';
 import PartnerApply from '@/pages/partner/PartnerApply';
 import PartnerThreatMap from '@/pages/partner/PartnerThreatMap';
 import PartnerApplicationsReview from '@/pages/admin/PartnerApplicationsReview';
+import AuditLogsManager from '@/pages/admin/AuditLogsManager';
 import JoinUs from '@/pages/JoinUs';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
@@ -1137,6 +1138,7 @@ function App() {
         <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
         <Route path="/admin/partner-units" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerUnitsManager /></ProtectedRoute>} />
         <Route path="/admin/partner-applications" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerApplicationsReview /></ProtectedRoute>} />
+        <Route path="/admin/audit-logs" element={<ProtectedRoute adminOnly><AuditLogsManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
