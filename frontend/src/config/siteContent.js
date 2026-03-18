@@ -112,6 +112,11 @@ export const defaultSiteContent = {
     showBackground: true,
     overlayOpacity: 0.85
   },
+  partnerLogin: {
+    backgroundImage: '',
+    showBackground: true,
+    overlayOpacity: 0.85
+  },
   footer: {
     unitName: '25th Infantry Division — Tropic Lightning',
     tagline: 'Ready to Strike',

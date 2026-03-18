@@ -1589,6 +1589,7 @@ async def get_site_content(current_user: dict = Depends(get_current_admin)):
             "operationalSuperiority": {"description": "", "images": []},
             "lethality": {"logistics": {"description": "", "image": ""}, "training": {"description": "", "image": ""}},
             "gallery": {"showcaseImages": []},
+            "partnerLogin": {"backgroundImage": "", "showBackground": True, "overlayOpacity": 0.85},
             "footer": {"description": "Tropic Lightning — Ready to Strike", "contact": {"discord": "", "email": ""}, "disclaimer": "This is a fictional Arma Reforger milsim unit. We are NOT in any way tied to the Department of War or the United States Department of Defense."}
         }
     if isinstance(content.get('updated_at'), str):
