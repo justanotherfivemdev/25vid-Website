@@ -4369,7 +4369,8 @@ async def partner_register(data: PartnerUserRegister, response: Response):
             raise HTTPException(status_code=400, detail="Invalid invite code")
         raise HTTPException(status_code=400, detail="Invite code has been used")
 
-    invite = await db.partner_invites.find_one({"code": data.invite_code}, {"_id": 0})
+    # Use the pre-update document from the atomic claim
+    invite = {k: v for k, v in claim_result.items() if k != "_id"}
 
     unit = await db.partner_units.find_one({"id": invite["partner_unit_id"]}, {"_id": 0})
     if not unit:
@@ -4377,11 +4378,14 @@ async def partner_register(data: PartnerUserRegister, response: Response):
     if unit.get("status") != "active":
         raise HTTPException(status_code=400, detail="Partner unit is not active")
 
-    # Check email uniqueness within partner_users
+    # Check email uniqueness within partner_users and main users
     normalized_email = normalize_email(data.email)
     existing = await db.partner_users.find_one({"email": normalized_email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
+    existing_main = await db.users.find_one({"email": normalized_email})
+    if existing_main:
+        raise HTTPException(status_code=400, detail="Email already registered as a 25th ID member")
 
     # Check max members
     current_count = await db.partner_users.count_documents({"partner_unit_id": unit["id"]})
