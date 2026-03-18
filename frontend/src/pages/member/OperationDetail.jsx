@@ -36,6 +36,11 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
             <Link to={`/roster/${r.user_id}`} className="font-medium text-sm hover:text-tropic-gold transition-colors" onClick={e => e.stopPropagation()}>{r.username}</Link>
             {r.rank && <span className="text-xs text-gray-500 ml-2">{r.rank}</span>}
           </div>
+          {r.mos_code && (
+            <span className="text-[10px] text-tropic-gold bg-tropic-gold/10 border border-tropic-gold/30 px-1.5 py-0.5 rounded font-mono">
+              {r.mos_code}
+            </span>
+          )}
           {r.role_notes && <span className="text-xs text-tropic-gold/80 border border-tropic-gold/30 px-1.5 py-0.5 rounded bg-tropic-gold/10">{r.role_notes}</span>}
         </div>
         <div className="flex items-center gap-2">
@@ -51,7 +56,8 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
           {r.company && <div><span className="text-gray-600">Company:</span> <span className="text-tropic-gold">{r.company}</span></div>}
           {r.platoon && <div><span className="text-gray-600">Platoon:</span> <span className="text-green-400">{r.platoon}</span></div>}
           {r.squad && <div><span className="text-gray-600">Squad:</span> <span className="text-gray-400">{r.squad}</span></div>}
-          {r.billet && <div><span className="text-gray-600">Billet:</span> <span className="text-tropic-gold">{r.billet}</span></div>}
+          {r.mos_title && <div><span className="text-gray-600">MOS:</span> <span className="text-tropic-gold">{r.mos_code} — {r.mos_title}</span></div>}
+          {r.billet_acronym && r.billet ? <div><span className="text-gray-600">Billet:</span> <span className="text-tropic-gold">{r.billet_acronym} — {r.billet}</span></div> : r.billet && <div><span className="text-gray-600">Billet:</span> <span className="text-tropic-gold">{r.billet}</span></div>}
           {r.member_status && <div><span className="text-gray-600">Status:</span> <span className="text-gray-400 capitalize">{r.member_status}</span></div>}
           {r.rsvp_time && <div><span className="text-gray-600">RSVPed:</span> <span className="text-gray-500">{new Date(r.rsvp_time).toLocaleDateString()}</span></div>}
         </div>
@@ -197,6 +203,25 @@ const OperationDetail = () => {
                     { id: operation.id, latitude: operation.lat, longitude: operation.lng, color: colors.markerOperation, label: operation.title },
                   ]}
                 />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* MOS Summary */}
+          {rosterData?.mos_summary && Object.keys(rosterData.mos_summary).length > 0 && (
+            <Card className="bg-gray-900/80 border-gray-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm tracking-wider text-tropic-gold">MANPOWER BY MOS</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(rosterData.mos_summary).sort((a, b) => b[1] - a[1]).map(([mos, count]) => (
+                    <div key={mos} className="bg-black/40 border border-gray-800 rounded px-3 py-1.5 text-xs">
+                      <span className="font-mono text-tropic-gold">{mos}</span>
+                      <span className="text-white ml-2 font-bold">{count}</span>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}

@@ -45,6 +45,11 @@ import PartnerApply from '@/pages/partner/PartnerApply';
 import PartnerThreatMap from '@/pages/partner/PartnerThreatMap';
 import PartnerApplicationsReview from '@/pages/admin/PartnerApplicationsReview';
 import AuditLogsManager from '@/pages/admin/AuditLogsManager';
+import LOARequest from '@/pages/member/LOARequest';
+import LOAManager from '@/pages/admin/LOAManager';
+import PipelineManager from '@/pages/admin/PipelineManager';
+import SharedArea from '@/pages/member/SharedArea';
+import PartnerSharedArea from '@/pages/partner/PartnerSharedArea';
 import JoinUs from '@/pages/JoinUs';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
@@ -883,6 +888,9 @@ const LoginPage = () => {
   const [discordAvailable, setDiscordAvailable] = useState(false);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
   const [resendingVerification, setResendingVerification] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimChecked, setClaimChecked] = useState(false);
+  const [claimUsername, setClaimUsername] = useState('');
   const navigate = useNavigate();
 
   // If already authenticated, send the user to the correct destination immediately
@@ -1009,6 +1017,43 @@ const LoginPage = () => {
     }
   };
 
+  const handleCheckClaim = async () => {
+    setError('');
+    setNotice('');
+    if (!formData.email) { setError('Enter your email address first.'); return; }
+    setSubmitting(true);
+    try {
+      const res = await axios.get(`${API}/auth/check-claimable?email=${encodeURIComponent(formData.email)}`);
+      if (res.data.claimable) {
+        setClaimChecked(true);
+        setClaimUsername(res.data.username || '');
+        setNotice(`Account found for "${res.data.username}". Set a password to activate.`);
+      } else {
+        setError(res.data.message || 'No claimable account found.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Check failed.');
+    } finally { setSubmitting(false); }
+  };
+
+  const handleClaimSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setNotice('');
+    if (!formData.password || formData.password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await axios.post(`${API}/auth/claim-account`, { email: formData.email, password: formData.password });
+      login(res.data.user);
+      navigate(getPostAuthRoute(res.data.user), { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Claim failed.');
+    } finally { setSubmitting(false); }
+  };
+
   const handleDiscordLogin = async () => {
     setError('');
     setNotice('');
@@ -1047,8 +1092,32 @@ const LoginPage = () => {
           <p className="text-gray-400 text-sm tracking-[0.1em]">Tropic Lightning — Member Access</p>
         </div>
         <Card className="glass-card corner-bracket">
-          <CardHeader><CardTitle className="text-2xl text-center tracking-wider">{isLogin ? 'MEMBER LOGIN' : 'NEW RECRUIT'}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-2xl text-center tracking-wider">{isClaiming ? 'CLAIM ACCOUNT' : isLogin ? 'MEMBER LOGIN' : 'NEW RECRUIT'}</CardTitle></CardHeader>
           <CardContent>
+            {isClaiming ? (
+              <div className="space-y-4">
+                {!claimChecked ? (
+                  <>
+                    <div><label className="block text-sm font-medium mb-2">Email</label><Input type="email" required className="bg-black/50 border-white/20" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
+                    {notice && <div className="text-green-400 text-sm text-center">{notice}</div>}
+                    {error && <div className="text-tropic-gold text-sm text-center">{error}</div>}
+                    <Button onClick={handleCheckClaim} disabled={submitting} className="w-full bg-tropic-gold hover:bg-tropic-gold-light text-black py-5 tracking-wider">{submitting ? 'Checking...' : 'FIND MY ACCOUNT'}</Button>
+                  </>
+                ) : (
+                  <form onSubmit={handleClaimSubmit} className="space-y-4">
+                    <div className="text-center text-sm text-gray-400 mb-2">Welcome back, <span className="text-tropic-gold font-bold">{claimUsername}</span></div>
+                    <div><label className="block text-sm font-medium mb-2">Set Password</label><Input type="password" required minLength={8} className="bg-black/50 border-white/20" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="Min 8 characters" /></div>
+                    {notice && <div className="text-green-400 text-sm text-center">{notice}</div>}
+                    {error && <div className="text-tropic-gold text-sm text-center">{error}</div>}
+                    <Button type="submit" disabled={submitting} className="w-full bg-tropic-gold hover:bg-tropic-gold-light text-black py-5 tracking-wider">{submitting ? 'Activating...' : 'ACTIVATE ACCOUNT'}</Button>
+                  </form>
+                )}
+                <div className="text-center mt-4">
+                  <button onClick={() => { setIsClaiming(false); setClaimChecked(false); setClaimUsername(''); setError(''); setNotice(''); }} className="text-sm text-gray-400 hover:text-tropic-gold transition-colors">← Back to Login</button>
+                </div>
+              </div>
+            ) : (
+            <>
             <form onSubmit={handleSubmit} className="space-y-4" data-testid="auth-form">
               {!isLogin && <div><label className="block text-sm font-medium mb-2">Username</label><Input type="text" required className="bg-black/50 border-white/20" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} data-testid="auth-username-input" /></div>}
               <div><label className="block text-sm font-medium mb-2">Email</label><Input type="email" required className="bg-black/50 border-white/20" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} data-testid="auth-email-input" /></div>
@@ -1094,6 +1163,13 @@ const LoginPage = () => {
             <div className="mt-6 text-center">
               <button onClick={() => { setIsLogin(!isLogin); setError(''); setNotice(''); }} className="text-sm text-gray-400 hover:text-tropic-gold transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
             </div>
+            {isLogin && (
+              <div className="mt-3 text-center">
+                <button onClick={() => { setIsClaiming(true); setError(''); setNotice(''); }} className="text-sm text-gray-500 hover:text-tropic-gold transition-colors">Already a member? Claim your pre-created account</button>
+              </div>
+            )}
+            </>
+            )}
           </CardContent>
         </Card>
         <div className="mt-6 text-center space-y-3">
@@ -1139,6 +1215,8 @@ function App() {
         <Route path="/admin/partner-units" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerUnitsManager /></ProtectedRoute>} />
         <Route path="/admin/partner-applications" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerApplicationsReview /></ProtectedRoute>} />
         <Route path="/admin/audit-logs" element={<ProtectedRoute adminOnly><AuditLogsManager /></ProtectedRoute>} />
+        <Route path="/admin/loa" element={<ProtectedRoute adminOnly><LOAManager /></ProtectedRoute>} />
+        <Route path="/admin/pipeline" element={<ProtectedRoute adminOnly><PipelineManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
@@ -1150,6 +1228,8 @@ function App() {
         <Route path="/hub/campaign" element={<ProtectedRoute><CampaignMap /></ProtectedRoute>} />
         <Route path="/hub/threat-map" element={<ProtectedRoute><ThreatMapPage /></ProtectedRoute>} />
         <Route path="/hub/gallery" element={<ProtectedRoute><GalleryHub /></ProtectedRoute>} />
+        <Route path="/hub/loa" element={<ProtectedRoute><LOARequest /></ProtectedRoute>} />
+        <Route path="/hub/shared" element={<ProtectedRoute><SharedArea /></ProtectedRoute>} />
         <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
         <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
         <Route path="/partner-login" element={<PartnerLoginPage />} />
@@ -1159,6 +1239,7 @@ function App() {
         <Route path="/partner/discussions" element={<DiscussionForum />} />
         <Route path="/partner/discussions/:id" element={<DiscussionThread />} />
         <Route path="/partner/threat-map" element={<PartnerThreatMap />} />
+        <Route path="/partner/shared" element={<PartnerSharedArea />} />
       </Routes>
     </BrowserRouter>
   );

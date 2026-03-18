@@ -6,7 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Trash2, Search, ChevronRight } from 'lucide-react';
+import { Trash2, Search, ChevronRight, UserPlus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 import { BACKEND_URL, API } from '@/utils/api';
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
@@ -16,7 +18,12 @@ const UsersManager = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-
+  const [preCreateOpen, setPreCreateOpen] = useState(false);
+  const [preCreateForm, setPreCreateForm] = useState({
+    username: '', email: '', rank: '', specialization: '', status: 'member', role: 'member',
+    company: '', platoon: '', squad: '', billet: '', discord_id: '', discord_username: ''
+  });
+  const [preCreateMsg, setPreCreateMsg] = useState({ type: '', text: '' });
   useEffect(() => { fetchUsers(); }, []);
 
   const fetchUsers = async () => {
@@ -35,6 +42,25 @@ const UsersManager = () => {
     } catch (error) { alert(error.response?.data?.detail || 'Error'); }
   };
 
+  const handlePreCreate = async (e) => {
+    e.preventDefault();
+    setPreCreateMsg({ type: '', text: '' });
+    try {
+      const payload = { ...preCreateForm };
+      Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k]; });
+      if (!payload.username || !payload.email) {
+        setPreCreateMsg({ type: 'error', text: 'Username and email are required.' });
+        return;
+      }
+      const res = await axios.post(`${API}/admin/users/precreate`, payload);
+      setPreCreateMsg({ type: 'success', text: res.data.message });
+      setPreCreateForm({ username: '', email: '', rank: '', specialization: '', status: 'member', role: 'member', company: '', platoon: '', squad: '', billet: '', discord_id: '', discord_username: '' });
+      fetchUsers();
+    } catch (e) {
+      setPreCreateMsg({ type: 'error', text: e.response?.data?.detail || 'Pre-creation failed.' });
+    }
+  };
+
   const filtered = users.filter(u =>
     u.username.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
@@ -43,9 +69,14 @@ const UsersManager = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="users-manager-title">MEMBER MANAGEMENT</h1>
-          <p className="text-gray-400 mt-2">{users.length} total members. Click a member to edit their full profile, history, and awards.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="users-manager-title">MEMBER MANAGEMENT</h1>
+            <p className="text-gray-400 mt-2">{users.length} total members. Click a member to edit their full profile, history, and awards.</p>
+          </div>
+          <Button onClick={() => setPreCreateOpen(true)} className="bg-tropic-gold hover:bg-tropic-gold-light text-black">
+            <UserPlus className="w-4 h-4 mr-2" />Pre-Create Member
+          </Button>
         </div>
 
         <div className="relative">
@@ -87,6 +118,40 @@ const UsersManager = () => {
             ))}
           </div>
         )}
+        <Dialog open={preCreateOpen} onOpenChange={setPreCreateOpen}>
+          <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="tracking-wider">PRE-CREATE MEMBER ACCOUNT</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-gray-500 mb-2">Create an account for an existing unit member. They can claim it via the login page or by logging in with Discord.</p>
+            {preCreateMsg.text && (
+              <div className={`text-sm p-2 rounded ${preCreateMsg.type === 'success' ? 'bg-green-900/20 text-green-400 border border-green-700' : 'bg-red-900/20 text-red-400 border border-red-700'}`}>{preCreateMsg.text}</div>
+            )}
+            <form onSubmit={handlePreCreate} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Username *</Label><Input required value={preCreateForm.username} onChange={e => setPreCreateForm({...preCreateForm, username: e.target.value})} className="bg-black border-gray-700" /></div>
+                <div><Label className="text-xs">Email *</Label><Input type="email" required value={preCreateForm.email} onChange={e => setPreCreateForm({...preCreateForm, email: e.target.value})} className="bg-black border-gray-700" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Rank</Label><Input value={preCreateForm.rank} onChange={e => setPreCreateForm({...preCreateForm, rank: e.target.value})} className="bg-black border-gray-700" /></div>
+                <div><Label className="text-xs">Specialization</Label><Input value={preCreateForm.specialization} onChange={e => setPreCreateForm({...preCreateForm, specialization: e.target.value})} className="bg-black border-gray-700" /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label className="text-xs">Company</Label><Input value={preCreateForm.company} onChange={e => setPreCreateForm({...preCreateForm, company: e.target.value})} className="bg-black border-gray-700" /></div>
+                <div><Label className="text-xs">Platoon</Label><Input value={preCreateForm.platoon} onChange={e => setPreCreateForm({...preCreateForm, platoon: e.target.value})} className="bg-black border-gray-700" /></div>
+                <div><Label className="text-xs">Squad</Label><Input value={preCreateForm.squad} onChange={e => setPreCreateForm({...preCreateForm, squad: e.target.value})} className="bg-black border-gray-700" /></div>
+              </div>
+              <div><Label className="text-xs">Billet</Label><Input value={preCreateForm.billet} onChange={e => setPreCreateForm({...preCreateForm, billet: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Squad Leader" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Discord ID</Label><Input value={preCreateForm.discord_id} onChange={e => setPreCreateForm({...preCreateForm, discord_id: e.target.value})} className="bg-black border-gray-700" /></div>
+                <div><Label className="text-xs">Discord Username</Label><Input value={preCreateForm.discord_username} onChange={e => setPreCreateForm({...preCreateForm, discord_username: e.target.value})} className="bg-black border-gray-700" /></div>
+              </div>
+              <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-light text-black w-full mt-2">
+                <UserPlus className="w-4 h-4 mr-2" />Create Pre-Registered Account
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

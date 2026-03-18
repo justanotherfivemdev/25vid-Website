@@ -34,14 +34,16 @@ const MemberCard = ({ member, compact = false }) => (
           <div className="flex-1 min-w-0">
             <div className={`font-bold ${compact ? 'text-sm' : 'text-base'} tracking-wide truncate group-hover:text-tropic-gold transition-colors`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{member.username}</div>
             {member.rank && <div className="text-xs text-gray-400">{member.rank}</div>}
-            {member.billet && <div className="text-xs text-tropic-gold/80">{member.billet}</div>}
+            {member.billet && <div className="text-xs text-tropic-gold/80">{member.billet_acronym ? `${member.billet_acronym} — ` : ''}{member.billet}</div>}
             {!compact && member.specialization && <div className="text-xs text-gray-500">{member.specialization}</div>}
+            {!compact && member.display_mos && <div className="text-xs text-gray-500 font-mono">{member.display_mos}</div>}
           </div>
           <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-tropic-red transition-colors shrink-0 mt-1" />
         </div>
         {!compact && (
           <div className="flex items-center gap-2 mt-3 flex-wrap">
             <Badge className={`${STATUS_COLORS[member.status] || 'bg-gray-700'} text-white text-[10px] px-2 py-0`}>{(member.status || 'recruit').toUpperCase()}</Badge>
+            {member.loa_status === 'on_loa' && <Badge className="bg-yellow-600/30 text-yellow-400 border border-yellow-600/40 text-[10px] px-2 py-0">LOA</Badge>}
             {member.company && <span className="text-[10px] text-tropic-gold border border-tropic-gold/50 px-1.5 py-0 rounded">{member.company}</span>}
             {member.platoon && <span className="text-[10px] text-green-400 border border-green-800/50 px-1.5 py-0 rounded">{member.platoon}</span>}
             {member.squad && <span className="text-[10px] text-gray-500 border border-gray-800 px-1.5 py-0 rounded">{member.squad}</span>}
@@ -205,6 +207,8 @@ const UnitRoster = () => {
       'Username',
       'Rank',
       'Billet',
+      'Billet Acronym',
+      'MOS',
       'Specialization',
       'Status',
       'Company',
@@ -218,6 +222,8 @@ const UnitRoster = () => {
       member.username,
       member.rank,
       member.billet,
+      member.billet_acronym,
+      member.display_mos,
       member.specialization,
       member.status,
       member.company,

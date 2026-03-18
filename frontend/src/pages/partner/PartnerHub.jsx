@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MessageSquare, Shield, LogOut, Home, BookOpen, Globe, Target, Radio, ChevronRight, Users, Map } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, Shield, LogOut, Home, BookOpen, Globe, Target, Radio, ChevronRight, Users, Map, Handshake } from 'lucide-react';
 import { BACKEND_URL, API } from '@/utils/api';
 
 const PartnerHub = () => {
@@ -88,6 +88,11 @@ const PartnerHub = () => {
               <span className="text-tropic-gold font-bold">{user?.username}</span>
               {user?.partner_unit_name && <span className="text-gray-500 ml-1">({user.partner_unit_name})</span>}
             </span>
+            <Link to="/partner/shared">
+              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold">
+                <Handshake className="w-4 h-4 mr-1.5" />Shared
+              </Button>
+            </Link>
             {user?.partner_role === 'partner_admin' && (
               <Link to="/partner-admin">
                 <Button size="sm" variant="outline" className="border-tropic-olive/60 text-tropic-olive hover:bg-tropic-olive/10">

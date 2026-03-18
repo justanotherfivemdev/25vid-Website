@@ -29,6 +29,8 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/intel', icon: Radio, label: 'Intel & Briefings' },
     { path: '/admin/campaigns', icon: MapPin, label: 'Campaigns' },
     { path: '/admin/unit-config', icon: Building2, label: 'Unit Config' },
+    { path: '/admin/loa', icon: Calendar, label: 'LOA Management' },
+    { path: '/admin/pipeline', icon: UserPlus, label: 'Recruit Pipeline' },
     { path: '/admin/partner-units', icon: Shield, label: 'Partner Units' },
     { path: '/admin/partner-applications', icon: ClipboardList, label: 'Partner Applications' },
     { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs' }
