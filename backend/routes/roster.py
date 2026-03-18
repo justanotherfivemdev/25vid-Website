@@ -6,6 +6,8 @@ from database import db
 from models.user import ProfileSelfUpdate
 from middleware.auth import get_current_user
 from services.auth_service import user_to_response
+from utils.mos_mapping import get_mos_display
+from utils.billet_mapping import get_billet_display
 
 router = APIRouter()
 
@@ -23,12 +25,21 @@ async def get_roster(current_user: dict = Depends(get_current_user)):
             jd = datetime.fromisoformat(jd).isoformat()
         elif hasattr(jd, 'isoformat'):
             jd = jd.isoformat()
+
+        billet = u.get("billet")
+        billet_info = get_billet_display(billet)
+        mos_info = get_mos_display(u.get("specialization"), billet)
+
         roster.append({
             "id": u["id"], "username": u["username"], "role": u.get("role", "member"),
             "rank": u.get("rank"), "specialization": u.get("specialization"),
             "status": u.get("status", "recruit"), "squad": u.get("squad"),
             "avatar_url": u.get("avatar_url"), "join_date": jd,
-            "company": u.get("company"), "platoon": u.get("platoon"), "billet": u.get("billet")
+            "company": u.get("company"), "platoon": u.get("platoon"), "billet": billet,
+            "display_mos": u.get("display_mos") or f"{mos_info['mos_code']} / {mos_info['mos_title']}",
+            "billet_acronym": u.get("billet_acronym") or billet_info.get("acronym"),
+            "loa_status": u.get("loa_status"),
+            "pipeline_stage": u.get("pipeline_stage"),
         })
     return roster
 
@@ -47,12 +58,20 @@ async def get_roster_hierarchy(current_user: dict = Depends(get_current_user)):
     }
 
     for u in users:
+        billet_raw = u.get("billet")
+        billet_info = get_billet_display(billet_raw)
+        mos_info = get_mos_display(u.get("specialization"), billet_raw)
+
         member_data = {
             "id": u["id"], "username": u["username"], "role": u.get("role", "member"),
             "rank": u.get("rank"), "specialization": u.get("specialization"),
             "status": u.get("status", "recruit"), "squad": u.get("squad"),
             "avatar_url": u.get("avatar_url"),
-            "company": u.get("company"), "platoon": u.get("platoon"), "billet": u.get("billet")
+            "company": u.get("company"), "platoon": u.get("platoon"), "billet": billet_raw,
+            "display_mos": u.get("display_mos") or f"{mos_info['mos_code']} / {mos_info['mos_title']}",
+            "billet_acronym": u.get("billet_acronym") or billet_info.get("acronym"),
+            "loa_status": u.get("loa_status"),
+            "pipeline_stage": u.get("pipeline_stage"),
         }
 
         billet = (u.get("billet") or "").lower()

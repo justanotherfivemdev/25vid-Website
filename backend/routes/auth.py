@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import httpx
 import jwt
 from fastapi import APIRouter, HTTPException, Depends, Response, Request
+from pydantic import BaseModel, EmailStr
 from starlette.responses import RedirectResponse
 
 from config import (
@@ -381,3 +382,61 @@ async def set_password(data: SetPasswordRequest, response: Response, current_use
     new_token = create_access_token({"sub": current_user["id"], "email": normalized})
     set_auth_cookie(response, new_token)
     return {"message": "Email and password set successfully. You can now log in with email/password.", "access_token": new_token}
+
+
+class ClaimAccountRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+@router.get("/auth/check-claimable")
+async def check_claimable(email: str):
+    """Check if an email has a claimable pre-registered account."""
+    normalized = normalize_email(email)
+    user = await db.users.find_one({"email": normalized}, {"_id": 0, "password_hash": 0})
+    if not user:
+        return {"claimable": False, "message": "No account found with this email"}
+    if not user.get("pre_registered", False):
+        return {"claimable": False, "message": "This account is already active. Please log in normally."}
+    return {"claimable": True, "username": user.get("username", ""), "message": "Account found! Set a password to activate your account."}
+
+
+@router.post("/auth/claim-account")
+async def claim_account(data: ClaimAccountRequest, response: Response):
+    """Allow a pre-registered member to claim their account by setting a password."""
+    if len(data.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    normalized = normalize_email(data.email)
+    user = await db.users.find_one({"email": normalized}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with this email")
+
+    if not user.get("pre_registered", False):
+        raise HTTPException(status_code=400, detail="This account is already active. Please log in normally.")
+
+    # Activate the account
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "password_hash": pwd_context.hash(data.password),
+            "pre_registered": False,
+            "is_active": True,
+            "email_verified": True,
+            "email_verified_at": user.get("email_verified_at") or datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+
+    # Auto-login the user
+    access_token = create_access_token({"sub": user["id"], "email": normalized})
+    set_auth_cookie(response, access_token)
+
+    user["pre_registered"] = False
+    user["is_active"] = True
+    user_response = user_to_response(user)
+
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_response
+    )

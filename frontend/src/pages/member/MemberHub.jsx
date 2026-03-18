@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image, Globe } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image, Globe, Handshake } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -89,6 +89,8 @@ const MemberHub = () => {
             <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
             <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
             <Link to="/hub/gallery"><Button size="sm" variant="outline" className="border-gray-700"><Image className="w-4 h-4 mr-1" />Gallery</Button></Link>
+            <Link to="/hub/loa"><Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold"><Calendar className="w-4 h-4 mr-1.5" />LOA</Button></Link>
+            <Link to="/hub/shared"><Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold"><Handshake className="w-4 h-4 mr-1.5" />Shared</Button></Link>
             <Link to="/hub/campaign"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><MapPin className="w-4 h-4 mr-1" />Campaigns</Button></Link>
             <Link to="/hub/threat-map"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Globe className="w-4 h-4 mr-1" />Global Threat Map</Button></Link>
             {user?.role === 'admin' && (

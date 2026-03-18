@@ -167,7 +167,10 @@ def user_to_response(u: dict) -> UserResponse:
         discord_id=u.get("discord_id"), discord_username=u.get("discord_username"),
         discord_avatar=u.get("discord_avatar"), discord_linked=u.get("discord_linked", False),
         pre_registered=u.get("pre_registered", False), permissions=u.get("permissions", []), unit=u.get("unit"),
-        company=u.get("company"), platoon=u.get("platoon"), billet=u.get("billet")
+        company=u.get("company"), platoon=u.get("platoon"), billet=u.get("billet"),
+        display_mos=u.get("display_mos"), billet_acronym=u.get("billet_acronym"),
+        loa_status=u.get("loa_status"), pipeline_stage=u.get("pipeline_stage"),
+        pipeline_history=u.get("pipeline_history", [])
     )
 
 
