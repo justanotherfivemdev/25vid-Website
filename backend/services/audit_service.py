@@ -5,8 +5,8 @@ from database import db
 
 
 async def log_audit(user_id: str, action_type: str, resource_type: str,
-                    resource_id: str = None, before: dict = None,
-                    after: dict = None, metadata: dict = None):
+                    resource_id: Optional[str] = None, before: Optional[dict] = None,
+                    after: Optional[dict] = None, metadata: Optional[dict] = None):
     entry = {
         "user_id": user_id,
         "action_type": action_type,
