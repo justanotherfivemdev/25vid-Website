@@ -8,6 +8,8 @@ from database import db
 from models.operations import Operation, OperationCreate, RSVPSubmit
 from middleware.auth import get_current_user, get_current_admin
 from services.map_service import upsert_map_event
+from utils.mos_mapping import get_mos_display
+from utils.billet_mapping import get_billet_display
 
 router = APIRouter()
 
@@ -157,9 +159,12 @@ async def get_operation_roster(operation_id: str, current_user: dict = Depends(g
     user_map = {u["id"]: u for u in users}
 
     enriched_rsvps = {"attending": [], "tentative": [], "waitlisted": []}
+    mos_counter: dict = {}
 
     for r in rsvps:
         user_data = user_map.get(r["user_id"], {})
+        mos_info = get_mos_display(user_data.get("specialization"), user_data.get("billet"))
+        billet_info = get_billet_display(user_data.get("billet"))
         enriched = {
             "user_id": r["user_id"],
             "username": r.get("username", user_data.get("username", "Unknown")),
@@ -173,11 +178,16 @@ async def get_operation_roster(operation_id: str, current_user: dict = Depends(g
             "platoon": user_data.get("platoon"),
             "billet": user_data.get("billet"),
             "avatar_url": user_data.get("avatar_url"),
-            "member_status": user_data.get("status", "recruit")
+            "member_status": user_data.get("status", "recruit"),
+            "mos_code": mos_info["mos_code"],
+            "mos_title": mos_info["mos_title"],
+            "billet_acronym": user_data.get("billet_acronym") or billet_info.get("acronym"),
         }
 
         if r["status"] == "attending":
             enriched_rsvps["attending"].append(enriched)
+            mos_label = f"{mos_info['mos_code']} / {mos_info['mos_title']}"
+            mos_counter[mos_label] = mos_counter.get(mos_label, 0) + 1
         elif r["status"] == "tentative":
             enriched_rsvps["tentative"].append(enriched)
         elif r["status"] == "waitlisted":
@@ -190,6 +200,7 @@ async def get_operation_roster(operation_id: str, current_user: dict = Depends(g
         "time": operation.get("time", ""),
         "max_participants": operation.get("max_participants"),
         "rsvps": enriched_rsvps,
+        "mos_summary": mos_counter,
         "counts": {
             "attending": len(enriched_rsvps["attending"]),
             "tentative": len(enriched_rsvps["tentative"]),

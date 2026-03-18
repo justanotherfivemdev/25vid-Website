@@ -37,6 +37,11 @@ class User(BaseModel):
     company: Optional[str] = None
     platoon: Optional[str] = None
     billet: Optional[str] = None
+    display_mos: Optional[str] = None
+    billet_acronym: Optional[str] = None
+    loa_status: Optional[str] = None
+    pipeline_stage: Optional[str] = None
+    pipeline_history: List[dict] = Field(default_factory=list)
 
 
 class UserRegister(BaseModel):
@@ -80,6 +85,11 @@ class UserResponse(BaseModel):
     company: Optional[str] = None
     platoon: Optional[str] = None
     billet: Optional[str] = None
+    display_mos: Optional[str] = None
+    billet_acronym: Optional[str] = None
+    loa_status: Optional[str] = None
+    pipeline_stage: Optional[str] = None
+    pipeline_history: List[dict] = Field(default_factory=list)
 
 
 class TokenResponse(BaseModel):
@@ -133,6 +143,8 @@ class AdminProfileUpdate(BaseModel):
     company: Optional[str] = None
     platoon: Optional[str] = None
     billet: Optional[str] = None
+    display_mos: Optional[str] = None
+    billet_acronym: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
