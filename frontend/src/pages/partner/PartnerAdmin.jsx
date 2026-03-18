@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Shield, Users, LogOut, Home, Copy, Trash2, ChevronRight, Plus, FileText } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Shield, Users, LogOut, Home, Copy, Trash2, ChevronRight, Plus, FileText, Calendar, Radio, Clock, Pencil } from 'lucide-react';
 import { BACKEND_URL, API } from '@/utils/api';
 
 const PartnerAdmin = () => {
@@ -13,10 +14,18 @@ const PartnerAdmin = () => {
   const [unit, setUnit] = useState(null);
   const [invites, setInvites] = useState([]);
   const [auditLog, setAuditLog] = useState([]);
+  const [operations, setOperations] = useState([]);
+  const [intelItems, setIntelItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('members');
   const [editingMember, setEditingMember] = useState(null);
   const [editForm, setEditForm] = useState({ rank: '', billet: '', status: 'active' });
+  const [showOpForm, setShowOpForm] = useState(false);
+  const [editingOp, setEditingOp] = useState(null);
+  const [opForm, setOpForm] = useState({ title: '', description: '', operation_type: 'combat', date: '', time: '', location: '' });
+  const [showIntelForm, setShowIntelForm] = useState(false);
+  const [editingIntel, setEditingIntel] = useState(null);
+  const [intelForm, setIntelForm] = useState({ title: '', content: '', classification: 'unclassified', region: '', threat_level: 'low' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,14 +43,18 @@ const PartnerAdmin = () => {
 
   const fetchData = async () => {
     try {
-      const [unitRes, invitesRes, logRes] = await Promise.all([
+      const [unitRes, invitesRes, logRes, opsRes, intelRes] = await Promise.all([
         axios.get(`${API}/partner/admin/unit`),
         axios.get(`${API}/partner/admin/invites`),
         axios.get(`${API}/partner/admin/audit-log`),
+        axios.get(`${API}/partner/admin/operations`),
+        axios.get(`${API}/partner/admin/intel`),
       ]);
       setUnit(unitRes.data);
       setInvites(invitesRes.data);
       setAuditLog(logRes.data.slice(0, 50));
+      setOperations(opsRes.data || []);
+      setIntelItems(intelRes.data || []);
     } catch (err) {
       console.error('Failed to fetch partner admin data:', err);
     } finally {
@@ -92,6 +105,87 @@ const PartnerAdmin = () => {
       alert(err.response?.data?.detail || 'Failed to remove member');
     }
   };
+
+  // === Operations CRUD ===
+  const resetOpForm = () => {
+    setOpForm({ title: '', description: '', operation_type: 'combat', date: '', time: '', location: '' });
+    setEditingOp(null);
+    setShowOpForm(false);
+  };
+
+  const startEditOp = (op) => {
+    setOpForm({ title: op.title || '', description: op.description || '', operation_type: op.operation_type || 'combat', date: op.date || '', time: op.time || '', location: op.location || '' });
+    setEditingOp(op.id);
+    setShowOpForm(true);
+  };
+
+  const saveOperation = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingOp) {
+        await axios.put(`${API}/partner/admin/operations/${editingOp}`, opForm);
+      } else {
+        await axios.post(`${API}/partner/admin/operations`, opForm);
+      }
+      resetOpForm();
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to save operation');
+    }
+  };
+
+  const deleteOperation = async (opId) => {
+    if (!window.confirm('Delete this operation?')) return;
+    try {
+      await axios.delete(`${API}/partner/admin/operations/${opId}`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to delete operation');
+    }
+  };
+
+  // === Intel CRUD ===
+  const resetIntelForm = () => {
+    setIntelForm({ title: '', content: '', classification: 'unclassified', region: '', threat_level: 'low' });
+    setEditingIntel(null);
+    setShowIntelForm(false);
+  };
+
+  const startEditIntel = (item) => {
+    setIntelForm({ title: item.title || '', content: item.content || '', classification: item.classification || 'unclassified', region: item.region || '', threat_level: item.threat_level || 'low' });
+    setEditingIntel(item.id);
+    setShowIntelForm(true);
+  };
+
+  const saveIntel = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingIntel) {
+        await axios.put(`${API}/partner/admin/intel/${editingIntel}`, intelForm);
+      } else {
+        await axios.post(`${API}/partner/admin/intel`, intelForm);
+      }
+      resetIntelForm();
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to save intel');
+    }
+  };
+
+  const deleteIntel = async (intelId) => {
+    if (!window.confirm('Delete this intel report?')) return;
+    try {
+      await axios.delete(`${API}/partner/admin/intel/${intelId}`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to delete intel');
+    }
+  };
+
+  const getTypeColor = (t) => ({
+    combat: 'bg-tropic-red', training: 'bg-tropic-gold-dark',
+    recon: 'bg-green-600', support: 'bg-gray-600'
+  }[t] || 'bg-gray-600');
 
   if (loading) {
     return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
@@ -159,16 +253,18 @@ const PartnerAdmin = () => {
           </Card>
 
           {/* Tabs */}
-          <div className="flex gap-2 border-b border-gray-800 pb-2">
-            {['members', 'invites', 'audit'].map(tab => (
+          <div className="flex gap-2 border-b border-gray-800 pb-2 overflow-x-auto">
+            {['members', 'operations', 'intel', 'invites', 'audit'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-sm font-medium rounded-t transition-colors ${
+                className={`px-4 py-2 text-sm font-medium rounded-t transition-colors whitespace-nowrap ${
                   activeTab === tab ? 'bg-tropic-olive/20 text-tropic-gold border-b-2 border-tropic-gold' : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
                 {tab === 'members' && <><Users className="w-4 h-4 inline mr-1" />Members</>}
+                {tab === 'operations' && <><Calendar className="w-4 h-4 inline mr-1" />Operations</>}
+                {tab === 'intel' && <><Radio className="w-4 h-4 inline mr-1" />Intel</>}
                 {tab === 'invites' && <><Copy className="w-4 h-4 inline mr-1" />Invites</>}
                 {tab === 'audit' && <><FileText className="w-4 h-4 inline mr-1" />Audit Log</>}
               </button>
@@ -248,6 +344,203 @@ const PartnerAdmin = () => {
                     </CardContent>
                   </Card>
                 ))
+              )}
+            </div>
+          )}
+
+          {/* Operations Tab */}
+          {activeTab === 'operations' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">Manage your unit's operations</p>
+                <Button onClick={() => { resetOpForm(); setShowOpForm(true); }} className="bg-tropic-olive hover:bg-tropic-olive/80">
+                  <Plus className="w-4 h-4 mr-2" />New Operation
+                </Button>
+              </div>
+
+              {showOpForm && (
+                <Card className="bg-gray-900/80 border-tropic-olive/30">
+                  <CardContent className="p-4">
+                    <form onSubmit={saveOperation} className="space-y-3">
+                      <h4 className="text-sm font-bold text-tropic-gold">{editingOp ? 'Edit Operation' : 'Create Operation'}</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500">Title *</label>
+                          <Input className="bg-black/50 border-white/20 mt-1" value={opForm.title} onChange={e => setOpForm({ ...opForm, title: e.target.value })} required />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">Type</label>
+                          <select className="w-full bg-black/50 border border-white/20 rounded px-2 py-2 mt-1 text-sm" value={opForm.operation_type} onChange={e => setOpForm({ ...opForm, operation_type: e.target.value })}>
+                            <option value="combat">Combat</option>
+                            <option value="training">Training</option>
+                            <option value="recon">Recon</option>
+                            <option value="support">Support</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Description</label>
+                        <Textarea className="bg-black/50 border-white/20 mt-1" rows={2} value={opForm.description} onChange={e => setOpForm({ ...opForm, description: e.target.value })} />
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500">Date</label>
+                          <Input type="date" className="bg-black/50 border-white/20 mt-1" value={opForm.date} onChange={e => setOpForm({ ...opForm, date: e.target.value })} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">Time</label>
+                          <Input type="time" className="bg-black/50 border-white/20 mt-1" value={opForm.time} onChange={e => setOpForm({ ...opForm, time: e.target.value })} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">Location</label>
+                          <Input className="bg-black/50 border-white/20 mt-1" value={opForm.location} onChange={e => setOpForm({ ...opForm, location: e.target.value })} />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm" className="bg-tropic-olive">{editingOp ? 'Update' : 'Create'}</Button>
+                        <Button type="button" size="sm" variant="outline" className="border-gray-700" onClick={resetOpForm}>Cancel</Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+
+              {operations.length === 0 && !showOpForm ? (
+                <Card className="bg-gray-900/50 border-gray-800">
+                  <CardContent className="p-8 text-center text-gray-500">
+                    <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No operations created yet for your unit.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {operations.map(op => (
+                    <Card key={op.id} className="bg-gray-900/80 border-gray-800">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-bold text-sm">{op.title}</h4>
+                            <Badge className={`${getTypeColor(op.operation_type)} text-[10px]`}>{op.operation_type?.toUpperCase()}</Badge>
+                          </div>
+                          <p className="text-xs text-gray-400 line-clamp-1">{op.description}</p>
+                          <div className="flex items-center gap-3 text-[10px] text-gray-500 mt-1">
+                            {op.date && <span><Calendar className="w-3 h-3 inline mr-1" />{op.date}</span>}
+                            {op.time && <span><Clock className="w-3 h-3 inline mr-1" />{op.time}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-3">
+                          <Button size="sm" variant="outline" className="border-gray-700 text-xs" onClick={() => startEditOp(op)}>
+                            <Pencil className="w-3 h-3 mr-1" />Edit
+                          </Button>
+                          <Button size="sm" variant="outline" className="border-tropic-red/40 text-tropic-red text-xs" onClick={() => deleteOperation(op.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Intel Tab */}
+          {activeTab === 'intel' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">Manage your unit's intelligence reports</p>
+                <Button onClick={() => { resetIntelForm(); setShowIntelForm(true); }} className="bg-tropic-olive hover:bg-tropic-olive/80">
+                  <Plus className="w-4 h-4 mr-2" />New Intel Report
+                </Button>
+              </div>
+
+              {showIntelForm && (
+                <Card className="bg-gray-900/80 border-tropic-olive/30">
+                  <CardContent className="p-4">
+                    <form onSubmit={saveIntel} className="space-y-3">
+                      <h4 className="text-sm font-bold text-tropic-gold">{editingIntel ? 'Edit Intel Report' : 'Create Intel Report'}</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500">Title *</label>
+                          <Input className="bg-black/50 border-white/20 mt-1" value={intelForm.title} onChange={e => setIntelForm({ ...intelForm, title: e.target.value })} required />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">Classification</label>
+                          <select className="w-full bg-black/50 border border-white/20 rounded px-2 py-2 mt-1 text-sm" value={intelForm.classification} onChange={e => setIntelForm({ ...intelForm, classification: e.target.value })}>
+                            <option value="unclassified">Unclassified</option>
+                            <option value="confidential">Confidential</option>
+                            <option value="secret">Secret</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Content *</label>
+                        <Textarea className="bg-black/50 border-white/20 mt-1" rows={3} value={intelForm.content} onChange={e => setIntelForm({ ...intelForm, content: e.target.value })} required />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500">Region</label>
+                          <Input className="bg-black/50 border-white/20 mt-1" value={intelForm.region} onChange={e => setIntelForm({ ...intelForm, region: e.target.value })} placeholder="e.g. Pacific Theater" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">Threat Level</label>
+                          <select className="w-full bg-black/50 border border-white/20 rounded px-2 py-2 mt-1 text-sm" value={intelForm.threat_level} onChange={e => setIntelForm({ ...intelForm, threat_level: e.target.value })}>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm" className="bg-tropic-olive">{editingIntel ? 'Update' : 'Create'}</Button>
+                        <Button type="button" size="sm" variant="outline" className="border-gray-700" onClick={resetIntelForm}>Cancel</Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+
+              {intelItems.length === 0 && !showIntelForm ? (
+                <Card className="bg-gray-900/50 border-gray-800">
+                  <CardContent className="p-8 text-center text-gray-500">
+                    <Radio className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No intel reports created yet for your unit.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {intelItems.map(item => (
+                    <Card key={item.id} className="bg-gray-900/80 border-gray-800">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-bold text-sm">{item.title}</h4>
+                            <Badge className="bg-gray-700 text-[10px]">{item.classification?.toUpperCase()}</Badge>
+                            {item.threat_level && (
+                              <Badge className={`text-[10px] ${
+                                item.threat_level === 'critical' ? 'bg-red-900 text-red-300' :
+                                item.threat_level === 'high' ? 'bg-orange-900 text-orange-300' :
+                                item.threat_level === 'medium' ? 'bg-yellow-900 text-yellow-300' :
+                                'bg-green-900 text-green-300'
+                              }`}>{item.threat_level?.toUpperCase()}</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400 line-clamp-1">{item.content}</p>
+                          {item.region && <p className="text-[10px] text-gray-500 mt-1">Region: {item.region}</p>}
+                        </div>
+                        <div className="flex items-center gap-2 ml-3">
+                          <Button size="sm" variant="outline" className="border-gray-700 text-xs" onClick={() => startEditIntel(item)}>
+                            <Pencil className="w-3 h-3 mr-1" />Edit
+                          </Button>
+                          <Button size="sm" variant="outline" className="border-tropic-red/40 text-tropic-red text-xs" onClick={() => deleteIntel(item.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </div>
           )}

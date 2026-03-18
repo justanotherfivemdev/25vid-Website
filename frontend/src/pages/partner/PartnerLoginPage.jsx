@@ -168,6 +168,9 @@ const PartnerLoginPage = () => {
         </Card>
 
         <div className="mt-6 text-center space-y-2">
+          <Link to="/partner-apply" className="text-sm text-tropic-olive hover:text-tropic-gold transition-colors block">
+            Don't have an invite? Apply as a Partner Unit →
+          </Link>
           <Link to="/login" className="text-sm text-gray-500 hover:text-tropic-gold transition-colors block">
             &larr; 25th ID Member Login
           </Link>
