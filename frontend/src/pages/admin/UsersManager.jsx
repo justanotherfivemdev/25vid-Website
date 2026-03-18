@@ -136,6 +136,28 @@ const UsersManager = () => {
                 <div><Label className="text-xs">Rank</Label><Input value={preCreateForm.rank} onChange={e => setPreCreateForm({...preCreateForm, rank: e.target.value})} className="bg-black border-gray-700" /></div>
                 <div><Label className="text-xs">Specialization</Label><Input value={preCreateForm.specialization} onChange={e => setPreCreateForm({...preCreateForm, specialization: e.target.value})} className="bg-black border-gray-700" /></div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Role</Label>
+                  <select value={preCreateForm.role} onChange={e => setPreCreateForm({...preCreateForm, role: e.target.value})} className="w-full bg-black border border-gray-700 rounded-md px-3 py-2 text-sm text-white">
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                    <option value="s5_liaison">S5 Liaison</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Status</Label>
+                  <select value={preCreateForm.status} onChange={e => setPreCreateForm({...preCreateForm, status: e.target.value})} className="w-full bg-black border border-gray-700 rounded-md px-3 py-2 text-sm text-white">
+                    <option value="member">Member</option>
+                    <option value="recruit">Recruit</option>
+                    <option value="active">Active</option>
+                    <option value="reserve">Reserve</option>
+                    <option value="staff">Staff</option>
+                    <option value="command">Command</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
               <div className="grid grid-cols-3 gap-3">
                 <div><Label className="text-xs">Company</Label><Input value={preCreateForm.company} onChange={e => setPreCreateForm({...preCreateForm, company: e.target.value})} className="bg-black border-gray-700" /></div>
                 <div><Label className="text-xs">Platoon</Label><Input value={preCreateForm.platoon} onChange={e => setPreCreateForm({...preCreateForm, platoon: e.target.value})} className="bg-black border-gray-700" /></div>

@@ -65,7 +65,8 @@ const AdminMemberDetail = () => {
         discord_username: member.discord_username || undefined,
         company: member.company || undefined,
         platoon: member.platoon || undefined,
-        billet: member.billet || undefined
+        billet: member.billet || undefined,
+        billet_acronym: member.billet_acronym || undefined
       });
       setMessage({ type: 'success', text: 'Profile saved.' });
     } catch (e) {
@@ -221,6 +222,10 @@ const AdminMemberDetail = () => {
               {renderTagSelect('company', 'Company', unitTags?.companies, 'Select company...')}
               {renderTagSelect('platoon', 'Platoon', unitTags?.platoons, 'Select platoon...')}
               {renderTagSelect('billet', 'Billet / Position', unitTags?.billets, 'Select billet...')}
+            </div>
+            <div>
+              <Label>Billet Acronym</Label>
+              <Input value={member.billet_acronym || ''} onChange={e => setMember({...member, billet_acronym: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., SL, PL, PSG, CO" />
             </div>
           </CardContent>
         </Card>

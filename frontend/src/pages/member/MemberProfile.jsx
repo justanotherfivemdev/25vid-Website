@@ -73,6 +73,7 @@ const MemberProfile = () => {
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {profile.rank && <span className="text-sm text-gray-400">{profile.rank}</span>}
                     <Badge className={`${STATUS_COLORS[profile.status] || 'bg-gray-700'} text-white text-xs`}>{(profile.status || 'recruit').toUpperCase()}</Badge>
+                    {profile.loa_status === 'on_loa' && <Badge className="bg-yellow-600/30 text-yellow-400 border border-yellow-600/40 text-xs">LOA</Badge>}
                     {profile.role === 'admin' && <Badge className="bg-tropic-gold/20 text-tropic-gold text-xs">ADMIN</Badge>}
                     {profile.discord_linked && <Badge className="bg-[#5865F2]/20 text-[#5865F2] text-xs border border-[#5865F2]/30">{profile.discord_username || 'Discord'}</Badge>}
                   </div>
@@ -81,7 +82,11 @@ const MemberProfile = () => {
 
               {/* Info grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
+                {profile.billet && <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">BILLET / POSITION</div><div className="text-sm font-medium">{profile.billet_acronym ? `${profile.billet_acronym} — ` : ''}{profile.billet}</div></div>}
                 {profile.specialization && <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">SPECIALIZATION</div><div className="text-sm font-medium">{profile.specialization}</div></div>}
+                {profile.display_mos && <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">MOS</div><div className="text-sm font-medium font-mono text-tropic-gold">{profile.display_mos}</div></div>}
+                {profile.company && <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">COMPANY</div><div className="text-sm font-medium text-tropic-gold">{profile.company}</div></div>}
+                {profile.platoon && <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">PLATOON</div><div className="text-sm font-medium text-green-400">{profile.platoon}</div></div>}
                 {profile.squad && <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">SQUAD / TEAM</div><div className="text-sm font-medium">{profile.squad}</div></div>}
                 {profile.timezone && <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">TIMEZONE</div><div className="text-sm font-medium flex items-center gap-1"><Globe className="w-3 h-3 text-gray-500" />{profile.timezone}</div></div>}
                 {profile.favorite_role && <div><div className="text-[10px] text-gray-500 tracking-wider mb-0.5">PREFERRED ROLE</div><div className="text-sm font-medium flex items-center gap-1"><Target className="w-3 h-3 text-gray-500" />{profile.favorite_role}</div></div>}

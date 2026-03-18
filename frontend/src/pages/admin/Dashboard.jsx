@@ -68,7 +68,7 @@ const AdminDashboard = () => {
 
   const fetchMotw = async () => {
     try {
-      const res = await axios.get(`${API}/member-of-the-week`);
+      const res = await axios.get(`${API}/soldier-of-the-month`);
       setMotw(res.data);
     } catch {}
   };
@@ -84,7 +84,7 @@ const AdminDashboard = () => {
   const handleSetMotw = async () => {
     if (!motwForm.user_id) return;
     try {
-      const res = await axios.put(`${API}/admin/member-of-the-week`, motwForm);
+      const res = await axios.put(`${API}/admin/soldier-of-the-month`, motwForm);
       setMotw(res.data);
       setMotwOpen(false);
       setMotwForm({ user_id: '', reason: '' });
@@ -92,9 +92,9 @@ const AdminDashboard = () => {
   };
 
   const handleClearMotw = async () => {
-    if (!window.confirm('Clear Member of the Week?')) return;
+    if (!window.confirm('Clear Soldier of the Month?')) return;
     try {
-      await axios.delete(`${API}/admin/member-of-the-week`);
+      await axios.delete(`${API}/admin/soldier-of-the-month`);
       setMotw(null);
     } catch {}
   };
@@ -139,12 +139,12 @@ const AdminDashboard = () => {
           </div>
         )}
         
-        {/* Member of the Week Management */}
+        {/* Soldier of the Month Management */}
         <Card className="bg-gray-900 border-gray-800">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2"><Star className="w-5 h-5 text-tropic-gold" />Member of the Week</CardTitle>
-              <CardDescription>Highlight an outstanding unit member — visible to all in the Hub</CardDescription>
+              <CardTitle className="flex items-center gap-2"><Star className="w-5 h-5 text-tropic-gold" />Soldier of the Month</CardTitle>
+              <CardDescription>Highlight an outstanding unit member — visible to all in the Hub. Auto-clears after 30 days.</CardDescription>
             </div>
             <div className="flex gap-2">
               <Dialog open={motwOpen} onOpenChange={setMotwOpen}>
@@ -154,7 +154,7 @@ const AdminDashboard = () => {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-lg max-h-[80vh] overflow-y-auto">
-                  <DialogHeader><DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>Set Member of the Week</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>Set Soldier of the Month</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div>
                       <Label>Search Members</Label>
@@ -183,7 +183,7 @@ const AdminDashboard = () => {
                     </div>
                     <Button disabled={!motwForm.user_id} onClick={handleSetMotw}
                       className="w-full bg-tropic-red hover:bg-tropic-red-dark" data-testid="motw-confirm-btn">
-                      Confirm Member of the Week
+                      Confirm Soldier of the Month
                     </Button>
                   </div>
                 </DialogContent>

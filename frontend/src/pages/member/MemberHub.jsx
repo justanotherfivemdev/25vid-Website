@@ -37,7 +37,7 @@ const MemberHub = () => {
         axios.get(`${API}/training`),
         axios.get(`${API}/discussions`),
         axios.get(`${API}/my-schedule`).catch(() => ({ data: [] })),
-        axios.get(`${API}/member-of-the-week`).catch(() => ({ data: null })),
+        axios.get(`${API}/soldier-of-the-month`).catch(() => ({ data: null })),
       ]);
       setOperations(ops.data.slice(0, 4));
       setAnnouncements(ann.data.slice(0, 4));
@@ -210,7 +210,7 @@ const MemberHub = () => {
             );
           })()}
 
-          {/* Member of the Week - 25th ID colors */}
+          {/* Soldier of the Month - 25th ID colors */}
           {motw && (
             <Card className="bg-gradient-to-r from-tropic-red/20 via-tropic-gold/10 to-transparent border-tropic-gold/40" data-testid="motw-card">
               <CardContent className="p-5 flex items-center gap-5">
@@ -227,7 +227,7 @@ const MemberHub = () => {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs tracking-widest text-tropic-gold mb-0.5">MEMBER OF THE WEEK</div>
+                  <div className="text-xs tracking-widest text-tropic-gold mb-0.5">SOLDIER OF THE MONTH</div>
                   <div className="text-lg font-bold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{motw.username}</div>
                   {motw.rank && <div className="text-xs text-gray-400">{motw.rank}</div>}
                   {motw.reason && <p className="text-sm text-gray-300 mt-1 whitespace-pre-wrap">{motw.reason}</p>}

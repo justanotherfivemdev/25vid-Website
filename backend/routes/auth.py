@@ -57,6 +57,7 @@ async def register(user_data: UserRegister, response: Response):
     user_dict["password_hash"] = hash_password(user_dict.pop("password"))
     user_dict["email_verified"] = True
     user_dict["email_verified_at"] = datetime.now(timezone.utc).isoformat()
+    user_dict["pipeline_stage"] = "applicant"
     user_obj = User(**user_dict)
 
     doc = user_obj.model_dump()
@@ -300,6 +301,9 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
         if existing_by_email:
             if not existing_by_email.get("is_active", True) and not existing_by_email.get("pre_registered", False):
                 return RedirectResponse(f"{frontend_base}/login?discord_error=account_inactive")
+            # Prevent linking if this email account already has a different Discord ID
+            if existing_by_email.get("discord_id") and existing_by_email["discord_id"] != discord_id:
+                return RedirectResponse(f"{frontend_base}/login?discord_error=email_already_linked_to_different_discord")
             await db.users.update_one(
                 {"id": existing_by_email["id"]},
                 {"$set": {
@@ -332,7 +336,8 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
         discord_id=discord_id,
         discord_username=discord_username,
         discord_avatar=discord_avatar_url,
-        discord_linked=True
+        discord_linked=True,
+        pipeline_stage="applicant",
     )
     doc = new_user.model_dump()
     doc['join_date'] = doc['join_date'].isoformat()
