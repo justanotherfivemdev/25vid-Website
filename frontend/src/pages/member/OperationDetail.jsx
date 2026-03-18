@@ -57,7 +57,11 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
           {r.platoon && <div><span className="text-gray-600">Platoon:</span> <span className="text-green-400">{r.platoon}</span></div>}
           {r.squad && <div><span className="text-gray-600">Squad:</span> <span className="text-gray-400">{r.squad}</span></div>}
           {r.mos_title && <div><span className="text-gray-600">MOS:</span> <span className="text-tropic-gold">{r.mos_code} — {r.mos_title}</span></div>}
-          {r.billet_acronym && r.billet ? <div><span className="text-gray-600">Billet:</span> <span className="text-tropic-gold">{r.billet_acronym} — {r.billet}</span></div> : r.billet && <div><span className="text-gray-600">Billet:</span> <span className="text-tropic-gold">{r.billet}</span></div>}
+          {r.billet && (
+            <div><span className="text-gray-600">Billet:</span>{' '}
+              <span className="text-tropic-gold">{r.billet_acronym ? `${r.billet_acronym} — ${r.billet}` : r.billet}</span>
+            </div>
+          )}
           {r.member_status && <div><span className="text-gray-600">Status:</span> <span className="text-gray-400 capitalize">{r.member_status}</span></div>}
           {r.rsvp_time && <div><span className="text-gray-600">RSVPed:</span> <span className="text-gray-500">{new Date(r.rsvp_time).toLocaleDateString()}</span></div>}
         </div>
