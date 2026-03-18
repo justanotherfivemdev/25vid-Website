@@ -2,9 +2,9 @@ import uuid
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import Dict
+from typing import Dict, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Query
 
 from config import UPLOAD_DIR
 from database import db
@@ -17,6 +17,7 @@ from models.content import AnnouncementCreate, GalleryImageCreate, TrainingCreat
 from models.common import HistoryEntry, HistoryEntryCreate
 from middleware.auth import get_current_user, get_current_admin
 from services.auth_service import user_to_response
+from services.audit_service import log_audit
 from services.map_service import upsert_map_event, remove_map_event
 from services.import_service import upsert_user_from_import
 from google_sheets_import import (
@@ -139,6 +140,10 @@ async def delete_operation(operation_id: str, current_user: dict = Depends(get_c
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Operation not found")
     await remove_map_event("operation", operation_id)
+    await log_audit(
+        user_id=current_user["id"], action_type="delete_operation",
+        resource_type="operation", resource_id=operation_id,
+    )
     return {"message": "Operation deleted successfully"}
 
 
@@ -179,6 +184,10 @@ async def delete_announcement(announcement_id: str, current_user: dict = Depends
     result = await db.announcements.delete_one({"id": announcement_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Announcement not found")
+    await log_audit(
+        user_id=current_user["id"], action_type="delete_announcement",
+        resource_type="announcement", resource_id=announcement_id,
+    )
     return {"message": "Announcement deleted successfully"}
 
 
@@ -343,6 +352,17 @@ async def import_users_from_google_sheet(payload: UserImportRequest, current_use
                 )
             )
 
+    await log_audit(
+        user_id=current_user["id"], action_type="import_users",
+        resource_type="user", metadata={
+            "sheet": resolved_sheet_name,
+            "imported": report.imported,
+            "updated": report.updated,
+            "skipped": report.skipped,
+            "errors": report.errors,
+        },
+    )
+
     return report
 
 
@@ -415,6 +435,8 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
 
+    before = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+
     result = await db.users.update_one(
         {"id": user_id},
         {"$set": update_dict}
@@ -422,6 +444,12 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
 
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
+
+    await log_audit(
+        user_id=current_user["id"], action_type="update_user",
+        resource_type="user", resource_id=user_id,
+        before=before, after=update_dict,
+    )
 
     return {"message": "User updated successfully"}
 
@@ -431,9 +459,16 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_current_adm
     if user_id == current_user["id"]:
         raise HTTPException(status_code=400, detail="Cannot delete your own account")
 
+    before = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
     result = await db.users.delete_one({"id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
+
+    await log_audit(
+        user_id=current_user["id"], action_type="delete_user",
+        resource_type="user", resource_id=user_id,
+        before=before,
+    )
 
     return {"message": "User deleted successfully"}
 
@@ -547,3 +582,86 @@ async def update_unit_tags(tags: dict, current_user: dict = Depends(get_current_
         upsert=True
     )
     return {"message": "Unit tags updated successfully"}
+
+
+# ============================================================================
+# AUDIT LOGS
+# ============================================================================
+
+@router.get("/admin/audit-logs")
+async def get_audit_logs(
+    current_user: dict = Depends(get_current_admin),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    action_type: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    user_id: Optional[str] = None,
+):
+    """Retrieve paginated audit logs with optional filters."""
+    query = {}
+    if action_type:
+        query["action_type"] = action_type
+    if resource_type:
+        query["resource_type"] = resource_type
+    if user_id:
+        query["user_id"] = user_id
+
+    skip = (page - 1) * limit
+    total = await db.audit_logs.count_documents(query)
+    logs = await db.audit_logs.find(query, {"_id": 0}).sort(
+        "timestamp", -1
+    ).skip(skip).limit(limit).to_list(limit)
+
+    # Enrich logs with username for display
+    user_ids = list({log.get("user_id") for log in logs if log.get("user_id")})
+    users_map = {}
+    if user_ids:
+        users = await db.users.find(
+            {"id": {"$in": user_ids}}, {"_id": 0, "id": 1, "username": 1}
+        ).to_list(len(user_ids))
+        users_map = {u["id"]: u.get("username", "Unknown") for u in users}
+
+    for log in logs:
+        log["username"] = users_map.get(log.get("user_id"), "System")
+
+    return {
+        "logs": logs,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit if limit else 1,
+    }
+
+
+@router.get("/admin/audit-logs/stats")
+async def get_audit_stats(current_user: dict = Depends(get_current_admin)):
+    """Get summary statistics for audit logs."""
+    total = await db.audit_logs.count_documents({})
+
+    # Get action type breakdown
+    pipeline = [
+        {"$group": {"_id": "$action_type", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 20},
+    ]
+    action_counts = await db.audit_logs.aggregate(pipeline).to_list(20)
+
+    # Get resource type breakdown
+    pipeline2 = [
+        {"$group": {"_id": "$resource_type", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 20},
+    ]
+    resource_counts = await db.audit_logs.aggregate(pipeline2).to_list(20)
+
+    # Get recent activity (last 24h)
+    from datetime import timedelta
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    recent_count = await db.audit_logs.count_documents({"timestamp": {"$gte": cutoff}})
+
+    return {
+        "total": total,
+        "recent_24h": recent_count,
+        "by_action": {item["_id"]: item["count"] for item in action_counts if item["_id"]},
+        "by_resource": {item["_id"]: item["count"] for item in resource_counts if item["_id"]},
+    }

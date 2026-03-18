@@ -1,4 +1,8 @@
-from backend.google_sheets_import import (
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from google_sheets_import import (
     parse_spreadsheet_id,
     build_field_mapping,
     row_to_mapped_fields,
