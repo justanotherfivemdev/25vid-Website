@@ -1134,8 +1134,8 @@ function App() {
         <Route path="/partner-login" element={<PartnerLoginPage />} />
         <Route path="/partner" element={<PartnerHub />} />
         <Route path="/partner-admin" element={<PartnerAdmin />} />
-        <Route path="/partner/discussions" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison', 'partner']}><DiscussionForum /></ProtectedRoute>} />
-        <Route path="/partner/discussions/:id" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison', 'partner']}><DiscussionThread /></ProtectedRoute>} />
+        <Route path="/partner/discussions" element={<DiscussionForum />} />
+        <Route path="/partner/discussions/:id" element={<DiscussionThread />} />
       </Routes>
     </BrowserRouter>
   );

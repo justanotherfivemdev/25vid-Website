@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,12 @@ const DiscussionThread = () => {
   const [reply, setReply] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
+
+  // Detect partner mode from URL path
+  const isPartnerMode = location.pathname.startsWith('/partner/');
+  const forumPath = isPartnerMode ? '/partner/discussions' : '/hub/discussions';
 
   useEffect(() => { fetchDiscussion(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -27,7 +32,7 @@ const DiscussionThread = () => {
       setDiscussion(res.data);
     } catch (e) {
       console.error(e);
-      if (e.response?.status === 404) navigate('/hub/discussions');
+      if (e.response?.status === 404) navigate(forumPath);
     }
     finally { setLoading(false); }
   };
@@ -68,11 +73,11 @@ const DiscussionThread = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-gold/25">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/hub/discussions"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Forum</Button></Link>
+            <Link to={forumPath}><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Forum</Button></Link>
             <h1 className="text-xl font-bold tracking-wider truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{discussion.title}</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4" /></Button></Link>}
+            {!isPartnerMode && user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4" /></Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
