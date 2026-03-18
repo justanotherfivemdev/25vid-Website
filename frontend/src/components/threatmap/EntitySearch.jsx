@@ -81,7 +81,7 @@ export default function EntitySearch() {
     setDeployMsg(null);
     try {
       await axios.post(`${API}/research-agent/query`, {
-        query: query,
+        query,
         post_to_intel_board: true,
         add_to_threat_map: true,
       }, { withCredentials: true });

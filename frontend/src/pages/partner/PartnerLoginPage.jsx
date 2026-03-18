@@ -26,7 +26,7 @@ const PartnerLoginPage = () => {
           setBgConfig(res.data.partnerLogin);
         }
       })
-      .catch(() => {});
+      .catch(err => console.error('Failed to fetch partner login config:', err));
   }, []);
 
   // If already authenticated as partner, redirect

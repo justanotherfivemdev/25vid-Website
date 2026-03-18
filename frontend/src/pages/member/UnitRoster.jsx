@@ -167,6 +167,14 @@ const UnitRoster = () => {
     }
   };
 
+  const handleOpenImportDialog = () => {
+    setImportDialogOpen(true);
+    setImportResult(null);
+    setImportError('');
+    setImportUrl('');
+    setImportSheetName('');
+  };
+
   const ranks = [...new Set(members.map(m => m.rank).filter(Boolean))].sort();
   const companies = [...new Set(members.map(m => m.company).filter(Boolean))].sort();
   const statuses = [...new Set(members.map(m => m.status).filter(Boolean))].sort();
@@ -274,7 +282,7 @@ const UnitRoster = () => {
                   size="sm"
                   variant="outline"
                   className="border-blue-600/60 text-blue-400 hover:bg-blue-900/20"
-                  onClick={() => { setImportDialogOpen(true); setImportResult(null); setImportError(''); setImportUrl(''); setImportSheetName(''); }}
+                  onClick={handleOpenImportDialog}
                   data-testid="import-google-sheets"
                 >
                   <Upload className="w-4 h-4 mr-1" />Import from Google Sheets
