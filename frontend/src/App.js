@@ -220,10 +220,10 @@ const Navigation = ({ scrollToSection, content }) => {
   const btnText = content.nav?.buttonText || 'JOIN NOW';
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/85 backdrop-blur-lg border-b border-tropic-gold/20" data-testid="main-nav">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="main-nav">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-lg font-bold tracking-widest text-tropic-gold-light hover:text-white transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <Link to="/" className="text-lg font-bold tracking-[0.15em] text-tropic-gold-light hover:text-white transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
             {brandName}
           </Link>
           <button className="md:hidden text-white" onClick={() => setMenuOpen(!menuOpen)} data-testid="mobile-menu-btn">
@@ -263,16 +263,22 @@ const HeroSection = ({ content }) => {
     <section className="hero-section relative min-h-screen flex items-center justify-center" style={heroIsVideo ? undefined : { backgroundImage: `url('${heroMedia}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }} data-testid="hero-section">
       {heroIsVideo && <video src={heroMedia} className="absolute inset-0 w-full h-full object-cover" muted loop autoPlay playsInline />}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/75 to-black"></div>
+      <div className="hero-grid-overlay"></div>
       <div className="relative z-10 text-center px-6">
         <div className="mb-10 compass-logo" data-testid="unit-logo">
           <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th Infantry Division" className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain drop-shadow-[0_0_30px_rgba(212,160,23,0.4)]" />
         </div>
-        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-[0.08em] leading-tight" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="hero-tagline">
+        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-[0.12em] leading-tight" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="hero-tagline">
           <span className="block">{heroLine1}</span>
-          {heroLine2 && <span className="block text-lg sm:text-xl lg:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-tropic-gold to-tropic-gold-light mt-4 tracking-[0.15em]">{heroLine2}</span>}
+          {heroLine2 && <span className="block text-lg sm:text-xl lg:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-tropic-gold to-tropic-gold-light mt-4 tracking-[0.2em]">{heroLine2}</span>}
         </h1>
         <div className="mt-10">
           <Link to="/login"><Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">{content.nav?.buttonText || 'ENLIST NOW'}</Button></Link>
+        </div>
+        <div className="mt-8 flex items-center justify-center gap-2 text-xs tracking-[0.25em] text-gray-500 uppercase">
+          <span className="w-8 h-px bg-gradient-to-r from-transparent to-gray-600"></span>
+          Scroll to explore
+          <span className="w-8 h-px bg-gradient-to-l from-transparent to-gray-600"></span>
         </div>
       </div>
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>
@@ -288,12 +294,13 @@ const AboutSection = ({ content }) => {
   const aboutHeading = textOrFallback(content.sectionHeadings?.about?.heading, 'ABOUT');
   const aboutSubtext = textOrFallback(content.sectionHeadings?.about?.subtext, '');
   return (
-    <section id="about" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="about-section">
+    <section id="about" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #080806 50%, #000 100%)' }} data-testid="about-section">
+      <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-6xl">
         <div className="grid md:grid-cols-[280px,1fr] gap-16 items-start">
           <div className="space-y-8">
             <div className="space-y-3">
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold section-underline tracking-wider" data-testid="about-heading">{aboutHeading}</h2>
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold section-underline tracking-[0.1em]" data-testid="about-heading">{aboutHeading}</h2>
               {aboutSubtext && <p className="text-sm md:text-base text-gray-500 tracking-wide" data-testid="about-subtext">{aboutSubtext}</p>}
             </div>
             {content.about?.logoImage && (
@@ -308,7 +315,7 @@ const AboutSection = ({ content }) => {
             <div className="h-px bg-gradient-to-r from-transparent via-tropic-gold/40 to-transparent"></div>
             <p className="text-gray-300" data-testid="about-description-2">{content.about?.paragraph2}</p>
             {/* Quote block */}
-            <div className="mt-12 relative rounded-lg overflow-hidden" style={{ minHeight: '280px' }}>
+            <div className="mt-12 relative rounded-lg overflow-hidden corner-bracket" style={{ minHeight: '280px' }}>
               {mediaKind(resolveImg(quote.backgroundImage)) === 'video'
                 ? <video src={resolveImg(quote.backgroundImage)} className="absolute inset-0 w-full h-full object-cover" muted loop autoPlay playsInline />
                 : <div className="absolute inset-0" style={{ backgroundImage: `url('${resolveImg(quote.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>}
@@ -337,10 +344,11 @@ const HistoryQuickTab = ({ onNavigate }) => (
       <button
         type="button"
         onClick={onNavigate}
-        className="w-full md:w-auto inline-flex items-center gap-3 rounded-md border border-tropic-gold/35 bg-black/80 hover:bg-black px-6 py-3 tracking-[0.15em] text-xs md:text-sm text-gray-300 hover:text-tropic-gold transition-colors"
+        className="w-full md:w-auto inline-flex items-center gap-3 rounded-md border border-tropic-gold/25 bg-black/90 hover:bg-black px-6 py-3 tracking-[0.15em] text-xs md:text-sm text-gray-400 hover:text-tropic-gold transition-all duration-300 hover:border-tropic-gold/40"
         data-testid="history-quick-scroll"
       >
         <span className="text-tropic-gold font-bold">HISTORY</span>
+        <span className="h-3 w-px bg-tropic-gold/30"></span>
         <span>JUMP TO TIMELINE</span>
         <span aria-hidden="true" className="text-tropic-gold">↓</span>
       </button>
@@ -539,7 +547,7 @@ const OperationalSuperioritySection = ({ content }) => {
         <div className="h-px bg-gradient-to-r from-transparent via-tropic-gold/35 to-transparent mb-16"></div>
         <div className="grid md:grid-cols-3 gap-6">
           {(content.operationalSuperiority?.images || []).map((img, idx) => (
-            <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-tropic-gold/15 hover:border-tropic-gold/40 transition-all duration-500 shadow-2xl shadow-black/40 group" data-testid={`ops-image-${idx + 1}`}>
+            <div key={idx} className="aspect-[3/4] overflow-hidden rounded-lg border border-tropic-gold/15 hover:border-tropic-gold/40 transition-all duration-500 shadow-2xl shadow-black/40 group corner-bracket" data-testid={`ops-image-${idx + 1}`}>
               <MediaFrame src={resolveImg(img)} alt={`Tactical ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
@@ -572,14 +580,14 @@ const LethalitySection = ({ content }) => {
             <h3 className="text-3xl font-bold tracking-wide" data-testid="logistics-heading">{logisticsHeading}</h3>
             <p className="text-base md:text-lg leading-relaxed text-gray-300" data-testid="logistics-description">{content.lethality?.logistics?.description}</p>
           </div>
-          <div className="aspect-video overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/40 group">
+          <div className="aspect-video overflow-hidden rounded-lg border border-tropic-gold/10 shadow-2xl shadow-black/40 group corner-bracket">
             <MediaFrame src={resolveImg(content.lethality?.logistics?.image)} alt="Logistics" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
         </div>
         <div className="h-px bg-gradient-to-r from-transparent via-tropic-gold/25 to-transparent"></div>
         {/* Training */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="order-2 md:order-1 aspect-video overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/40 group">
+          <div className="order-2 md:order-1 aspect-video overflow-hidden rounded-lg border border-tropic-gold/10 shadow-2xl shadow-black/40 group corner-bracket">
             <MediaFrame src={resolveImg(content.lethality?.training?.image)} alt="Training" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
           <div className="order-1 md:order-2 space-y-6">
@@ -627,7 +635,7 @@ const UpcomingOperationsSection = ({ content }) => {
             {operations.map((op, idx) => {
               const tc = getType(op.operation_type);
               return (
-                <Card key={op.id} className={`op-card bg-black/80 backdrop-blur border ${tc.border} ${tc.glow} shadow-xl`} data-testid={`operation-card-${idx}`}>
+                <Card key={op.id} className={`op-card corner-bracket bg-black/80 backdrop-blur border ${tc.border} ${tc.glow} shadow-xl`} data-testid={`operation-card-${idx}`}>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between mb-3">
                       <Badge className={`${tc.bg} text-white text-xs tracking-wider px-3 py-0.5`}>{op.operation_type.toUpperCase()}</Badge>
@@ -730,9 +738,9 @@ const GallerySection = ({ content }) => {
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold" data-testid="gallery-heading">{sh.heading || 'MISSION GALLERY'}</h2>
           <p className="text-base md:text-lg">{sh.subtext || 'Moments from the field'}</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
           {(content.gallery?.showcaseImages || []).map((img, idx) => (
-            <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-tropic-gold/10 hover:border-tropic-gold/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30" data-testid={`gallery-image-${idx}`}>
+            <div key={idx} className="aspect-square overflow-hidden rounded-lg border border-tropic-gold/10 hover:border-tropic-gold/40 transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30 corner-bracket" data-testid={`gallery-image-${idx}`}>
               <MediaFrame src={resolveImg(img)} alt={`Mission ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
             </div>
           ))}
@@ -756,7 +764,7 @@ const JoinUsSection = ({ content }) => {
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold" data-testid="join-heading">{sh.heading || 'JOIN THE 25TH'}</h2>
           <p className="text-base md:text-lg">{sh.subtext || 'Become part of the Tropic Lightning legacy'}</p>
         </div>
-        <Card className="glass-card shadow-2xl shadow-black/40">
+        <Card className="glass-card shadow-2xl shadow-black/40 corner-bracket">
           <CardContent className="p-8 md:p-12 space-y-6">
             <p className="text-gray-300 text-lg leading-relaxed">
               The 25th Infantry Division is always looking for dedicated operators ready to commit to tactical excellence,
@@ -795,15 +803,16 @@ const JoinUsSection = ({ content }) => {
 // FOOTER
 // ============================================================================
 const Footer = ({ content }) => (
-  <footer className="bg-black border-t border-white/5 py-14 px-6" data-testid="footer">
+  <footer className="bg-black border-t border-tropic-gold/10 py-14 px-6" data-testid="footer">
     <div className="container mx-auto max-w-7xl">
       <div className="grid md:grid-cols-3 gap-10 mb-10">
         <div>
-          <h3 className="text-xl font-bold mb-3 tracking-wider">{content.nav?.brandName || '25TH INFANTRY DIVISION'}</h3>
+          <h3 className="text-xl font-bold mb-3 tracking-[0.12em]">{content.nav?.brandName || '25TH INFANTRY DIVISION'}</h3>
           <p className="text-sm text-gray-500 leading-relaxed">{content.footer?.tagline || 'Tropic Lightning — Ready to Strike'}</p>
         </div>
         <div>
-          <h4 className="text-sm font-bold mb-3 tracking-[0.15em] text-gray-400">QUICK LINKS</h4>
+          <h4 className="text-sm font-bold mb-3 tracking-[0.2em] text-tropic-gold/60">QUICK LINKS</h4>
+          <div className="h-px w-12 bg-tropic-gold/20 mb-3"></div>
           <ul className="space-y-2 text-sm text-gray-500">
             <li><a href="#about" className="hover:text-tropic-gold transition-colors">About</a></li>
             <li><a href="#history" className="hover:text-tropic-gold transition-colors">History</a></li>
@@ -813,15 +822,17 @@ const Footer = ({ content }) => (
           </ul>
         </div>
         <div>
-          <h4 className="text-sm font-bold mb-3 tracking-[0.15em] text-gray-400">CONNECT</h4>
+          <h4 className="text-sm font-bold mb-3 tracking-[0.2em] text-tropic-gold/60">CONNECT</h4>
+          <div className="h-px w-12 bg-tropic-gold/20 mb-3"></div>
           <div className="space-y-2 text-sm text-gray-500">
             {content.footer?.discord && <p><a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="hover:text-tropic-gold transition-colors">Discord Server</a></p>}
             {(content.footer?.contact?.email || content.footer?.email) && <p>Email: {content.footer?.contact?.email || content.footer?.email}</p>}
           </div>
         </div>
       </div>
-      <div className="border-t border-white/5 pt-8 space-y-3 text-center">
-        <p className="text-xs text-gray-600 tracking-wider">&copy; {new Date().getFullYear()} 25th Infantry Division — Tropic Lightning</p>
+      <div className="footer-divider mb-8"></div>
+      <div className="space-y-3 text-center">
+        <p className="text-xs text-gray-600 tracking-[0.15em]">&copy; {new Date().getFullYear()} 25th Infantry Division — Tropic Lightning</p>
         <p className="text-[10px] text-gray-700 max-w-2xl mx-auto leading-relaxed">{content.footer?.disclaimer || 'This is a fictional Arma Reforger milsim unit. We are NOT in any way tied to the Department of War or the United States Department of Defense.'}</p>
       </div>
     </div>
@@ -837,6 +848,7 @@ const LandingPage = () => {
 
   return (
     <div className="App">
+      <div className="landing-glitch-overlay" aria-hidden="true"></div>
       <Navigation scrollToSection={scrollToSection} content={content} />
       <HeroSection content={content} />
       <AboutSection content={content} />
@@ -1030,10 +1042,10 @@ const LoginPage = () => {
       {content.login?.showBackground && <div className="absolute inset-0 bg-black" style={{ opacity: content.login.overlayOpacity || 0.85 }}></div>}
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-2 tracking-wider">25TH INFANTRY DIVISION</h1>
-          <p className="text-gray-400 text-sm tracking-wide">Tropic Lightning — Member Access</p>
+          <h1 className="text-4xl sm:text-5xl font-bold mb-2 tracking-[0.12em]">25TH INFANTRY DIVISION</h1>
+          <p className="text-gray-400 text-sm tracking-[0.1em]">Tropic Lightning — Member Access</p>
         </div>
-        <Card className="glass-card">
+        <Card className="glass-card corner-bracket">
           <CardHeader><CardTitle className="text-2xl text-center tracking-wider">{isLogin ? 'MEMBER LOGIN' : 'NEW RECRUIT'}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4" data-testid="auth-form">
