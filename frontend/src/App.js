@@ -179,7 +179,7 @@ const useSiteContent = () => {
 // ============================================================================
 // PROTECTED ROUTE WRAPPER
 // ============================================================================
-const ProtectedRoute = ({ children, adminOnly = false, allowRecruit = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, allowedRoles = null, allowRecruit = false }) => {
   const [authState, setAuthState] = useState({ loading: true, user: null });
 
   useEffect(() => {
@@ -199,7 +199,8 @@ const ProtectedRoute = ({ children, adminOnly = false, allowRecruit = false }) =
   }
 
   if (!authState.user) return <Navigate to="/login" replace />;
-  if (adminOnly && authState.user.role !== 'admin') return <Navigate to="/" replace />;
+  if (allowedRoles && !allowedRoles.includes(authState.user.role)) return <Navigate to="/" replace />;
+  if (adminOnly && !allowedRoles && authState.user.role !== 'admin') return <Navigate to="/" replace />;
   if (authState.user.role !== 'admin' && authState.user.status === 'recruit' && !allowRecruit) {
     return <Navigate to="/recruit" replace />;
   }
@@ -1079,11 +1080,14 @@ const LoginPage = () => {
             </div>
           </CardContent>
         </Card>
-        <div className="mt-6 text-center space-y-2">
+        <div className="mt-6 text-center space-y-3">
           <Link to="/" className="text-sm text-gray-500 hover:text-tropic-gold transition-colors block">&larr; Back to Home</Link>
-          <Link to="/partner-login" className="text-sm text-gray-600 hover:text-tropic-olive transition-colors flex items-center justify-center gap-1" data-testid="partner-login-link">
-            <Shield className="w-3 h-3" /> Partner Unit Login
-          </Link>
+          <div className="border-t border-gray-800 pt-4 mt-4">
+            <p className="text-xs text-gray-500 mb-2 tracking-wide">PARTNER UNIT ACCESS</p>
+            <Link to="/partner-login" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-tropic-olive/40 text-tropic-olive hover:bg-tropic-olive/10 hover:border-tropic-olive/60 transition-all text-sm" data-testid="partner-login-link">
+              <Shield className="w-4 h-4" /> S-5 Liaison / Partner Login
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -1113,7 +1117,7 @@ function App() {
         <Route path="/admin/intel" element={<ProtectedRoute adminOnly><IntelManager /></ProtectedRoute>} />
         <Route path="/admin/campaigns" element={<ProtectedRoute adminOnly><CampaignManager /></ProtectedRoute>} />
         <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
-        <Route path="/admin/partner-units" element={<ProtectedRoute adminOnly><PartnerUnitsManager /></ProtectedRoute>} />
+        <Route path="/admin/partner-units" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerUnitsManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
@@ -1130,6 +1134,8 @@ function App() {
         <Route path="/partner-login" element={<PartnerLoginPage />} />
         <Route path="/partner" element={<PartnerHub />} />
         <Route path="/partner-admin" element={<PartnerAdmin />} />
+        <Route path="/partner/discussions" element={<DiscussionForum />} />
+        <Route path="/partner/discussions/:id" element={<DiscussionThread />} />
       </Routes>
     </BrowserRouter>
   );

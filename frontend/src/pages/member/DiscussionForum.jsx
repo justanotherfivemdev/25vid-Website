@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +31,13 @@ const DiscussionForum = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
+
+  // Detect partner mode from URL path
+  const isPartnerMode = location.pathname.startsWith('/partner/');
+  const hubPath = isPartnerMode ? '/partner' : '/hub';
+  const discussionBasePath = isPartnerMode ? '/partner/discussions' : '/hub/discussions';
 
   useEffect(() => { fetchDiscussions(); }, []);
 
@@ -100,11 +106,11 @@ const DiscussionForum = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-tropic-gold/25">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
+            <Link to={hubPath}><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />{isPartnerMode ? 'Partner Hub' : 'Hub'}</Button></Link>
             <h1 className="text-xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>DISCUSSION FORUM</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>}
+            {!isPartnerMode && user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -179,7 +185,7 @@ const DiscussionForum = () => {
                 <p className="text-sm text-gray-500">{searchResults.length} result(s) found</p>
                 {searchResults.map((d) => (
                   <div key={d.id} className="flex items-center gap-2">
-                    <Link to={`/hub/discussions/${d.id}`} className="flex-1">
+                    <Link to={`${discussionBasePath}/${d.id}`} className="flex-1">
                       <Card className={`bg-gray-900 border-gray-800 hover:border-tropic-gold/30 transition-colors ${d.pinned ? 'border-l-2 border-l-tropic-gold' : ''}`} data-testid={`search-discussion-${d.id}`}>
                         <CardContent className="py-4 flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -204,7 +210,7 @@ const DiscussionForum = () => {
             <div className="space-y-3">
               {filtered.map((d) => (
                 <div key={d.id} className="flex items-center gap-2">
-                  <Link to={`/hub/discussions/${d.id}`} className="flex-1">
+                  <Link to={`${discussionBasePath}/${d.id}`} className="flex-1">
                     <Card className={`bg-gray-900 border-gray-800 hover:border-tropic-gold/30 transition-colors ${d.pinned ? 'border-l-2 border-l-tropic-gold bg-gray-900/90' : ''}`} data-testid={`discussion-item-${d.id}`}>
                       <CardContent className="py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">

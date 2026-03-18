@@ -122,23 +122,28 @@ const PartnerHub = () => {
           {/* Quick links */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {[
-              { icon: MessageSquare, label: 'Discussions', color: 'text-blue-400' },
-              { icon: Calendar, label: 'Operations', color: 'text-tropic-red' },
-              { icon: BookOpen, label: 'Training', color: 'text-tropic-gold' },
-              { icon: Radio, label: 'Intel Board', color: 'text-green-400' },
-              { icon: Target, label: 'Campaigns', color: 'text-purple-400' },
-            ].map((item) => (
-              <Card key={item.label} className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors cursor-pointer">
-                <CardContent className="p-4 text-center">
-                  <item.icon className={`w-6 h-6 mx-auto mb-2 ${item.color}`} />
-                  <p className="text-xs font-medium text-gray-300">{item.label}</p>
-                </CardContent>
-              </Card>
-            ))}
+              { icon: MessageSquare, label: 'Discussions', color: 'text-blue-400', href: '/partner/discussions' },
+              { icon: Calendar, label: 'Operations', color: 'text-tropic-red', section: 'ops' },
+              { icon: BookOpen, label: 'Training', color: 'text-tropic-gold', section: 'training' },
+              { icon: Radio, label: 'Intel Board', color: 'text-green-400', section: 'intel' },
+              { icon: Target, label: 'Campaigns', color: 'text-purple-400', section: 'campaigns' },
+            ].map((item) => {
+              const content = (
+                <Card key={item.label} className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors cursor-pointer">
+                  <CardContent className="p-4 text-center">
+                    <item.icon className={`w-6 h-6 mx-auto mb-2 ${item.color}`} />
+                    <p className="text-xs font-medium text-gray-300">{item.label}</p>
+                  </CardContent>
+                </Card>
+              );
+              if (item.href) return <Link key={item.label} to={item.href}>{content}</Link>;
+              if (item.section) return <a key={item.label} href={`#${item.section}`}>{content}</a>;
+              return content;
+            })}
           </div>
 
           {/* Operations */}
-          <div>
+          <div id="ops">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-tropic-gold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                 <Calendar className="w-5 h-5 inline mr-2" />UPCOMING OPERATIONS
@@ -169,34 +174,43 @@ const PartnerHub = () => {
 
           {/* Discussions */}
           <div>
-            <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-              <MessageSquare className="w-5 h-5 inline mr-2" />DISCUSSIONS
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-tropic-gold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                <MessageSquare className="w-5 h-5 inline mr-2" />DISCUSSIONS
+              </h3>
+              <Link to="/partner/discussions">
+                <Button size="sm" variant="outline" className="border-tropic-olive/40 text-tropic-olive hover:bg-tropic-olive/10">
+                  View All <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
             {discussions.length === 0 ? (
               <Card className="bg-gray-900/50 border-gray-800"><CardContent className="p-6 text-center text-gray-500">No discussions available</CardContent></Card>
             ) : (
               <div className="space-y-2">
                 {discussions.map(d => (
-                  <Card key={d.id} className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors">
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div>
-                        <h4 className="font-bold text-sm">{d.title}</h4>
-                        <p className="text-xs text-gray-500">{d.category} — by {d.author_name}</p>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <MessageSquare className="w-3 h-3" />
-                        <span>{d.replies?.length || 0}</span>
-                        <ChevronRight className="w-4 h-4 text-gray-600" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <Link key={d.id} to={`/partner/discussions/${d.id}`}>
+                    <Card className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors cursor-pointer">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-sm">{d.title}</h4>
+                          <p className="text-xs text-gray-500">{d.category} — by {d.author_name}</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <MessageSquare className="w-3 h-3" />
+                          <span>{d.replies?.length || 0}</span>
+                          <ChevronRight className="w-4 h-4 text-gray-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             )}
           </div>
 
           {/* Training & Intel side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" id="training">
             {/* Training */}
             <div>
               <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
@@ -220,7 +234,7 @@ const PartnerHub = () => {
             </div>
 
             {/* Intel */}
-            <div>
+            <div id="intel">
               <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                 <Radio className="w-5 h-5 inline mr-2" />INTEL BOARD
               </h3>
@@ -245,7 +259,7 @@ const PartnerHub = () => {
           </div>
 
           {/* Campaigns */}
-          <div>
+          <div id="campaigns">
             <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
               <Target className="w-5 h-5 inline mr-2" />CAMPAIGNS
             </h3>
