@@ -177,7 +177,7 @@ const CampaignManager = () => {
                 <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>{editing ? 'Edit Campaign' : 'New Campaign'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div><Label>Campaign Name</Label><Input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="bg-black border-gray-700" data-testid="campaign-name-input" /></div>
                   <div><Label>Theater</Label><Input value={form.theater} onChange={e => setForm({ ...form, theater: e.target.value })} className="bg-black border-gray-700" placeholder="e.g. Pacific AO" data-testid="campaign-theater-input" /></div>
                 </div>
@@ -255,7 +255,7 @@ const CampaignManager = () => {
                           <Label className="text-[10px] text-gray-500 mb-0.5 block">Objective Name</Label>
                           <Input value={o.name} onChange={e => updateObj(i, 'name', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Objective name" />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           <div>
                             <Label className="text-[10px] text-gray-500 mb-0.5 block">Status</Label>
                             <Select value={o.status} onValueChange={v => updateObj(i, 'status', v)}>
@@ -320,7 +320,7 @@ const CampaignManager = () => {
                         </div>
                       </div>
                       {/* Row 5: Lat, Lng, Severity */}
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                         <div>
                           <Label className="text-[10px] text-gray-500 mb-0.5 block">Latitude</Label>
                           <Input value={o.lat ?? ''} onChange={e => updateObj(i, 'lat', e.target.value)} className="bg-black border-gray-700 text-sm" placeholder="Latitude" />
@@ -363,7 +363,7 @@ const CampaignManager = () => {
                     <Globe className="w-4 h-4" />GLOBAL THREAT MAP PLACEMENT
                   </Label>
                   <p className="text-xs text-gray-500">Set coordinates to pin this campaign on the Global Threat Map. Click the map to place, or enter manually.</p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs">Latitude</Label>
                       <Input value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} className="bg-black border-gray-700 text-sm" placeholder="e.g. 14.5" />
@@ -373,7 +373,7 @@ const CampaignManager = () => {
                       <Input value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} className="bg-black border-gray-700 text-sm" placeholder="e.g. 120.9" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs">Region Label</Label>
                       <Input value={form.region} onChange={e => setForm({ ...form, region: e.target.value })} className="bg-black border-gray-700 text-sm" placeholder="e.g. Pacific AO" />
