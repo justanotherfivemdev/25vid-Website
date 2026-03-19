@@ -50,3 +50,4 @@ Thumbs.db
 # Test artifacts
 test_reports/
 .pytest_cache/
+frontend/package.json.bak

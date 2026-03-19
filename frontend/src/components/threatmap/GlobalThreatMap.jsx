@@ -358,6 +358,10 @@ const UNIT_DEPLOYMENT_COLORS = [
   '#6366F1', // indigo
 ];
 
+// Latitude offset in degrees applied to each partner unit's deployment line
+// so overlapping routes remain visually distinguishable (~16 km per unit).
+const PARTNER_LINE_OFFSET_DEG = 0.15;
+
 function getUnitColor(partnerUnitId, unitIndex) {
   if (!partnerUnitId) return UNIT_DEPLOYMENT_COLORS[0]; // 25th ID gold
   return UNIT_DEPLOYMENT_COLORS[(unitIndex % (UNIT_DEPLOYMENT_COLORS.length - 1)) + 1];
@@ -603,8 +607,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         const unitIdx = d.partner_unit_id ? (partnerUnitIndexMap[d.partner_unit_id] ?? 0) : -1;
         const color = getUnitColor(d.partner_unit_id, unitIdx);
         const durationLabel = computeDurationLabel(d);
-        // Offset overlapping lines slightly for partner units
-        const offsetLat = d.partner_unit_id ? (unitIdx + 1) * 0.15 : 0;
+        const offsetLat = d.partner_unit_id ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
         return {
           type: 'Feature',
           geometry: {
