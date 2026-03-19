@@ -228,7 +228,7 @@ const Navigation = ({ scrollToSection, content }) => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="main-nav">
-      <div className="container mx-auto px-6 py-4">
+      <div className="container mx-auto px-4 md:px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-lg font-bold tracking-[0.15em] text-tropic-gold-light hover:text-white transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
             {brandName}
@@ -271,7 +271,7 @@ const HeroSection = ({ content }) => {
       {heroIsVideo && <video src={heroMedia} className="absolute inset-0 w-full h-full object-cover" muted loop autoPlay playsInline />}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/75 to-black"></div>
       <div className="hero-grid-overlay"></div>
-      <div className="relative z-10 text-center px-6">
+      <div className="relative z-10 text-center px-4 md:px-6">
         <div className="mb-10 compass-logo" data-testid="unit-logo">
           <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th Infantry Division" className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain drop-shadow-[0_0_30px_rgba(212,160,23,0.4)]" />
         </div>
@@ -301,10 +301,10 @@ const AboutSection = ({ content }) => {
   const aboutHeading = textOrFallback(content.sectionHeadings?.about?.heading, 'ABOUT');
   const aboutSubtext = textOrFallback(content.sectionHeadings?.about?.subtext, '');
   return (
-    <section id="about" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #080806 50%, #000 100%)' }} data-testid="about-section">
+    <section id="about" className="py-28 px-4 md:px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #080806 50%, #000 100%)' }} data-testid="about-section">
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-6xl">
-        <div className="grid md:grid-cols-[280px,1fr] gap-16 items-start">
+        <div className="grid md:grid-cols-[280px,1fr] gap-8 md:gap-16 items-start">
           <div className="space-y-8">
             <div className="space-y-3">
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold section-underline tracking-[0.1em]" data-testid="about-heading">{aboutHeading}</h2>
@@ -346,7 +346,7 @@ const AboutSection = ({ content }) => {
 // QUICK NAV TAB STRIP
 // ============================================================================
 const HistoryQuickTab = ({ onNavigate }) => (
-  <section className="px-6 -mt-2 relative z-20" data-testid="history-quick-tab">
+  <section className="px-4 md:px-6 -mt-2 relative z-20" data-testid="history-quick-tab">
     <div className="container mx-auto max-w-6xl">
       <button
         type="button"
@@ -449,7 +449,7 @@ const UnitHistorySection = ({ content }) => {
   if (loading || entries.length === 0) return null;
 
   return (
-    <section id="history" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #080806 50%, #000 100%)' }} data-testid="unit-history-section">
+    <section id="history" className="py-28 px-4 md:px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #080806 50%, #000 100%)' }} data-testid="unit-history-section">
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-5xl">
         <div className="section-label mb-16">
@@ -536,7 +536,7 @@ const OperationalSuperioritySection = ({ content }) => {
   const heading = textOrFallback(sh.heading, 'OPERATIONAL SUPERIORITY');
   const subtext = textOrFallback(sh.subtext, '');
   return (
-    <section className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #060606 50%, #000 100%)' }} data-testid="operational-superiority-section">
+    <section className="py-28 px-4 md:px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #060606 50%, #000 100%)' }} data-testid="operational-superiority-section">
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-7xl">
         <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
@@ -575,7 +575,7 @@ const LethalitySection = ({ content }) => {
   const logisticsHeading = textOrFallback(content.lethality?.logistics?.heading, 'LOGISTICS & OPERATIONAL SUPPORT');
   const trainingHeading = textOrFallback(content.lethality?.training?.heading, 'TRAINING PROGRAMS');
   return (
-    <section id="training" className="py-28 px-6" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="lethality-section">
+    <section id="training" className="py-28 px-4 md:px-6" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="lethality-section">
       <div className="container mx-auto max-w-7xl space-y-20">
         <div className="space-y-3">
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-wider" data-testid="lethality-heading">{heading}</h2>
@@ -628,7 +628,7 @@ const UpcomingOperationsSection = ({ content }) => {
   const getType = (t) => typeConfig[t] || typeConfig.combat;
 
   return (
-    <section id="operations" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #080808 50%, #000 100%)' }} data-testid="operations-section">
+    <section id="operations" className="py-28 px-4 md:px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #080808 50%, #000 100%)' }} data-testid="operations-section">
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-7xl">
         <div className="section-label">
@@ -690,7 +690,7 @@ const AnnouncementsSection = ({ content }) => {
   const getPriority = (p) => priorityConfig[p] || priorityConfig.normal;
 
   return (
-    <section id="intel" className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="announcements-section">
+    <section id="intel" className="py-28 px-4 md:px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="announcements-section">
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-7xl">
         <div className="section-label">
@@ -738,7 +738,7 @@ const AnnouncementsSection = ({ content }) => {
 const GallerySection = ({ content }) => {
   const sh = content.sectionHeadings?.gallery || {};
   return (
-    <section className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #060606 50%, #000 100%)' }} data-testid="gallery-section">
+    <section className="py-28 px-4 md:px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #060606 50%, #000 100%)' }} data-testid="gallery-section">
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-7xl">
         <div className="section-label">
@@ -764,7 +764,7 @@ const JoinUsSection = ({ content }) => {
   const sh = content.sectionHeadings?.enlist || {};
 
   return (
-    <section className="py-28 px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="join-section">
+    <section className="py-28 px-4 md:px-6 relative" style={{ background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #000 100%)' }} data-testid="join-section">
       <div className="section-divider absolute top-0 left-0 right-0"></div>
       <div className="container mx-auto max-w-3xl text-center">
         <div className="section-label">
@@ -810,7 +810,7 @@ const JoinUsSection = ({ content }) => {
 // FOOTER
 // ============================================================================
 const Footer = ({ content }) => (
-  <footer className="bg-black border-t border-tropic-gold/10 py-14 px-6" data-testid="footer">
+  <footer className="bg-black border-t border-tropic-gold/10 py-14 px-4 md:px-6" data-testid="footer">
     <div className="container mx-auto max-w-7xl">
       <div className="grid md:grid-cols-3 gap-10 mb-10">
         <div>
@@ -1085,7 +1085,7 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 relative" style={loginBg}>
+    <div className="min-h-screen flex items-center justify-center px-4 md:px-6 relative" style={loginBg}>
       {content.login?.showBackground && <div className="absolute inset-0 bg-black" style={{ opacity: content.login.overlayOpacity || 0.85 }}></div>}
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">

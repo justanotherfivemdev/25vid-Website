@@ -70,7 +70,7 @@ const PartnerHub = () => {
     <div className="min-h-screen bg-black text-white">
       {/* Top bar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="partner-nav">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
             <div>
@@ -80,29 +80,29 @@ const PartnerHub = () => {
               <p className="text-[10px] text-tropic-olive tracking-widest">S-5 LIAISON AREA</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Badge className="bg-tropic-olive/20 text-tropic-olive border border-tropic-olive/40 text-[10px]">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            <Badge className="bg-tropic-olive/20 text-tropic-olive border border-tropic-olive/40 text-[10px] hidden sm:inline-flex">
               PARTNER UNIT
             </Badge>
-            <span className="text-sm text-gray-400 hidden sm:block">
+            <span className="text-sm text-gray-400 hidden lg:block">
               <span className="text-tropic-gold font-bold">{user?.username}</span>
               {user?.partner_unit_name && <span className="text-gray-500 ml-1">({user.partner_unit_name})</span>}
             </span>
             <Link to="/partner/shared">
               <Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold">
-                <Handshake className="w-4 h-4 mr-1.5" />Shared
+                <Handshake className="w-4 h-4 md:mr-1.5" /><span className="hidden md:inline">Shared</span>
               </Button>
             </Link>
             {user?.partner_role === 'partner_admin' && (
               <Link to="/partner-admin">
                 <Button size="sm" variant="outline" className="border-tropic-olive/60 text-tropic-olive hover:bg-tropic-olive/10">
-                  <Shield className="w-4 h-4 mr-1" />Admin
+                  <Shield className="w-4 h-4 md:mr-1" /><span className="hidden md:inline">Admin</span>
                 </Button>
               </Link>
             )}
             <Link to="/">
               <Button size="sm" variant="outline" className="border-gray-700">
-                <Home className="w-4 h-4 mr-1" />Home
+                <Home className="w-4 h-4 md:mr-1" /><span className="hidden md:inline">Home</span>
               </Button>
             </Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700" data-testid="partner-logout-btn">
@@ -112,7 +112,7 @@ const PartnerHub = () => {
         </div>
       </nav>
 
-      <div className="pt-20 pb-12 px-6">
+      <div className="pt-20 pb-12 px-4 md:px-6">
         <div className="container mx-auto max-w-7xl space-y-8">
           {/* Welcome */}
           <div className="bg-gradient-to-r from-tropic-olive/20 to-gray-900 border border-tropic-olive/30 rounded-xl p-6">

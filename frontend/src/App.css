@@ -153,6 +153,43 @@
   gap: 1rem;
 }
 
+@media (max-width: 639px) {
+  .tactical-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============ MOBILE IMPROVEMENTS ============ */
+@media (max-width: 767px) {
+  /* Prevent horizontal overflow on mobile */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Ensure touch-friendly tap targets */
+  button, a, [role="button"] {
+    min-height: 36px;
+  }
+
+  /* Make tables scrollable on mobile */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  thead, tbody, tr, th, td {
+    display: revert;
+  }
+
+  /* Improve modal sizing on mobile */
+  [role="dialog"] {
+    max-width: 95vw !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 /* keep backwards compat */
 .announcement-urgent { border-left: 4px solid var(--brand-red); }
 .announcement-high { border-left: 4px solid var(--brand-gold-light); }

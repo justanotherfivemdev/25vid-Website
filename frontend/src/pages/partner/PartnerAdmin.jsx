@@ -206,7 +206,7 @@ const PartnerAdmin = () => {
     <div className="min-h-screen bg-black text-white">
       {/* Top bar */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-tropic-olive/30">
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center justify-between px-4 md:px-6 py-4">
           <div className="flex items-center space-x-4">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
             <div>
@@ -218,28 +218,28 @@ const PartnerAdmin = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Badge className="bg-tropic-olive/20 text-tropic-olive border border-tropic-olive/40 text-[10px]">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            <Badge className="bg-tropic-olive/20 text-tropic-olive border border-tropic-olive/40 text-[10px] hidden sm:inline-flex">
               PARTNER ADMIN
             </Badge>
             <Link to="/partner">
               <Button variant="outline" size="sm" className="border-tropic-olive/60 text-tropic-olive hover:bg-tropic-olive/10">
-                <Shield className="w-4 h-4 mr-2" />Partner Hub
+                <Shield className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Partner Hub</span>
               </Button>
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="border-gray-700 text-gray-400 hover:bg-gray-700/10">
-                <Home className="w-4 h-4 mr-2" />Main Site
+                <Home className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Main Site</span>
               </Button>
             </Link>
             <Button onClick={handleLogout} variant="outline" size="sm" className="border-tropic-red/50 text-tropic-red-light hover:bg-tropic-red/10">
-              <LogOut className="w-4 h-4 mr-2" />Logout
+              <LogOut className="w-4 h-4 md:mr-2" /><span className="hidden md:inline">Logout</span>
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="pt-20 px-6 pb-12">
+      <div className="pt-20 px-4 md:px-6 pb-12">
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Unit Info Card */}
           <Card className="bg-gray-900/80 border-tropic-olive/30">

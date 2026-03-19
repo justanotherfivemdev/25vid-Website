@@ -40,7 +40,7 @@ export default function TimelineScrubber() {
   }, [isAutoPlaying, viewport.longitude, setViewport]);
 
   return (
-    <div className="absolute bottom-6 left-6 z-10">
+    <div className="absolute bottom-6 left-3 md:left-6 z-10">
       <button
         onClick={handlePlayToggle}
         className={`flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${

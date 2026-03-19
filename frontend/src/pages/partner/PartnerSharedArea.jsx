@@ -76,7 +76,7 @@ const PartnerSharedArea = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/partner"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Partner Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-widest" style={{ fontFamily: 'Rajdhani, sans-serif' }}>SHARED COORDINATION</h1>
@@ -91,7 +91,7 @@ const PartnerSharedArea = () => {
         </div>
       </nav>
 
-      <div className="pt-20 pb-12 px-6">
+      <div className="pt-20 pb-12 px-4 md:px-6">
         <div className="container mx-auto max-w-4xl space-y-6">
           {stats && (
             <div className="flex flex-wrap gap-3">
