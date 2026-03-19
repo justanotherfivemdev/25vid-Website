@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, MapPin, Navigation, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Navigation, RefreshCw, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { API } from '@/utils/api';
 
 const DEPLOYMENT_STATUSES = ['planning', 'deploying', 'deployed', 'returning', 'completed', 'cancelled'];
@@ -34,6 +34,8 @@ const EMPTY_DEPLOYMENT = {
   title: '',
   description: '',
   status: 'planning',
+  deployment_type: '25th_id',
+  unit_name: '',
   start_location_name: 'Schofield Barracks, HI',
   start_latitude: 21.4959,
   start_longitude: -158.0648,
@@ -69,6 +71,13 @@ const DeploymentManager = () => {
   const [editingDeployment, setEditingDeployment] = useState(null);
   const [deploymentForm, setDeploymentForm] = useState({ ...EMPTY_DEPLOYMENT });
 
+  // Allied deployments state
+  const [alliedDeployments, setAlliedDeployments] = useState([]);
+  const [alliedDeploymentsLoading, setAlliedDeploymentsLoading] = useState(true);
+
+  // Location entities for entity picker
+  const [locationEntities, setLocationEntities] = useState([]);
+
   // NATO markers state
   const [markers, setMarkers] = useState([]);
   const [markersLoading, setMarkersLoading] = useState(true);
@@ -97,6 +106,28 @@ const DeploymentManager = () => {
       setError('Failed to load deployments');
     } finally {
       setDeploymentsLoading(false);
+    }
+  }, []);
+
+  const fetchAlliedDeployments = useCallback(async () => {
+    setAlliedDeploymentsLoading(true);
+    try {
+      const res = await axios.get(`${API}/admin/map/deployments?deployment_type=allied`, { withCredentials: true });
+      setAlliedDeployments(res.data);
+    } catch (err) {
+      console.error('Error fetching allied deployments:', err);
+      setError('Failed to load allied deployments');
+    } finally {
+      setAlliedDeploymentsLoading(false);
+    }
+  }, []);
+
+  const fetchLocationEntities = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/map/location-entities`, { withCredentials: true });
+      setLocationEntities(res.data);
+    } catch (err) {
+      console.error('Error fetching location entities:', err);
     }
   }, []);
 
@@ -133,17 +164,85 @@ const DeploymentManager = () => {
 
   useEffect(() => {
     fetchDeployments();
+    fetchAlliedDeployments();
+    fetchLocationEntities();
     fetchMarkers();
     fetchNatoReference();
     fetchDivisionLocation();
-  }, [fetchDeployments, fetchMarkers, fetchNatoReference, fetchDivisionLocation]);
+  }, [fetchDeployments, fetchAlliedDeployments, fetchLocationEntities, fetchMarkers, fetchNatoReference, fetchDivisionLocation]);
+
+  // --- Entity picker helpers ---
+
+  const groupedEntities = useMemo(() => {
+    const groups = {};
+    (locationEntities || []).forEach((entity) => {
+      const type = entity.type || 'other';
+      if (!groups[type]) groups[type] = [];
+      groups[type].push(entity);
+    });
+    return groups;
+  }, [locationEntities]);
+
+  const handleEntityPickOrigin = (entityId) => {
+    if (!entityId || entityId === '__manual__') return;
+    const entity = (locationEntities || []).find((e) => String(e.id) === String(entityId));
+    if (!entity) return;
+    setDeploymentForm({
+      ...deploymentForm,
+      start_location_name: entity.name || '',
+      start_latitude: entity.latitude ?? '',
+      start_longitude: entity.longitude ?? '',
+    });
+  };
+
+  const handleEntityPickDestination = (entityId) => {
+    if (!entityId || entityId === '__manual__') return;
+    const entity = (locationEntities || []).find((e) => String(e.id) === String(entityId));
+    if (!entity) return;
+    setDeploymentForm({
+      ...deploymentForm,
+      destination_name: entity.name || '',
+      destination_latitude: entity.latitude ?? '',
+      destination_longitude: entity.longitude ?? '',
+    });
+  };
+
+  const handleEntityPickWaypoint = (entityId, idx) => {
+    if (!entityId || entityId === '__manual__') return;
+    const entity = (locationEntities || []).find((e) => String(e.id) === String(entityId));
+    if (!entity) return;
+    const wps = [...deploymentForm.waypoints];
+    wps[idx] = {
+      ...wps[idx],
+      name: entity.name || '',
+      latitude: entity.latitude ?? '',
+      longitude: entity.longitude ?? '',
+    };
+    setDeploymentForm({ ...deploymentForm, waypoints: wps });
+  };
+
+  // --- Waypoint reorder helpers ---
+
+  const swapWaypoints = (idx, targetIdx) => {
+    const wps = [...deploymentForm.waypoints];
+    if (targetIdx < 0 || targetIdx >= wps.length) return;
+    [wps[idx], wps[targetIdx]] = [wps[targetIdx], wps[idx]];
+    setDeploymentForm({ ...deploymentForm, waypoints: wps });
+  };
+
+  const moveWaypointUp = (idx) => swapWaypoints(idx, idx - 1);
+  const moveWaypointDown = (idx) => swapWaypoints(idx, idx + 1);
 
   // --- Deployment handlers ---
 
-  const openNewDeployment = () => {
+  const openNewDeployment = (type = '25th_id') => {
     setEditingDeployment(null);
-    setDeploymentForm({ ...EMPTY_DEPLOYMENT });
+    setDeploymentForm({ ...EMPTY_DEPLOYMENT, deployment_type: type });
     setDeploymentDialogOpen(true);
+  };
+
+  const openNewAlliedDeployment = () => {
+    openNewDeployment('allied');
   };
 
   const openEditDeployment = (dep) => {
@@ -152,6 +251,8 @@ const DeploymentManager = () => {
       title: dep.title || '',
       description: dep.description || '',
       status: dep.status || 'planning',
+      deployment_type: dep.deployment_type || '25th_id',
+      unit_name: dep.unit_name || '',
       start_location_name: dep.start_location_name || 'Schofield Barracks, HI',
       start_latitude: dep.start_latitude ?? 21.4959,
       start_longitude: dep.start_longitude ?? -158.0648,
@@ -178,10 +279,14 @@ const DeploymentManager = () => {
         destination_longitude: deploymentForm.destination_longitude === '' ? null : parseFloat(deploymentForm.destination_longitude),
         start_date: deploymentForm.start_date || null,
         estimated_arrival: deploymentForm.estimated_arrival || null,
+        deployment_type: deploymentForm.deployment_type || '25th_id',
+        unit_name: deploymentForm.unit_name || '',
         waypoints: (deploymentForm.waypoints || []).map((wp) => ({
           name: wp.name || '',
           latitude: wp.latitude === '' || wp.latitude == null ? null : parseFloat(wp.latitude),
           longitude: wp.longitude === '' || wp.longitude == null ? null : parseFloat(wp.longitude),
+          description: wp.description || '',
+          stop_duration_hours: wp.stop_duration_hours === '' || wp.stop_duration_hours == null ? null : parseFloat(wp.stop_duration_hours),
         })).filter((wp) => wp.latitude != null && wp.longitude != null),
       };
 
@@ -195,6 +300,7 @@ const DeploymentManager = () => {
       setEditingDeployment(null);
       setDeploymentForm({ ...EMPTY_DEPLOYMENT });
       await fetchDeployments();
+      await fetchAlliedDeployments();
     } catch (err) {
       console.error('Error saving deployment:', err);
       alert(err.response?.data?.detail || 'Error saving deployment');
@@ -205,6 +311,7 @@ const DeploymentManager = () => {
     try {
       await axios.put(`${API}/admin/map/deployments/${dep.id}`, { status: newStatus }, { withCredentials: true });
       await fetchDeployments();
+      await fetchAlliedDeployments();
       await fetchDivisionLocation();
     } catch (err) {
       console.error('Error updating status:', err);
@@ -217,6 +324,7 @@ const DeploymentManager = () => {
     try {
       await axios.delete(`${API}/admin/map/deployments/${id}`, { withCredentials: true });
       await fetchDeployments();
+      await fetchAlliedDeployments();
     } catch (err) {
       console.error('Error archiving deployment:', err);
       alert('Error archiving deployment');
@@ -383,6 +491,16 @@ const DeploymentManager = () => {
           </button>
           <button
             className={`px-4 py-2 text-sm font-bold tracking-wider transition-colors ${
+              activeTab === 'allied'
+                ? 'text-tropic-gold border-b-2 border-tropic-gold'
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
+            onClick={() => setActiveTab('allied')}
+          >
+            ALLIED DEPLOYMENTS
+          </button>
+          <button
+            className={`px-4 py-2 text-sm font-bold tracking-wider transition-colors ${
               activeTab === 'nato-markers'
                 ? 'text-tropic-gold border-b-2 border-tropic-gold'
                 : 'text-gray-500 hover:text-gray-300'
@@ -442,6 +560,129 @@ const DeploymentManager = () => {
                             <Badge className={STATUS_COLORS[dep.status] || 'bg-gray-600'}>
                               {dep.status?.toUpperCase()}
                             </Badge>
+                            {dep.is_active && (
+                              <Badge variant="outline" className="border-green-500/50 text-green-400 text-[10px]">
+                                ACTIVE
+                              </Badge>
+                            )}
+                          </div>
+                          {dep.description && (
+                            <p className="text-gray-400 text-sm mb-2 line-clamp-2">{dep.description}</p>
+                          )}
+                          <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {dep.start_location_name || 'Origin not set'}
+                            </span>
+                            {dep.destination_name && (
+                              <span className="flex items-center gap-1">
+                                <Navigation className="w-3 h-3" />
+                                {dep.destination_name}
+                              </span>
+                            )}
+                            {Array.isArray(dep.waypoints) && dep.waypoints.length > 0 && (
+                              <span className="text-tropic-gold/70">
+                                via {dep.waypoints.map((wp) => wp.name || 'waypoint').join(' → ')}
+                              </span>
+                            )}
+                            {dep.start_date && (
+                              <span>Start: {new Date(dep.start_date).toLocaleDateString()}</span>
+                            )}
+                            {dep.estimated_arrival && (
+                              <span>ETA: {new Date(dep.estimated_arrival).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Select
+                            value={dep.status}
+                            onValueChange={(val) => handleDeploymentStatusChange(dep, val)}
+                          >
+                            <SelectTrigger className="w-full sm:w-[130px] bg-black border-gray-700 text-xs h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-900 border-gray-700">
+                              {DEPLOYMENT_STATUSES.map((s) => (
+                                <SelectItem key={s} value={s} className="text-xs">
+                                  {s.toUpperCase()}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-gray-700 text-gray-400 hover:text-white h-8"
+                            onClick={() => openEditDeployment(dep)}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-red-800/50 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8"
+                            onClick={() => handleArchiveDeployment(dep.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===================== ALLIED DEPLOYMENTS TAB ===================== */}
+        {activeTab === 'allied' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-gray-400 text-sm">{alliedDeployments.length} allied deployment(s)</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-700 text-gray-400 hover:text-white"
+                  onClick={fetchAlliedDeployments}
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Refresh
+                </Button>
+                <Button
+                  className="bg-tropic-gold hover:bg-tropic-gold-dark text-black"
+                  onClick={openNewAlliedDeployment}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Allied Deployment
+                </Button>
+              </div>
+            </div>
+
+            {alliedDeploymentsLoading ? (
+              <div className="text-center text-gray-500 py-12">Loading allied deployments...</div>
+            ) : alliedDeployments.length === 0 ? (
+              <div className="text-center text-gray-600 py-12">No allied deployments found. Create your first allied deployment.</div>
+            ) : (
+              <div className="space-y-3">
+                {alliedDeployments.map((dep) => (
+                  <Card key={dep.id} className="bg-black/40 border-gray-800 hover:border-gray-700 transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-bold text-white truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                              {dep.title}
+                            </h3>
+                            <Badge className={STATUS_COLORS[dep.status] || 'bg-gray-600'}>
+                              {dep.status?.toUpperCase()}
+                            </Badge>
+                            {dep.unit_name && (
+                              <Badge variant="outline" className="border-blue-500/50 text-blue-400 text-[10px]">
+                                {dep.unit_name}
+                              </Badge>
+                            )}
                             {dep.is_active && (
                               <Badge variant="outline" className="border-green-500/50 text-green-400 text-[10px]">
                                 ACTIVE
@@ -618,6 +859,11 @@ const DeploymentManager = () => {
             <DialogHeader>
               <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                 {editingDeployment ? 'EDIT DEPLOYMENT' : 'CREATE NEW DEPLOYMENT'}
+                {deploymentForm.deployment_type === 'allied' && (
+                  <Badge variant="outline" className="ml-3 border-blue-500/50 text-blue-400 text-[10px] align-middle">
+                    ALLIED
+                  </Badge>
+                )}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleDeploymentSubmit} className="space-y-4">
@@ -642,6 +888,18 @@ const DeploymentManager = () => {
                   placeholder="Deployment description"
                 />
               </div>
+
+              {deploymentForm.deployment_type === 'allied' && (
+                <div>
+                  <Label>Unit Name</Label>
+                  <Input
+                    value={deploymentForm.unit_name}
+                    onChange={(e) => setDeploymentForm({ ...deploymentForm, unit_name: e.target.value })}
+                    className="bg-black border-gray-700"
+                    placeholder="e.g., NATO Response Force, USAF 18th Wing"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -676,6 +934,34 @@ const DeploymentManager = () => {
               {/* Origin */}
               <div className="border border-gray-800 rounded-lg p-3 space-y-3">
                 <div className="text-xs text-tropic-gold tracking-wider font-bold">ORIGIN</div>
+                {(locationEntities || []).length > 0 && (
+                  <div>
+                    <Label className="text-[10px] text-gray-500 flex items-center gap-1">
+                      <Search className="w-3 h-3" />
+                      Pick from existing location
+                    </Label>
+                    <Select onValueChange={handleEntityPickOrigin}>
+                      <SelectTrigger className="bg-black border-gray-700 h-8 text-xs">
+                        <SelectValue placeholder="— Manual entry —" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700 max-h-[300px]">
+                        <SelectItem value="__manual__" className="text-xs text-gray-400">— Manual entry —</SelectItem>
+                        {Object.entries(groupedEntities).map(([type, entities]) => (
+                          <React.Fragment key={type}>
+                            <div className="px-2 py-1 text-[10px] text-tropic-gold/70 font-bold tracking-wider uppercase border-t border-gray-800 mt-1">
+                              {type}
+                            </div>
+                            {entities.map((entity) => (
+                              <SelectItem key={`origin-${type}-${entity.id}`} value={String(entity.id)} className="text-xs">
+                                {entity.name} ({entity.latitude?.toFixed(2)}, {entity.longitude?.toFixed(2)})
+                              </SelectItem>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <Label>Location Name</Label>
                   <Input
@@ -712,6 +998,34 @@ const DeploymentManager = () => {
               {/* Destination */}
               <div className="border border-gray-800 rounded-lg p-3 space-y-3">
                 <div className="text-xs text-tropic-gold tracking-wider font-bold">DESTINATION</div>
+                {(locationEntities || []).length > 0 && (
+                  <div>
+                    <Label className="text-[10px] text-gray-500 flex items-center gap-1">
+                      <Search className="w-3 h-3" />
+                      Pick from existing location
+                    </Label>
+                    <Select onValueChange={handleEntityPickDestination}>
+                      <SelectTrigger className="bg-black border-gray-700 h-8 text-xs">
+                        <SelectValue placeholder="— Manual entry —" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700 max-h-[300px]">
+                        <SelectItem value="__manual__" className="text-xs text-gray-400">— Manual entry —</SelectItem>
+                        {Object.entries(groupedEntities).map(([type, entities]) => (
+                          <React.Fragment key={type}>
+                            <div className="px-2 py-1 text-[10px] text-tropic-gold/70 font-bold tracking-wider uppercase border-t border-gray-800 mt-1">
+                              {type}
+                            </div>
+                            {entities.map((entity) => (
+                              <SelectItem key={`dest-${type}-${entity.id}`} value={String(entity.id)} className="text-xs">
+                                {entity.name} ({entity.latitude?.toFixed(2)}, {entity.longitude?.toFixed(2)})
+                              </SelectItem>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <Label>Destination Name</Label>
                   <Input
@@ -756,7 +1070,7 @@ const DeploymentManager = () => {
                     className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10 h-7 text-xs"
                     onClick={() => setDeploymentForm({
                       ...deploymentForm,
-                      waypoints: [...(deploymentForm.waypoints || []), { name: '', latitude: '', longitude: '' }],
+                      waypoints: [...(deploymentForm.waypoints || []), { name: '', latitude: '', longitude: '', description: '', stop_duration_hours: '' }],
                     })}
                   >
                     <Plus className="w-3 h-3 mr-1" />
@@ -767,60 +1081,146 @@ const DeploymentManager = () => {
                   <p className="text-xs text-gray-600 italic">No intermediate stops. Add waypoints for multi-leg routes (e.g., a stop in Germany).</p>
                 )}
                 {(deploymentForm.waypoints || []).map((wp, idx) => (
-                  <div key={idx} className="flex items-end gap-2 border border-gray-800/60 rounded p-2">
-                    <div className="flex-1 space-y-1">
-                      <Label className="text-[10px] text-gray-500">Stop Name</Label>
-                      <Input
-                        value={wp.name || ''}
-                        onChange={(e) => {
-                          const wps = [...deploymentForm.waypoints];
-                          wps[idx] = { ...wps[idx], name: e.target.value };
-                          setDeploymentForm({ ...deploymentForm, waypoints: wps });
-                        }}
-                        className="bg-black border-gray-700 h-8 text-xs"
-                        placeholder="e.g., Ramstein, Germany"
-                      />
+                  <div key={idx} className="border border-gray-800/60 rounded p-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-tropic-gold font-bold tracking-wider">Stop {idx + 1}</span>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="border-gray-700 text-gray-400 hover:text-white h-6 w-6 p-0 shrink-0"
+                          onClick={() => moveWaypointUp(idx)}
+                          disabled={idx === 0}
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="border-gray-700 text-gray-400 hover:text-white h-6 w-6 p-0 shrink-0"
+                          onClick={() => moveWaypointDown(idx)}
+                          disabled={idx === (deploymentForm.waypoints || []).length - 1}
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="border-red-800/50 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-6 w-6 p-0 shrink-0"
+                          onClick={() => {
+                            const wps = deploymentForm.waypoints.filter((_, i) => i !== idx);
+                            setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="w-24 space-y-1">
-                      <Label className="text-[10px] text-gray-500">Lat</Label>
-                      <Input
-                        type="number"
-                        step="any"
-                        value={wp.latitude ?? ''}
-                        onChange={(e) => {
-                          const wps = [...deploymentForm.waypoints];
-                          wps[idx] = { ...wps[idx], latitude: e.target.value };
-                          setDeploymentForm({ ...deploymentForm, waypoints: wps });
-                        }}
-                        className="bg-black border-gray-700 h-8 text-xs"
-                      />
+                    {(locationEntities || []).length > 0 && (
+                      <div>
+                        <Label className="text-[10px] text-gray-500 flex items-center gap-1">
+                          <Search className="w-3 h-3" />
+                          Use existing location
+                        </Label>
+                        <Select onValueChange={(val) => handleEntityPickWaypoint(val, idx)}>
+                          <SelectTrigger className="bg-black border-gray-700 h-7 text-xs">
+                            <SelectValue placeholder="— Manual entry —" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-900 border-gray-700 max-h-[250px]">
+                            <SelectItem value="__manual__" className="text-xs text-gray-400">— Manual entry —</SelectItem>
+                            {Object.entries(groupedEntities).map(([type, entities]) => (
+                              <React.Fragment key={type}>
+                                <div className="px-2 py-1 text-[10px] text-tropic-gold/70 font-bold tracking-wider uppercase border-t border-gray-800 mt-1">
+                                  {type}
+                                </div>
+                                {entities.map((entity) => (
+                                  <SelectItem key={`wp${idx}-${type}-${entity.id}`} value={String(entity.id)} className="text-xs">
+                                    {entity.name} ({entity.latitude?.toFixed(2)}, {entity.longitude?.toFixed(2)})
+                                  </SelectItem>
+                                ))}
+                              </React.Fragment>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-[10px] text-gray-500">Stop Name</Label>
+                        <Input
+                          value={wp.name || ''}
+                          onChange={(e) => {
+                            const wps = [...deploymentForm.waypoints];
+                            wps[idx] = { ...wps[idx], name: e.target.value };
+                            setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                          }}
+                          className="bg-black border-gray-700 h-8 text-xs"
+                          placeholder="e.g., Ramstein, Germany"
+                        />
+                      </div>
+                      <div className="w-24 space-y-1">
+                        <Label className="text-[10px] text-gray-500">Lat</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={wp.latitude ?? ''}
+                          onChange={(e) => {
+                            const wps = [...deploymentForm.waypoints];
+                            wps[idx] = { ...wps[idx], latitude: e.target.value };
+                            setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                          }}
+                          className="bg-black border-gray-700 h-8 text-xs"
+                        />
+                      </div>
+                      <div className="w-24 space-y-1">
+                        <Label className="text-[10px] text-gray-500">Lng</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={wp.longitude ?? ''}
+                          onChange={(e) => {
+                            const wps = [...deploymentForm.waypoints];
+                            wps[idx] = { ...wps[idx], longitude: e.target.value };
+                            setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                          }}
+                          className="bg-black border-gray-700 h-8 text-xs"
+                        />
+                      </div>
                     </div>
-                    <div className="w-24 space-y-1">
-                      <Label className="text-[10px] text-gray-500">Lng</Label>
-                      <Input
-                        type="number"
-                        step="any"
-                        value={wp.longitude ?? ''}
-                        onChange={(e) => {
-                          const wps = [...deploymentForm.waypoints];
-                          wps[idx] = { ...wps[idx], longitude: e.target.value };
-                          setDeploymentForm({ ...deploymentForm, waypoints: wps });
-                        }}
-                        className="bg-black border-gray-700 h-8 text-xs"
-                      />
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-[10px] text-gray-500">Description</Label>
+                        <Input
+                          value={wp.description || ''}
+                          onChange={(e) => {
+                            const wps = [...deploymentForm.waypoints];
+                            wps[idx] = { ...wps[idx], description: e.target.value };
+                            setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                          }}
+                          className="bg-black border-gray-700 h-8 text-xs"
+                          placeholder="Optional description"
+                        />
+                      </div>
+                      <div className="w-28 space-y-1">
+                        <Label className="text-[10px] text-gray-500">Stop Duration (h)</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0"
+                          value={wp.stop_duration_hours ?? ''}
+                          onChange={(e) => {
+                            const wps = [...deploymentForm.waypoints];
+                            wps[idx] = { ...wps[idx], stop_duration_hours: e.target.value };
+                            setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                          }}
+                          className="bg-black border-gray-700 h-8 text-xs"
+                          placeholder="Hours"
+                        />
+                      </div>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-red-800/50 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 p-0 shrink-0"
-                      onClick={() => {
-                        const wps = deploymentForm.waypoints.filter((_, i) => i !== idx);
-                        setDeploymentForm({ ...deploymentForm, waypoints: wps });
-                      }}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
                   </div>
                 ))}
               </div>
