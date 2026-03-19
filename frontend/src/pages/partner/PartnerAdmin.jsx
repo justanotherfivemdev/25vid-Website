@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Shield, Users, LogOut, Home, Copy, Trash2, ChevronRight, Plus, FileText, Calendar, Radio, Clock, Pencil } from 'lucide-react';
+import { Shield, Users, LogOut, Home, Copy, Trash2, ChevronRight, Plus, FileText, Calendar, Radio, Clock, Pencil, Navigation, MapPin } from 'lucide-react';
 import { BACKEND_URL, API } from '@/utils/api';
 
 const PartnerAdmin = () => {
@@ -26,6 +26,15 @@ const PartnerAdmin = () => {
   const [showIntelForm, setShowIntelForm] = useState(false);
   const [editingIntel, setEditingIntel] = useState(null);
   const [intelForm, setIntelForm] = useState({ title: '', content: '', classification: 'unclassified', region: '', threat_level: 'low' });
+  const [partnerDeployments, setPartnerDeployments] = useState([]);
+  const [showDepForm, setShowDepForm] = useState(false);
+  const [editingDep, setEditingDep] = useState(null);
+  const [depForm, setDepForm] = useState({
+    title: '', description: '', status: 'planning',
+    start_location_name: '', start_latitude: '', start_longitude: '',
+    destination_name: '', destination_latitude: '', destination_longitude: '',
+    start_date: '', estimated_arrival: '', notes: '',
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,18 +52,20 @@ const PartnerAdmin = () => {
 
   const fetchData = async () => {
     try {
-      const [unitRes, invitesRes, logRes, opsRes, intelRes] = await Promise.all([
+      const [unitRes, invitesRes, logRes, opsRes, intelRes, depRes] = await Promise.all([
         axios.get(`${API}/partner/admin/unit`),
         axios.get(`${API}/partner/admin/invites`),
         axios.get(`${API}/partner/admin/audit-log`),
         axios.get(`${API}/partner/admin/operations`),
         axios.get(`${API}/partner/admin/intel`),
+        axios.get(`${API}/partner/admin/deployments`),
       ]);
       setUnit(unitRes.data);
       setInvites(invitesRes.data);
       setAuditLog(logRes.data.slice(0, 50));
       setOperations(opsRes.data || []);
       setIntelItems(intelRes.data || []);
+      setPartnerDeployments(depRes.data || []);
     } catch (err) {
       console.error('Failed to fetch partner admin data:', err);
     } finally {
@@ -254,7 +265,7 @@ const PartnerAdmin = () => {
 
           {/* Tabs */}
           <div className="flex gap-2 border-b border-gray-800 pb-2 overflow-x-auto">
-            {['members', 'operations', 'intel', 'invites', 'audit'].map(tab => (
+            {['members', 'operations', 'intel', 'deployments', 'invites', 'audit'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -265,6 +276,7 @@ const PartnerAdmin = () => {
                 {tab === 'members' && <><Users className="w-4 h-4 inline mr-1" />Members</>}
                 {tab === 'operations' && <><Calendar className="w-4 h-4 inline mr-1" />Operations</>}
                 {tab === 'intel' && <><Radio className="w-4 h-4 inline mr-1" />Intel</>}
+                {tab === 'deployments' && <><Navigation className="w-4 h-4 inline mr-1" />Deployments</>}
                 {tab === 'invites' && <><Copy className="w-4 h-4 inline mr-1" />Invites</>}
                 {tab === 'audit' && <><FileText className="w-4 h-4 inline mr-1" />Audit Log</>}
               </button>
@@ -541,6 +553,165 @@ const PartnerAdmin = () => {
                     </Card>
                   ))}
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* Deployments Tab */}
+          {activeTab === 'deployments' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-bold text-tropic-gold">Unit Deployments</h3>
+                <Button onClick={() => { setShowDepForm(true); setEditingDep(null); setDepForm({
+                  title: '', description: '', status: 'planning',
+                  start_location_name: '', start_latitude: '', start_longitude: '',
+                  destination_name: '', destination_latitude: '', destination_longitude: '',
+                  start_date: '', estimated_arrival: '', notes: '',
+                }); }} className="bg-tropic-olive hover:bg-tropic-olive/80">
+                  <Plus className="w-4 h-4 mr-2" />New Deployment
+                </Button>
+              </div>
+
+              {showDepForm && (
+                <Card className="bg-gray-900/50 border-gray-800">
+                  <CardContent className="p-4 space-y-3">
+                    <h4 className="text-sm font-bold text-tropic-gold">{editingDep ? 'Edit Deployment' : 'Create Deployment'}</h4>
+                    <Input placeholder="Title" value={depForm.title} onChange={e => setDepForm(p => ({ ...p, title: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                    <Textarea placeholder="Description" value={depForm.description} onChange={e => setDepForm(p => ({ ...p, description: e.target.value }))} className="bg-black/50 border-gray-700 text-white" rows={2} />
+                    <select value={depForm.status} onChange={e => setDepForm(p => ({ ...p, status: e.target.value }))} className="w-full bg-black/50 border border-gray-700 text-white rounded px-3 py-2 text-sm">
+                      {['planning', 'deploying', 'deployed', 'returning', 'completed', 'cancelled'].map(s => (
+                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                      ))}
+                    </select>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <Input placeholder="Start Location Name" value={depForm.start_location_name} onChange={e => setDepForm(p => ({ ...p, start_location_name: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                      <Input placeholder="Start Latitude" type="number" step="any" value={depForm.start_latitude} onChange={e => setDepForm(p => ({ ...p, start_latitude: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                      <Input placeholder="Start Longitude" type="number" step="any" value={depForm.start_longitude} onChange={e => setDepForm(p => ({ ...p, start_longitude: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <Input placeholder="Destination Name" value={depForm.destination_name} onChange={e => setDepForm(p => ({ ...p, destination_name: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                      <Input placeholder="Destination Latitude" type="number" step="any" value={depForm.destination_latitude} onChange={e => setDepForm(p => ({ ...p, destination_latitude: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                      <Input placeholder="Destination Longitude" type="number" step="any" value={depForm.destination_longitude} onChange={e => setDepForm(p => ({ ...p, destination_longitude: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-400 mb-1 block">Start Date</label>
+                        <Input type="date" value={depForm.start_date} onChange={e => setDepForm(p => ({ ...p, start_date: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-400 mb-1 block">Estimated Arrival</label>
+                        <Input type="date" value={depForm.estimated_arrival} onChange={e => setDepForm(p => ({ ...p, estimated_arrival: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                      </div>
+                    </div>
+                    <Textarea placeholder="Notes" value={depForm.notes} onChange={e => setDepForm(p => ({ ...p, notes: e.target.value }))} className="bg-black/50 border-gray-700 text-white" rows={2} />
+                    <div className="flex gap-2">
+                      <Button onClick={async () => {
+                        try {
+                          const payload = {
+                            ...depForm,
+                            start_latitude: depForm.start_latitude ? parseFloat(depForm.start_latitude) : 0,
+                            start_longitude: depForm.start_longitude ? parseFloat(depForm.start_longitude) : 0,
+                            destination_latitude: depForm.destination_latitude ? parseFloat(depForm.destination_latitude) : null,
+                            destination_longitude: depForm.destination_longitude ? parseFloat(depForm.destination_longitude) : null,
+                          };
+                          if (editingDep) {
+                            await axios.put(`${API}/partner/admin/deployments/${editingDep}`, payload);
+                          } else {
+                            await axios.post(`${API}/partner/admin/deployments`, payload);
+                          }
+                          setShowDepForm(false);
+                          setEditingDep(null);
+                          fetchData();
+                        } catch (err) {
+                          alert(err.response?.data?.detail || 'Failed to save deployment');
+                        }
+                      }} className="bg-tropic-gold text-black hover:bg-tropic-gold/80">
+                        {editingDep ? 'Update' : 'Create'}
+                      </Button>
+                      <Button variant="outline" onClick={() => { setShowDepForm(false); setEditingDep(null); }} className="border-gray-700 text-gray-400">Cancel</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {partnerDeployments.length === 0 ? (
+                <Card className="bg-gray-900/50 border-gray-800">
+                  <CardContent className="p-6 text-center text-gray-500">No deployments created yet</CardContent>
+                </Card>
+              ) : (
+                partnerDeployments.map(dep => (
+                  <Card key={dep.id} className="bg-gray-900/50 border-gray-800">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-bold text-white">{dep.title}</h4>
+                            <Badge className={`text-[10px] ${
+                              dep.status === 'planning' ? 'bg-gray-600' :
+                              dep.status === 'deploying' ? 'bg-yellow-600' :
+                              dep.status === 'deployed' ? 'bg-green-600' :
+                              dep.status === 'returning' ? 'bg-blue-600' :
+                              dep.status === 'completed' ? 'bg-purple-600' : 'bg-red-600'
+                            }`}>{dep.status?.toUpperCase()}</Badge>
+                          </div>
+                          {dep.description && <p className="text-xs text-gray-400 mb-1">{dep.description}</p>}
+                          <div className="flex flex-wrap gap-3 text-xs text-gray-500 mt-1">
+                            {dep.start_location_name && (
+                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />From: {dep.start_location_name}</span>
+                            )}
+                            {dep.destination_name && (
+                              <span className="flex items-center gap-1"><Navigation className="w-3 h-3" />To: {dep.destination_name}</span>
+                            )}
+                            {dep.start_date && (
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Start: {dep.start_date}</span>
+                            )}
+                            {dep.estimated_arrival && (
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />ETA: {dep.estimated_arrival}</span>
+                            )}
+                          </div>
+                          {dep.start_latitude != null && dep.start_longitude != null && (
+                            <p className="text-[10px] text-gray-600 mt-1">Origin: {dep.start_latitude}, {dep.start_longitude}</p>
+                          )}
+                          {dep.destination_latitude != null && dep.destination_longitude != null && (
+                            <p className="text-[10px] text-gray-600">Dest: {dep.destination_latitude}, {dep.destination_longitude}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-1 ml-2">
+                          <Button size="sm" variant="outline" className="border-gray-700 text-gray-400 h-7 w-7 p-0" onClick={() => {
+                            setDepForm({
+                              title: dep.title || '', description: dep.description || '',
+                              status: dep.status || 'planning',
+                              start_location_name: dep.start_location_name || '',
+                              start_latitude: dep.start_latitude ?? '',
+                              start_longitude: dep.start_longitude ?? '',
+                              destination_name: dep.destination_name || '',
+                              destination_latitude: dep.destination_latitude ?? '',
+                              destination_longitude: dep.destination_longitude ?? '',
+                              start_date: dep.start_date || '',
+                              estimated_arrival: dep.estimated_arrival || '',
+                              notes: dep.notes || '',
+                            });
+                            setEditingDep(dep.id);
+                            setShowDepForm(true);
+                          }}>
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="outline" className="border-red-900/50 text-red-400 h-7 w-7 p-0" onClick={async () => {
+                            if (!window.confirm('Archive this deployment?')) return;
+                            try {
+                              await axios.delete(`${API}/partner/admin/deployments/${dep.id}`);
+                              fetchData();
+                            } catch (err) {
+                              alert(err.response?.data?.detail || 'Failed to archive');
+                            }
+                          }}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
               )}
             </div>
           )}

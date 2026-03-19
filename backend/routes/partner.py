@@ -14,6 +14,9 @@ from models.partner import (
     PartnerInvite, PartnerApplication, PartnerApplicationSubmit,
 )
 from models.operations import RSVPSubmit
+from models.deployment import (
+    Deployment, DeploymentCreate, DeploymentUpdate, DEPLOYMENT_STATUSES,
+)
 from middleware.auth import get_current_admin_or_liaison, get_current_partner_user, get_current_partner_admin
 from services.auth_service import (
     hash_password, verify_password, normalize_email,
@@ -659,3 +662,124 @@ async def review_partner_application(app_id: str, data: dict, current_user: dict
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
     return {"message": f"Application {status}"}
+
+
+# ── Partner Deployments ──────────────────────────────────────────────────────
+
+@router.get("/partner/deployments")
+async def partner_list_deployments(partner_user: dict = Depends(get_current_partner_user)):
+    """List active deployments for the partner's unit."""
+    unit_id = partner_user.get("partner_unit_id")
+    deployments = await db.deployments.find(
+        {"partner_unit_id": unit_id, "is_active": True}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return deployments
+
+
+@router.get("/partner/admin/deployments")
+async def partner_admin_list_deployments(partner_user: dict = Depends(get_current_partner_admin)):
+    """List all deployments for the partner's unit (including archived)."""
+    unit_id = partner_user.get("partner_unit_id")
+    deployments = await db.deployments.find(
+        {"partner_unit_id": unit_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(200)
+    return deployments
+
+
+@router.post("/partner/admin/deployments")
+async def partner_create_deployment(
+    data: DeploymentCreate,
+    partner_user: dict = Depends(get_current_partner_admin),
+):
+    """Create a deployment for the partner's unit."""
+    unit_id = partner_user.get("partner_unit_id")
+    dep = Deployment(
+        title=data.title,
+        description=data.description,
+        status=data.status,
+        start_location_name=data.start_location_name,
+        start_latitude=data.start_latitude,
+        start_longitude=data.start_longitude,
+        destination_name=data.destination_name,
+        destination_latitude=data.destination_latitude,
+        destination_longitude=data.destination_longitude,
+        start_date=data.start_date,
+        estimated_arrival=data.estimated_arrival,
+        notes=data.notes,
+        created_by=partner_user["id"],
+        partner_unit_id=unit_id,
+    )
+    await db.deployments.insert_one(dep.model_dump())
+    await db.partner_audit_log.insert_one({
+        "action": "deployment_create",
+        "unit_id": unit_id,
+        "performed_by": partner_user["id"],
+        "performed_by_type": "partner_admin",
+        "details": {"deployment_id": dep.id, "title": dep.title},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return dep.model_dump()
+
+
+@router.put("/partner/admin/deployments/{deployment_id}")
+async def partner_update_deployment(
+    deployment_id: str,
+    data: DeploymentUpdate,
+    partner_user: dict = Depends(get_current_partner_admin),
+):
+    """Update a deployment belonging to the partner's unit."""
+    unit_id = partner_user.get("partner_unit_id")
+    existing = await db.deployments.find_one(
+        {"id": deployment_id, "partner_unit_id": unit_id}, {"_id": 0}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Deployment not found")
+
+    update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})
+    await db.partner_audit_log.insert_one({
+        "action": "deployment_update",
+        "unit_id": unit_id,
+        "performed_by": partner_user["id"],
+        "performed_by_type": "partner_admin",
+        "details": {"deployment_id": deployment_id},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    updated = await db.deployments.find_one({"id": deployment_id}, {"_id": 0})
+    return updated
+
+
+@router.delete("/partner/admin/deployments/{deployment_id}")
+async def partner_archive_deployment(
+    deployment_id: str,
+    partner_user: dict = Depends(get_current_partner_admin),
+):
+    """Archive a deployment belonging to the partner's unit."""
+    unit_id = partner_user.get("partner_unit_id")
+    existing = await db.deployments.find_one(
+        {"id": deployment_id, "partner_unit_id": unit_id}, {"_id": 0}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Deployment not found")
+
+    await db.deployments.update_one(
+        {"id": deployment_id},
+        {"$set": {
+            "is_active": False,
+            "status": "completed",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+    )
+    await db.partner_audit_log.insert_one({
+        "action": "deployment_archive",
+        "unit_id": unit_id,
+        "performed_by": partner_user["id"],
+        "performed_by_type": "partner_admin",
+        "details": {"deployment_id": deployment_id},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"message": "Deployment archived"}
