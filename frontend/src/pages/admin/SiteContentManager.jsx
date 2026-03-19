@@ -176,7 +176,7 @@ const SiteContentManager = () => {
 
         {/* 1 — NAVIGATION BAR */}
         <SectionCard number="01" icon={Globe} title="Navigation Bar" subtitle="Top navigation bar visible on every page">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Brand Name</Label>
               <FieldHint location="Top-left of nav bar on every page" purpose="Your unit's display name" />
@@ -197,7 +197,7 @@ const SiteContentManager = () => {
           <ImageUpload value={get('hero.backgroundImage')} onChange={url => set('hero.backgroundImage', url)} label="Background Image"
             description="Appears on: Full-screen behind logo and tagline. Purpose: Sets the tactical, immersive first impression. Recommended: 1920x1080px or larger, dark landscape photo."
             previewClass="w-full h-44 object-cover rounded" />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Tagline Line 1</Label>
               <FieldHint location="Centered below compass logo" purpose="Bold headline, first line" />
@@ -213,7 +213,7 @@ const SiteContentManager = () => {
 
         {/* 3 — ABOUT SECTION */}
         <SectionCard number="03" icon={FileText} title="About Section" subtitle="Unit background, emblem, and founder quote — below the hero">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Section Heading</Label>
               <FieldHint location="About section title" purpose="Main label shown above the about copy" />
@@ -259,7 +259,7 @@ const SiteContentManager = () => {
 
         {/* 4 — OPERATIONAL SUPERIORITY */}
         <SectionCard number="04" icon={ImageIcon} title="Operational Superiority" subtitle="3-column tactical image showcase with description text">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Section Heading</Label>
               <FieldHint location="Large left-side heading" purpose="Main section title shown on the homepage" />
@@ -276,7 +276,7 @@ const SiteContentManager = () => {
             <FieldHint location="Right side of heading" purpose="Describes the unit's operational capability" />
             <Textarea value={get('operationalSuperiority.description')} onChange={e => set('operationalSuperiority.description', e.target.value)} rows={2} className="bg-black border-gray-700 mt-2" />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[0, 1, 2].map(i => (
               <ImageUpload key={i} value={get(`operationalSuperiority.images`)?.[i] || ''} onChange={url => setArr('operationalSuperiority.images', i, url)}
                 label={`Column ${i + 1}`} description={`Appears on: Operational Superiority, position ${i + 1}. Recommended: 400x600px portrait.`}
@@ -287,7 +287,7 @@ const SiteContentManager = () => {
 
         {/* 5 — LETHALITY ON DEMAND */}
         <SectionCard number="05" icon={Layout} title="Lethality on Demand" subtitle="Logistics and training showcase sections">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Section Heading</Label>
               <FieldHint location="Top of the Lethality section" purpose="Main section title shown on the homepage" />
@@ -380,7 +380,7 @@ const SiteContentManager = () => {
           <ImageUpload value={get('partnerLogin.backgroundImage')} onChange={url => set('partnerLogin.backgroundImage', url)} label="Partner Login Background Image"
             description="Appears on: Full-screen background on /partner-login. Purpose: Branded partner login experience. Recommended: 1920x1080px."
             previewClass="w-full h-44 object-cover rounded" />
-          <div className="grid grid-cols-2 gap-4 mt-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
             <div>
               <Label>Show Background</Label>
               <Select value={get('partnerLogin.showBackground') === false ? 'no' : 'yes'} onValueChange={v => set('partnerLogin.showBackground', v === 'yes')}>
@@ -408,7 +408,7 @@ const SiteContentManager = () => {
             <FieldHint location="Footer, below brand name" purpose="Short unit description or slogan" />
             <Input value={get('footer.tagline')} onChange={e => set('footer.tagline', e.target.value)} className="bg-black border-gray-700 mt-2" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Discord</Label>
               <FieldHint location="Footer, Connect column" />

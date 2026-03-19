@@ -101,7 +101,7 @@ const RecruitDashboard = () => {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
             <h1 className="text-xl font-bold tracking-widest text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
@@ -119,7 +119,7 @@ const RecruitDashboard = () => {
         </div>
       </nav>
 
-      <div className="pt-24 pb-16 px-6">
+      <div className="pt-24 pb-16 px-4 md:px-6">
         <div className="container mx-auto max-w-2xl space-y-8">
           <Card className="bg-gray-900/80 border-amber-700/30" data-testid="recruit-profile-cta">
             <CardContent className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -159,7 +159,7 @@ const RecruitDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-black/30 rounded-lg p-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Submitted:</span>
                       <div className="text-gray-300">{new Date(application.submitted_at).toLocaleDateString()}</div>
@@ -214,7 +214,7 @@ const RecruitDashboard = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label>Discord Username</Label>
                       <Input 

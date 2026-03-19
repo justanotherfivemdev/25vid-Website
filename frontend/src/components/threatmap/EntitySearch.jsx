@@ -302,7 +302,7 @@ export default function EntitySearch() {
       {/* Full Report Dialog */}
       {showFullReport && researchResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="bg-black border border-tropic-gold-dark/30 rounded-lg shadow-2xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col">
+          <div className="bg-black border border-tropic-gold-dark/30 rounded-lg shadow-2xl w-[95vw] sm:max-w-2xl md:max-w-4xl mx-auto max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-tropic-gold-dark/20">
               <h2 className="text-lg font-bold text-tropic-gold-light flex items-center gap-2">
                 <FileText className="h-5 w-5 text-tropic-gold" />

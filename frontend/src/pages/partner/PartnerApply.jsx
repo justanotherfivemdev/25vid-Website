@@ -102,7 +102,7 @@ const PartnerApply = () => {
                   className="bg-black/50 border-gray-700 focus:border-tropic-olive" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-gray-400 block mb-1">Contact Name</label>
                   <Input name="contact_name" value={form.contact_name} onChange={handleChange}
@@ -117,7 +117,7 @@ const PartnerApply = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-gray-400 block mb-1">Unit Timezone</label>
                   <Input name="unit_timezone" value={form.unit_timezone} onChange={handleChange}

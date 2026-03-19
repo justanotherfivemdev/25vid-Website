@@ -173,3 +173,21 @@
 .threat-map-page .gold-glow {
   box-shadow: 0 0 12px rgba(201, 162, 39, 0.3);
 }
+
+/* Mobile-specific threat map improvements */
+@media (max-width: 767px) {
+  .threat-map-popup .mapboxgl-popup-content {
+    max-width: 280px !important;
+    font-size: 13px !important;
+  }
+
+  .threat-map-popup .mapboxgl-popup-close-button {
+    font-size: 22px !important;
+    padding: 6px 10px !important;
+  }
+
+  .threat-map-page .mapboxgl-ctrl-group button {
+    width: 36px !important;
+    height: 36px !important;
+  }
+}

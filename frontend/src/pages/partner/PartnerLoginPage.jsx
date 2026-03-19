@@ -78,7 +78,7 @@ const PartnerLoginPage = () => {
   } : {};
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 relative" style={partnerBg}>
+    <div className="min-h-screen flex items-center justify-center px-4 md:px-6 relative" style={partnerBg}>
       {bgConfig?.showBackground && bgConfig?.backgroundImage && (
         <div className="absolute inset-0 bg-black" style={{ opacity: bgConfig.overlayOpacity || 0.85 }}></div>
       )}

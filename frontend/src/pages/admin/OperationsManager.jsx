@@ -363,7 +363,7 @@ const OperationsManager = () => {
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Type</Label>
                     <Select
@@ -394,7 +394,7 @@ const OperationsManager = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Date</Label>
                     <Input
@@ -418,7 +418,7 @@ const OperationsManager = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Campaign ID (optional)</Label>
                     <Input value={formData.campaign_id} onChange={(e) => setFormData({...formData, campaign_id: e.target.value})} className="bg-black border-gray-700" placeholder="Campaign UUID" />
@@ -429,7 +429,7 @@ const OperationsManager = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Theater Label</Label>
                     <Input value={formData.theater} onChange={(e) => setFormData({...formData, theater: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Pacific AO" />
@@ -445,7 +445,7 @@ const OperationsManager = () => {
                   <Input value={formData.grid_ref} onChange={(e) => setFormData({...formData, grid_ref: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., H7-22" />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <Label>Latitude</Label>
                     <Input value={formData.lat} onChange={(e) => setFormData({...formData, lat: e.target.value})} className="bg-black border-gray-700" placeholder="14.5995" />

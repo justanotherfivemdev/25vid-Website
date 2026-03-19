@@ -128,15 +128,15 @@ const UsersManager = () => {
               <div className={`text-sm p-2 rounded ${preCreateMsg.type === 'success' ? 'bg-green-900/20 text-green-400 border border-green-700' : 'bg-red-900/20 text-red-400 border border-red-700'}`}>{preCreateMsg.text}</div>
             )}
             <form onSubmit={handlePreCreate} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div><Label className="text-xs">Username *</Label><Input required value={preCreateForm.username} onChange={e => setPreCreateForm({...preCreateForm, username: e.target.value})} className="bg-black border-gray-700" /></div>
                 <div><Label className="text-xs">Email *</Label><Input type="email" required value={preCreateForm.email} onChange={e => setPreCreateForm({...preCreateForm, email: e.target.value})} className="bg-black border-gray-700" /></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div><Label className="text-xs">Rank</Label><Input value={preCreateForm.rank} onChange={e => setPreCreateForm({...preCreateForm, rank: e.target.value})} className="bg-black border-gray-700" /></div>
                 <div><Label className="text-xs">Specialization</Label><Input value={preCreateForm.specialization} onChange={e => setPreCreateForm({...preCreateForm, specialization: e.target.value})} className="bg-black border-gray-700" /></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Role</Label>
                   <select value={preCreateForm.role} onChange={e => setPreCreateForm({...preCreateForm, role: e.target.value})} className="w-full bg-black border border-gray-700 rounded-md px-3 py-2 text-sm text-white">
@@ -158,13 +158,13 @@ const UsersManager = () => {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <div><Label className="text-xs">Company</Label><Input value={preCreateForm.company} onChange={e => setPreCreateForm({...preCreateForm, company: e.target.value})} className="bg-black border-gray-700" /></div>
                 <div><Label className="text-xs">Platoon</Label><Input value={preCreateForm.platoon} onChange={e => setPreCreateForm({...preCreateForm, platoon: e.target.value})} className="bg-black border-gray-700" /></div>
                 <div><Label className="text-xs">Squad</Label><Input value={preCreateForm.squad} onChange={e => setPreCreateForm({...preCreateForm, squad: e.target.value})} className="bg-black border-gray-700" /></div>
               </div>
               <div><Label className="text-xs">Billet</Label><Input value={preCreateForm.billet} onChange={e => setPreCreateForm({...preCreateForm, billet: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Squad Leader" /></div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div><Label className="text-xs">Discord ID</Label><Input value={preCreateForm.discord_id} onChange={e => setPreCreateForm({...preCreateForm, discord_id: e.target.value})} className="bg-black border-gray-700" /></div>
                 <div><Label className="text-xs">Discord Username</Label><Input value={preCreateForm.discord_username} onChange={e => setPreCreateForm({...preCreateForm, discord_username: e.target.value})} className="bg-black border-gray-700" /></div>
               </div>

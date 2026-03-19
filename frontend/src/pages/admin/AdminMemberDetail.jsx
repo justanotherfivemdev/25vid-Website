@@ -155,7 +155,7 @@ const AdminMemberDetail = () => {
           <Input 
             value={currentValue} 
             onChange={e => setMember({ ...member, [field]: e.target.value })} 
-            className="bg-black border-gray-700 w-40" 
+            className="bg-black border-gray-700 w-full md:w-40" 
             placeholder="Or type custom..."
           />
         </div>
@@ -187,7 +187,7 @@ const AdminMemberDetail = () => {
           <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider">IDENTITY & ASSIGNMENT</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <ImageUpload value={member.avatar_url || ''} onChange={url => setMember({ ...member, avatar_url: url })} label="Avatar" description="Profile photo. 300x300px recommended." previewClass="w-16 h-16 rounded-lg object-cover" />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><Label>Username</Label><Input value={member.username || ''} onChange={e => setMember({ ...member, username: e.target.value })} className="bg-black border-gray-700" /></div>
               <div><Label>Role</Label>
                 <Select value={member.role} onValueChange={v => setMember({ ...member, role: v })}>
@@ -196,11 +196,11 @@ const AdminMemberDetail = () => {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {renderTagSelect('rank', 'Rank', unitTags?.ranks, 'Select rank...')}
               {renderTagSelect('specialization', 'Specialization / MOS', unitTags?.specializations, 'Select spec...')}
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div><Label>Status</Label>
                 <Select value={member.status || 'recruit'} onValueChange={v => setMember({ ...member, status: v })}>
                   <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
@@ -224,7 +224,7 @@ const AdminMemberDetail = () => {
             <p className="text-xs text-gray-500 mt-1">Assign this member to a position in the unit hierarchy. Used for the organizational roster view.</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {renderTagSelect('company', 'Company', unitTags?.companies, 'Select company...')}
               {renderTagSelect('platoon', 'Platoon', unitTags?.platoons, 'Select platoon...')}
               {renderTagSelect('billet', 'Billet / Position', unitTags?.billets, 'Select billet...')}
@@ -245,7 +245,7 @@ const AdminMemberDetail = () => {
             <p className="text-xs text-gray-500 mt-1">These fields prepare the account for future Discord OAuth linking. They are not active OAuth controls — values here will be overwritten when Discord linking goes live.</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Discord ID</Label>
                 <Input value={member.discord_id || ''} onChange={e => setMember({ ...member, discord_id: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., 123456789012345678" data-testid="discord-id-input" />
@@ -255,7 +255,7 @@ const AdminMemberDetail = () => {
                 <Input value={member.discord_username || ''} onChange={e => setMember({ ...member, discord_username: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., operator#1234" data-testid="discord-username-input" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Discord Avatar URL</Label>
                 <Input value={member.discord_avatar || ''} disabled className="bg-black/40 border-gray-800 text-gray-500 cursor-not-allowed" placeholder="Auto-populated by Discord OAuth" data-testid="discord-avatar-input" />
@@ -285,7 +285,7 @@ const AdminMemberDetail = () => {
                   <DialogHeader><DialogTitle>Add Mission Record</DialogTitle></DialogHeader>
                   <form onSubmit={addMission} className="space-y-3">
                     <div><Label>Operation Name</Label><Input required value={missionForm.operation_name} onChange={e => setMissionForm({...missionForm, operation_name: e.target.value})} className="bg-black border-gray-700" data-testid="mission-name-input" /></div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div><Label>Date</Label><Input required value={missionForm.date} onChange={e => setMissionForm({...missionForm, date: e.target.value})} className="bg-black border-gray-700" placeholder="2026-01-15" /></div>
                       <div><Label>Role Performed</Label><Input required value={missionForm.role_performed} onChange={e => setMissionForm({...missionForm, role_performed: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Squad Lead" /></div>
                     </div>
@@ -321,7 +321,7 @@ const AdminMemberDetail = () => {
                   <DialogHeader><DialogTitle>Add Training Record</DialogTitle></DialogHeader>
                   <form onSubmit={addTraining} className="space-y-3">
                     <div><Label>Course / Training Name</Label><Input required value={trainingForm.course_name} onChange={e => setTrainingForm({...trainingForm, course_name: e.target.value})} className="bg-black border-gray-700" data-testid="training-name-input" /></div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div><Label>Completion Date</Label><Input required value={trainingForm.completion_date} onChange={e => setTrainingForm({...trainingForm, completion_date: e.target.value})} className="bg-black border-gray-700" placeholder="2026-01-15" /></div>
                       <div><Label>Instructor</Label><Input value={trainingForm.instructor} onChange={e => setTrainingForm({...trainingForm, instructor: e.target.value})} className="bg-black border-gray-700" /></div>
                     </div>

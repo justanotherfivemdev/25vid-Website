@@ -480,7 +480,7 @@ const DeploymentManager = () => {
                             value={dep.status}
                             onValueChange={(val) => handleDeploymentStatusChange(dep, val)}
                           >
-                            <SelectTrigger className="w-[130px] bg-black border-gray-700 text-xs h-8">
+                            <SelectTrigger className="w-full sm:w-[130px] bg-black border-gray-700 text-xs h-8">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-gray-900 border-gray-700">
@@ -643,7 +643,7 @@ const DeploymentManager = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Status</Label>
                   <Select
@@ -685,7 +685,7 @@ const DeploymentManager = () => {
                     placeholder="Schofield Barracks, HI"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Latitude</Label>
                     <Input
@@ -721,7 +721,7 @@ const DeploymentManager = () => {
                     placeholder="e.g., Camp Humphreys, South Korea"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Latitude</Label>
                     <Input
@@ -826,7 +826,7 @@ const DeploymentManager = () => {
               </div>
 
               {/* Dates */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Start Date</Label>
                   <Input
@@ -909,7 +909,7 @@ const DeploymentManager = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Affiliation</Label>
                   <Select
@@ -970,7 +970,7 @@ const DeploymentManager = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Latitude</Label>
                   <Input
@@ -1029,7 +1029,7 @@ const DeploymentManager = () => {
                   placeholder="e.g., Schofield Barracks, HI"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Latitude</Label>
                   <Input

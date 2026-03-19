@@ -216,7 +216,7 @@ const LOAManager = () => {
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><Label>Start Date</Label><Input type="date" required value={placeForm.start_date} onChange={e => setPlaceForm({ ...placeForm, start_date: e.target.value })} className="bg-black border-gray-700" /></div>
                 <div><Label>End Date</Label><Input type="date" required value={placeForm.end_date} onChange={e => setPlaceForm({ ...placeForm, end_date: e.target.value })} className="bg-black border-gray-700" /></div>
               </div>

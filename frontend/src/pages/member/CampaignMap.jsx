@@ -265,7 +265,7 @@ const CampaignMap = () => {
     <div className="min-h-screen bg-black text-white">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-widest text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="campaign-map-title">
@@ -280,7 +280,7 @@ const CampaignMap = () => {
         </div>
       </nav>
 
-      <div className="pt-20 pb-12 px-6">
+      <div className="pt-20 pb-12 px-4 md:px-6">
         <div className="container mx-auto max-w-6xl">
           {loading ? (
             <div className="text-center py-20 text-gray-500">Loading campaign data...</div>
@@ -429,7 +429,7 @@ const CampaignMap = () => {
                             <div className="text-xs tracking-wider text-tropic-gold">CREATE EVENT / ONGOING ACTIVITY</div>
                             <Input required value={activityForm.title} onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })} className="bg-black border-gray-700" placeholder="Activity title" />
                             <Textarea value={activityForm.description} onChange={(e) => setActivityForm({ ...activityForm, description: e.target.value })} className="bg-black border-gray-700" rows={2} placeholder="Activity details" />
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <select value={activityForm.operation_type} onChange={(e) => setActivityForm({ ...activityForm, operation_type: e.target.value })} className="h-9 rounded-md bg-black border border-gray-700 px-2 text-xs">
                                 <option value="combat">combat</option>
                                 <option value="training">training</option>
@@ -442,7 +442,7 @@ const CampaignMap = () => {
                                 <option value="completed">completed</option>
                               </select>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <Input required type="date" value={activityForm.date} onChange={(e) => setActivityForm({ ...activityForm, date: e.target.value })} className="bg-black border-gray-700" />
                               <Input required type="time" value={activityForm.time} onChange={(e) => setActivityForm({ ...activityForm, time: e.target.value })} className="bg-black border-gray-700" />
                             </div>

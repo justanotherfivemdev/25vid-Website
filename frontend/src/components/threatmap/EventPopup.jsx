@@ -30,7 +30,7 @@ export default function EventPopup({ event }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className={`min-w-[250px] p-3 ${isExpanded ? 'max-w-[500px]' : 'max-w-[300px]'}`}>
+    <div className={`p-3 ${isExpanded ? 'sm:max-w-[500px]' : 'sm:max-w-[300px]'}`}>
       <div className="mb-2 flex items-start justify-between gap-2">
         <h3 className="text-sm font-semibold text-white line-clamp-2">
           {event.sourceUrl ? (

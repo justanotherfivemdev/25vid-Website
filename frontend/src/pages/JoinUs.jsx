@@ -94,7 +94,7 @@ const JoinUs = () => {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/"><Button size="sm" variant="outline" className="border-tropic-gold/30 text-tropic-gold hover:bg-tropic-gold/10"><ArrowLeft className="w-4 h-4 mr-1" />Home</Button></Link>
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
@@ -104,7 +104,7 @@ const JoinUs = () => {
         </div>
       </nav>
 
-      <div className="pt-24 pb-16 px-6">
+      <div className="pt-24 pb-16 px-4 md:px-6">
         <div className="container mx-auto max-w-5xl space-y-10">
           {/* Hero Section */}
           <div className="text-center space-y-4">
@@ -272,7 +272,7 @@ const JoinUs = () => {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>Name / Callsign *</Label>
                       <Input required value={form.applicant_name} onChange={e => setForm({...form, applicant_name: e.target.value})} className="bg-black border-gray-700" placeholder="Your name" data-testid="apply-name" />
@@ -283,7 +283,7 @@ const JoinUs = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>Discord Username</Label>
                       <Input value={form.discord_username} onChange={e => setForm({...form, discord_username: e.target.value})} className="bg-black border-gray-700" placeholder="username#1234" data-testid="apply-discord" />

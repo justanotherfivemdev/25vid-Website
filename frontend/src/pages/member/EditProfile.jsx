@@ -124,7 +124,7 @@ const EditProfile = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-widest" style={{ fontFamily: 'Rajdhani, sans-serif' }}>EDIT PROFILE</h1>
@@ -136,7 +136,7 @@ const EditProfile = () => {
         </div>
       </nav>
 
-      <div className="pt-20 pb-12 px-6">
+      <div className="pt-20 pb-12 px-4 md:px-6">
         <div className="container mx-auto max-w-2xl space-y-6">
           {message.text && (
             <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-tropic-red/10 border-tropic-red/60'}>
@@ -149,7 +149,7 @@ const EditProfile = () => {
           <Card className="bg-gray-900/80 border-gray-800">
             <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider">YOUR DETAILS</CardTitle></CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><span className="text-gray-500 text-xs block">Username</span>{profile.username}</div>
                 <div><span className="text-gray-500 text-xs block">Email</span>{profile.email}</div>
                 <div><span className="text-gray-500 text-xs block">Rank</span><span className="text-gray-400">{profile.rank || 'Not assigned'}</span></div>
@@ -177,7 +177,7 @@ const EditProfile = () => {
                 <p className="text-xs text-gray-500 mb-1">A short personal or in-character description.</p>
                 <Textarea value={profile.bio || ''} onChange={e => setProfile({ ...profile, bio: e.target.value })} rows={3} className="bg-black border-gray-700" placeholder="Tell the unit about yourself..." data-testid="profile-bio-input" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Timezone</Label>
                   <p className="text-xs text-gray-500 mb-1">Helps with op scheduling.</p>
@@ -266,7 +266,7 @@ const EditProfile = () => {
                       data-testid="set-email-input"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Password</Label>
                       <Input

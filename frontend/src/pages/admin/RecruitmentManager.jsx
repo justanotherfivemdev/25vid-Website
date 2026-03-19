@@ -189,7 +189,7 @@ const RecruitmentManager = () => {
           <TabsContent value="applications" className="space-y-4">
             <div className="flex items-center justify-between">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="bg-black border-gray-700 w-[180px]">
+                <SelectTrigger className="bg-black border-gray-700 w-full sm:w-[180px]">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-900 border-gray-700">
@@ -263,7 +263,7 @@ const RecruitmentManager = () => {
                       <Label>Position Title *</Label>
                       <Input required value={billetForm.title} onChange={e => setBilletForm({...billetForm, title: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Squad Leader" data-testid="billet-title" />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <Label>Company</Label>
                         <Select value={billetForm.company || '__none__'} onValueChange={v => setBilletForm({...billetForm, company: v === '__none__' ? '' : v})}>
@@ -355,7 +355,7 @@ const RecruitmentManager = () => {
             </DialogHeader>
             {selectedApp && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-gray-500">Applicant</Label>
                     <div className="font-medium">{selectedApp.applicant_name}</div>

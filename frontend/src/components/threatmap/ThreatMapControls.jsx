@@ -11,7 +11,7 @@ export default function ThreatMapControls() {
   } = useMapStore();
 
   return (
-    <div className="absolute bottom-20 left-6 z-10 flex flex-col gap-2">
+    <div className="absolute bottom-20 left-3 md:left-6 z-10 flex flex-col gap-2">
       <button
         onClick={toggleClusters}
         className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${

@@ -196,7 +196,7 @@ const IntelManager = () => {
                   <Label>Title</Label>
                   <Input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="bg-black border-gray-700" placeholder="Briefing title" data-testid="intel-title-input" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Category</Label>
                     <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
@@ -216,7 +216,7 @@ const IntelManager = () => {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Visibility</Label>
                     <Select value={form.visibility_scope} onValueChange={v => setForm({ ...form, visibility_scope: v })}>
@@ -239,17 +239,17 @@ const IntelManager = () => {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div><Label>Campaign ID</Label><Input value={form.campaign_id} onChange={e => setForm({ ...form, campaign_id: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
                   <div><Label>Objective ID</Label><Input value={form.objective_id} onChange={e => setForm({ ...form, objective_id: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
                   <div><Label>Operation ID</Label><Input value={form.operation_id} onChange={e => setForm({ ...form, operation_id: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div><Label>Theater</Label><Input value={form.theater} onChange={e => setForm({ ...form, theater: e.target.value })} className="bg-black border-gray-700" placeholder="Pacific" /></div>
                   <div><Label>Region Label</Label><Input value={form.region_label} onChange={e => setForm({ ...form, region_label: e.target.value })} className="bg-black border-gray-700" placeholder="South China Sea" /></div>
                   <div><Label>Grid Ref</Label><Input value={form.grid_ref} onChange={e => setForm({ ...form, grid_ref: e.target.value })} className="bg-black border-gray-700" placeholder="G-17" /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Latitude</Label>
                     <Input type="number" step="any" value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" />

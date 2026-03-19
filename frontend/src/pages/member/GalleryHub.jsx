@@ -112,7 +112,7 @@ const GalleryHub = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="member-gallery-nav">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
             <h1 className="text-xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH ID GALLERY</h1>
@@ -130,7 +130,7 @@ const GalleryHub = () => {
         </div>
       </nav>
 
-      <div className="pt-24 pb-12 px-6">
+      <div className="pt-24 pb-12 px-4 md:px-6">
         <div className="container mx-auto max-w-7xl space-y-6">
           <Card className="bg-gradient-to-r from-tropic-red/20 to-gray-900 border border-tropic-red/30" data-testid="gallery-hero-card">
             <CardHeader>

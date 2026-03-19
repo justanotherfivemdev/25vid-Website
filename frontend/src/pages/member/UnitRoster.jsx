@@ -258,7 +258,7 @@ const UnitRoster = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700">Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-widest text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>UNIT ROSTER</h1>
@@ -271,13 +271,13 @@ const UnitRoster = () => {
         </div>
       </nav>
 
-      <div className="pt-20 pb-12 px-6">
+      <div className="pt-20 pb-12 px-4 md:px-6">
         <div className="container mx-auto max-w-7xl space-y-6">
-          <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-3">
               <Users className="w-8 h-8 text-tropic-gold" />
               <div>
-                <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="roster-title">PERSONNEL DIRECTORY</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="roster-title">PERSONNEL DIRECTORY</h2>
                 <p className="text-sm text-gray-500">{rosterTab === '25th' ? `${filtered.length} of ${members.length} operators` : `${partnerUnits.length} partner units`}</p>
               </div>
             </div>
@@ -359,7 +359,7 @@ const UnitRoster = () => {
           {/* Filters - only show in grid mode for 25th tab */}
           {rosterTab === '25th' && viewMode === 'grid' && (
             <div className="flex flex-wrap gap-3 bg-gray-900/50 border border-gray-800 rounded-lg p-4">
-              <div className="flex-1 min-w-[200px]">
+              <div className="flex-1 min-w-0 sm:min-w-[200px]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name..." className="bg-black border-gray-700 pl-10" data-testid="roster-search" />
@@ -367,19 +367,19 @@ const UnitRoster = () => {
               </div>
               {ranks.length > 0 && (
                 <Select value={rankFilter} onValueChange={setRankFilter}>
-                  <SelectTrigger className="bg-black border-gray-700 w-[150px]" data-testid="roster-filter-rank"><SelectValue placeholder="Rank" /></SelectTrigger>
+                  <SelectTrigger className="bg-black border-gray-700 w-full sm:w-[150px]" data-testid="roster-filter-rank"><SelectValue placeholder="Rank" /></SelectTrigger>
                   <SelectContent className="bg-gray-900 border-gray-700"><SelectItem value="all">All Ranks</SelectItem>{ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                 </Select>
               )}
               {companies.length > 0 && (
                 <Select value={companyFilter} onValueChange={setCompanyFilter}>
-                  <SelectTrigger className="bg-black border-gray-700 w-[150px]"><SelectValue placeholder="Company" /></SelectTrigger>
+                  <SelectTrigger className="bg-black border-gray-700 w-full sm:w-[150px]"><SelectValue placeholder="Company" /></SelectTrigger>
                   <SelectContent className="bg-gray-900 border-gray-700"><SelectItem value="all">All Companies</SelectItem>{companies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               )}
               {statuses.length > 0 && (
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="bg-black border-gray-700 w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectTrigger className="bg-black border-gray-700 w-full sm:w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent className="bg-gray-900 border-gray-700"><SelectItem value="all">All Status</SelectItem>{statuses.map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
                 </Select>
               )}
