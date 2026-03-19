@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image, Globe, Handshake } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image, Globe, Handshake, Menu, X } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -13,6 +13,7 @@ import { BACKEND_URL, API } from '@/utils/api';
 
 const MemberHub = () => {
   const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [operations, setOperations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [training, setTraining] = useState([]);
@@ -79,30 +80,54 @@ const MemberHub = () => {
     <div className="min-h-screen bg-black text-white">
       {/* Top bar - 25th ID colors */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="member-nav">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
             <h1 className="text-xl font-bold tracking-[0.12em] text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH ID HUB</h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-400 hidden sm:block">Welcome, <span className="text-tropic-gold font-bold">{user?.username}</span></span>
-            <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
-            <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
-            <Link to="/hub/gallery"><Button size="sm" variant="outline" className="border-gray-700"><Image className="w-4 h-4 mr-1" />Gallery</Button></Link>
-            <Link to="/hub/loa"><Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold"><Calendar className="w-4 h-4 mr-1.5" />LOA</Button></Link>
-            <Link to="/hub/shared"><Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold"><Handshake className="w-4 h-4 mr-1.5" />Shared</Button></Link>
-            <Link to="/hub/campaign"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><MapPin className="w-4 h-4 mr-1" />Campaigns</Button></Link>
-            <Link to="/hub/threat-map"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Globe className="w-4 h-4 mr-1" />Global Threat Map</Button></Link>
-            {user?.role === 'admin' && (
-              <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
-            )}
-            <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4 mr-1" />Home</Button></Link>
-            <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700" data-testid="member-logout-btn"><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400 hidden lg:block">Welcome, <span className="text-tropic-gold font-bold">{user?.username}</span></span>
+            {/* Desktop nav links */}
+            <div className="hidden md:flex items-center space-x-2">
+              <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
+              <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
+              <Link to="/hub/gallery"><Button size="sm" variant="outline" className="border-gray-700"><Image className="w-4 h-4 mr-1" />Gallery</Button></Link>
+              <Link to="/hub/loa"><Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold"><Calendar className="w-4 h-4 mr-1.5" />LOA</Button></Link>
+              <Link to="/hub/shared"><Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold"><Handshake className="w-4 h-4 mr-1.5" />Shared</Button></Link>
+              <Link to="/hub/campaign"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><MapPin className="w-4 h-4 mr-1" />Campaigns</Button></Link>
+              <Link to="/hub/threat-map"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Globe className="w-4 h-4 mr-1" />Global Threat Map</Button></Link>
+              {user?.role === 'admin' && (
+                <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
+              )}
+              <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4 mr-1" />Home</Button></Link>
+              <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700" data-testid="member-logout-btn"><LogOut className="w-4 h-4" /></Button>
+            </div>
+            {/* Mobile hamburger */}
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-tropic-gold p-1" aria-label="Toggle menu">
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-tropic-gold/10 bg-black/95 backdrop-blur-xl px-4 py-3 space-y-1">
+            <Link to="/hub/profile" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:text-tropic-gold rounded-lg hover:bg-tropic-gold/10"><User className="w-4 h-4" />Profile</Link>
+            <Link to="/roster" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:text-tropic-gold rounded-lg hover:bg-tropic-gold/10"><Users className="w-4 h-4" />Roster</Link>
+            <Link to="/hub/gallery" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:text-tropic-gold rounded-lg hover:bg-tropic-gold/10"><Image className="w-4 h-4" />Gallery</Link>
+            <Link to="/hub/loa" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:text-tropic-gold rounded-lg hover:bg-tropic-gold/10"><Calendar className="w-4 h-4" />LOA</Link>
+            <Link to="/hub/shared" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:text-tropic-gold rounded-lg hover:bg-tropic-gold/10"><Handshake className="w-4 h-4" />Shared</Link>
+            <Link to="/hub/campaign" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-tropic-gold hover:bg-tropic-gold/10 rounded-lg"><MapPin className="w-4 h-4" />Campaigns</Link>
+            <Link to="/hub/threat-map" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-tropic-gold hover:bg-tropic-gold/10 rounded-lg"><Globe className="w-4 h-4" />Global Threat Map</Link>
+            {user?.role === 'admin' && (
+              <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-tropic-red hover:bg-tropic-red/10 rounded-lg"><Shield className="w-4 h-4" />Admin</Link>
+            )}
+            <Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:text-tropic-gold rounded-lg hover:bg-tropic-gold/10"><Home className="w-4 h-4" />Home</Link>
+            <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:text-tropic-red rounded-lg hover:bg-tropic-red/10 w-full" data-testid="member-logout-btn"><LogOut className="w-4 h-4" />Logout</button>
+          </div>
+        )}
       </nav>
 
-      <div className="pt-20 pb-12 px-6">
+      <div className="pt-20 pb-12 px-4 md:px-6">
         <div className="container mx-auto max-w-7xl space-y-8">
           {/* Welcome banner with search - 25th ID colors */}
           <div className="bg-gradient-to-r from-tropic-red/15 via-gray-900/80 to-gray-900 border border-tropic-gold/15 rounded-lg p-6" data-testid="member-welcome-banner">

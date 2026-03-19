@@ -82,7 +82,7 @@ const LOARequest = () => {
         </div>
       </nav>
 
-      <div className="pt-20 pb-12 px-6">
+      <div className="pt-20 pb-12 px-4 md:px-6">
         <div className="container mx-auto max-w-3xl space-y-6">
           {message.text && (
             <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-tropic-red/10 border-tropic-red/60'}>
@@ -116,7 +116,7 @@ const LOARequest = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Start Date *</Label>
                     <Input type="date" required value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} className="bg-black border-gray-700" />
