@@ -16,6 +16,7 @@ reliable for continuous polling.  It can be enabled via env-var if desired.
 """
 
 import os
+import math
 import time
 import logging
 from typing import Optional
@@ -198,7 +199,7 @@ def _safe_float(val) -> Optional[float]:
         return None
     try:
         f = float(val)
-        return None if f != f else f  # NaN check
+        return None if math.isnan(f) else f
     except (ValueError, TypeError):
         return None
 

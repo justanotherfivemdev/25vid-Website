@@ -35,30 +35,32 @@ export default function useADSBAircraft(enabled) {
       }
 
       // Merge with grace period: keep aircraft that were recently seen
-      const merged = [];
-      const seenIds = new Set();
+      setAircraft((prevAircraft) => {
+        const merged = [];
+        const seenIds = new Set();
 
-      // First add all currently-seen aircraft
-      for (const ac of incoming) {
-        merged.push({ ...ac, _stale: false });
-        seenIds.add(ac.id);
-      }
-
-      // Then add grace-period aircraft (recently lost signal)
-      for (const [id, lastSeen] of Object.entries(updatedLastSeen)) {
-        if (!seenIds.has(id) && now - lastSeen < GRACE_PERIOD_MS) {
-          // Find from previous state
-          const prev = aircraft.find((a) => a.id === id);
-          if (prev) {
-            merged.push({ ...prev, _stale: true });
-          }
-        } else if (now - lastSeen >= GRACE_PERIOD_MS) {
-          delete updatedLastSeen[id];
+        // First add all currently-seen aircraft
+        for (const ac of incoming) {
+          merged.push({ ...ac, _stale: false });
+          seenIds.add(ac.id);
         }
-      }
 
-      lastSeenRef.current = updatedLastSeen;
-      setAircraft(merged);
+        // Then add grace-period aircraft (recently lost signal)
+        for (const [id, lastSeen] of Object.entries(updatedLastSeen)) {
+          if (!seenIds.has(id) && now - lastSeen < GRACE_PERIOD_MS) {
+            const prev = prevAircraft.find((a) => a.id === id);
+            if (prev) {
+              merged.push({ ...prev, _stale: true });
+            }
+          } else if (now - lastSeen >= GRACE_PERIOD_MS) {
+            delete updatedLastSeen[id];
+          }
+        }
+
+        lastSeenRef.current = updatedLastSeen;
+        return merged;
+      });
+
       setError(null);
     } catch (err) {
       // Don't clear existing data on error — keep showing last known positions
@@ -66,7 +68,7 @@ export default function useADSBAircraft(enabled) {
     } finally {
       setIsLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!enabled) {
