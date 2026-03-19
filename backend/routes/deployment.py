@@ -218,9 +218,9 @@ async def admin_list_deployments(
         query["deployment_type"] = "partner"
     else:
         # Default: show 25th ID deployments (backwards-compatible)
+        # {deployment_type: None} in MongoDB matches both null values and missing fields
         query["$or"] = [
             {"deployment_type": "25th_id"},
-            {"deployment_type": {"$exists": False}},
             {"deployment_type": None},
         ]
         query["partner_unit_id"] = None

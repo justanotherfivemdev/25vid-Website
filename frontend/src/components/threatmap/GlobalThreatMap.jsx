@@ -1299,7 +1299,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                           <li key={i} className="text-[10px] text-gray-300 flex items-center gap-1">
                             <span className="text-gray-500">•</span>
                             <span>{wp.name || `Stop ${i + 1}`}</span>
-                            {wp.stop_duration_hours > 0 && (
+                            {wp.stop_duration_hours != null && wp.stop_duration_hours > 0 && (
                               <span className="text-gray-500 ml-auto">{wp.stop_duration_hours}h stop</span>
                             )}
                           </li>
