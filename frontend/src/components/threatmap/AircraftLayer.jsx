@@ -118,6 +118,10 @@ export default function AircraftLayer({ aircraft = [], visible = false }) {
         heading: ac.heading || 0,
         aircraft_type: ac.aircraft_type || '',
         source: ac.source || '',
+        origin_country: ac.origin_country || '',
+        on_ground: ac.on_ground ?? false,
+        vertical_rate: ac.vertical_rate,
+        squawk: ac.squawk || '',
         stale: ac._stale || false,
       },
     })),
@@ -136,6 +140,10 @@ export default function AircraftLayer({ aircraft = [], visible = false }) {
       heading: props.heading,
       aircraft_type: props.aircraft_type,
       source: props.source,
+      origin_country: props.origin_country,
+      on_ground: props.on_ground,
+      vertical_rate: props.vertical_rate,
+      squawk: props.squawk,
     });
   }, []);
 
@@ -168,10 +176,18 @@ export default function AircraftLayer({ aircraft = [], visible = false }) {
                   {popup.aircraft_type}
                 </span>
               )}
+              {popup.on_ground && (
+                <span className="text-xs px-2 py-0.5 rounded bg-yellow-600/20 text-yellow-300">
+                  GND
+                </span>
+              )}
             </div>
             <h3 className="font-bold text-cyan-400 text-sm tracking-wider">
               {popup.callsign || 'UNKNOWN'}
             </h3>
+            {popup.origin_country && (
+              <p className="text-xs text-gray-400 mt-0.5">{popup.origin_country}</p>
+            )}
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs">
               {popup.altitude != null && (
                 <>
@@ -189,6 +205,18 @@ export default function AircraftLayer({ aircraft = [], visible = false }) {
                 <>
                   <span className="text-gray-400">Heading</span>
                   <span className="text-gray-200 text-right">{Math.round(popup.heading)}°</span>
+                </>
+              )}
+              {popup.vertical_rate != null && popup.vertical_rate !== 0 && (
+                <>
+                  <span className="text-gray-400">V/S</span>
+                  <span className="text-gray-200 text-right">{popup.vertical_rate > 0 ? '+' : ''}{Math.round(popup.vertical_rate)} ft/min</span>
+                </>
+              )}
+              {popup.squawk && (
+                <>
+                  <span className="text-gray-400">Squawk</span>
+                  <span className="text-gray-200 text-right">{popup.squawk}</span>
                 </>
               )}
               {popup.source && (
