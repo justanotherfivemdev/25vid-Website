@@ -86,8 +86,10 @@ const AdminMemberDetail = () => {
 
   const removeMission = async (entryId) => {
     if (!window.confirm('Remove this mission record?')) return;
-    await axios.delete(`${API}/admin/users/${id}/mission-history/${entryId}`);
-    await fetchMember();
+    try {
+      await axios.delete(`${API}/admin/users/${id}/mission-history/${entryId}`);
+      await fetchMember();
+    } catch (e) { alert(e.response?.data?.detail || 'Error removing mission'); }
   };
 
   const addTraining = async (e) => {
@@ -102,8 +104,10 @@ const AdminMemberDetail = () => {
 
   const removeTraining = async (entryId) => {
     if (!window.confirm('Remove this training record?')) return;
-    await axios.delete(`${API}/admin/users/${id}/training-history/${entryId}`);
-    await fetchMember();
+    try {
+      await axios.delete(`${API}/admin/users/${id}/training-history/${entryId}`);
+      await fetchMember();
+    } catch (e) { alert(e.response?.data?.detail || 'Error removing training record'); }
   };
 
   const addAward = async (e) => {
@@ -118,8 +122,10 @@ const AdminMemberDetail = () => {
 
   const removeAward = async (entryId) => {
     if (!window.confirm('Remove this award?')) return;
-    await axios.delete(`${API}/admin/users/${id}/awards/${entryId}`);
-    await fetchMember();
+    try {
+      await axios.delete(`${API}/admin/users/${id}/awards/${entryId}`);
+      await fetchMember();
+    } catch (e) { alert(e.response?.data?.detail || 'Error removing award'); }
   };
 
   // Helper to render select with option to type custom value

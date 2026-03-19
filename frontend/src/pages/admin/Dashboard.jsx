@@ -70,14 +70,14 @@ const AdminDashboard = () => {
     try {
       const res = await axios.get(`${API}/soldier-of-the-month`);
       setMotw(res.data);
-    } catch {}
+    } catch (err) { console.error('Failed to fetch Soldier of the Month:', err); }
   };
 
   const openMotwDialog = async () => {
     try {
       const res = await axios.get(`${API}/admin/users`);
       setMemberList(res.data);
-    } catch {}
+    } catch (err) { console.error('Failed to fetch member list:', err); }
     setMotwOpen(true);
   };
 
@@ -96,7 +96,7 @@ const AdminDashboard = () => {
     try {
       await axios.delete(`${API}/admin/soldier-of-the-month`);
       setMotw(null);
-    } catch {}
+    } catch (err) { alert(err.response?.data?.detail || 'Error clearing Soldier of the Month'); }
   };
 
   const filteredMembers = memberList.filter(m =>

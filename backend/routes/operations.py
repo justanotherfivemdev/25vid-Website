@@ -77,24 +77,37 @@ async def rsvp_operation(operation_id: str, rsvp_data: RSVPSubmit, current_user:
         raise HTTPException(status_code=404, detail="Operation not found")
 
     user_id = current_user["id"]
-    rsvps = operation.get("rsvps", [])
     max_p = operation.get("max_participants")
 
-    rsvps = [r for r in rsvps if r["user_id"] != user_id]
+    # Atomically remove any existing RSVP for this user first
+    await db.operations.update_one(
+        {"id": operation_id},
+        {"$pull": {"rsvps": {"user_id": user_id}}}
+    )
 
     if rsvp_data.status == "not_attending":
-        await db.operations.update_one({"id": operation_id}, {"$set": {"rsvps": rsvps}})
+        # Promote first waitlisted user if there is capacity
         if max_p:
+            refreshed = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+            rsvps = refreshed.get("rsvps", [])
             attending = [r for r in rsvps if r["status"] == "attending"]
-            waitlisted = [r for r in rsvps if r["status"] == "waitlisted"]
+            waitlisted = sorted(
+                [r for r in rsvps if r["status"] == "waitlisted"],
+                key=lambda r: r.get("rsvp_time") or "9999-12-31T23:59:59",
+            )
             if len(attending) < max_p and waitlisted:
-                waitlisted[0]["status"] = "attending"
-                await db.operations.update_one({"id": operation_id}, {"$set": {"rsvps": rsvps}})
-        return {"message": "RSVP removed", "rsvps": rsvps}
+                promote_uid = waitlisted[0]["user_id"]
+                await db.operations.update_one(
+                    {"id": operation_id, "rsvps.user_id": promote_uid},
+                    {"$set": {"rsvps.$.status": "attending"}}
+                )
+        updated = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+        return {"message": "RSVP removed", "rsvps": updated.get("rsvps", [])}
 
     assigned_status = rsvp_data.status
     if assigned_status == "attending" and max_p:
-        current_attending = len([r for r in rsvps if r["status"] == "attending"])
+        refreshed = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+        current_attending = len([r for r in refreshed.get("rsvps", []) if r["status"] == "attending"])
         if current_attending >= max_p:
             assigned_status = "waitlisted"
 
@@ -105,11 +118,16 @@ async def rsvp_operation(operation_id: str, rsvp_data: RSVPSubmit, current_user:
         "role_notes": rsvp_data.role_notes or "",
         "rsvp_time": datetime.now(timezone.utc).isoformat()
     }
-    rsvps.append(entry)
 
-    await db.operations.update_one({"id": operation_id}, {"$set": {"rsvps": rsvps}})
+    # Atomically push the new RSVP entry
+    await db.operations.update_one(
+        {"id": operation_id},
+        {"$push": {"rsvps": entry}}
+    )
+
+    updated = await db.operations.find_one({"id": operation_id}, {"_id": 0})
     msg = "Waitlisted — operation at capacity" if assigned_status == "waitlisted" else f"RSVP set to {assigned_status}"
-    return {"message": msg, "your_status": assigned_status, "rsvps": rsvps}
+    return {"message": msg, "your_status": assigned_status, "rsvps": updated.get("rsvps", [])}
 
 
 @router.delete("/operations/{operation_id}/rsvp")
@@ -117,15 +135,31 @@ async def cancel_rsvp(operation_id: str, current_user: dict = Depends(get_curren
     operation = await db.operations.find_one({"id": operation_id}, {"_id": 0})
     if not operation:
         raise HTTPException(status_code=404, detail="Operation not found")
-    rsvps = [r for r in operation.get("rsvps", []) if r["user_id"] != current_user["id"]]
+
+    # Atomically remove the user's RSVP
+    await db.operations.update_one(
+        {"id": operation_id},
+        {"$pull": {"rsvps": {"user_id": current_user["id"]}}}
+    )
+
     max_p = operation.get("max_participants")
     if max_p:
+        refreshed = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+        rsvps = refreshed.get("rsvps", [])
         attending = [r for r in rsvps if r["status"] == "attending"]
-        waitlisted = [r for r in rsvps if r["status"] == "waitlisted"]
+        waitlisted = sorted(
+            [r for r in rsvps if r["status"] == "waitlisted"],
+            key=lambda r: r.get("rsvp_time") or "9999-12-31T23:59:59",
+        )
         if len(attending) < max_p and waitlisted:
-            waitlisted[0]["status"] = "attending"
-    await db.operations.update_one({"id": operation_id}, {"$set": {"rsvps": rsvps}})
-    return {"message": "RSVP cancelled", "rsvps": rsvps}
+            promote_uid = waitlisted[0]["user_id"]
+            await db.operations.update_one(
+                {"id": operation_id, "rsvps.user_id": promote_uid},
+                {"$set": {"rsvps.$.status": "attending"}}
+            )
+
+    updated = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+    return {"message": "RSVP cancelled", "rsvps": updated.get("rsvps", [])}
 
 
 @router.get("/operations/{operation_id}/rsvp")
