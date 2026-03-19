@@ -160,7 +160,7 @@ const PartnerSharedArea = () => {
               <form onSubmit={handleCreate} className="space-y-4">
                 <div><Label>Title</Label><Input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="bg-black border-gray-700" /></div>
                 <div><Label>Content</Label><Textarea required value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} className="bg-black border-gray-700" rows={4} /></div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Type</Label>
                     <Select value={form.post_type} onValueChange={v => setForm({ ...form, post_type: v })}>

@@ -140,7 +140,7 @@ const PartnerUnitsManager = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-gray-400 mb-1 block">Unit Name *</label>
                     <Input required className="bg-black/50 border-white/20" value={formData.name}
@@ -157,7 +157,7 @@ const PartnerUnitsManager = () => {
                   <Textarea className="bg-black/50 border-white/20" value={formData.description}
                     onChange={e => setFormData({ ...formData, description: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-gray-400 mb-1 block">Contact Email</label>
                     <Input type="email" className="bg-black/50 border-white/20" value={formData.contact_email}

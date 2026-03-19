@@ -124,7 +124,7 @@ const HistoryManager = () => {
                     className="bg-black border-gray-700" placeholder="e.g., Guadalcanal Campaign"
                     data-testid="history-title-input" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Year / Date Range</Label>
                     <Input required value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })}

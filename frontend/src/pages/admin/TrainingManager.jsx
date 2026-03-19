@@ -83,7 +83,7 @@ const TrainingManager = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div><Label>Title</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Advanced CQB Training" data-testid="training-title-input" /></div>
                 <div><Label>Description</Label><Textarea required rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="bg-black border-gray-700" data-testid="training-desc-input" /></div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div><Label>Instructor</Label><Input required value={form.instructor} onChange={(e) => setForm({ ...form, instructor: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., SGT Miller" data-testid="training-instructor-input" /></div>
                   <div><Label>Duration</Label><Input required value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., 2 hours" data-testid="training-duration-input" /></div>
                 </div>
