@@ -272,7 +272,7 @@ const JoinUs = () => {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>Name / Callsign *</Label>
                       <Input required value={form.applicant_name} onChange={e => setForm({...form, applicant_name: e.target.value})} className="bg-black border-gray-700" placeholder="Your name" data-testid="apply-name" />
@@ -283,7 +283,7 @@ const JoinUs = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>Discord Username</Label>
                       <Input value={form.discord_username} onChange={e => setForm({...form, discord_username: e.target.value})} className="bg-black border-gray-700" placeholder="username#1234" data-testid="apply-discord" />

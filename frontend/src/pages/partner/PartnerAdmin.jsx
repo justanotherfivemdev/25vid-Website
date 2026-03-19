@@ -299,7 +299,7 @@ const PartnerAdmin = () => {
                     <CardContent className="p-4">
                       {editingMember === member.id ? (
                         <div className="space-y-3">
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
                               <label className="text-xs text-gray-500">Rank</label>
                               <Input className="bg-black/50 border-white/20 mt-1" value={editForm.rank} onChange={e => setEditForm({ ...editForm, rank: e.target.value })} />
@@ -375,7 +375,7 @@ const PartnerAdmin = () => {
                   <CardContent className="p-4">
                     <form onSubmit={saveOperation} className="space-y-3">
                       <h4 className="text-sm font-bold text-tropic-gold">{editingOp ? 'Edit Operation' : 'Create Operation'}</h4>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="text-xs text-gray-500">Title *</label>
                           <Input className="bg-black/50 border-white/20 mt-1" value={opForm.title} onChange={e => setOpForm({ ...opForm, title: e.target.value })} required />
@@ -394,7 +394,7 @@ const PartnerAdmin = () => {
                         <label className="text-xs text-gray-500">Description</label>
                         <Textarea className="bg-black/50 border-white/20 mt-1" rows={2} value={opForm.description} onChange={e => setOpForm({ ...opForm, description: e.target.value })} />
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <label className="text-xs text-gray-500">Date</label>
                           <Input type="date" className="bg-black/50 border-white/20 mt-1" value={opForm.date} onChange={e => setOpForm({ ...opForm, date: e.target.value })} />
@@ -471,7 +471,7 @@ const PartnerAdmin = () => {
                   <CardContent className="p-4">
                     <form onSubmit={saveIntel} className="space-y-3">
                       <h4 className="text-sm font-bold text-tropic-gold">{editingIntel ? 'Edit Intel Report' : 'Create Intel Report'}</h4>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="text-xs text-gray-500">Title *</label>
                           <Input className="bg-black/50 border-white/20 mt-1" value={intelForm.title} onChange={e => setIntelForm({ ...intelForm, title: e.target.value })} required />
@@ -489,7 +489,7 @@ const PartnerAdmin = () => {
                         <label className="text-xs text-gray-500">Content *</label>
                         <Textarea className="bg-black/50 border-white/20 mt-1" rows={3} value={intelForm.content} onChange={e => setIntelForm({ ...intelForm, content: e.target.value })} required />
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="text-xs text-gray-500">Region</label>
                           <Input className="bg-black/50 border-white/20 mt-1" value={intelForm.region} onChange={e => setIntelForm({ ...intelForm, region: e.target.value })} placeholder="e.g. Pacific Theater" />

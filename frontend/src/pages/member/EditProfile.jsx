@@ -149,7 +149,7 @@ const EditProfile = () => {
           <Card className="bg-gray-900/80 border-gray-800">
             <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider">YOUR DETAILS</CardTitle></CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><span className="text-gray-500 text-xs block">Username</span>{profile.username}</div>
                 <div><span className="text-gray-500 text-xs block">Email</span>{profile.email}</div>
                 <div><span className="text-gray-500 text-xs block">Rank</span><span className="text-gray-400">{profile.rank || 'Not assigned'}</span></div>
@@ -177,7 +177,7 @@ const EditProfile = () => {
                 <p className="text-xs text-gray-500 mb-1">A short personal or in-character description.</p>
                 <Textarea value={profile.bio || ''} onChange={e => setProfile({ ...profile, bio: e.target.value })} rows={3} className="bg-black border-gray-700" placeholder="Tell the unit about yourself..." data-testid="profile-bio-input" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Timezone</Label>
                   <p className="text-xs text-gray-500 mb-1">Helps with op scheduling.</p>
@@ -266,7 +266,7 @@ const EditProfile = () => {
                       data-testid="set-email-input"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Password</Label>
                       <Input

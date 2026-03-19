@@ -159,7 +159,7 @@ const RecruitDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-black/30 rounded-lg p-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Submitted:</span>
                       <div className="text-gray-300">{new Date(application.submitted_at).toLocaleDateString()}</div>
@@ -214,7 +214,7 @@ const RecruitDashboard = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label>Discord Username</Label>
                       <Input 
