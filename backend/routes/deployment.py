@@ -19,6 +19,7 @@ from models.deployment import (
     DeploymentCreate,
     DeploymentUpdate,
     DEPLOYMENT_STATUSES,
+    DEPLOYMENT_TYPES,
     DivisionLocation,
     DivisionLocationUpdate,
     DIVISION_STATES,
@@ -42,7 +43,61 @@ async def get_nato_reference():
         "affiliation_labels": NATO_AFFILIATION_LABELS,
         "symbol_type_labels": NATO_SYMBOL_TYPE_LABELS,
         "echelon_labels": NATO_ECHELON_LABELS,
+        "deployment_types": DEPLOYMENT_TYPES,
     }
+
+
+@router.get("/map/location-entities")
+async def get_location_entities(current_user: dict = Depends(get_current_admin)):
+    """Return campaigns, operations, and intel with coordinates for the entity picker."""
+    entities = []
+
+    # Campaigns with coordinates
+    campaigns = await db.campaigns.find(
+        {"lat": {"$ne": None}, "lng": {"$ne": None}},
+        {"_id": 0, "name": 1, "lat": 1, "lng": 1, "id": 1},
+    ).to_list(200)
+    for c in campaigns:
+        if c.get("lat") is not None and c.get("lng") is not None:
+            entities.append({
+                "entity_type": "campaign",
+                "entity_id": c.get("id", ""),
+                "name": c.get("name", "Campaign"),
+                "latitude": c["lat"],
+                "longitude": c["lng"],
+            })
+
+    # Operations with coordinates
+    ops = await db.operations.find(
+        {"lat": {"$ne": None}, "lng": {"$ne": None}},
+        {"_id": 0, "title": 1, "lat": 1, "lng": 1, "id": 1},
+    ).to_list(200)
+    for op in ops:
+        if op.get("lat") is not None and op.get("lng") is not None:
+            entities.append({
+                "entity_type": "operation",
+                "entity_id": op.get("id", ""),
+                "name": op.get("title", "Operation"),
+                "latitude": op["lat"],
+                "longitude": op["lng"],
+            })
+
+    # Intel briefings with coordinates
+    intel = await db.intel_briefings.find(
+        {"lat": {"$ne": None}, "lng": {"$ne": None}},
+        {"_id": 0, "title": 1, "lat": 1, "lng": 1, "id": 1},
+    ).to_list(200)
+    for br in intel:
+        if br.get("lat") is not None and br.get("lng") is not None:
+            entities.append({
+                "entity_type": "intel",
+                "entity_id": br.get("id", ""),
+                "name": br.get("title", "Intel"),
+                "latitude": br["lat"],
+                "longitude": br["lng"],
+            })
+
+    return entities
 
 
 # ── NATO Markers (Public read, Admin write) ──────────────────────────────────
@@ -151,10 +206,26 @@ async def get_deployment(
 
 
 @router.get("/admin/map/deployments")
-async def admin_list_deployments(current_user: dict = Depends(get_current_admin)):
-    """Return all 25th ID deployments including inactive/archived."""
+async def admin_list_deployments(
+    deployment_type: str = None,
+    current_user: dict = Depends(get_current_admin),
+):
+    """Return deployments filtered by type, including inactive/archived."""
+    query = {}
+    if deployment_type == "allied":
+        query["deployment_type"] = "allied"
+    elif deployment_type == "partner":
+        query["deployment_type"] = "partner"
+    else:
+        # Default: show 25th ID deployments (backwards-compatible)
+        query["$or"] = [
+            {"deployment_type": "25th_id"},
+            {"deployment_type": {"$exists": False}},
+            {"deployment_type": None},
+        ]
+        query["partner_unit_id"] = None
     deployments = await db.deployments.find(
-        {"partner_unit_id": None}, {"_id": 0}
+        query, {"_id": 0}
     ).sort("created_at", -1).to_list(200)
     return deployments
 
@@ -168,6 +239,7 @@ async def create_deployment(
         title=data.title,
         description=data.description,
         status=data.status,
+        deployment_type=data.deployment_type,
         start_location_name=data.start_location_name,
         start_latitude=data.start_latitude,
         start_longitude=data.start_longitude,
@@ -179,11 +251,13 @@ async def create_deployment(
         waypoints=data.waypoints,
         notes=data.notes,
         created_by=current_user["id"],
+        partner_unit_id=data.partner_unit_id,
+        unit_name=data.unit_name,
     )
     await db.deployments.insert_one(dep.model_dump())
 
-    # If deploying/deployed, update division location
-    if data.status in ("deploying", "deployed"):
+    # If deploying/deployed, update division location (only for 25th ID deployments)
+    if data.status in ("deploying", "deployed") and data.deployment_type == "25th_id":
         await _update_division_for_deployment(dep, current_user["id"])
 
     await log_audit(
@@ -214,19 +288,23 @@ async def update_deployment(
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})
 
-    # If status changed, update division location
+    # If status changed, update division location (only for 25th ID deployments)
     new_status = data.status
     if new_status:
         updated = await db.deployments.find_one({"id": deployment_id}, {"_id": 0})
         dep_obj = Deployment(**updated)
-        if new_status in ("deploying", "deployed"):
-            await _update_division_for_deployment(dep_obj, current_user["id"])
-        elif new_status in ("returning",):
-            await _set_division_state("returning", dep_obj.start_location_name,
-                                       dep_obj.start_latitude, dep_obj.start_longitude,
-                                       deployment_id, current_user["id"])
-        elif new_status in ("completed", "cancelled"):
-            await _reset_division_home(current_user["id"])
+        is_25th = dep_obj.deployment_type == "25th_id" or (
+            dep_obj.deployment_type is None and dep_obj.partner_unit_id is None
+        )
+        if is_25th:
+            if new_status in ("deploying", "deployed"):
+                await _update_division_for_deployment(dep_obj, current_user["id"])
+            elif new_status in ("returning",):
+                await _set_division_state("returning", dep_obj.start_location_name,
+                                           dep_obj.start_latitude, dep_obj.start_longitude,
+                                           deployment_id, current_user["id"])
+            elif new_status in ("completed", "cancelled"):
+                await _reset_division_home(current_user["id"])
 
     await log_audit(
         user_id=current_user["id"],
