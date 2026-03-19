@@ -42,6 +42,7 @@ const EMPTY_DEPLOYMENT = {
   destination_longitude: '',
   start_date: '',
   estimated_arrival: '',
+  waypoints: [],
   notes: '',
   is_active: true,
 };
@@ -159,6 +160,7 @@ const DeploymentManager = () => {
       destination_longitude: dep.destination_longitude ?? '',
       start_date: dep.start_date ? dep.start_date.split('T')[0] : '',
       estimated_arrival: dep.estimated_arrival ? dep.estimated_arrival.split('T')[0] : '',
+      waypoints: Array.isArray(dep.waypoints) ? dep.waypoints : [],
       notes: dep.notes || '',
       is_active: dep.is_active ?? true,
     });
@@ -176,6 +178,11 @@ const DeploymentManager = () => {
         destination_longitude: deploymentForm.destination_longitude === '' ? null : parseFloat(deploymentForm.destination_longitude),
         start_date: deploymentForm.start_date || null,
         estimated_arrival: deploymentForm.estimated_arrival || null,
+        waypoints: (deploymentForm.waypoints || []).map((wp) => ({
+          name: wp.name || '',
+          latitude: wp.latitude === '' || wp.latitude == null ? null : parseFloat(wp.latitude),
+          longitude: wp.longitude === '' || wp.longitude == null ? null : parseFloat(wp.longitude),
+        })).filter((wp) => wp.latitude != null && wp.longitude != null),
       };
 
       if (editingDeployment) {
@@ -455,6 +462,11 @@ const DeploymentManager = () => {
                                 {dep.destination_name}
                               </span>
                             )}
+                            {Array.isArray(dep.waypoints) && dep.waypoints.length > 0 && (
+                              <span className="text-tropic-gold/70">
+                                via {dep.waypoints.map((wp) => wp.name || 'waypoint').join(' → ')}
+                              </span>
+                            )}
                             {dep.start_date && (
                               <span>Start: {new Date(dep.start_date).toLocaleDateString()}</span>
                             )}
@@ -731,6 +743,86 @@ const DeploymentManager = () => {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Waypoints – intermediate stops */}
+              <div className="border border-gray-800 rounded-lg p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-tropic-gold tracking-wider font-bold">WAYPOINTS (Intermediate Stops)</div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10 h-7 text-xs"
+                    onClick={() => setDeploymentForm({
+                      ...deploymentForm,
+                      waypoints: [...(deploymentForm.waypoints || []), { name: '', latitude: '', longitude: '' }],
+                    })}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add Stop
+                  </Button>
+                </div>
+                {(deploymentForm.waypoints || []).length === 0 && (
+                  <p className="text-xs text-gray-600 italic">No intermediate stops. Add waypoints for multi-leg routes (e.g., a stop in Germany).</p>
+                )}
+                {(deploymentForm.waypoints || []).map((wp, idx) => (
+                  <div key={idx} className="flex items-end gap-2 border border-gray-800/60 rounded p-2">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-[10px] text-gray-500">Stop Name</Label>
+                      <Input
+                        value={wp.name || ''}
+                        onChange={(e) => {
+                          const wps = [...deploymentForm.waypoints];
+                          wps[idx] = { ...wps[idx], name: e.target.value };
+                          setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                        }}
+                        className="bg-black border-gray-700 h-8 text-xs"
+                        placeholder="e.g., Ramstein, Germany"
+                      />
+                    </div>
+                    <div className="w-24 space-y-1">
+                      <Label className="text-[10px] text-gray-500">Lat</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={wp.latitude ?? ''}
+                        onChange={(e) => {
+                          const wps = [...deploymentForm.waypoints];
+                          wps[idx] = { ...wps[idx], latitude: e.target.value };
+                          setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                        }}
+                        className="bg-black border-gray-700 h-8 text-xs"
+                      />
+                    </div>
+                    <div className="w-24 space-y-1">
+                      <Label className="text-[10px] text-gray-500">Lng</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={wp.longitude ?? ''}
+                        onChange={(e) => {
+                          const wps = [...deploymentForm.waypoints];
+                          wps[idx] = { ...wps[idx], longitude: e.target.value };
+                          setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                        }}
+                        className="bg-black border-gray-700 h-8 text-xs"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-red-800/50 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 p-0 shrink-0"
+                      onClick={() => {
+                        const wps = deploymentForm.waypoints.filter((_, i) => i !== idx);
+                        setDeploymentForm({ ...deploymentForm, waypoints: wps });
+                      }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
               </div>
 
               {/* Dates */}

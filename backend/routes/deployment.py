@@ -176,6 +176,7 @@ async def create_deployment(
         destination_longitude=data.destination_longitude,
         start_date=data.start_date,
         estimated_arrival=data.estimated_arrival,
+        waypoints=data.waypoints,
         notes=data.notes,
         created_by=current_user["id"],
     )
