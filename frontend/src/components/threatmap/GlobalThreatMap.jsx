@@ -300,6 +300,19 @@ const NATO_SYMBOL_ICONS = {
   air_defense: 'M8,22 L16,8 L24,22 M8,16 L24,16',
   naval: 'M6,16 Q10,10 16,16 Q22,22 26,16',
   special_operations: 'M16,6 L19,13 L26,14 L21,19 L22,26 L16,22 L10,26 L11,19 L6,14 L13,13 Z',
+  military_police: 'M10,8 L22,8 L22,24 L10,24 Z M16,8 L16,24',
+  chemical: 'M10,10 L22,10 L22,22 L10,22 Z M10,10 L22,22 M22,10 L10,22',
+  maintenance: 'M8,16 L24,16 M16,8 L16,24 M10,10 L22,22',
+  transportation: 'M6,20 L16,10 L26,20 M11,15 L21,15',
+  supply: 'M8,12 L24,12 L24,20 L8,20 Z',
+  missile: 'M16,6 L16,26 M12,10 L16,6 L20,10',
+  cyber: 'M8,16 L12,10 L20,10 L24,16 L20,22 L12,22 Z',
+  civil_affairs: 'M10,16 L16,10 L22,16 L16,22 Z M16,10 L16,6 M16,22 L16,26',
+  psychological_operations: 'M10,8 L22,8 Q26,16 22,24 L10,24 Q6,16 10,8 Z',
+  unmanned_aerial: 'M8,16 L16,8 L24,16 M12,22 L16,16 L20,22',
+  electronic_warfare: 'M8,16 Q12,8 16,16 Q20,24 24,16 M8,12 L24,12',
+  staging_area: 'M8,8 L24,8 L24,24 L8,24 Z M12,12 L20,12 L20,20 L12,20 Z',
+  custom: 'M16,6 L16,26 M6,16 L26,16 M10,10 L22,22 M22,10 L10,22',
 };
 
 function buildNATOMarkerSVG(affiliation, symbolType, size = 32) {
@@ -331,12 +344,35 @@ function buildNATOMarkerSVG(affiliation, symbolType, size = 32) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${shape}${icon}</svg>`;
 }
 
-/* Deployment path layer */
+/* ── Deployment path colours per unit ────────────────────────────────────── */
+const UNIT_DEPLOYMENT_COLORS = [
+  '#C9A227', // gold  – 25th ID (default)
+  '#3B82F6', // blue
+  '#EF4444', // red
+  '#10B981', // emerald
+  '#A855F7', // purple
+  '#F59E0B', // amber
+  '#EC4899', // pink
+  '#06B6D4', // cyan
+  '#F97316', // orange
+  '#6366F1', // indigo
+];
+
+// Latitude offset in degrees applied to each partner unit's deployment line
+// so overlapping routes remain visually distinguishable (~16 km per unit).
+const PARTNER_LINE_OFFSET_DEG = 0.15;
+
+function getUnitColor(partnerUnitId, unitIndex) {
+  if (!partnerUnitId) return UNIT_DEPLOYMENT_COLORS[0]; // 25th ID gold
+  return UNIT_DEPLOYMENT_COLORS[(unitIndex % (UNIT_DEPLOYMENT_COLORS.length - 1)) + 1];
+}
+
+/* Deployment path layer – uses data-driven color */
 const deploymentPathLayer = {
   id: 'deployment-path',
   type: 'line',
   paint: {
-    'line-color': '#C9A227',
+    'line-color': ['get', 'color'],
     'line-width': 2.5,
     'line-dasharray': [2, 2],
     'line-opacity': 0.8,
@@ -361,8 +397,29 @@ const deploymentArrowLayer = {
     'text-allow-overlap': true,
   },
   paint: {
-    'text-color': '#C9A227',
+    'text-color': ['get', 'color'],
     'text-opacity': 0.9,
+  },
+};
+
+/* Duration label shown along the deployment line when deploying */
+const deploymentDurationLayer = {
+  id: 'deployment-duration',
+  type: 'symbol',
+  filter: ['==', ['get', 'status'], 'deploying'],
+  layout: {
+    'symbol-placement': 'line-center',
+    'text-field': ['get', 'durationLabel'],
+    'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+    'text-size': 11,
+    'text-offset': [0, -1.2],
+    'text-allow-overlap': true,
+    'text-anchor': 'center',
+  },
+  paint: {
+    'text-color': ['get', 'color'],
+    'text-halo-color': '#0f172a',
+    'text-halo-width': 1.5,
   },
 };
 
@@ -513,29 +570,64 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       })),
   }), [campaignEvents]);
 
+  // Build a stable unit-index map so each partner unit gets a unique color
+  const partnerUnitIndexMap = useMemo(() => {
+    const map = {};
+    let idx = 0;
+    deployments.forEach((d) => {
+      if (d.partner_unit_id && !(d.partner_unit_id in map)) {
+        map[d.partner_unit_id] = idx++;
+      }
+    });
+    return map;
+  }, [deployments]);
+
+  // Compute a human-readable travel duration label from start_date → estimated_arrival
+  function computeDurationLabel(dep) {
+    if (!dep.start_date || !dep.estimated_arrival) return '';
+    const start = new Date(dep.start_date);
+    const end = new Date(dep.estimated_arrival);
+    const diffMs = end - start;
+    if (isNaN(diffMs) || diffMs <= 0) return '';
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    if (days > 0 && hours > 0) return `${days}d ${hours}h`;
+    if (days > 0) return `${days}d`;
+    if (hours > 0) return `${hours}h`;
+    return '';
+  }
+
   // Build GeoJSON for deployment travel paths
   const deploymentPathsGeoJson = useMemo(() => ({
     type: 'FeatureCollection',
     features: deployments
       .filter((d) => d.destination_latitude != null && d.destination_longitude != null &&
                      d.status !== 'completed' && d.status !== 'cancelled')
-      .map((d) => ({
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [d.start_longitude, d.start_latitude],
-            [d.destination_longitude, d.destination_latitude],
-          ],
-        },
-        properties: {
-          id: d.id,
-          title: d.title,
-          status: d.status,
-          partner_unit_id: d.partner_unit_id || null,
-        },
-      })),
-  }), [deployments]);
+      .map((d) => {
+        const unitIdx = d.partner_unit_id ? (partnerUnitIndexMap[d.partner_unit_id] ?? 0) : -1;
+        const color = getUnitColor(d.partner_unit_id, unitIdx);
+        const durationLabel = computeDurationLabel(d);
+        const offsetLat = d.partner_unit_id ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
+        return {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [d.start_longitude, d.start_latitude + offsetLat],
+              [d.destination_longitude, d.destination_latitude + offsetLat],
+            ],
+          },
+          properties: {
+            id: d.id,
+            title: d.title,
+            status: d.status,
+            partner_unit_id: d.partner_unit_id || '',
+            color,
+            durationLabel: durationLabel ? `⏱ ${durationLabel}` : '',
+          },
+        };
+      }),
+  }), [deployments, partnerUnitIndexMap]);
 
   // Current active deployment for the 25th ID
   const activeDeployment = useMemo(() =>
@@ -785,6 +877,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           <Source id="deployment-paths" type="geojson" data={deploymentPathsGeoJson}>
             <Layer {...deploymentPathLayer} />
             <Layer {...deploymentArrowLayer} />
+            <Layer {...deploymentDurationLayer} />
           </Source>
         )}
 
@@ -844,7 +937,10 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         {deployments
           .filter((d) => d.destination_latitude != null && d.destination_longitude != null &&
                          d.status !== 'completed' && d.status !== 'cancelled')
-          .map((d) => (
+          .map((d) => {
+            const unitIdx = d.partner_unit_id ? (partnerUnitIndexMap[d.partner_unit_id] ?? 0) : -1;
+            const color = getUnitColor(d.partner_unit_id, unitIdx);
+            return (
             <Marker
               key={`dep-dest-${d.id}`}
               longitude={d.destination_longitude}
@@ -866,12 +962,16 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                     __html: buildNATOMarkerSVG('friendly', 'objective', 32),
                   }}
                 />
-                <span className="text-[9px] text-tropic-gold-light mt-0.5 whitespace-nowrap bg-black/70 px-1 rounded max-w-[100px] truncate">
+                <span
+                  className="text-[9px] mt-0.5 whitespace-nowrap bg-black/70 px-1 rounded max-w-[100px] truncate"
+                  style={{ color }}
+                >
                   {d.destination_name || d.title}
                 </span>
               </div>
             </Marker>
-          ))}
+            );
+          })}
 
         {/* Event popup */}
         {popupInfo && (
@@ -974,6 +1074,12 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                   <p className="text-xs text-gray-400 mt-1">
                     {deploymentPopup.data.start_location_name} → {deploymentPopup.data.destination_name}
                   </p>
+                  {deploymentPopup.data.start_date && deploymentPopup.data.estimated_arrival && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      ⏱ {computeDurationLabel(deploymentPopup.data) || 'Calculating...'}
+                      {deploymentPopup.data.status === 'deploying' && ' — In Transit'}
+                    </p>
+                  )}
                   {deploymentPopup.data.estimated_arrival && (
                     <p className="text-xs text-gray-500 mt-1">
                       ETA: {new Date(deploymentPopup.data.estimated_arrival).toLocaleDateString()}

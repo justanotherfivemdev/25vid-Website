@@ -196,8 +196,9 @@ const DeploymentManager = () => {
 
   const handleDeploymentStatusChange = async (dep, newStatus) => {
     try {
-      await axios.put(`${API}/admin/map/deployments/${dep.id}`, { ...dep, status: newStatus }, { withCredentials: true });
+      await axios.put(`${API}/admin/map/deployments/${dep.id}`, { status: newStatus }, { withCredentials: true });
       await fetchDeployments();
+      await fetchDivisionLocation();
     } catch (err) {
       console.error('Error updating status:', err);
       alert('Error updating deployment status');
@@ -279,9 +280,9 @@ const DeploymentManager = () => {
 
   const openDivisionDialog = () => {
     setDivisionForm({
-      name: divisionLocation?.name || '',
-      latitude: divisionLocation?.latitude ?? '',
-      longitude: divisionLocation?.longitude ?? '',
+      name: divisionLocation?.current_location_name || '',
+      latitude: divisionLocation?.current_latitude ?? '',
+      longitude: divisionLocation?.current_longitude ?? '',
     });
     setDivisionDialogOpen(true);
   };
@@ -290,9 +291,9 @@ const DeploymentManager = () => {
     e.preventDefault();
     try {
       await axios.put(`${API}/admin/map/division-location`, {
-        name: divisionForm.name,
-        latitude: parseFloat(divisionForm.latitude),
-        longitude: parseFloat(divisionForm.longitude),
+        current_location_name: divisionForm.name,
+        current_latitude: parseFloat(divisionForm.latitude),
+        current_longitude: parseFloat(divisionForm.longitude),
       }, { withCredentials: true });
       setDivisionDialogOpen(false);
       await fetchDivisionLocation();
@@ -305,18 +306,23 @@ const DeploymentManager = () => {
   // --- Helpers ---
 
   const symbolTypes = natoReference?.symbol_types
-    ? Object.keys(natoReference.symbol_types)
-    : ['infantry', 'armor', 'aviation', 'artillery', 'logistics', 'headquarters', 'medical', 'recon', 'signal', 'engineer', 'objective', 'waypoint', 'staging_area', 'air_defense', 'naval', 'special_operations', 'custom'];
+    ? natoReference.symbol_types
+    : ['infantry', 'armor', 'aviation', 'artillery', 'logistics', 'headquarters', 'medical', 'recon', 'signal', 'engineer', 'air_defense', 'naval', 'special_operations', 'military_police', 'chemical', 'maintenance', 'transportation', 'supply', 'missile', 'cyber', 'civil_affairs', 'psychological_operations', 'unmanned_aerial', 'electronic_warfare', 'objective', 'waypoint', 'staging_area', 'custom'];
 
   const echelons = natoReference?.echelons
-    ? Object.keys(natoReference.echelons)
-    : ['team', 'squad', 'platoon', 'company', 'battalion', 'regiment', 'brigade', 'division', 'corps', 'army', 'none'];
+    ? natoReference.echelons
+    : ['team', 'squad', 'section', 'platoon', 'company', 'battalion', 'regiment', 'brigade', 'division', 'corps', 'army', 'army_group', 'theater', 'none'];
 
   const affiliations = natoReference?.affiliations
-    ? Object.keys(natoReference.affiliations)
+    ? natoReference.affiliations
     : ['friendly', 'hostile', 'neutral', 'unknown'];
 
+  const symbolTypeLabels = natoReference?.symbol_type_labels || {};
+  const echelonLabels = natoReference?.echelon_labels || {};
+  const affiliationLabels = natoReference?.affiliation_labels || {};
+
   const formatLabel = (str) => str.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  const getNatoLabel = (value, labelsMap) => labelsMap[value] || formatLabel(value);
 
   return (
     <AdminLayout>
@@ -338,7 +344,7 @@ const DeploymentManager = () => {
                   <div className="text-xs text-gray-500 tracking-wider font-bold">DIVISION HQ LOCATION</div>
                   <div className="text-sm text-white">
                     {divisionLocation
-                      ? `${divisionLocation.name || 'Unknown'} (${divisionLocation.latitude?.toFixed(4)}, ${divisionLocation.longitude?.toFixed(4)})`
+                      ? `${divisionLocation.current_location_name || 'Unknown'} (${divisionLocation.current_latitude?.toFixed(4)}, ${divisionLocation.current_longitude?.toFixed(4)})`
                       : 'Not set'}
                   </div>
                 </div>
@@ -821,9 +827,9 @@ const DeploymentManager = () => {
                     <SelectTrigger className="bg-black border-gray-700">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectContent className="bg-gray-900 border-gray-700 max-h-[300px]">
                       {affiliations.map((a) => (
-                        <SelectItem key={a} value={a}>{formatLabel(a)}</SelectItem>
+                        <SelectItem key={a} value={a}>{getNatoLabel(a, affiliationLabels)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -837,9 +843,9 @@ const DeploymentManager = () => {
                     <SelectTrigger className="bg-black border-gray-700">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectContent className="bg-gray-900 border-gray-700 max-h-[300px]">
                       {symbolTypes.map((st) => (
-                        <SelectItem key={st} value={st}>{formatLabel(st)}</SelectItem>
+                        <SelectItem key={st} value={st}>{getNatoLabel(st, symbolTypeLabels)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -853,9 +859,9 @@ const DeploymentManager = () => {
                     <SelectTrigger className="bg-black border-gray-700">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectContent className="bg-gray-900 border-gray-700 max-h-[300px]">
                       {echelons.map((ec) => (
-                        <SelectItem key={ec} value={ec}>{formatLabel(ec)}</SelectItem>
+                        <SelectItem key={ec} value={ec}>{getNatoLabel(ec, echelonLabels)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
