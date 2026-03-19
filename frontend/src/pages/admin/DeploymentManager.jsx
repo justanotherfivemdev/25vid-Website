@@ -176,7 +176,7 @@ const DeploymentManager = () => {
   const groupedEntities = useMemo(() => {
     const groups = {};
     (locationEntities || []).forEach((entity) => {
-      const type = entity.type || 'other';
+      const type = entity.entity_type || 'other';
       if (!groups[type]) groups[type] = [];
       groups[type].push(entity);
     });
@@ -185,7 +185,7 @@ const DeploymentManager = () => {
 
   const handleEntityPickOrigin = (entityId) => {
     if (!entityId || entityId === '__manual__') return;
-    const entity = (locationEntities || []).find((e) => String(e.id) === String(entityId));
+    const entity = (locationEntities || []).find((e) => String(e.entity_id) === String(entityId));
     if (!entity) return;
     setDeploymentForm({
       ...deploymentForm,
@@ -197,7 +197,7 @@ const DeploymentManager = () => {
 
   const handleEntityPickDestination = (entityId) => {
     if (!entityId || entityId === '__manual__') return;
-    const entity = (locationEntities || []).find((e) => String(e.id) === String(entityId));
+    const entity = (locationEntities || []).find((e) => String(e.entity_id) === String(entityId));
     if (!entity) return;
     setDeploymentForm({
       ...deploymentForm,
@@ -209,7 +209,7 @@ const DeploymentManager = () => {
 
   const handleEntityPickWaypoint = (entityId, idx) => {
     if (!entityId || entityId === '__manual__') return;
-    const entity = (locationEntities || []).find((e) => String(e.id) === String(entityId));
+    const entity = (locationEntities || []).find((e) => String(e.entity_id) === String(entityId));
     if (!entity) return;
     const wps = [...deploymentForm.waypoints];
     wps[idx] = {
@@ -952,7 +952,7 @@ const DeploymentManager = () => {
                               {type}
                             </div>
                             {entities.map((entity) => (
-                              <SelectItem key={`origin-${type}-${entity.id}`} value={String(entity.id)} className="text-xs">
+                              <SelectItem key={`origin-${type}-${entity.entity_id}`} value={String(entity.entity_id)} className="text-xs">
                                 {entity.name} ({entity.latitude?.toFixed(2)}, {entity.longitude?.toFixed(2)})
                               </SelectItem>
                             ))}
@@ -1016,7 +1016,7 @@ const DeploymentManager = () => {
                               {type}
                             </div>
                             {entities.map((entity) => (
-                              <SelectItem key={`dest-${type}-${entity.id}`} value={String(entity.id)} className="text-xs">
+                              <SelectItem key={`dest-${type}-${entity.entity_id}`} value={String(entity.entity_id)} className="text-xs">
                                 {entity.name} ({entity.latitude?.toFixed(2)}, {entity.longitude?.toFixed(2)})
                               </SelectItem>
                             ))}
@@ -1137,7 +1137,7 @@ const DeploymentManager = () => {
                                   {type}
                                 </div>
                                 {entities.map((entity) => (
-                                  <SelectItem key={`wp${idx}-${type}-${entity.id}`} value={String(entity.id)} className="text-xs">
+                                  <SelectItem key={`wp${idx}-${type}-${entity.entity_id}`} value={String(entity.entity_id)} className="text-xs">
                                     {entity.name} ({entity.latitude?.toFixed(2)}, {entity.longitude?.toFixed(2)})
                                   </SelectItem>
                                 ))}
