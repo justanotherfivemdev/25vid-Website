@@ -196,6 +196,10 @@ class Deployment(BaseModel):
     start_date: Optional[str] = None
     estimated_arrival: Optional[str] = None
 
+    # Waypoints – intermediate stops between origin and destination
+    # Each entry: {"name": "...", "latitude": float, "longitude": float}
+    waypoints: List[dict] = Field(default_factory=list)
+
     # Admin
     created_by: str = ""
     created_at: str = Field(
@@ -223,6 +227,7 @@ class DeploymentCreate(BaseModel):
     destination_longitude: Optional[float] = None
     start_date: Optional[str] = None
     estimated_arrival: Optional[str] = None
+    waypoints: List[dict] = Field(default_factory=list)
     notes: str = ""
     partner_unit_id: Optional[str] = None
 
@@ -239,6 +244,7 @@ class DeploymentUpdate(BaseModel):
     destination_longitude: Optional[float] = None
     start_date: Optional[str] = None
     estimated_arrival: Optional[str] = None
+    waypoints: Optional[List[dict]] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = None
 

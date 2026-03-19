@@ -402,26 +402,7 @@ const deploymentArrowLayer = {
   },
 };
 
-/* Duration label shown along the deployment line when deploying */
-const deploymentDurationLayer = {
-  id: 'deployment-duration',
-  type: 'symbol',
-  filter: ['==', ['get', 'status'], 'deploying'],
-  layout: {
-    'symbol-placement': 'line-center',
-    'text-field': ['get', 'durationLabel'],
-    'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
-    'text-size': 11,
-    'text-offset': [0, -1.2],
-    'text-allow-overlap': true,
-    'text-anchor': 'center',
-  },
-  paint: {
-    'text-color': ['get', 'color'],
-    'text-halo-color': '#0f172a',
-    'text-halo-width': 1.5,
-  },
-};
+/* (Removed – countdown timer is now rendered via React Markers) */
 
 export default function GlobalThreatMap({ operations = [], intelEvents = [], campaignEvents = [] }) {
   const mapRef = useRef(null);
@@ -582,22 +563,87 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     return map;
   }, [deployments]);
 
-  // Compute a human-readable travel duration label from start_date → estimated_arrival
-  function computeDurationLabel(dep) {
-    if (!dep.start_date || !dep.estimated_arrival) return '';
-    const start = new Date(dep.start_date);
-    const end = new Date(dep.estimated_arrival);
-    const diffMs = end - start;
-    if (isNaN(diffMs) || diffMs <= 0) return '';
-    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    if (days > 0 && hours > 0) return `${days}d ${hours}h`;
-    if (days > 0) return `${days}d`;
-    if (hours > 0) return `${hours}h`;
-    return '';
+  // Live clock tick – updates every 60 s so countdown labels refresh
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Countdown label: remaining hours until estimated_arrival from *now*
+  function computeCountdownLabel(dep) {
+    if (!dep.estimated_arrival) return '';
+    const end = new Date(dep.estimated_arrival).getTime();
+    if (isNaN(end)) return '';
+    const remaining = end - nowTick;
+    if (remaining <= 0) return '0h 0m';
+    const totalMinutes = Math.floor(remaining / 60_000);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    if (hours > 0 && mins > 0) return `${hours}h ${mins}m`;
+    if (hours > 0) return `${hours}h 0m`;
+    return `0h ${mins}m`;
   }
 
-  // Build GeoJSON for deployment travel paths
+  // Compute deployment progress (0-1) based on elapsed time
+  function computeProgress(dep) {
+    if (!dep.start_date || !dep.estimated_arrival) return 0;
+    const start = new Date(dep.start_date).getTime();
+    const end = new Date(dep.estimated_arrival).getTime();
+    if (isNaN(start) || isNaN(end) || end <= start) return 0;
+    const progress = (nowTick - start) / (end - start);
+    return Math.max(0, Math.min(1, progress));
+  }
+
+  // Build the ordered list of coordinates for a deployment (origin → waypoints → destination)
+  function getDeploymentCoords(dep, offsetLat = 0) {
+    const coords = [[dep.start_longitude, dep.start_latitude + offsetLat]];
+    if (Array.isArray(dep.waypoints)) {
+      dep.waypoints.forEach((wp) => {
+        if (wp.latitude != null && wp.longitude != null) {
+          coords.push([wp.longitude, wp.latitude + offsetLat]);
+        }
+      });
+    }
+    if (dep.destination_latitude != null && dep.destination_longitude != null) {
+      coords.push([dep.destination_longitude, dep.destination_latitude + offsetLat]);
+    }
+    return coords;
+  }
+
+  // Interpolate a position along a multi-segment LineString by fractional progress (0-1)
+  function interpolateAlongLine(coords, fraction) {
+    if (!coords || coords.length < 2) return coords?.[0] || [0, 0];
+    if (fraction <= 0) return coords[0];
+    if (fraction >= 1) return coords[coords.length - 1];
+
+    // Compute cumulative segment lengths
+    const segLengths = [];
+    let totalLen = 0;
+    for (let i = 1; i < coords.length; i++) {
+      const dx = coords[i][0] - coords[i - 1][0];
+      const dy = coords[i][1] - coords[i - 1][1];
+      const len = Math.sqrt(dx * dx + dy * dy);
+      segLengths.push(len);
+      totalLen += len;
+    }
+    if (totalLen === 0) return coords[0];
+
+    let target = fraction * totalLen;
+    for (let i = 0; i < segLengths.length; i++) {
+      if (target <= segLengths[i]) {
+        const t = target / segLengths[i];
+        return [
+          coords[i][0] + t * (coords[i + 1][0] - coords[i][0]),
+          coords[i][1] + t * (coords[i + 1][1] - coords[i][1]),
+        ];
+      }
+      target -= segLengths[i];
+    }
+    return coords[coords.length - 1];
+  }
+
+  // Build GeoJSON for deployment travel paths (supports waypoints)
   const deploymentPathsGeoJson = useMemo(() => ({
     type: 'FeatureCollection',
     features: deployments
@@ -606,16 +652,13 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       .map((d) => {
         const unitIdx = d.partner_unit_id ? (partnerUnitIndexMap[d.partner_unit_id] ?? 0) : -1;
         const color = getUnitColor(d.partner_unit_id, unitIdx);
-        const durationLabel = computeDurationLabel(d);
         const offsetLat = d.partner_unit_id ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
+        const coords = getDeploymentCoords(d, offsetLat);
         return {
           type: 'Feature',
           geometry: {
             type: 'LineString',
-            coordinates: [
-              [d.start_longitude, d.start_latitude + offsetLat],
-              [d.destination_longitude, d.destination_latitude + offsetLat],
-            ],
+            coordinates: coords,
           },
           properties: {
             id: d.id,
@@ -623,7 +666,6 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             status: d.status,
             partner_unit_id: d.partner_unit_id || '',
             color,
-            durationLabel: durationLabel ? `⏱ ${durationLabel}` : '',
           },
         };
       }),
@@ -877,9 +919,39 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           <Source id="deployment-paths" type="geojson" data={deploymentPathsGeoJson}>
             <Layer {...deploymentPathLayer} />
             <Layer {...deploymentArrowLayer} />
-            <Layer {...deploymentDurationLayer} />
           </Source>
         )}
+
+        {/* Countdown timer UI boxes at midpoint of each deploying path */}
+        {deployments
+          .filter((d) => d.status === 'deploying' && d.destination_latitude != null && d.destination_longitude != null && d.estimated_arrival)
+          .map((d) => {
+            const unitIdx = d.partner_unit_id ? (partnerUnitIndexMap[d.partner_unit_id] ?? 0) : -1;
+            const color = getUnitColor(d.partner_unit_id, unitIdx);
+            const offsetLat = d.partner_unit_id ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
+            const coords = getDeploymentCoords(d, offsetLat);
+            const mid = interpolateAlongLine(coords, 0.5);
+            const countdown = computeCountdownLabel(d);
+            if (!countdown) return null;
+            return (
+              <Marker key={`dep-timer-${d.id}`} longitude={mid[0]} latitude={mid[1]} anchor="center">
+                <div
+                  className="flex items-center gap-1 px-2 py-1 rounded border shadow-lg whitespace-nowrap select-none"
+                  style={{
+                    background: 'rgba(15,23,42,0.92)',
+                    borderColor: color,
+                    boxShadow: `0 0 8px ${color}44`,
+                  }}
+                >
+                  <span style={{ color, fontSize: 10 }}>⏱</span>
+                  <span className="font-mono font-bold text-[11px]" style={{ color }}>
+                    {countdown}
+                  </span>
+                </div>
+              </Marker>
+            );
+          })
+        }
 
         {/* NATO Markers */}
         {natoMarkers.map((marker) => (
@@ -908,30 +980,46 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           </Marker>
         ))}
 
-        {/* 25th ID Division Location Marker */}
-        {divisionDisplayLocation && (
-          <Marker
-            longitude={divisionDisplayLocation.longitude}
-            latitude={divisionDisplayLocation.latitude}
-            anchor="center"
-          >
-            <div className="flex flex-col items-center" title={`25th ID - ${divisionDisplayLocation.name}`}>
-              <div className="relative">
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: buildNATOMarkerSVG('friendly', 'headquarters', 40),
-                  }}
-                />
-                {divisionDisplayLocation.state !== 'home_station' && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-tropic-gold rounded-full animate-pulse border border-black" />
-                )}
+        {/* 25th ID Division Location Marker – moves along deployment path when deploying */}
+        {divisionDisplayLocation && (() => {
+          let markerLng = divisionDisplayLocation.longitude;
+          let markerLat = divisionDisplayLocation.latitude;
+
+          // When deploying, interpolate position along the active deployment line
+          if (activeDeployment && activeDeployment.status === 'deploying') {
+            const coords = getDeploymentCoords(activeDeployment, 0);
+            if (coords.length >= 2) {
+              const progress = computeProgress(activeDeployment);
+              const pos = interpolateAlongLine(coords, progress);
+              markerLng = pos[0];
+              markerLat = pos[1];
+            }
+          }
+
+          return (
+            <Marker
+              longitude={markerLng}
+              latitude={markerLat}
+              anchor="center"
+            >
+              <div className="flex flex-col items-center" title={`25th ID - ${divisionDisplayLocation.name}`}>
+                <div className="relative">
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: buildNATOMarkerSVG('friendly', 'headquarters', 40),
+                    }}
+                  />
+                  {divisionDisplayLocation.state !== 'home_station' && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-tropic-gold rounded-full animate-pulse border border-black" />
+                  )}
+                </div>
+                <span className="text-[10px] font-bold text-tropic-gold mt-0.5 whitespace-nowrap bg-black/70 px-1 rounded">
+                  25th ID
+                </span>
               </div>
-              <span className="text-[10px] font-bold text-tropic-gold mt-0.5 whitespace-nowrap bg-black/70 px-1 rounded">
-                25th ID
-              </span>
-            </div>
-          </Marker>
-        )}
+            </Marker>
+          );
+        })()}
 
         {/* Deployment destination markers */}
         {deployments
@@ -1076,7 +1164,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                   </p>
                   {deploymentPopup.data.start_date && deploymentPopup.data.estimated_arrival && (
                     <p className="text-xs text-gray-500 mt-1">
-                      ⏱ {computeDurationLabel(deploymentPopup.data) || 'Calculating...'}
+                      ⏱ {computeCountdownLabel(deploymentPopup.data) || 'Arrived'}
                       {deploymentPopup.data.status === 'deploying' && ' — In Transit'}
                     </p>
                   )}
