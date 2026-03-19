@@ -93,7 +93,7 @@ async def rsvp_operation(operation_id: str, rsvp_data: RSVPSubmit, current_user:
             attending = [r for r in rsvps if r["status"] == "attending"]
             waitlisted = sorted(
                 [r for r in rsvps if r["status"] == "waitlisted"],
-                key=lambda r: r.get("rsvp_time", ""),
+                key=lambda r: r.get("rsvp_time") or "9999-12-31T23:59:59",
             )
             if len(attending) < max_p and waitlisted:
                 promote_uid = waitlisted[0]["user_id"]
@@ -149,7 +149,7 @@ async def cancel_rsvp(operation_id: str, current_user: dict = Depends(get_curren
         attending = [r for r in rsvps if r["status"] == "attending"]
         waitlisted = sorted(
             [r for r in rsvps if r["status"] == "waitlisted"],
-            key=lambda r: r.get("rsvp_time", ""),
+            key=lambda r: r.get("rsvp_time") or "9999-12-31T23:59:59",
         )
         if len(attending) < max_p and waitlisted:
             promote_uid = waitlisted[0]["user_id"]
