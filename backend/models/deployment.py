@@ -137,6 +137,9 @@ class Deployment(BaseModel):
     is_active: bool = True
     notes: str = ""
 
+    # Partner scope (None = 25th ID deployment)
+    partner_unit_id: Optional[str] = None
+
 
 class DeploymentCreate(BaseModel):
     title: str
@@ -151,6 +154,7 @@ class DeploymentCreate(BaseModel):
     start_date: Optional[str] = None
     estimated_arrival: Optional[str] = None
     notes: str = ""
+    partner_unit_id: Optional[str] = None
 
 
 class DeploymentUpdate(BaseModel):

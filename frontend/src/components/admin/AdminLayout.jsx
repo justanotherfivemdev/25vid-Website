@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield, Building2, UserPlus, Radio, MapPin, ClipboardList, ScrollText } from 'lucide-react';
+import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield, Building2, UserPlus, Radio, MapPin, ClipboardList, ScrollText, Navigation } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 import { BACKEND_URL } from '@/utils/api';
@@ -28,6 +28,7 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/recruitment', icon: UserPlus, label: 'Recruitment' },
     { path: '/admin/intel', icon: Radio, label: 'Intel & Briefings' },
     { path: '/admin/campaigns', icon: MapPin, label: 'Campaigns' },
+    { path: '/admin/deployments', icon: Navigation, label: 'Deployments' },
     { path: '/admin/unit-config', icon: Building2, label: 'Unit Config' },
     { path: '/admin/loa', icon: Calendar, label: 'LOA Management' },
     { path: '/admin/pipeline', icon: UserPlus, label: 'Recruit Pipeline' },

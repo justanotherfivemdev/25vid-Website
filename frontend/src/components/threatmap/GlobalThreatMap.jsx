@@ -6,6 +6,7 @@ import Map, {
   Source,
   Layer,
   Popup,
+  Marker,
 } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapStore, useEventsStore, threatLevelColors } from '@/stores/threatMapStore';
@@ -14,6 +15,8 @@ import OperationPopup from './OperationPopup';
 import IntelPopup from './IntelPopup';
 import CampaignPopup from './CampaignPopup';
 import CountryConflictsModal from './CountryConflictsModal';
+import axios from 'axios';
+import { API } from '@/utils/api';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 const CLUSTER_MAX_ZOOM = 14;
@@ -272,6 +275,97 @@ const campaignLabelLayer = {
   },
 };
 
+/* ── NATO Symbology SVG Renderer (APP-6 Inspired) ──────────────────────── */
+
+const NATO_AFFILIATION_COLORS = {
+  friendly: { fill: '#80b0ff', stroke: '#3366cc', bg: '#1a3a6e' },
+  hostile: { fill: '#ff8080', stroke: '#cc3333', bg: '#6e1a1a' },
+  neutral: { fill: '#80ff80', stroke: '#33aa33', bg: '#1a6e1a' },
+  unknown: { fill: '#ffff80', stroke: '#cccc33', bg: '#6e6e1a' },
+};
+
+const NATO_SYMBOL_ICONS = {
+  infantry: 'M4,12 L16,4 L28,12 L16,20 Z',
+  armor: (sz) => `<ellipse cx="${sz/2}" cy="${sz/2}" rx="${sz*0.38}" ry="${sz*0.28}" fill="none" stroke="currentColor" stroke-width="1.5"/>`,
+  aviation: 'M6,18 L16,6 L26,18',
+  artillery: 'M10,8 L22,8 M16,8 L16,24',
+  logistics: 'M8,10 L24,10 L24,22 L8,22 Z',
+  headquarters: 'M8,16 L24,16 M8,8 L8,24',
+  medical: 'M14,8 L18,8 L18,14 L24,14 L24,18 L18,18 L18,24 L14,24 L14,18 L8,18 L8,14 L14,14 Z',
+  recon: 'M8,16 L16,8 L24,16 L16,24 Z',
+  signal: 'M8,20 Q12,6 16,16 Q20,26 24,12',
+  engineer: 'M8,8 L24,24 M24,8 L8,24',
+  objective: 'M16,6 L16,26 M6,16 L26,16',
+  waypoint: 'M16,4 L20,14 L28,16 L20,18 L16,28 L12,18 L4,16 L12,14 Z',
+  air_defense: 'M8,22 L16,8 L24,22 M8,16 L24,16',
+  naval: 'M6,16 Q10,10 16,16 Q22,22 26,16',
+  special_operations: 'M16,6 L19,13 L26,14 L21,19 L22,26 L16,22 L10,26 L11,19 L6,14 L13,13 Z',
+};
+
+function buildNATOMarkerSVG(affiliation, symbolType, size = 32) {
+  const colors = NATO_AFFILIATION_COLORS[affiliation] || NATO_AFFILIATION_COLORS.unknown;
+  let shape;
+  if (affiliation === 'friendly') {
+    shape = `<rect x="3" y="6" width="${size-6}" height="${size-12}" rx="2" fill="${colors.bg}" stroke="${colors.stroke}" stroke-width="2"/>`;
+  } else if (affiliation === 'hostile') {
+    shape = `<polygon points="${size/2},3 ${size-3},${size/2} ${size/2},${size-3} 3,${size/2}" fill="${colors.bg}" stroke="${colors.stroke}" stroke-width="2"/>`;
+  } else if (affiliation === 'neutral') {
+    shape = `<rect x="4" y="4" width="${size-8}" height="${size-8}" fill="${colors.bg}" stroke="${colors.stroke}" stroke-width="2"/>`;
+  } else {
+    shape = `<rect x="4" y="4" width="${size-8}" height="${size-8}" rx="${size/4}" fill="${colors.bg}" stroke="${colors.stroke}" stroke-width="2"/>`;
+  }
+
+  let icon = '';
+  const sym = NATO_SYMBOL_ICONS[symbolType];
+  if (typeof sym === 'function') {
+    icon = sym(size);
+  } else if (typeof sym === 'string') {
+    if (sym.startsWith('M') || sym.startsWith('m')) {
+      icon = `<path d="${sym}" fill="none" stroke="${colors.fill}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+  }
+  if (symbolType === 'medical') {
+    icon = `<path d="${NATO_SYMBOL_ICONS.medical}" fill="${colors.fill}" stroke="none"/>`;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${shape}${icon}</svg>`;
+}
+
+/* Deployment path layer */
+const deploymentPathLayer = {
+  id: 'deployment-path',
+  type: 'line',
+  paint: {
+    'line-color': '#C9A227',
+    'line-width': 2.5,
+    'line-dasharray': [2, 2],
+    'line-opacity': 0.8,
+  },
+  layout: {
+    'line-cap': 'round',
+    'line-join': 'round',
+  },
+};
+
+const deploymentArrowLayer = {
+  id: 'deployment-arrows',
+  type: 'symbol',
+  layout: {
+    'symbol-placement': 'line',
+    'symbol-spacing': 80,
+    'text-field': '▶',
+    'text-size': 14,
+    'text-rotate': 0,
+    'text-rotation-alignment': 'map',
+    'text-keep-upright': false,
+    'text-allow-overlap': true,
+  },
+  paint: {
+    'text-color': '#C9A227',
+    'text-opacity': 0.9,
+  },
+};
+
 export default function GlobalThreatMap({ operations = [], intelEvents = [], campaignEvents = [] }) {
   const mapRef = useRef(null);
   const {
@@ -286,6 +380,29 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   const [campaignPopup, setCampaignPopup] = useState(null);
   const [countryModal, setCountryModal] = useState(null);
   const [cursor, setCursor] = useState('');
+
+  // NATO markers, deployments, and division location state
+  const [natoMarkers, setNatoMarkers] = useState([]);
+  const [deployments, setDeployments] = useState([]);
+  const [divisionLocation, setDivisionLocation] = useState(null);
+  const [deploymentPopup, setDeploymentPopup] = useState(null);
+
+  // Fetch NATO markers, deployments, division location
+  useEffect(() => {
+    const fetchMapData = async () => {
+      try {
+        const [markersRes, deploymentsRes, divRes] = await Promise.allSettled([
+          axios.get(`${API}/map/nato-markers`, { withCredentials: true }),
+          axios.get(`${API}/map/deployments`, { withCredentials: true }),
+          axios.get(`${API}/map/division-location`, { withCredentials: true }),
+        ]);
+        if (markersRes.status === 'fulfilled') setNatoMarkers(markersRes.value.data);
+        if (deploymentsRes.status === 'fulfilled') setDeployments(deploymentsRes.value.data);
+        if (divRes.status === 'fulfilled') setDivisionLocation(divRes.value.data);
+      } catch { /* silently fail for unauthenticated sessions */ }
+    };
+    fetchMapData();
+  }, []);
 
   // Build GeoJSON for threat events
   const eventsGeoJson = useMemo(() => ({
@@ -396,6 +513,50 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       })),
   }), [campaignEvents]);
 
+  // Build GeoJSON for deployment travel paths
+  const deploymentPathsGeoJson = useMemo(() => ({
+    type: 'FeatureCollection',
+    features: deployments
+      .filter((d) => d.destination_latitude != null && d.destination_longitude != null &&
+                     d.status !== 'completed' && d.status !== 'cancelled')
+      .map((d) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [d.start_longitude, d.start_latitude],
+            [d.destination_longitude, d.destination_latitude],
+          ],
+        },
+        properties: {
+          id: d.id,
+          title: d.title,
+          status: d.status,
+          partner_unit_id: d.partner_unit_id || null,
+        },
+      })),
+  }), [deployments]);
+
+  // Current active deployment for the 25th ID
+  const activeDeployment = useMemo(() =>
+    deployments.find((d) =>
+      !d.partner_unit_id &&
+      ['deploying', 'deployed', 'returning'].includes(d.status)
+    ), [deployments]);
+
+  // Division display location
+  const divisionDisplayLocation = useMemo(() => {
+    if (divisionLocation) {
+      return {
+        name: divisionLocation.current_location_name || 'Schofield Barracks, HI',
+        latitude: divisionLocation.current_latitude || 21.4959,
+        longitude: divisionLocation.current_longitude || -158.0648,
+        state: divisionLocation.state || 'home_station',
+      };
+    }
+    return { name: 'Schofield Barracks, HI', latitude: 21.4959, longitude: -158.0648, state: 'home_station' };
+  }, [divisionLocation]);
+
   // Pan to selected event from sidebar (no zoom change)
   useEffect(() => {
     if (selectedEvent && mapRef.current) {
@@ -505,6 +666,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     setOperationPopup(null);
     setIntelPopup(null);
     setCampaignPopup(null);
+    setDeploymentPopup(null);
   }, [selectEvent]);
 
   const onMouseEnter = useCallback(() => setCursor('pointer'), []);
@@ -515,7 +677,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   }, [setViewport]);
 
   const interactiveLayerIds = useMemo(() => {
-    const ids = ['clusters', 'unclustered-point', 'operations-markers', 'intel-markers', 'campaign-markers'];
+    const ids = ['clusters', 'unclustered-point', 'operations-markers', 'intel-markers', 'campaign-markers', 'deployment-path'];
     return ids;
   }, []);
 
@@ -618,6 +780,99 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           </Source>
         )}
 
+        {/* Deployment travel paths */}
+        {deployments.length > 0 && (
+          <Source id="deployment-paths" type="geojson" data={deploymentPathsGeoJson}>
+            <Layer {...deploymentPathLayer} />
+            <Layer {...deploymentArrowLayer} />
+          </Source>
+        )}
+
+        {/* NATO Markers */}
+        {natoMarkers.map((marker) => (
+          <Marker
+            key={marker.id}
+            longitude={marker.longitude}
+            latitude={marker.latitude}
+            anchor="center"
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              setDeploymentPopup({
+                longitude: marker.longitude,
+                latitude: marker.latitude,
+                type: 'nato',
+                data: marker,
+              });
+            }}
+          >
+            <div
+              title={`${marker.title} (${marker.affiliation} ${marker.symbol_type})`}
+              style={{ cursor: 'pointer' }}
+              dangerouslySetInnerHTML={{
+                __html: buildNATOMarkerSVG(marker.affiliation, marker.symbol_type, 36),
+              }}
+            />
+          </Marker>
+        ))}
+
+        {/* 25th ID Division Location Marker */}
+        {divisionDisplayLocation && (
+          <Marker
+            longitude={divisionDisplayLocation.longitude}
+            latitude={divisionDisplayLocation.latitude}
+            anchor="center"
+          >
+            <div className="flex flex-col items-center" title={`25th ID - ${divisionDisplayLocation.name}`}>
+              <div className="relative">
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: buildNATOMarkerSVG('friendly', 'headquarters', 40),
+                  }}
+                />
+                {divisionDisplayLocation.state !== 'home_station' && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-tropic-gold rounded-full animate-pulse border border-black" />
+                )}
+              </div>
+              <span className="text-[10px] font-bold text-tropic-gold mt-0.5 whitespace-nowrap bg-black/70 px-1 rounded">
+                25th ID
+              </span>
+            </div>
+          </Marker>
+        )}
+
+        {/* Deployment destination markers */}
+        {deployments
+          .filter((d) => d.destination_latitude != null && d.destination_longitude != null &&
+                         d.status !== 'completed' && d.status !== 'cancelled')
+          .map((d) => (
+            <Marker
+              key={`dep-dest-${d.id}`}
+              longitude={d.destination_longitude}
+              latitude={d.destination_latitude}
+              anchor="center"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                setDeploymentPopup({
+                  longitude: d.destination_longitude,
+                  latitude: d.destination_latitude,
+                  type: 'deployment',
+                  data: d,
+                });
+              }}
+            >
+              <div className="flex flex-col items-center" style={{ cursor: 'pointer' }}>
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: buildNATOMarkerSVG('friendly', 'objective', 32),
+                  }}
+                />
+                <span className="text-[9px] text-tropic-gold-light mt-0.5 whitespace-nowrap bg-black/70 px-1 rounded max-w-[100px] truncate">
+                  {d.destination_name || d.title}
+                </span>
+              </div>
+            </Marker>
+          ))}
+
         {/* Event popup */}
         {popupInfo && (
           <Popup
@@ -671,6 +926,62 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             className="threat-map-popup"
           >
             <CampaignPopup campaign={campaignPopup.campaign} />
+          </Popup>
+        )}
+
+        {/* Deployment / NATO marker popup */}
+        {deploymentPopup && (
+          <Popup
+            longitude={deploymentPopup.longitude}
+            latitude={deploymentPopup.latitude}
+            closeOnClick={false}
+            onClose={() => setDeploymentPopup(null)}
+            maxWidth="320px"
+            className="threat-map-popup"
+          >
+            <div className="p-3 bg-gray-900 text-white rounded-lg border border-tropic-gold/20">
+              {deploymentPopup.type === 'nato' ? (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-600/20 text-blue-300 uppercase">
+                      {deploymentPopup.data.affiliation}
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300">
+                      {deploymentPopup.data.symbol_type}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-tropic-gold text-sm">{deploymentPopup.data.title}</h3>
+                  {deploymentPopup.data.designator && (
+                    <p className="text-xs text-gray-400 mt-1">{deploymentPopup.data.designator}</p>
+                  )}
+                  {deploymentPopup.data.description && (
+                    <p className="text-xs text-gray-300 mt-1">{deploymentPopup.data.description}</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${
+                      deploymentPopup.data.status === 'deploying' ? 'bg-yellow-600/20 text-yellow-300' :
+                      deploymentPopup.data.status === 'deployed' ? 'bg-green-600/20 text-green-300' :
+                      deploymentPopup.data.status === 'returning' ? 'bg-blue-600/20 text-blue-300' :
+                      'bg-gray-600/20 text-gray-300'
+                    }`}>
+                      {deploymentPopup.data.status}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-tropic-gold text-sm">{deploymentPopup.data.title}</h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {deploymentPopup.data.start_location_name} → {deploymentPopup.data.destination_name}
+                  </p>
+                  {deploymentPopup.data.estimated_arrival && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      ETA: {new Date(deploymentPopup.data.estimated_arrival).toLocaleDateString()}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </Popup>
         )}
       </Map>

@@ -48,6 +48,7 @@ import AuditLogsManager from '@/pages/admin/AuditLogsManager';
 import LOARequest from '@/pages/member/LOARequest';
 import LOAManager from '@/pages/admin/LOAManager';
 import PipelineManager from '@/pages/admin/PipelineManager';
+import DeploymentManager from '@/pages/admin/DeploymentManager';
 import SharedArea from '@/pages/member/SharedArea';
 import PartnerSharedArea from '@/pages/partner/PartnerSharedArea';
 import JoinUs from '@/pages/JoinUs';
@@ -1211,6 +1212,7 @@ function App() {
         <Route path="/admin/recruitment" element={<ProtectedRoute adminOnly><RecruitmentManager /></ProtectedRoute>} />
         <Route path="/admin/intel" element={<ProtectedRoute adminOnly><IntelManager /></ProtectedRoute>} />
         <Route path="/admin/campaigns" element={<ProtectedRoute adminOnly><CampaignManager /></ProtectedRoute>} />
+        <Route path="/admin/deployments" element={<ProtectedRoute adminOnly><DeploymentManager /></ProtectedRoute>} />
         <Route path="/admin/unit-config" element={<ProtectedRoute adminOnly><UnitTagsManager /></ProtectedRoute>} />
         <Route path="/admin/partner-units" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerUnitsManager /></ProtectedRoute>} />
         <Route path="/admin/partner-applications" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerApplicationsReview /></ProtectedRoute>} />

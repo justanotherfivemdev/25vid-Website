@@ -126,7 +126,7 @@ async def delete_nato_marker(
 
 @router.get("/map/deployments")
 async def list_deployments(current_user: dict = Depends(get_current_user)):
-    """Return all active deployments for map display."""
+    """Return all active deployments for map display (25th ID + partner)."""
     deployments = await db.deployments.find(
         {"is_active": True}, {"_id": 0}
     ).sort("created_at", -1).to_list(100)
@@ -146,9 +146,9 @@ async def get_deployment(
 
 @router.get("/admin/map/deployments")
 async def admin_list_deployments(current_user: dict = Depends(get_current_admin)):
-    """Return all deployments including inactive/archived."""
+    """Return all 25th ID deployments including inactive/archived."""
     deployments = await db.deployments.find(
-        {}, {"_id": 0}
+        {"partner_unit_id": None}, {"_id": 0}
     ).sort("created_at", -1).to_list(200)
     return deployments
 
