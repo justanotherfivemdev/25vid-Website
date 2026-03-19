@@ -1,12 +1,13 @@
 import React from 'react';
 import { useMapStore } from '@/stores/threatMapStore';
-import { Shield, Flame, Layers, Eye, EyeOff } from 'lucide-react';
+import { Shield, Flame, Layers, Eye, EyeOff, Plane } from 'lucide-react';
 
 export default function ThreatMapControls() {
   const {
     showHeatmap, toggleHeatmap,
     showClusters, toggleClusters,
     showMilitaryBases, toggleMilitaryBases,
+    showADSB, toggleADSB,
     militaryBases,
   } = useMapStore();
 
@@ -46,6 +47,18 @@ export default function ThreatMapControls() {
         title={showMilitaryBases ? `Hide Military Bases (${militaryBases.length})` : 'Show Military Bases'}
       >
         <Shield className="h-4 w-4" />
+      </button>
+
+      <button
+        onClick={toggleADSB}
+        className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
+          showADSB
+            ? 'bg-cyan-600 text-white hover:bg-cyan-500 shadow-cyan-600/30'
+            : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+        } backdrop-blur-md`}
+        title={showADSB ? 'Hide Military Air Traffic' : 'Show Military Air Traffic'}
+      >
+        <Plane className="h-4 w-4" />
       </button>
     </div>
   );

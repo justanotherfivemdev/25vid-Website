@@ -51,6 +51,7 @@ from routes.loa import router as loa_router
 from routes.pipeline import router as pipeline_router
 from routes.shared import router as shared_router
 from routes.deployment import router as deployment_router
+from routes.adsb import router as adsb_router
 
 
 # Create the main app
@@ -76,6 +77,7 @@ api_router.include_router(loa_router)
 api_router.include_router(pipeline_router)
 api_router.include_router(shared_router)
 api_router.include_router(deployment_router)
+api_router.include_router(adsb_router)
 
 
 @api_router.get("/")

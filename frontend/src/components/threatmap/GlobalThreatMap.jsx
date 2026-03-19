@@ -15,6 +15,8 @@ import OperationPopup from './OperationPopup';
 import IntelPopup from './IntelPopup';
 import CampaignPopup from './CampaignPopup';
 import CountryConflictsModal from './CountryConflictsModal';
+import AircraftLayer, { addAircraftIcon, AIRCRAFT_INTERACTIVE_LAYERS } from './AircraftLayer';
+import useADSBAircraft from '@/hooks/useADSBAircraft';
 import axios from 'axios';
 import { API } from '@/utils/api';
 
@@ -437,7 +439,7 @@ const deploymentArrowLayer = {
 export default function GlobalThreatMap({ operations = [], intelEvents = [], campaignEvents = [] }) {
   const mapRef = useRef(null);
   const {
-    viewport, showHeatmap, showClusters, showMilitaryBases,
+    viewport, showHeatmap, showClusters, showMilitaryBases, showADSB,
     entityLocations, militaryBases, setViewport,
   } = useMapStore();
   const { filteredEvents, selectEvent, selectedEvent } = useEventsStore();
@@ -454,6 +456,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   const [deployments, setDeployments] = useState([]);
   const [divisionLocation, setDivisionLocation] = useState(null);
   const [deploymentPopup, setDeploymentPopup] = useState(null);
+
+  // ADS-B military aircraft tracking
+  const { aircraft: adsbAircraft } = useADSBAircraft(showADSB);
 
   // Fetch NATO markers, deployments, division location
   useEffect(() => {
@@ -900,7 +905,15 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
   const interactiveLayerIds = useMemo(() => {
     const ids = ['clusters', 'unclustered-point', 'operations-markers', 'intel-markers', 'campaign-markers', 'deployment-path'];
+    if (showADSB) ids.push(...AIRCRAFT_INTERACTIVE_LAYERS);
     return ids;
+  }, [showADSB]);
+
+  // Add aircraft icon to map when it loads
+  const onMapLoad = useCallback(() => {
+    if (mapRef.current) {
+      addAircraftIcon(mapRef.current.getMap());
+    }
   }, []);
 
   if (!MAPBOX_TOKEN) {
@@ -921,6 +934,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         {...viewport}
         onMove={onMove}
         onClick={onMapClick}
+        onLoad={onMapLoad}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         cursor={cursor}
@@ -1171,6 +1185,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
               ));
           })
         }
+
+        {/* ADS-B Military Aircraft Layer */}
+        <AircraftLayer aircraft={adsbAircraft} visible={showADSB} />
 
         {/* Event popup */}
         {popupInfo && (

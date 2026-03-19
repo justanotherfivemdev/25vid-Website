@@ -48,6 +48,7 @@ export const useMapStore = create((set) => ({
   showHeatmap: false,
   showClusters: true,
   showMilitaryBases: true,
+  showADSB: JSON.parse(localStorage.getItem('showADSB') ?? 'false'),
   isAutoPlaying: false,
   entityLocations: [],
   militaryBases: [],
@@ -62,6 +63,12 @@ export const useMapStore = create((set) => ({
   toggleHeatmap: () => set((state) => ({ showHeatmap: !state.showHeatmap })),
   toggleClusters: () => set((state) => ({ showClusters: !state.showClusters })),
   toggleMilitaryBases: () => set((state) => ({ showMilitaryBases: !state.showMilitaryBases })),
+  toggleADSB: () =>
+    set((state) => {
+      const next = !state.showADSB;
+      localStorage.setItem('showADSB', JSON.stringify(next));
+      return { showADSB: next };
+    }),
 
   startAutoPlay: () => set({ isAutoPlaying: true }),
   stopAutoPlay: () => set({ isAutoPlaying: false }),
