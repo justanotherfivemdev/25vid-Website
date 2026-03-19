@@ -85,10 +85,10 @@ const OperationDetail = () => {
   const fetchData = async () => {
     try {
       const [opRes, rosterRes] = await Promise.all([
-        axios.get(`${API}/operations`),
+        axios.get(`${API}/operations/${id}`),
         axios.get(`${API}/operations/${id}/roster`)
       ]);
-      const op = opRes.data.find(o => o.id === id);
+      const op = opRes.data;
       if (!op) { navigate('/hub'); return; }
       setOperation(op);
       setRosterData(rosterRes.data);
@@ -97,7 +97,10 @@ const OperationDetail = () => {
       const allRsvps = [...(rsvps.attending || []), ...(rsvps.tentative || []), ...(rsvps.waitlisted || [])];
       const myRsvp = allRsvps.find(r => r.user_id === user.id);
       if (myRsvp) setRoleNotes(myRsvp.role_notes || '');
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      if (e.response?.status === 404) { navigate('/hub'); return; }
+    }
     finally { setLoading(false); }
   };
 

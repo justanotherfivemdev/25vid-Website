@@ -125,7 +125,7 @@ async def create_shared_post(
 async def update_shared_post(
     post_id: str,
     data: SharedPostCreate,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(get_shared_admin),
 ):
     post = await db.shared_posts.find_one({"id": post_id}, {"_id": 0})
     if not post:
@@ -146,7 +146,7 @@ async def update_shared_post(
 @router.delete("/shared/posts/{post_id}")
 async def delete_shared_post(
     post_id: str,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(get_shared_admin),
 ):
     result = await db.shared_posts.delete_one({"id": post_id})
     if result.deleted_count == 0:
@@ -196,7 +196,9 @@ async def update_liaison_contact(
     if not existing:
         raise HTTPException(status_code=404, detail="Contact not found")
 
-    await db.liaison_contacts.update_one({"id": contact_id}, {"$set": data.model_dump()})
+    update_dict = data.model_dump()
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.liaison_contacts.update_one({"id": contact_id}, {"$set": update_dict})
     await log_audit(
         user_id=current_user["id"],
         action_type="liaison_contact_update",
