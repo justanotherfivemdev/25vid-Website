@@ -12,6 +12,9 @@ from models.deployment import (
     NATO_AFFILIATIONS,
     NATO_SYMBOL_TYPES,
     NATO_ECHELONS,
+    NATO_AFFILIATION_LABELS,
+    NATO_SYMBOL_TYPE_LABELS,
+    NATO_ECHELON_LABELS,
     Deployment,
     DeploymentCreate,
     DeploymentUpdate,
@@ -31,11 +34,14 @@ router = APIRouter()
 
 @router.get("/map/nato-reference")
 async def get_nato_reference():
-    """Return available NATO symbol types, affiliations, and echelons."""
+    """Return available NATO symbol types, affiliations, and echelons with labels."""
     return {
         "affiliations": NATO_AFFILIATIONS,
         "symbol_types": NATO_SYMBOL_TYPES,
         "echelons": NATO_ECHELONS,
+        "affiliation_labels": NATO_AFFILIATION_LABELS,
+        "symbol_type_labels": NATO_SYMBOL_TYPE_LABELS,
+        "echelon_labels": NATO_ECHELON_LABELS,
     }
 
 
