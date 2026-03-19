@@ -356,6 +356,28 @@ const UNIT_DEPLOYMENT_COLORS = [
   '#06B6D4', // cyan
   '#F97316', // orange
   '#6366F1', // indigo
+  '#14B8A6', // teal
+  '#F43F5E', // rose
+  '#8B5CF6', // violet
+  '#84CC16', // lime
+  '#0EA5E9', // sky
+  '#D946EF', // fuchsia
+  '#22D3EE', // bright cyan
+  '#FB923C', // light orange
+  '#A3E635', // yellow-green
+  '#E879F9', // light fuchsia
+  '#2DD4BF', // aquamarine
+  '#FBBF24', // bright amber
+  '#818CF8', // light indigo
+  '#34D399', // light emerald
+  '#F87171', // light red
+  '#38BDF8', // light sky
+  '#C084FC', // light purple
+  '#4ADE80', // green
+  '#FB7185', // light rose
+  '#FACC15', // yellow
+  '#60A5FA', // light blue
+  '#A78BFA', // lavender
 ];
 
 // Latitude offset in degrees applied to each partner unit's deployment line
@@ -365,6 +387,14 @@ const PARTNER_LINE_OFFSET_DEG = 0.15;
 function getUnitColor(partnerUnitId, unitIndex) {
   if (!partnerUnitId) return UNIT_DEPLOYMENT_COLORS[0]; // 25th ID gold
   return UNIT_DEPLOYMENT_COLORS[(unitIndex % (UNIT_DEPLOYMENT_COLORS.length - 1)) + 1];
+}
+
+function getDeploymentTypeLabel(dep) {
+  if (dep.deployment_type === 'partner') return dep.unit_name || 'Partner Unit';
+  if (dep.deployment_type === 'allied') return dep.unit_name || 'Allied Unit';
+  // 25th_id or missing deployment_type with no partner_unit_id
+  if (dep.deployment_type === '25th_id' || !dep.partner_unit_id) return '25th ID';
+  return dep.unit_name || 'Partner Unit';
 }
 
 /* Deployment path layer – uses data-driven color */
@@ -559,6 +589,10 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       if (d.partner_unit_id && !(d.partner_unit_id in map)) {
         map[d.partner_unit_id] = idx++;
       }
+      // Allied deployments without partner_unit_id use their own id as key
+      if (d.deployment_type === 'allied' && !d.partner_unit_id && !(d.id in map)) {
+        map[d.id] = idx++;
+      }
     });
     return map;
   }, [deployments]);
@@ -585,14 +619,67 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     return `0h ${mins}m`;
   }
 
-  // Compute deployment progress (0-1) based on elapsed time
+  // Compute deployment progress (0-1) based on elapsed time, accounting for waypoint stop durations
   function computeProgress(dep) {
     if (!dep.start_date || !dep.estimated_arrival) return 0;
     const start = new Date(dep.start_date).getTime();
     const end = new Date(dep.estimated_arrival).getTime();
     if (isNaN(start) || isNaN(end) || end <= start) return 0;
-    const progress = (nowTick - start) / (end - start);
-    return Math.max(0, Math.min(1, progress));
+    const totalMs = end - start;
+    const elapsedMs = nowTick - start;
+    if (elapsedMs <= 0) return 0;
+    if (elapsedMs >= totalMs) return 1;
+
+    // Calculate total stop duration
+    const wps = Array.isArray(dep.waypoints) ? dep.waypoints : [];
+    let totalStopMs = 0;
+    wps.forEach(wp => {
+      if (wp.stop_duration_hours && wp.stop_duration_hours > 0) {
+        totalStopMs += wp.stop_duration_hours * 3600000;
+      }
+    });
+
+    // If total stops exceed total time, just use linear progress
+    if (totalStopMs >= totalMs) {
+      return Math.max(0, Math.min(1, elapsedMs / totalMs));
+    }
+
+    const travelMs = totalMs - totalStopMs;
+    const numSegments = wps.length + 1; // origin→wp1, wp1→wp2, …, last wp→destination
+    const segmentTravelMs = travelMs / numSegments;
+
+    // Walk through timeline: for each segment, consume travel time then stop time
+    let timeAccum = 0;
+    let distanceFraction = 0;
+    const segFrac = 1 / numSegments;
+
+    for (let i = 0; i < numSegments; i++) {
+      // Travel phase for this segment
+      const segEnd = timeAccum + segmentTravelMs;
+      if (elapsedMs <= segEnd) {
+        // Currently traveling in this segment
+        const segProgress = (elapsedMs - timeAccum) / segmentTravelMs;
+        distanceFraction += segFrac * segProgress;
+        return Math.max(0, Math.min(1, distanceFraction));
+      }
+      timeAccum = segEnd;
+      distanceFraction += segFrac;
+
+      // Stop phase at the end of this segment (except after the last segment)
+      if (i < numSegments - 1 && i < wps.length) {
+        const stopMs = (wps[i].stop_duration_hours || 0) * 3600000;
+        if (stopMs > 0) {
+          const stopEnd = timeAccum + stopMs;
+          if (elapsedMs <= stopEnd) {
+            // Currently stopped at this waypoint
+            return Math.max(0, Math.min(1, distanceFraction));
+          }
+          timeAccum = stopEnd;
+        }
+      }
+    }
+
+    return 1;
   }
 
   // Build the ordered list of coordinates for a deployment (origin → waypoints → destination)
@@ -650,9 +737,10 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       .filter((d) => d.destination_latitude != null && d.destination_longitude != null &&
                      d.status !== 'completed' && d.status !== 'cancelled')
       .map((d) => {
-        const unitIdx = d.partner_unit_id ? (partnerUnitIndexMap[d.partner_unit_id] ?? 0) : -1;
-        const color = getUnitColor(d.partner_unit_id, unitIdx);
-        const offsetLat = d.partner_unit_id ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
+        const unitKey = d.partner_unit_id || (d.deployment_type === 'allied' ? d.id : null);
+        const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
+        const color = getUnitColor(unitKey, unitIdx);
+        const offsetLat = unitKey ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
         const coords = getDeploymentCoords(d, offsetLat);
         return {
           type: 'Feature',
@@ -926,9 +1014,10 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         {deployments
           .filter((d) => d.status === 'deploying' && d.destination_latitude != null && d.destination_longitude != null && d.estimated_arrival)
           .map((d) => {
-            const unitIdx = d.partner_unit_id ? (partnerUnitIndexMap[d.partner_unit_id] ?? 0) : -1;
-            const color = getUnitColor(d.partner_unit_id, unitIdx);
-            const offsetLat = d.partner_unit_id ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
+            const unitKey = d.partner_unit_id || (d.deployment_type === 'allied' ? d.id : null);
+            const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
+            const color = getUnitColor(unitKey, unitIdx);
+            const offsetLat = unitKey ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
             const coords = getDeploymentCoords(d, offsetLat);
             const mid = interpolateAlongLine(coords, 0.5);
             const countdown = computeCountdownLabel(d);
@@ -1026,8 +1115,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           .filter((d) => d.destination_latitude != null && d.destination_longitude != null &&
                          d.status !== 'completed' && d.status !== 'cancelled')
           .map((d) => {
-            const unitIdx = d.partner_unit_id ? (partnerUnitIndexMap[d.partner_unit_id] ?? 0) : -1;
-            const color = getUnitColor(d.partner_unit_id, unitIdx);
+            const unitKey = d.partner_unit_id || (d.deployment_type === 'allied' ? d.id : null);
+            const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
+            const color = getUnitColor(unitKey, unitIdx);
             return (
             <Marker
               key={`dep-dest-${d.id}`}
@@ -1060,6 +1150,27 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             </Marker>
             );
           })}
+
+        {/* Waypoint stop markers */}
+        {deployments
+          .filter((d) => d.status !== 'completed' && d.status !== 'cancelled' && Array.isArray(d.waypoints) && d.waypoints.length > 0)
+          .flatMap((d) => {
+            const unitKey = d.partner_unit_id || (d.deployment_type === 'allied' ? d.id : null);
+            const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
+            const color = getUnitColor(unitKey, unitIdx);
+            return d.waypoints
+              .filter(wp => wp.latitude != null && wp.longitude != null)
+              .map((wp, wpIdx) => (
+                <Marker key={`wp-${d.id}-${wpIdx}`} longitude={wp.longitude} latitude={wp.latitude} anchor="center">
+                  <div
+                    title={`${wp.name || `Stop ${wpIdx + 1}`}${wp.stop_duration_hours ? ` (${wp.stop_duration_hours}h stop)` : ''}`}
+                    className="rounded-full border-2 border-black"
+                    style={{ width: 10, height: 10, backgroundColor: color, opacity: 0.8 }}
+                  />
+                </Marker>
+              ));
+          })
+        }
 
         {/* Event popup */}
         {popupInfo && (
@@ -1148,7 +1259,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                 </>
               ) : (
                 <>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${
                       deploymentPopup.data.status === 'deploying' ? 'bg-yellow-600/20 text-yellow-300' :
                       deploymentPopup.data.status === 'deployed' ? 'bg-green-600/20 text-green-300' :
@@ -1156,6 +1267,13 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                       'bg-gray-600/20 text-gray-300'
                     }`}>
                       {deploymentPopup.data.status}
+                    </span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                      deploymentPopup.data.deployment_type === 'allied' ? 'bg-purple-600/20 text-purple-300' :
+                      deploymentPopup.data.deployment_type === 'partner' ? 'bg-cyan-600/20 text-cyan-300' :
+                      'bg-tropic-gold/20 text-tropic-gold'
+                    }`}>
+                      {getDeploymentTypeLabel(deploymentPopup.data)}
                     </span>
                   </div>
                   <h3 className="font-bold text-tropic-gold text-sm">{deploymentPopup.data.title}</h3>
@@ -1172,6 +1290,22 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                     <p className="text-xs text-gray-500 mt-1">
                       ETA: {new Date(deploymentPopup.data.estimated_arrival).toLocaleDateString()}
                     </p>
+                  )}
+                  {Array.isArray(deploymentPopup.data.waypoints) && deploymentPopup.data.waypoints.length > 0 && (
+                    <div className="mt-2 border-t border-gray-700 pt-2">
+                      <p className="text-[10px] text-gray-400 font-semibold mb-1 uppercase">Waypoints</p>
+                      <ul className="space-y-0.5">
+                        {deploymentPopup.data.waypoints.map((wp, i) => (
+                          <li key={i} className="text-[10px] text-gray-300 flex items-center gap-1">
+                            <span className="text-gray-500">•</span>
+                            <span>{wp.name || `Stop ${i + 1}`}</span>
+                            {wp.stop_duration_hours != null && wp.stop_duration_hours > 0 && (
+                              <span className="text-gray-500 ml-auto">{wp.stop_duration_hours}h stop</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </>
               )}

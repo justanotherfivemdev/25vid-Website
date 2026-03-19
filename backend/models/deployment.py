@@ -7,6 +7,11 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 
+# ── Deployment Types ─────────────────────────────────────────────────────────
+
+DEPLOYMENT_TYPES = ["25th_id", "partner", "allied"]
+
+
 # ── NATO Marker Symbology ────────────────────────────────────────────────────
 
 NATO_AFFILIATIONS = ["friendly", "hostile", "neutral", "unknown"]
@@ -182,6 +187,9 @@ class Deployment(BaseModel):
         "planning", "deploying", "deployed", "returning", "completed", "cancelled"
     ] = "planning"
 
+    # Deployment type: 25th_id | partner | allied (counterpart/support)
+    deployment_type: Literal["25th_id", "partner", "allied"] = "25th_id"
+
     # Origin
     start_location_name: str = "Schofield Barracks, HI"
     start_latitude: float = 21.4959
@@ -197,7 +205,8 @@ class Deployment(BaseModel):
     estimated_arrival: Optional[str] = None
 
     # Waypoints – intermediate stops between origin and destination
-    # Each entry: {"name": "...", "latitude": float, "longitude": float}
+    # Each entry: {"name": "...", "latitude": float, "longitude": float,
+    #              "description": "...", "stop_duration_hours": float}
     waypoints: List[dict] = Field(default_factory=list)
 
     # Admin
@@ -211,14 +220,16 @@ class Deployment(BaseModel):
     is_active: bool = True
     notes: str = ""
 
-    # Partner scope (None = 25th ID deployment)
+    # Partner / allied unit scope (None = 25th ID deployment)
     partner_unit_id: Optional[str] = None
+    unit_name: Optional[str] = None  # Display name for partner/allied unit
 
 
 class DeploymentCreate(BaseModel):
     title: str
     description: str = ""
     status: str = "planning"
+    deployment_type: str = "25th_id"
     start_location_name: str = "Schofield Barracks, HI"
     start_latitude: float = 21.4959
     start_longitude: float = -158.0648
@@ -230,12 +241,14 @@ class DeploymentCreate(BaseModel):
     waypoints: List[dict] = Field(default_factory=list)
     notes: str = ""
     partner_unit_id: Optional[str] = None
+    unit_name: Optional[str] = None
 
 
 class DeploymentUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None
+    deployment_type: Optional[str] = None
     start_location_name: Optional[str] = None
     start_latitude: Optional[float] = None
     start_longitude: Optional[float] = None
@@ -247,6 +260,7 @@ class DeploymentUpdate(BaseModel):
     waypoints: Optional[List[dict]] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = None
+    unit_name: Optional[str] = None
 
 
 # ── Division Location State ──────────────────────────────────────────────────
