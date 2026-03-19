@@ -70,6 +70,7 @@ OPENSKY_MIN_INTERVAL_S = int(os.environ.get("OPENSKY_MIN_INTERVAL_S", "10"))
 # Unit conversion constants
 _METERS_TO_FEET = 3.28084
 _MS_TO_KNOTS = 1.94384
+_MS_TO_FPM = 196.8504   # m/s → feet per minute (60 * 3.28084)
 
 # ---------------------------------------------------------------------------
 # Military callsign prefixes (expandable)
@@ -216,6 +217,12 @@ def _ms_to_knots(val) -> Optional[float]:
     return round(f * _MS_TO_KNOTS, 1) if f is not None else None
 
 
+def _ms_to_fpm(val) -> Optional[float]:
+    """Convert m/s to feet per minute, returning None if input is None."""
+    f = _safe_float(val)
+    return round(f * _MS_TO_FPM, 1) if f is not None else None
+
+
 # ===================================================================
 # OpenSky OAuth2 token management
 # ===================================================================
@@ -311,7 +318,7 @@ def _normalize_opensky(states: list, timestamp: int) -> list:
             "altitude": _meters_to_feet(sv[7]),       # baro_altitude m → ft
             "velocity": _ms_to_knots(sv[9]),           # m/s → knots
             "heading": _safe_float(sv[10]),             # true_track (degrees)
-            "vertical_rate": _ms_to_knots(sv[11]),      # m/s → ft/min approx
+            "vertical_rate": _ms_to_fpm(sv[11]),        # m/s → ft/min
             "aircraft_type": None,                      # not in state vectors
             "origin_country": origin_country,
             "on_ground": on_ground,
@@ -356,7 +363,7 @@ def _normalize_adsbx_v2(aircraft_list: list, source: str) -> list:
             "altitude": _safe_float(alt),              # already in feet
             "velocity": _safe_float(velocity),          # already in knots
             "heading": _safe_float(heading),
-            "vertical_rate": _safe_float(ac.get("baro_rate") or ac.get("geom_rate")),
+            "vertical_rate": _safe_float(ac.get("baro_rate") or ac.get("geom_rate")),  # already in ft/min
             "aircraft_type": ac_type,
             "origin_country": None,
             "on_ground": ac.get("ground") if "ground" in ac else None,
