@@ -774,7 +774,10 @@ async def partner_delete_deployment(
 
     result = await db.deployments.delete_one({"id": deployment_id})
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Deployment not found")
+        raise HTTPException(
+            status_code=409,
+            detail="Deployment was already deleted by another request",
+        )
 
     try:
         await db.partner_audit_log.insert_one({

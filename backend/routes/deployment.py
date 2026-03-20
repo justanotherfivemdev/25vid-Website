@@ -437,18 +437,32 @@ async def delete_deployment(
     if not existing:
         raise HTTPException(status_code=404, detail="Deployment not found")
 
-    # If this was the active deployment, reset division home
+    # If this was the active deployment, reset division home before deletion
     div = await db.division_location.find_one({"id": "division_25id"}, {"_id": 0})
     if div and div.get("active_deployment_id") == deployment_id:
         try:
             await _reset_division_home(current_user["id"])
         except Exception as exc:
-            logging.error("Failed to reset division home on delete: %s", exc)
+            logging.error("Failed to reset division home on delete (deployment %s): %s",
+                          deployment_id, exc)
+            await log_error(
+                source="deployment",
+                message=f"Division location reset failed during deployment deletion: {exc}",
+                severity="warning",
+                error_type=type(exc).__name__,
+                request_path=f"/api/admin/map/deployments/{deployment_id}",
+                request_method="DELETE",
+                user_id=current_user.get("id"),
+                metadata={"action": "reset_division_home", "deployment_id": deployment_id},
+            )
 
     try:
         result = await db.deployments.delete_one({"id": deployment_id})
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Deployment not found")
+            raise HTTPException(
+                status_code=409,
+                detail="Deployment was already deleted by another request",
+            )
     except HTTPException:
         raise
     except Exception as exc:
