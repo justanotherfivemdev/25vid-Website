@@ -139,15 +139,27 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
 
 @router.delete("/admin/operations/{operation_id}")
 async def delete_operation(operation_id: str, current_user: dict = Depends(get_current_admin)):
-    result = await db.operations.delete_one({"id": operation_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Operation not found")
-    await remove_map_event("operation", operation_id)
-    await log_audit(
-        user_id=current_user["id"], action_type="delete_operation",
-        resource_type="operation", resource_id=operation_id,
-    )
-    return {"message": "Operation deleted successfully"}
+    try:
+        result = await db.operations.delete_one({"id": operation_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Operation not found")
+        await remove_map_event("operation", operation_id)
+        await log_audit(
+            user_id=current_user["id"], action_type="delete_operation",
+            resource_type="operation", resource_id=operation_id,
+        )
+        return {"message": "Operation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        await log_error(
+            source="operations", message=f"Failed to delete operation {operation_id}: {exc}",
+            severity="error", error_type=type(exc).__name__,
+            request_path=f"/api/admin/operations/{operation_id}",
+            request_method="DELETE", user_id=current_user.get("id"),
+            metadata={"operation_id": operation_id},
+        )
+        raise HTTPException(status_code=500, detail="Failed to delete operation")
 
 
 @router.put("/admin/operations/{operation_id}")
@@ -232,11 +244,22 @@ async def delete_gallery_image(image_id: str, current_user: dict = Depends(get_c
     result = await db.gallery.delete_one({"id": image_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Image not found")
+    await log_audit(
+        user_id=current_user["id"], action_type="delete_gallery",
+        resource_type="gallery", resource_id=image_id,
+    )
     return {"message": "Image deleted successfully"}
 
 
 @router.put("/admin/gallery/{image_id}")
 async def update_gallery_image(image_id: str, image_data: GalleryImageCreate, current_user: dict = Depends(get_current_admin)):
+    # Reject external URLs — only locally-uploaded files are allowed
+    url = image_data.image_url or ""
+    if url.startswith("http://") or url.startswith("https://"):
+        raise HTTPException(
+            status_code=400,
+            detail="External image URLs are not allowed. Please upload a file instead.",
+        )
     result = await db.gallery.update_one(
         {"id": image_id},
         {"$set": image_data.model_dump()}
@@ -262,6 +285,10 @@ async def delete_training(training_id: str, current_user: dict = Depends(get_cur
     result = await db.training.delete_one({"id": training_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Training not found")
+    await log_audit(
+        user_id=current_user["id"], action_type="delete_training",
+        resource_type="training", resource_id=training_id,
+    )
     return {"message": "Training deleted successfully"}
 
 

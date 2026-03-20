@@ -113,6 +113,14 @@ async def get_gallery(category: Optional[str] = None):
 
 @router.post("/gallery", response_model=GalleryImage)
 async def upload_image(image_data: GalleryImageCreate, current_user: dict = Depends(get_current_admin)):
+    # Reject external URLs — only locally-uploaded files are allowed
+    url = image_data.image_url or ""
+    if url.startswith("http://") or url.startswith("https://"):
+        raise HTTPException(
+            status_code=400,
+            detail="External image URLs are not allowed. Please upload a file instead.",
+        )
+
     img_dict = image_data.model_dump()
     img_dict["uploaded_by"] = current_user["username"]
     image_obj = GalleryImage(**img_dict)
