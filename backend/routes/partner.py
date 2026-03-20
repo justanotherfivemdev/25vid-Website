@@ -16,8 +16,8 @@ from models.partner import (
 )
 from models.operations import RSVPSubmit
 from models.deployment import (
-    Deployment, DeploymentCreate, DeploymentUpdate, DEPLOYMENT_STATUSES,
-    HOME_STATION,
+    Deployment, DeploymentCreate, DeploymentUpdate, RoutePoint,
+    DEPLOYMENT_STATUSES, HOME_STATION,
 )
 from middleware.auth import get_current_admin_or_liaison, get_current_partner_user, get_current_partner_admin
 from services.auth_service import (
@@ -675,7 +675,7 @@ async def partner_list_deployments(partner_user: dict = Depends(get_current_part
     """List active deployments for the partner's unit."""
     unit_id = partner_user.get("partner_unit_id")
     deployments = await db.deployments.find(
-        {"partner_unit_id": unit_id, "is_active": True}, {"_id": 0}
+        {"origin_unit_id": unit_id, "is_active": True}, {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     return deployments
 
@@ -685,7 +685,7 @@ async def partner_admin_list_deployments(partner_user: dict = Depends(get_curren
     """List all deployments for the partner's unit (including archived)."""
     unit_id = partner_user.get("partner_unit_id")
     deployments = await db.deployments.find(
-        {"partner_unit_id": unit_id}, {"_id": 0}
+        {"origin_unit_id": unit_id}, {"_id": 0}
     ).sort("created_at", -1).to_list(200)
     return deployments
 
@@ -699,24 +699,19 @@ async def partner_create_deployment(
     unit_id = partner_user.get("partner_unit_id")
     dep = Deployment(
         title=data.title,
-        description=data.description,
-        status=data.status,
-        deployment_type=data.deployment_type,
-        start_location_name=data.start_location_name,
-        start_latitude=data.start_latitude if data.start_latitude is not None else HOME_STATION["latitude"],
-        start_longitude=data.start_longitude if data.start_longitude is not None else HOME_STATION["longitude"],
-        destination_name=data.destination_name,
-        destination_latitude=data.destination_latitude,
-        destination_longitude=data.destination_longitude,
-        start_date=data.start_date,
-        estimated_arrival=data.estimated_arrival,
-        waypoints=data.waypoints,
-        notes=data.notes,
-        is_active=data.is_active,
-        created_by=partner_user["id"],
-        partner_unit_id=unit_id,
         unit_name=data.unit_name,
+        origin_type="partner",
+        origin_unit_id=unit_id,
+        status=data.status,
+        is_active=data.is_active,
+        total_duration_hours=data.total_duration_hours,
+        route_points=data.route_points,
+        notes=data.notes,
+        created_by=partner_user["id"],
     )
+    # Auto-set started_at when creating as active
+    if dep.status == "active":
+        dep.started_at = datetime.now(timezone.utc).isoformat()
 
     try:
         await db.deployments.insert_one(sanitize_mongo_payload(dep.model_dump()))
@@ -758,7 +753,7 @@ async def partner_update_deployment(
     """Update a deployment belonging to the partner's unit."""
     unit_id = partner_user.get("partner_unit_id")
     existing = await db.deployments.find_one(
-        {"id": deployment_id, "partner_unit_id": unit_id}, {"_id": 0}
+        {"id": deployment_id, "origin_unit_id": unit_id}, {"_id": 0}
     )
     if not existing:
         raise HTTPException(status_code=404, detail="Deployment not found")
@@ -766,6 +761,18 @@ async def partner_update_deployment(
     update_dict = data.model_dump(exclude_unset=True)
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
+
+    # Auto-set started_at when transitioning to active
+    new_status = update_dict.get("status")
+    if new_status == "active" and not existing.get("started_at"):
+        update_dict["started_at"] = datetime.now(timezone.utc).isoformat()
+
+    # Serialize route_points if present
+    if "route_points" in update_dict and update_dict["route_points"] is not None:
+        update_dict["route_points"] = [
+            rp.model_dump() if isinstance(rp, RoutePoint) else rp
+            for rp in update_dict["route_points"]
+        ]
 
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     try:
@@ -808,7 +815,7 @@ async def partner_delete_deployment(
     """Delete a deployment belonging to the partner's unit."""
     unit_id = partner_user.get("partner_unit_id")
     existing = await db.deployments.find_one(
-        {"id": deployment_id, "partner_unit_id": unit_id}, {"_id": 0}
+        {"id": deployment_id, "origin_unit_id": unit_id}, {"_id": 0}
     )
     if not existing:
         raise HTTPException(status_code=404, detail="Deployment not found")
