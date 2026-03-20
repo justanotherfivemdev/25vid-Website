@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Shield, Users, LogOut, Home, Copy, Trash2, ChevronRight, Plus, FileText, Calendar, Radio, Clock, Pencil, Navigation, MapPin } from 'lucide-react';
 import { BACKEND_URL, API } from '@/utils/api';
+import { formatApiError } from '@/utils/errorMessages';
 
 const PartnerAdmin = () => {
   const [user, setUser] = useState(null);
@@ -623,7 +624,7 @@ const PartnerAdmin = () => {
                           setEditingDep(null);
                           fetchData();
                         } catch (err) {
-                          alert(err.response?.data?.detail || 'Failed to save deployment');
+                          alert(formatApiError(err, 'Failed to save deployment'));
                         }
                       }} className="bg-tropic-gold text-black hover:bg-tropic-gold/80">
                         {editingDep ? 'Update' : 'Create'}

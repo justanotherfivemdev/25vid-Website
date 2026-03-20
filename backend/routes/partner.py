@@ -16,6 +16,7 @@ from models.partner import (
 from models.operations import RSVPSubmit
 from models.deployment import (
     Deployment, DeploymentCreate, DeploymentUpdate, DEPLOYMENT_STATUSES,
+    HOME_STATION,
 )
 from middleware.auth import get_current_admin_or_liaison, get_current_partner_user, get_current_partner_admin
 from services.auth_service import (
@@ -697,17 +698,21 @@ async def partner_create_deployment(
         title=data.title,
         description=data.description,
         status=data.status,
+        deployment_type=data.deployment_type,
         start_location_name=data.start_location_name,
-        start_latitude=data.start_latitude,
-        start_longitude=data.start_longitude,
+        start_latitude=data.start_latitude if data.start_latitude is not None else HOME_STATION["latitude"],
+        start_longitude=data.start_longitude if data.start_longitude is not None else HOME_STATION["longitude"],
         destination_name=data.destination_name,
         destination_latitude=data.destination_latitude,
         destination_longitude=data.destination_longitude,
         start_date=data.start_date,
         estimated_arrival=data.estimated_arrival,
+        waypoints=data.waypoints,
         notes=data.notes,
+        is_active=data.is_active,
         created_by=partner_user["id"],
         partner_unit_id=unit_id,
+        unit_name=data.unit_name,
     )
     await db.deployments.insert_one(dep.model_dump())
     await db.partner_audit_log.insert_one({
@@ -735,7 +740,7 @@ async def partner_update_deployment(
     if not existing:
         raise HTTPException(status_code=404, detail="Deployment not found")
 
-    update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+    update_dict = data.model_dump(exclude_unset=True)
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
 

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, MapPin, Navigation, RefreshCw, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { API } from '@/utils/api';
+import { formatApiError } from '@/utils/errorMessages';
 
 const DEPLOYMENT_STATUSES = ['planning', 'deploying', 'deployed', 'returning', 'completed', 'cancelled'];
 
@@ -303,7 +304,7 @@ const DeploymentManager = () => {
       await fetchAlliedDeployments();
     } catch (err) {
       console.error('Error saving deployment:', err);
-      alert(err.response?.data?.detail || 'Error saving deployment');
+      alert(formatApiError(err, 'Error saving deployment'));
     }
   };
 
@@ -376,7 +377,7 @@ const DeploymentManager = () => {
       await fetchMarkers();
     } catch (err) {
       console.error('Error saving marker:', err);
-      alert(err.response?.data?.detail || 'Error saving marker');
+      alert(formatApiError(err, 'Error saving marker'));
     }
   };
 
