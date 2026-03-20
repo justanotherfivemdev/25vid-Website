@@ -218,6 +218,7 @@ class DeploymentCreate(BaseModel):
         if self.status == "active" and len(self.route_points) < 2:
             raise ValueError(
                 "Active deployment requires at least 2 route points"
+                " (origin and destination)"
             )
         return self
 
