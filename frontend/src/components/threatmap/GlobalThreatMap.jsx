@@ -637,7 +637,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     const end = new Date(dep.estimated_arrival).getTime();
     if (isNaN(end)) return '';
     const remaining = end - nowTick;
-    if (remaining <= 0) return '0h 0m';
+    if (remaining <= 0) return '';
     const totalMinutes = Math.floor(remaining / 60_000);
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
@@ -745,6 +745,10 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
     let target = fraction * totalLen;
     for (let i = 0; i < segLengths.length; i++) {
+      if (segLengths[i] === 0) {
+        // Skip zero-length segments (duplicate waypoint coordinates)
+        continue;
+      }
       if (target <= segLengths[i]) {
         const t = target / segLengths[i];
         return [
