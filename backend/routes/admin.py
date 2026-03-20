@@ -1,3 +1,4 @@
+import re
 import uuid
 import secrets
 import logging
@@ -6,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Query
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 from config import UPLOAD_DIR, pwd_context
 from database import db
@@ -815,10 +816,11 @@ async def get_error_logs(
     if resolved is not None:
         query["resolved"] = resolved
     if search:
+        safe = re.escape(search)[:200]
         query["$or"] = [
-            {"message": {"$regex": search, "$options": "i"}},
-            {"error_type": {"$regex": search, "$options": "i"}},
-            {"request_path": {"$regex": search, "$options": "i"}},
+            {"message": {"$regex": safe, "$options": "i"}},
+            {"error_type": {"$regex": safe, "$options": "i"}},
+            {"request_path": {"$regex": safe, "$options": "i"}},
         ]
 
     skip = (page - 1) * limit
@@ -913,6 +915,9 @@ async def clear_resolved_error_logs(
     return {"message": f"Deleted {result.deleted_count} resolved error log(s)"}
 
 
+_ALLOWED_FRONTEND_SOURCES = {"frontend", "react", "js", "browser"}
+
+
 class FrontendErrorLog(BaseModel):
     source: str = "frontend"
     message: str
@@ -922,6 +927,39 @@ class FrontendErrorLog(BaseModel):
     component: Optional[str] = None
     url: Optional[str] = None
     metadata: Optional[dict] = None
+
+    @field_validator("source")
+    @classmethod
+    def validate_source(cls, v: str) -> str:
+        if v.lower() not in _ALLOWED_FRONTEND_SOURCES:
+            raise ValueError(f"source must be one of {_ALLOWED_FRONTEND_SOURCES}")
+        return v.lower()
+
+    @field_validator("message")
+    @classmethod
+    def cap_message(cls, v: str) -> str:
+        return v[:2000]
+
+    @field_validator("stack_trace")
+    @classmethod
+    def cap_stack_trace(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return v[:5000]
+        return v
+
+    @field_validator("component")
+    @classmethod
+    def cap_component(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return v[:200]
+        return v
+
+    @field_validator("url")
+    @classmethod
+    def cap_url(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return v[:500]
+        return v
 
 
 @router.post("/error-logs")

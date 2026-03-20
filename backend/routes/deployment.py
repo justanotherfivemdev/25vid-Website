@@ -314,9 +314,11 @@ async def update_deployment(
     # model.  If the frontend sends null, fall back to existing values (or to
     # HOME_STATION) so we never store None in a required-float field.
     if "start_latitude" in update_dict and update_dict["start_latitude"] is None:
-        update_dict["start_latitude"] = existing.get("start_latitude") or HOME_STATION["latitude"]
+        existing_lat = existing.get("start_latitude")
+        update_dict["start_latitude"] = existing_lat if existing_lat is not None else HOME_STATION["latitude"]
     if "start_longitude" in update_dict and update_dict["start_longitude"] is None:
-        update_dict["start_longitude"] = existing.get("start_longitude") or HOME_STATION["longitude"]
+        existing_lng = existing.get("start_longitude")
+        update_dict["start_longitude"] = existing_lng if existing_lng is not None else HOME_STATION["longitude"]
 
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})

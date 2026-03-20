@@ -150,7 +150,7 @@ const ErrorLogsManager = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setPage(1);
-    fetchLogs();
+    // fetchLogs will be triggered by the useEffect that depends on [page, filters]
   };
 
   return (

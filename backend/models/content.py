@@ -64,7 +64,8 @@ class GalleryImageCreate(BaseModel):
     @field_validator("image_url")
     @classmethod
     def reject_external_urls(cls, v: str) -> str:
-        if v.startswith("http://") or v.startswith("https://"):
+        normalised = v.strip().lower()
+        if normalised.startswith("http://") or normalised.startswith("https://"):
             raise ValueError("External image URLs are not allowed. Please upload a file instead.")
         return v
 
