@@ -71,8 +71,13 @@ const GalleryManager = () => {
     if (!window.confirm('Delete this gallery image?')) return;
     try {
       await axios.delete(`${API}/admin/gallery/${id}`);
+      // Immediately remove from local state
+      setImages(prev => prev.filter(img => img.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Error deleting image');
+      // Refetch to sync state after failed delete
       await fetchImages();
-    } catch (err) { alert('Error deleting'); }
+    }
   };
 
   const resetForm = () => {
@@ -110,7 +115,7 @@ const GalleryManager = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Image" description="Upload or paste URL. Recommended: 600x600px or larger." previewClass="w-full h-48 object-cover" />
+                <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Image" description="Upload a file. Recommended: 600x600px or larger. Max 10MB." previewClass="w-full h-48 object-cover" />
                 <div className="flex justify-end space-x-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
                   <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="gallery-submit-btn">{editing ? 'Update' : 'Add'}</Button>

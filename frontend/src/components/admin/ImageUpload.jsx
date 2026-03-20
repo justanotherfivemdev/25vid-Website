@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Upload, X, Loader2 } from 'lucide-react';
 
 import { BACKEND_URL, API } from '@/utils/api';
@@ -85,20 +84,15 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
       {description && <p className="text-sm text-gray-400">{description}</p>}
 
       <div className="flex gap-2">
-        <Input
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Paste URL or upload a file..."
-          className="bg-black border-gray-700 flex-1"
-        />
         <Button
           type="button"
           variant="outline"
-          className="border-gray-700 shrink-0"
+          className="border-gray-700 flex-1"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
         >
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+          {uploading ? 'Uploading...' : (value ? 'Replace File' : 'Upload File')}
         </Button>
         {value && (
           <Button

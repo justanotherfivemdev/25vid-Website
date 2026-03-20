@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield, Building2, UserPlus, Radio, MapPin, ClipboardList, ScrollText, Navigation, Menu, X } from 'lucide-react';
+import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield, Building2, UserPlus, Radio, MapPin, ClipboardList, ScrollText, Navigation, Menu, X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 import { BACKEND_URL } from '@/utils/api';
@@ -22,24 +22,28 @@ const AdminLayout = ({ children }) => {
   };
   
   const menuItems = [
+    // Primary navigation — fixed order per requirements
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/admin/site-content', icon: Settings, label: 'Command Center' },
+    { path: '/admin/recruitment', icon: UserPlus, label: 'Recruitment' },
+    { path: '/admin/pipeline', icon: UserPlus, label: 'Recruit Pipeline' },
+    { path: '/admin/users', icon: Users, label: 'Members' },
+    { path: '/admin/training', icon: FileText, label: 'Training' },
+    { path: '/admin/deployments', icon: Navigation, label: 'Deployments' },
     { path: '/admin/operations', icon: Calendar, label: 'Operations' },
+    { path: '/admin/campaigns', icon: MapPin, label: 'Campaigns' },
+    // Secondary navigation — remaining sections
     { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
     { path: '/admin/gallery', icon: Image, label: 'Gallery' },
-    { path: '/admin/history', icon: BookOpen, label: 'Unit History' },
-    { path: '/admin/training', icon: FileText, label: 'Training' },
-    { path: '/admin/users', icon: Users, label: 'Members' },
-    { path: '/admin/recruitment', icon: UserPlus, label: 'Recruitment' },
     { path: '/admin/intel', icon: Radio, label: 'Intel & Briefings' },
-    { path: '/admin/campaigns', icon: MapPin, label: 'Campaigns' },
-    { path: '/admin/deployments', icon: Navigation, label: 'Deployments' },
+    { path: '/admin/history', icon: BookOpen, label: 'Unit History' },
     { path: '/admin/unit-config', icon: Building2, label: 'Unit Config' },
     { path: '/admin/loa', icon: Calendar, label: 'LOA Management' },
-    { path: '/admin/pipeline', icon: UserPlus, label: 'Recruit Pipeline' },
     { path: '/admin/partner-units', icon: Shield, label: 'Partner Units' },
     { path: '/admin/partner-applications', icon: ClipboardList, label: 'Partner Applications' },
-    { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs' }
+    // Logs — always at the bottom
+    { path: '/admin/error-logs', icon: AlertTriangle, label: 'Error Logs' },
+    { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs' },
   ];
   
   const visibleMenuItems = authUser?.role === 's5_liaison' 

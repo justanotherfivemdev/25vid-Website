@@ -238,10 +238,15 @@ const OperationsManager = () => {
     
     try {
       await axios.delete(`${API}/admin/operations/${id}`);
-      await fetchOperations();
+      // Immediately remove from local state so UI updates even if refetch is slow
+      setOperations(prev => prev.filter(op => op.id !== id));
+      // Close expanded panel if the deleted operation was expanded
+      if (expandedOp === id) setExpandedOp(null);
     } catch (error) {
       console.error('Error deleting operation:', error);
-      alert('Error deleting operation');
+      alert(error.response?.data?.detail || 'Error deleting operation');
+      // Refetch to ensure UI is in sync after a failed delete
+      await fetchOperations();
     }
   };
 

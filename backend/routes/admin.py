@@ -10,6 +10,7 @@ from pydantic import BaseModel, EmailStr
 
 from config import UPLOAD_DIR, pwd_context
 from database import db
+from services.error_log_service import log_error, SEVERITY_LEVELS
 from models.user import (
     User, UserUpdate, AdminProfileUpdate, UserImportRequest, UserImportResponse,
     UserImportRowResult, MissionHistoryEntry, TrainingHistoryEntry, AwardEntry,
@@ -138,15 +139,27 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
 
 @router.delete("/admin/operations/{operation_id}")
 async def delete_operation(operation_id: str, current_user: dict = Depends(get_current_admin)):
-    result = await db.operations.delete_one({"id": operation_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Operation not found")
-    await remove_map_event("operation", operation_id)
-    await log_audit(
-        user_id=current_user["id"], action_type="delete_operation",
-        resource_type="operation", resource_id=operation_id,
-    )
-    return {"message": "Operation deleted successfully"}
+    try:
+        result = await db.operations.delete_one({"id": operation_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Operation not found")
+        await remove_map_event("operation", operation_id)
+        await log_audit(
+            user_id=current_user["id"], action_type="delete_operation",
+            resource_type="operation", resource_id=operation_id,
+        )
+        return {"message": "Operation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        await log_error(
+            source="operations", message=f"Failed to delete operation {operation_id}: {exc}",
+            severity="error", error_type=type(exc).__name__,
+            request_path=f"/api/admin/operations/{operation_id}",
+            request_method="DELETE", user_id=current_user.get("id"),
+            metadata={"operation_id": operation_id},
+        )
+        raise HTTPException(status_code=500, detail="Failed to delete operation")
 
 
 @router.put("/admin/operations/{operation_id}")
@@ -231,6 +244,10 @@ async def delete_gallery_image(image_id: str, current_user: dict = Depends(get_c
     result = await db.gallery.delete_one({"id": image_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Image not found")
+    await log_audit(
+        user_id=current_user["id"], action_type="delete_gallery",
+        resource_type="gallery", resource_id=image_id,
+    )
     return {"message": "Image deleted successfully"}
 
 
@@ -261,6 +278,10 @@ async def delete_training(training_id: str, current_user: dict = Depends(get_cur
     result = await db.training.delete_one({"id": training_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Training not found")
+    await log_audit(
+        user_id=current_user["id"], action_type="delete_training",
+        resource_type="training", resource_id=training_id,
+    )
     return {"message": "Training deleted successfully"}
 
 
@@ -769,3 +790,157 @@ async def admin_precreate_member(data: AdminPreCreateMember, current_user: dict 
         "id": new_user.id,
         "claim_method": "The member can claim this account by logging in with this email via 'Claim Account' on the login page, or by logging in with Discord if their Discord ID was provided.",
     }
+
+
+# ============================================================================
+# ERROR LOGS — structured application error viewer for Command Center
+# ============================================================================
+
+@router.get("/admin/error-logs")
+async def get_error_logs(
+    current_user: dict = Depends(get_current_admin),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    source: Optional[str] = None,
+    severity: Optional[str] = None,
+    resolved: Optional[bool] = None,
+    search: Optional[str] = None,
+):
+    """Retrieve paginated error logs with filtering."""
+    query = {}
+    if source:
+        query["source"] = source
+    if severity:
+        query["severity"] = severity
+    if resolved is not None:
+        query["resolved"] = resolved
+    if search:
+        query["$or"] = [
+            {"message": {"$regex": search, "$options": "i"}},
+            {"error_type": {"$regex": search, "$options": "i"}},
+            {"request_path": {"$regex": search, "$options": "i"}},
+        ]
+
+    skip = (page - 1) * limit
+    total = await db.error_logs.count_documents(query)
+    logs = await db.error_logs.find(query, {"_id": 0}).sort(
+        "timestamp", -1
+    ).skip(skip).limit(limit).to_list(limit)
+
+    return {
+        "logs": logs,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": max(1, (total + limit - 1) // limit),
+    }
+
+
+@router.get("/admin/error-logs/stats")
+async def get_error_log_stats(current_user: dict = Depends(get_current_admin)):
+    """Summary statistics for error logs."""
+    total = await db.error_logs.count_documents({})
+    unresolved = await db.error_logs.count_documents({"resolved": False})
+
+    from datetime import timedelta
+    cutoff_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    cutoff_1h = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    recent_24h = await db.error_logs.count_documents({"timestamp": {"$gte": cutoff_24h}})
+    recent_1h = await db.error_logs.count_documents({"timestamp": {"$gte": cutoff_1h}})
+
+    # By severity
+    sev_pipeline = [
+        {"$group": {"_id": "$severity", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+    ]
+    sev_counts = await db.error_logs.aggregate(sev_pipeline).to_list(10)
+
+    # By source
+    src_pipeline = [
+        {"$group": {"_id": "$source", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 20},
+    ]
+    src_counts = await db.error_logs.aggregate(src_pipeline).to_list(20)
+
+    return {
+        "total": total,
+        "unresolved": unresolved,
+        "recent_24h": recent_24h,
+        "recent_1h": recent_1h,
+        "by_severity": {item["_id"]: item["count"] for item in sev_counts if item["_id"]},
+        "by_source": {item["_id"]: item["count"] for item in src_counts if item["_id"]},
+    }
+
+
+@router.put("/admin/error-logs/{error_id}/resolve")
+async def resolve_error_log(
+    error_id: str,
+    current_user: dict = Depends(get_current_admin),
+):
+    """Mark an error log as resolved."""
+    result = await db.error_logs.update_one(
+        {"id": error_id},
+        {"$set": {
+            "resolved": True,
+            "resolved_by": current_user["id"],
+            "resolved_at": datetime.now(timezone.utc).isoformat(),
+        }},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Error log not found")
+    return {"message": "Error log resolved"}
+
+
+@router.delete("/admin/error-logs/{error_id}")
+async def delete_error_log(
+    error_id: str,
+    current_user: dict = Depends(get_current_admin),
+):
+    """Delete a single error log entry."""
+    result = await db.error_logs.delete_one({"id": error_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Error log not found")
+    return {"message": "Error log deleted"}
+
+
+@router.delete("/admin/error-logs")
+async def clear_resolved_error_logs(
+    current_user: dict = Depends(get_current_admin),
+):
+    """Delete all resolved error logs."""
+    result = await db.error_logs.delete_many({"resolved": True})
+    return {"message": f"Deleted {result.deleted_count} resolved error log(s)"}
+
+
+class FrontendErrorLog(BaseModel):
+    source: str = "frontend"
+    message: str
+    severity: str = "error"
+    error_type: Optional[str] = None
+    stack_trace: Optional[str] = None
+    component: Optional[str] = None
+    url: Optional[str] = None
+    metadata: Optional[dict] = None
+
+
+@router.post("/error-logs")
+async def create_frontend_error_log(
+    data: FrontendErrorLog,
+    current_user: dict = Depends(get_current_user),
+):
+    """Accept error reports from the frontend."""
+    entry = await log_error(
+        source=data.source,
+        message=data.message,
+        severity=data.severity if data.severity in SEVERITY_LEVELS else "error",
+        error_type=data.error_type,
+        stack_trace=data.stack_trace,
+        user_id=current_user.get("id"),
+        metadata={
+            **(data.metadata or {}),
+            "component": data.component,
+            "url": data.url,
+        },
+    )
+    return {"id": entry["id"]}

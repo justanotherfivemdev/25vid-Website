@@ -348,11 +348,15 @@ const DeploymentManager = () => {
     if (!window.confirm('Are you sure you want to archive this deployment?')) return;
     try {
       await axios.delete(`${API}/admin/map/deployments/${id}`, { withCredentials: true });
-      await fetchDeployments();
-      await fetchAlliedDeployments();
+      // Immediately remove from local state
+      setDeployments(prev => prev.filter(dep => dep.id !== id));
+      setAlliedDeployments(prev => prev.filter(dep => dep.id !== id));
     } catch (err) {
       console.error('Error archiving deployment:', err);
-      alert('Error archiving deployment');
+      alert(err.response?.data?.detail || 'Error archiving deployment');
+      // Refetch to sync state after failure
+      await fetchDeployments();
+      await fetchAlliedDeployments();
     }
   };
 

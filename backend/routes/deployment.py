@@ -29,6 +29,7 @@ from models.deployment import (
 )
 from middleware.auth import get_current_user, get_current_admin
 from services.audit_service import log_audit
+from services.error_log_service import log_error, log_exception
 
 router = APIRouter()
 
@@ -258,7 +259,28 @@ async def create_deployment(
         )
     except ValidationError as exc:
         logging.error("Deployment validation failed: %s", exc)
+        await log_error(
+            source="deployment",
+            message=f"Deployment creation validation failed: {exc}",
+            severity="warning",
+            error_type="ValidationError",
+            request_path="/api/admin/map/deployments",
+            request_method="POST",
+            request_body=data.model_dump(),
+            user_id=current_user.get("id"),
+            metadata={"action": "create_deployment"},
+        )
         raise HTTPException(status_code=422, detail=str(exc))
+    except Exception as exc:
+        await log_exception(
+            "deployment", exc,
+            request_path="/api/admin/map/deployments",
+            request_method="POST",
+            request_body=data.model_dump(),
+            user_id=current_user.get("id"),
+            metadata={"action": "create_deployment"},
+        )
+        raise
     await db.deployments.insert_one(dep.model_dump())
 
     # If deploying/deployed, update division location (only for 25th ID deployments)
@@ -288,6 +310,14 @@ async def update_deployment(
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
 
+    # Guard: start_latitude / start_longitude must be floats in the Deployment
+    # model.  If the frontend sends null, fall back to existing values (or to
+    # HOME_STATION) so we never store None in a required-float field.
+    if "start_latitude" in update_dict and update_dict["start_latitude"] is None:
+        update_dict["start_latitude"] = existing.get("start_latitude") or HOME_STATION["latitude"]
+    if "start_longitude" in update_dict and update_dict["start_longitude"] is None:
+        update_dict["start_longitude"] = existing.get("start_longitude") or HOME_STATION["longitude"]
+
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})
 
@@ -299,6 +329,22 @@ async def update_deployment(
             dep_obj = Deployment(**updated)
         except ValidationError as exc:
             logging.error("Deployment reconstruction failed: %s", exc)
+            await log_error(
+                source="deployment",
+                message=f"Deployment reconstruction after update failed: {exc}",
+                severity="error",
+                error_type="ValidationError",
+                request_path=f"/api/admin/map/deployments/{deployment_id}",
+                request_method="PUT",
+                request_body=data.model_dump(exclude_unset=True),
+                user_id=current_user.get("id"),
+                metadata={
+                    "action": "update_deployment",
+                    "deployment_id": deployment_id,
+                    "stored_document": {k: v for k, v in updated.items()
+                                        if k not in ("_id",)},
+                },
+            )
             raise HTTPException(status_code=422, detail=str(exc))
         is_25th = dep_obj.deployment_type == "25th_id" or (
             dep_obj.deployment_type is None and dep_obj.partner_unit_id is None

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import List, Optional, Literal
 from datetime import datetime, timezone
 import uuid
@@ -60,6 +60,13 @@ class GalleryImageCreate(BaseModel):
     title: str
     image_url: str
     category: Literal["operation", "training", "team", "equipment"] = "operation"
+
+    @field_validator("image_url")
+    @classmethod
+    def reject_external_urls(cls, v: str) -> str:
+        if v.startswith("http://") or v.startswith("https://"):
+            raise ValueError("External image URLs are not allowed. Please upload a file instead.")
+        return v
 
 
 class Training(BaseModel):

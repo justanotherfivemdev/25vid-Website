@@ -265,6 +265,7 @@ class DeploymentUpdate(BaseModel):
     waypoints: Optional[List[dict]] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = None
+    partner_unit_id: Optional[str] = None
     unit_name: Optional[str] = None
 
 

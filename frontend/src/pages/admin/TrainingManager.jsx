@@ -55,8 +55,11 @@ const TrainingManager = () => {
     if (!window.confirm('Delete this training program?')) return;
     try {
       await axios.delete(`${API}/admin/training/${id}`);
+      setItems(prev => prev.filter(t => t.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Error deleting training');
       await fetchItems();
-    } catch (err) { alert('Error deleting'); }
+    }
   };
 
   const resetForm = () => {

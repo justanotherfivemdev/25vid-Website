@@ -75,10 +75,11 @@ const AnnouncementsManager = () => {
     if (!window.confirm('Are you sure you want to delete this announcement?')) return;
     try {
       await axios.delete(`${API}/admin/announcements/${id}`);
-      await fetchAnnouncements();
+      setAnnouncements(prev => prev.filter(ann => ann.id !== id));
     } catch (error) {
       console.error('Error deleting announcement:', error);
-      alert('Error deleting announcement');
+      alert(error.response?.data?.detail || 'Error deleting announcement');
+      await fetchAnnouncements();
     }
   };
 

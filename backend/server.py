@@ -114,6 +114,46 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+# ── Error-logging middleware — captures unhandled exceptions ──────────────────
+
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+from services.error_log_service import log_error
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch unhandled exceptions, log to error_logs, and return 500."""
+    import traceback as _tb
+
+    body = None
+    try:
+        body_bytes = await request.body()
+        if body_bytes:
+            import json as _json
+            body = _json.loads(body_bytes)
+    except Exception:
+        pass
+
+    try:
+        await log_error(
+            source="unhandled",
+            message=str(exc),
+            severity="critical",
+            error_type=type(exc).__name__,
+            stack_trace=_tb.format_exc(),
+            request_path=str(request.url.path),
+            request_method=request.method,
+            request_body=body,
+        )
+    except Exception:
+        logger.error("Failed to persist unhandled exception log")
+
+    logger.error("Unhandled exception on %s %s: %s", request.method,
+                 request.url.path, exc, exc_info=True)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
 # ============================================================================
 # BACKGROUND INGESTION
 # ============================================================================
