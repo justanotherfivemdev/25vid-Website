@@ -46,6 +46,7 @@ const EMPTY_DEPLOYMENT = {
   status: 'planning',
   deployment_type: '25th_id',
   unit_name: '',
+  partner_unit_id: null,
   start_location_name: 'Schofield Barracks, HI',
   start_latitude: 21.4959,
   start_longitude: -158.0648,
@@ -263,6 +264,7 @@ const DeploymentManager = () => {
       status: dep.status || 'planning',
       deployment_type: dep.deployment_type || '25th_id',
       unit_name: dep.unit_name || '',
+      partner_unit_id: dep.partner_unit_id || null,
       start_location_name: dep.start_location_name || 'Schofield Barracks, HI',
       start_latitude: dep.start_latitude ?? 21.4959,
       start_longitude: dep.start_longitude ?? -158.0648,
@@ -281,22 +283,35 @@ const DeploymentManager = () => {
   const handleDeploymentSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Safely parse a numeric field: returns null for empty/null/NaN, otherwise a float
+      const safeFloat = (v) => {
+        if (v === '' || v == null) return null;
+        const n = parseFloat(v);
+        return isNaN(n) ? null : n;
+      };
+
       const payload = {
-        ...deploymentForm,
-        start_latitude: deploymentForm.start_latitude === '' ? null : parseFloat(deploymentForm.start_latitude),
-        start_longitude: deploymentForm.start_longitude === '' ? null : parseFloat(deploymentForm.start_longitude),
-        destination_latitude: deploymentForm.destination_latitude === '' ? null : parseFloat(deploymentForm.destination_latitude),
-        destination_longitude: deploymentForm.destination_longitude === '' ? null : parseFloat(deploymentForm.destination_longitude),
-        start_date: deploymentForm.start_date || null,
-        estimated_arrival: deploymentForm.estimated_arrival || null,
+        title: deploymentForm.title,
+        description: deploymentForm.description || '',
+        status: deploymentForm.status || 'planning',
         deployment_type: deploymentForm.deployment_type || '25th_id',
         unit_name: deploymentForm.unit_name || '',
+        start_location_name: deploymentForm.start_location_name || 'Schofield Barracks, HI',
+        start_latitude: safeFloat(deploymentForm.start_latitude),
+        start_longitude: safeFloat(deploymentForm.start_longitude),
+        destination_name: deploymentForm.destination_name || '',
+        destination_latitude: safeFloat(deploymentForm.destination_latitude),
+        destination_longitude: safeFloat(deploymentForm.destination_longitude),
+        start_date: deploymentForm.start_date || null,
+        estimated_arrival: deploymentForm.estimated_arrival || null,
+        is_active: deploymentForm.is_active ?? true,
+        notes: deploymentForm.notes || '',
         waypoints: (deploymentForm.waypoints || []).map((wp) => ({
           name: wp.name || '',
-          latitude: wp.latitude === '' || wp.latitude == null ? null : parseFloat(wp.latitude),
-          longitude: wp.longitude === '' || wp.longitude == null ? null : parseFloat(wp.longitude),
+          latitude: safeFloat(wp.latitude),
+          longitude: safeFloat(wp.longitude),
           description: wp.description || '',
-          stop_duration_hours: wp.stop_duration_hours === '' || wp.stop_duration_hours == null ? null : parseFloat(wp.stop_duration_hours),
+          stop_duration_hours: safeFloat(wp.stop_duration_hours),
         })).filter((wp) => wp.latitude != null && wp.longitude != null),
       };
 

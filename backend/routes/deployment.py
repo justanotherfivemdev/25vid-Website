@@ -1,8 +1,10 @@
 """Routes for NATO markers, deployments, and division location management."""
 
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import ValidationError
 
 from database import db
 from models.deployment import (
@@ -233,26 +235,30 @@ async def create_deployment(
     data: DeploymentCreate,
     current_user: dict = Depends(get_current_admin),
 ):
-    dep = Deployment(
-        title=data.title,
-        description=data.description,
-        status=data.status,
-        deployment_type=data.deployment_type,
-        start_location_name=data.start_location_name,
-        start_latitude=data.start_latitude if data.start_latitude is not None else HOME_STATION["latitude"],
-        start_longitude=data.start_longitude if data.start_longitude is not None else HOME_STATION["longitude"],
-        destination_name=data.destination_name,
-        destination_latitude=data.destination_latitude,
-        destination_longitude=data.destination_longitude,
-        start_date=data.start_date,
-        estimated_arrival=data.estimated_arrival,
-        waypoints=data.waypoints,
-        notes=data.notes,
-        is_active=data.is_active,
-        created_by=current_user["id"],
-        partner_unit_id=data.partner_unit_id,
-        unit_name=data.unit_name,
-    )
+    try:
+        dep = Deployment(
+            title=data.title,
+            description=data.description,
+            status=data.status,
+            deployment_type=data.deployment_type,
+            start_location_name=data.start_location_name,
+            start_latitude=data.start_latitude if data.start_latitude is not None else HOME_STATION["latitude"],
+            start_longitude=data.start_longitude if data.start_longitude is not None else HOME_STATION["longitude"],
+            destination_name=data.destination_name,
+            destination_latitude=data.destination_latitude,
+            destination_longitude=data.destination_longitude,
+            start_date=data.start_date,
+            estimated_arrival=data.estimated_arrival,
+            waypoints=data.waypoints,
+            notes=data.notes,
+            is_active=data.is_active,
+            created_by=current_user["id"],
+            partner_unit_id=data.partner_unit_id,
+            unit_name=data.unit_name,
+        )
+    except ValidationError as exc:
+        logging.error("Deployment validation failed: %s", exc)
+        raise HTTPException(status_code=422, detail=str(exc))
     await db.deployments.insert_one(dep.model_dump())
 
     # If deploying/deployed, update division location (only for 25th ID deployments)
@@ -289,7 +295,11 @@ async def update_deployment(
     new_status = data.status
     if new_status:
         updated = await db.deployments.find_one({"id": deployment_id}, {"_id": 0})
-        dep_obj = Deployment(**updated)
+        try:
+            dep_obj = Deployment(**updated)
+        except ValidationError as exc:
+            logging.error("Deployment reconstruction failed: %s", exc)
+            raise HTTPException(status_code=422, detail=str(exc))
         is_25th = dep_obj.deployment_type == "25th_id" or (
             dep_obj.deployment_type is None and dep_obj.partner_unit_id is None
         )
