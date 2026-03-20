@@ -340,7 +340,7 @@ const DeploymentManager = () => {
       await fetchDivisionLocation();
     } catch (err) {
       console.error('Error updating status:', err);
-      alert('Error updating deployment status');
+      alert(formatApiError(err, 'Error updating deployment status'));
     }
   };
 
@@ -353,7 +353,7 @@ const DeploymentManager = () => {
       await fetchAlliedDeployments();
     } catch (err) {
       console.error('Error deleting deployment:', err);
-      alert(err.response?.data?.detail || 'Error deleting deployment');
+      alert(formatApiError(err, 'Error deleting deployment'));
       // Refetch to sync state after failure
       await fetchDeployments();
       await fetchAlliedDeployments();
@@ -416,7 +416,7 @@ const DeploymentManager = () => {
       await fetchMarkers();
     } catch (err) {
       console.error('Error deleting marker:', err);
-      alert('Error deleting marker');
+      alert(formatApiError(err, 'Error deleting marker'));
     }
   };
 
@@ -443,7 +443,7 @@ const DeploymentManager = () => {
       await fetchDivisionLocation();
     } catch (err) {
       console.error('Error updating division location:', err);
-      alert(err.response?.data?.detail || 'Error updating division location');
+      alert(formatApiError(err, 'Error updating division location'));
     }
   };
 
