@@ -26,6 +26,7 @@ from services.auth_service import (
     partner_user_to_response,
 )
 from services.error_log_service import log_exception
+from services.mongo_sanitize import sanitize_mongo_payload
 
 router = APIRouter()
 
@@ -718,7 +719,7 @@ async def partner_create_deployment(
     )
 
     try:
-        await db.deployments.insert_one(dep.model_dump())
+        await db.deployments.insert_one(sanitize_mongo_payload(dep.model_dump()))
     except Exception as exc:
         await log_exception(
             "partner_deployment", exc,
@@ -768,7 +769,7 @@ async def partner_update_deployment(
 
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     try:
-        await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})
+        await db.deployments.update_one({"id": deployment_id}, {"$set": sanitize_mongo_payload(update_dict)})
     except Exception as exc:
         await log_exception(
             "partner_deployment", exc,

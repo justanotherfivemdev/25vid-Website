@@ -13,6 +13,7 @@ from typing import Optional
 from uuid import uuid4
 
 from database import db
+from services.mongo_sanitize import mongo_safe_key
 
 logger = logging.getLogger(__name__)
 
@@ -120,20 +121,23 @@ _MAX_VALUE_LENGTH = 2000
 
 
 def _sanitise_body(body, *, _depth: int = 0):
-    """Strip sensitive fields from request payloads before persisting.
+    """Strip sensitive fields and Mongo-illegal keys before persisting.
 
     Recurses into nested dicts and lists so that secrets at any depth
-    are redacted.  Large string values are truncated to prevent storing
-    oversized payloads.
+    are redacted, dotted / $-prefixed keys cannot break Mongo writes,
+    and large string values are truncated to prevent oversized payloads.
     """
     if _depth > 10:
         return "***"
     if isinstance(body, dict):
-        return {
-            k: "***" if k.lower() in _SENSITIVE_KEYS
-            else _sanitise_body(v, _depth=_depth + 1)
-            for k, v in body.items()
-        }
+        sanitised = {}
+        for raw_key, value in body.items():
+            key = mongo_safe_key(raw_key)
+            lowered = str(raw_key).lower()
+            sanitised[key] = "***" if lowered in _SENSITIVE_KEYS else _sanitise_body(
+                value, _depth=_depth + 1
+            )
+        return sanitised
     if isinstance(body, list):
         return [_sanitise_body(item, _depth=_depth + 1) for item in body]
     if isinstance(body, str) and len(body) > _MAX_VALUE_LENGTH:

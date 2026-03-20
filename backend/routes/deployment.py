@@ -30,6 +30,7 @@ from models.deployment import (
 from middleware.auth import get_current_user, get_current_admin
 from services.audit_service import log_audit
 from services.error_log_service import log_error, log_exception
+from services.mongo_sanitize import sanitize_mongo_payload
 
 router = APIRouter()
 
@@ -283,7 +284,7 @@ async def create_deployment(
         raise
 
     try:
-        await db.deployments.insert_one(dep.model_dump())
+        await db.deployments.insert_one(sanitize_mongo_payload(dep.model_dump()))
     except Exception as exc:
         await log_exception(
             "deployment", exc,
@@ -350,7 +351,7 @@ async def update_deployment(
 
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     try:
-        await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})
+        await db.deployments.update_one({"id": deployment_id}, {"$set": sanitize_mongo_payload(update_dict)})
     except Exception as exc:
         await log_exception(
             "deployment", exc,

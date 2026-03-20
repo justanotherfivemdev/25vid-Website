@@ -9,15 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Shield, Users, LogOut, Home, Copy, Trash2, ChevronRight, Plus, FileText, Calendar, Radio, Clock, Pencil, Navigation, MapPin } from 'lucide-react';
 import { BACKEND_URL, API } from '@/utils/api';
 import { formatApiError } from '@/utils/errorMessages';
-
-/** Convert an ISO / date string into the value format required by <input type="datetime-local"> (YYYY-MM-DDTHH:mm). */
-function toDatetimeLocalValue(isoStr) {
-  if (!isoStr) return '';
-  const d = new Date(isoStr);
-  if (isNaN(d.getTime())) return isoStr.slice(0, 16); // fallback: keep what we have
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+import { toDeploymentApiValue, toDeploymentInputValue, formatDeploymentDateTime } from '@/utils/deploymentDateTime';
 
 const PartnerAdmin = () => {
   const [user, setUser] = useState(null);
@@ -617,8 +609,17 @@ const PartnerAdmin = () => {
                     <div className="flex gap-2">
                       <Button onClick={async () => {
                         try {
+                          const startDate = toDeploymentApiValue(depForm.start_date);
+                          const estimatedArrival = toDeploymentApiValue(depForm.estimated_arrival);
+                          if (startDate && estimatedArrival && new Date(estimatedArrival).getTime() <= new Date(startDate).getTime()) {
+                            alert('Estimated arrival must be after the start date.');
+                            return;
+                          }
+
                           const payload = {
                             ...depForm,
+                            start_date: startDate,
+                            estimated_arrival: estimatedArrival,
                             start_latitude: depForm.start_latitude ? parseFloat(depForm.start_latitude) : 0,
                             start_longitude: depForm.start_longitude ? parseFloat(depForm.start_longitude) : 0,
                             destination_latitude: depForm.destination_latitude ? parseFloat(depForm.destination_latitude) : null,
@@ -673,10 +674,10 @@ const PartnerAdmin = () => {
                               <span className="flex items-center gap-1"><Navigation className="w-3 h-3" />To: {dep.destination_name}</span>
                             )}
                             {dep.start_date && (
-                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Start: {dep.start_date}</span>
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Start: {formatDeploymentDateTime(dep.start_date, { includeTime: true })}</span>
                             )}
                             {dep.estimated_arrival && (
-                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />ETA: {dep.estimated_arrival}</span>
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />ETA: {formatDeploymentDateTime(dep.estimated_arrival, { includeTime: true })}</span>
                             )}
                           </div>
                           {dep.start_latitude != null && dep.start_longitude != null && (
@@ -697,8 +698,8 @@ const PartnerAdmin = () => {
                               destination_name: dep.destination_name || '',
                               destination_latitude: dep.destination_latitude ?? '',
                               destination_longitude: dep.destination_longitude ?? '',
-                              start_date: toDatetimeLocalValue(dep.start_date),
-                              estimated_arrival: toDatetimeLocalValue(dep.estimated_arrival),
+                              start_date: toDeploymentInputValue(dep.start_date),
+                              estimated_arrival: toDeploymentInputValue(dep.estimated_arrival),
                               notes: dep.notes || '',
                             });
                             setEditingDep(dep.id);

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Plus, Edit, Trash2, MapPin, Navigation, RefreshCw, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { API } from '@/utils/api';
 import { formatApiError } from '@/utils/errorMessages';
+import { toDeploymentApiValue, toDeploymentInputValue, formatDeploymentDateTime } from '@/utils/deploymentDateTime';
 
 const DEPLOYMENT_STATUSES = ['planning', 'deploying', 'deployed', 'returning', 'completed', 'cancelled'];
 
@@ -30,15 +31,6 @@ const AFFILIATION_COLORS = {
   neutral: 'bg-green-600 text-green-100',
   unknown: 'bg-yellow-600 text-yellow-100',
 };
-
-/** Convert an ISO / date string into the value format required by <input type="datetime-local"> (YYYY-MM-DDTHH:mm). */
-function toDatetimeLocalValue(isoStr) {
-  if (!isoStr) return '';
-  const d = new Date(isoStr);
-  if (isNaN(d.getTime())) return isoStr.slice(0, 16); // fallback: keep what we have
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 const EMPTY_DEPLOYMENT = {
   title: '',
@@ -271,8 +263,8 @@ const DeploymentManager = () => {
       destination_name: dep.destination_name || '',
       destination_latitude: dep.destination_latitude ?? '',
       destination_longitude: dep.destination_longitude ?? '',
-      start_date: toDatetimeLocalValue(dep.start_date),
-      estimated_arrival: toDatetimeLocalValue(dep.estimated_arrival),
+      start_date: toDeploymentInputValue(dep.start_date),
+      estimated_arrival: toDeploymentInputValue(dep.estimated_arrival),
       waypoints: Array.isArray(dep.waypoints) ? dep.waypoints : [],
       notes: dep.notes || '',
       is_active: dep.is_active ?? true,
@@ -290,6 +282,13 @@ const DeploymentManager = () => {
         return isNaN(n) ? null : n;
       };
 
+      const startDate = toDeploymentApiValue(deploymentForm.start_date);
+      const estimatedArrival = toDeploymentApiValue(deploymentForm.estimated_arrival);
+      if (startDate && estimatedArrival && new Date(estimatedArrival).getTime() <= new Date(startDate).getTime()) {
+        alert('Estimated arrival must be after the start date.');
+        return;
+      }
+
       const payload = {
         title: deploymentForm.title,
         description: deploymentForm.description || '',
@@ -302,8 +301,8 @@ const DeploymentManager = () => {
         destination_name: deploymentForm.destination_name || '',
         destination_latitude: safeFloat(deploymentForm.destination_latitude),
         destination_longitude: safeFloat(deploymentForm.destination_longitude),
-        start_date: deploymentForm.start_date || null,
-        estimated_arrival: deploymentForm.estimated_arrival || null,
+        start_date: startDate,
+        estimated_arrival: estimatedArrival,
         is_active: deploymentForm.is_active ?? true,
         notes: deploymentForm.notes || '',
         waypoints: (deploymentForm.waypoints || []).map((wp) => ({
@@ -615,10 +614,10 @@ const DeploymentManager = () => {
                               </span>
                             )}
                             {dep.start_date && (
-                              <span>Start: {new Date(dep.start_date).toLocaleDateString()}</span>
+                              <span>Start: {formatDeploymentDateTime(dep.start_date, { includeTime: true })}</span>
                             )}
                             {dep.estimated_arrival && (
-                              <span>ETA: {new Date(dep.estimated_arrival).toLocaleDateString()}</span>
+                              <span>ETA: {formatDeploymentDateTime(dep.estimated_arrival, { includeTime: true })}</span>
                             )}
                           </div>
                         </div>
@@ -738,10 +737,10 @@ const DeploymentManager = () => {
                               </span>
                             )}
                             {dep.start_date && (
-                              <span>Start: {new Date(dep.start_date).toLocaleDateString()}</span>
+                              <span>Start: {formatDeploymentDateTime(dep.start_date, { includeTime: true })}</span>
                             )}
                             {dep.estimated_arrival && (
-                              <span>ETA: {new Date(dep.estimated_arrival).toLocaleDateString()}</span>
+                              <span>ETA: {formatDeploymentDateTime(dep.estimated_arrival, { includeTime: true })}</span>
                             )}
                           </div>
                         </div>
