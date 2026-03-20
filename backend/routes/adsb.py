@@ -522,6 +522,13 @@ async def _fetch_adsb_lol() -> list:
             return _normalize_adsb_lol(aircraft)
     except Exception as exc:
         logger.warning("ADSB.lol fetch failed: %s", exc)
+        from services.error_log_service import log_error as _log_err
+        import asyncio
+        asyncio.ensure_future(_log_err(
+            source="adsb", message=f"ADSB.lol fetch failed: {exc}",
+            severity="warning", error_type=type(exc).__name__,
+            metadata={"provider": "adsb.lol"},
+        ))
         return []
 
 
