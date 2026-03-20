@@ -67,7 +67,7 @@ class GalleryImageCreate(BaseModel):
         normalised = v.strip().lower()
         if normalised.startswith("http://") or normalised.startswith("https://"):
             raise ValueError("External image URLs are not allowed. Please upload a file instead.")
-        return v
+        return v.strip()
 
 
 class Training(BaseModel):

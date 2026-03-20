@@ -932,7 +932,8 @@ class FrontendErrorLog(BaseModel):
     @classmethod
     def validate_source(cls, v: str) -> str:
         if v.lower() not in _ALLOWED_FRONTEND_SOURCES:
-            raise ValueError(f"source must be one of {_ALLOWED_FRONTEND_SOURCES}")
+            allowed = ", ".join(sorted(_ALLOWED_FRONTEND_SOURCES))
+            raise ValueError(f"source must be one of: {allowed}")
         return v.lower()
 
     @field_validator("message")

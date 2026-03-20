@@ -137,5 +137,5 @@ def _sanitise_body(body, *, _depth: int = 0):
     if isinstance(body, list):
         return [_sanitise_body(item, _depth=_depth + 1) for item in body]
     if isinstance(body, str) and len(body) > _MAX_VALUE_LENGTH:
-        return body[:_MAX_VALUE_LENGTH] + "…[truncated]"
+        return body[:_MAX_VALUE_LENGTH] + "...[truncated]"
     return body
