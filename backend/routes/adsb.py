@@ -328,13 +328,13 @@ def _normalize_opensky(states: list, timestamp: int) -> list:
             "origin_country": origin_country,
             "on_ground": on_ground,
             "squawk": sv[14] if len(sv) > 14 else None,
-            "spi": bool(sv[15]) if len(sv) > 15 else None,
+            "spi": bool(sv[15]) if len(sv) > 15 and sv[15] is not None else None,
             "position_source": sv[16] if len(sv) > 16 else None,
             "category": sv[17] if len(sv) > 17 else None,
             "source": "opensky",
             "time_position": sv[3],                    # last position update
             "last_contact": sv[4],                     # last contact timestamp
-            "timestamp": sv[4] or timestamp or time.time(),  # prefer per-aircraft last_contact
+            "timestamp": sv[4] if sv[4] is not None else (timestamp or time.time()),
         })
     return results
 
