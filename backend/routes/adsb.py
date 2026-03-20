@@ -43,7 +43,7 @@ import logging
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 logger = logging.getLogger(__name__)
 
@@ -493,17 +493,40 @@ def _deduplicate(aircraft: list) -> list:
 # ===================================================================
 
 @router.get("/military-aircraft")
-async def get_military_aircraft():
+async def get_military_aircraft(
+    origin_country: Optional[str] = Query(None, description="Filter by origin country"),
+    altitude_min: Optional[float] = Query(None, description="Minimum altitude in feet"),
+    altitude_max: Optional[float] = Query(None, description="Maximum altitude in feet"),
+    on_ground: Optional[bool] = Query(None, description="Filter by on-ground status"),
+    callsign: Optional[str] = Query(None, description="Filter by callsign (case-insensitive substring match)"),
+):
     """
     Return currently tracked military aircraft.
     Results are cached for ADSB_CACHE_SECONDS to reduce upstream load.
+    Optional query params filter the cached results per-request.
     """
     now = time.time()
     if now - _cache["timestamp"] < ADSB_CACHE_SECONDS and _cache["data"]:
-        return {"aircraft": _cache["data"], "count": len(_cache["data"]), "cached": True}
+        aircraft = _cache["data"]
+        cached = True
+    else:
+        aircraft = await _fetch_military_aircraft()
+        _cache["data"] = aircraft
+        _cache["timestamp"] = now
+        cached = False
 
-    aircraft = await _fetch_military_aircraft()
-    _cache["data"] = aircraft
-    _cache["timestamp"] = now
+    # Apply optional filters on the cached result set
+    filtered = aircraft
+    if origin_country:
+        filtered = [ac for ac in filtered if ac.get("origin_country") == origin_country]
+    if altitude_min is not None:
+        filtered = [ac for ac in filtered if ac.get("altitude") is not None and ac["altitude"] >= altitude_min]
+    if altitude_max is not None:
+        filtered = [ac for ac in filtered if ac.get("altitude") is not None and ac["altitude"] <= altitude_max]
+    if on_ground is not None:
+        filtered = [ac for ac in filtered if ac.get("on_ground") == on_ground]
+    if callsign:
+        cs_upper = callsign.upper()
+        filtered = [ac for ac in filtered if ac.get("callsign") and cs_upper in ac["callsign"].upper()]
 
-    return {"aircraft": aircraft, "count": len(aircraft), "cached": False}
+    return {"aircraft": filtered, "count": len(filtered), "cached": cached}

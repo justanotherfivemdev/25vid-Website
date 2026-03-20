@@ -49,6 +49,13 @@ export const useMapStore = create((set) => ({
   showClusters: true,
   showMilitaryBases: true,
   showADSB: JSON.parse(localStorage.getItem('showADSB') ?? 'false'),
+  adsbFilters: JSON.parse(localStorage.getItem('adsbFilters') ?? JSON.stringify({
+    originCountry: '',
+    altitudeMin: null,
+    altitudeMax: null,
+    showOnGround: true,
+    callsignSearch: '',
+  })),
   isAutoPlaying: false,
   entityLocations: [],
   militaryBases: [],
@@ -69,6 +76,17 @@ export const useMapStore = create((set) => ({
       localStorage.setItem('showADSB', JSON.stringify(next));
       return { showADSB: next };
     }),
+  setAdsbFilter: (key, value) =>
+    set((state) => {
+      const next = { ...state.adsbFilters, [key]: value };
+      localStorage.setItem('adsbFilters', JSON.stringify(next));
+      return { adsbFilters: next };
+    }),
+  resetAdsbFilters: () => {
+    const defaults = { originCountry: '', altitudeMin: null, altitudeMax: null, showOnGround: true, callsignSearch: '' };
+    localStorage.setItem('adsbFilters', JSON.stringify(defaults));
+    set({ adsbFilters: defaults });
+  },
 
   startAutoPlay: () => set({ isAutoPlaying: true }),
   stopAutoPlay: () => set({ isAutoPlaying: false }),
