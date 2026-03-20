@@ -7,12 +7,15 @@ results to minimize upstream requests.
 
 Data sources (priority order):
   1. OpenSky Network — OAuth2 authenticated, best data quality, origin_country
-  2. ADSB.lol        — no auth, good coverage, /mil endpoint
+  2. ADSB.lol        — no auth, good coverage, /mil endpoint, dedicated normalizer
   3. Airplanes.live  — no auth, real-time, US-focused, /mil endpoint
   4. ADSB.fi         — no auth, European coverage
 
 OpenSky REST API reference:
   https://openskynetwork.github.io/opensky-api/rest.html
+
+ADSB.lol API reference (OAS 3.1):
+  https://api.adsb.lol/docs
 
 State vector response format (array-of-arrays):
   Index  Field             Type
@@ -339,8 +342,127 @@ def _normalize_opensky(states: list, timestamp: int) -> list:
     return results
 
 
+def _normalize_adsb_lol(aircraft_list: list) -> list:
+    """
+    Normalize ADSB.lol /v2/mil response into the unified schema.
+
+    ADSB.lol uses the ADSBx v2 JSON format.  Key field mappings
+    (from V2Response_AcItem in https://github.com/adsblol/api):
+      hex          → ICAO hex address                         (str, required)
+      flight       → callsign                                 (str | None)
+      t            → aircraft type ICAO designator             (str | None)
+      lat / lon    → WGS84 position                           (float | None)
+      alt_baro     → barometric altitude (feet) OR "ground"   (int | str | None)
+      alt_geom     → geometric altitude (feet)                (int | None)
+      gs           → ground speed (knots)                     (float | None)
+      track        → true track (degrees)                     (float | None)
+      baro_rate    → barometric vertical rate (ft/min)        (int | None)
+      geom_rate    → geometric vertical rate  (ft/min)        (int | None)
+      squawk       → transponder code                         (str | None)
+      category     → emitter category (e.g. "A1")            (str | None)
+      spi          → Special Position Identification flag     (int 0|1 | None)
+      seen_pos     → seconds since last position message      (float | None)
+      seen         → seconds since any message                (float, required)
+      mlat         → list of MLAT-derived field names         (list[str])
+      tisb         → list of TIS-B-derived field names        (list[str])
+      dbFlags      → database flags (bit 0 = military)        (int | None)
+      type         → message type, e.g. "adsb_icao"           (str, required)
+
+    All altitude/speed values are already in imperial units (feet / knots / ft·min⁻¹),
+    matching the unified schema without conversion.
+    """
+    results = []
+    now = time.time()
+    for ac in aircraft_list:
+        callsign = (ac.get("flight") or "").strip() or None
+        hex_code = (ac.get("hex") or "").strip() or None
+        ac_type = (ac.get("t") or "").strip() or None
+
+        # Military gate — use dbFlags bit-0 as an extra signal
+        db_flags = ac.get("dbFlags")
+        is_db_military = isinstance(db_flags, int) and (db_flags & 1)
+        if not is_db_military and not is_military(callsign, hex_code, ac_type):
+            continue
+
+        lat = ac.get("lat")
+        lon = ac.get("lon")
+        if lat is None or lon is None:
+            continue
+
+        try:
+            lat = float(lat)
+            lon = float(lon)
+        except (ValueError, TypeError):
+            continue
+
+        # Validate WGS84 coordinate ranges for proper globe rendering
+        if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+            continue
+
+        # alt_baro can be an int (feet) OR the string "ground"
+        raw_alt_baro = ac.get("alt_baro")
+        if raw_alt_baro == "ground":
+            on_ground = True
+            alt = ac.get("alt_geom")       # fall back to geometric altitude
+        else:
+            on_ground = False
+            alt = raw_alt_baro or ac.get("alt_geom")
+
+        velocity = ac.get("gs")
+        heading = ac.get("track") or ac.get("true_heading") or ac.get("mag_heading")
+
+        # Derive position_source: 0=ADS-B, 2=MLAT, 3=TIS-B
+        mlat_fields = ac.get("mlat") or []
+        tisb_fields = ac.get("tisb") or []
+        if tisb_fields:
+            position_source = 3   # TIS-B
+        elif mlat_fields:
+            position_source = 2   # MLAT
+        else:
+            position_source = 0   # ADS-B (default)
+
+        # Convert category string (e.g. "A1") to integer if possible
+        raw_cat = ac.get("category")
+        category = None
+        if raw_cat is not None:
+            try:
+                category = int(raw_cat, 16) if isinstance(raw_cat, str) else int(raw_cat)
+            except (ValueError, TypeError):
+                category = None
+
+        # Derive absolute timestamps from "seconds ago" fields
+        seen_pos = _safe_float(ac.get("seen_pos"))
+        seen = _safe_float(ac.get("seen"))
+        time_position = round(now - seen_pos) if seen_pos is not None else None
+        last_contact = round(now - seen) if seen is not None else None
+
+        results.append({
+            "id": hex_code or callsign or f"{lat}:{lon}",
+            "callsign": callsign,
+            "lat": lat,
+            "lon": lon,
+            "altitude": _safe_float(alt),              # already in feet
+            "geo_altitude": _safe_float(ac.get("alt_geom")),  # already in feet
+            "velocity": _safe_float(velocity),          # already in knots
+            "heading": _safe_float(heading),
+            "vertical_rate": _safe_float(ac.get("baro_rate") or ac.get("geom_rate")),  # already in ft/min
+            "aircraft_type": ac_type,
+            "origin_country": None,                     # not provided by ADSB.lol
+            "on_ground": on_ground,
+            "squawk": ac.get("squawk"),
+            "spi": bool(ac.get("spi")) if ac.get("spi") is not None else None,
+            "position_source": position_source,
+            "category": category,
+            "source": "adsb.lol",
+            "time_position": time_position,
+            "last_contact": last_contact,
+            "timestamp": (now - seen_pos) if seen_pos is not None else ac.get("now") or now,
+        })
+    return results
+
+
 def _normalize_adsbx_v2(aircraft_list: list, source: str) -> list:
-    """Normalize ADSB.lol / Airplanes.live / ADSB.fi (ADSBx v2-compatible) data."""
+    """Normalize Airplanes.live / ADSB.fi (ADSBx v2-compatible) data."""
     results = []
     for ac in aircraft_list:
         callsign = (ac.get("flight") or ac.get("call") or "").strip() or None
@@ -392,8 +514,22 @@ def _normalize_adsbx_v2(aircraft_list: list, source: str) -> list:
 # Fetchers — each API source
 # ===================================================================
 
+async def _fetch_adsb_lol() -> list:
+    """Fetch military aircraft from ADSB.lol /v2/mil using the dedicated normalizer."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get("https://api.adsb.lol/v2/mil")
+            resp.raise_for_status()
+            data = resp.json()
+            aircraft = data.get("ac") or data.get("aircraft") or []
+            return _normalize_adsb_lol(aircraft)
+    except Exception as exc:
+        logger.warning("ADSB.lol fetch failed: %s", exc)
+        return []
+
+
 async def _fetch_v2_source(url: str, source: str) -> list:
-    """Generic fetcher for ADSBx v2-compatible endpoints (ADSB.lol, Airplanes.live, ADSB.fi)."""
+    """Generic fetcher for ADSBx v2-compatible endpoints (Airplanes.live, ADSB.fi)."""
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(url)
@@ -458,8 +594,8 @@ async def _fetch_military_aircraft() -> list:
         if results:
             return _deduplicate(results)
 
-    # 2. ADSB.lol (has /mil endpoint)
-    results = await _fetch_v2_source("https://api.adsb.lol/v2/mil", "adsb.lol")
+    # 2. ADSB.lol (has /mil endpoint — dedicated normalizer)
+    results = await _fetch_adsb_lol()
     if results:
         return _deduplicate(results)
 
