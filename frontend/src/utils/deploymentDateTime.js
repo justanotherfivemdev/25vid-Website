@@ -21,7 +21,7 @@ export function formatDeploymentDateTime(isoStr, options = {}) {
 export function computeDeploymentProgress(dep, nowMs) {
   if (!dep.started_at || !dep.total_duration_hours) return 0;
   const startMs = new Date(dep.started_at).getTime();
-  if (isNaN(startMs)) return 0;
+  if (Number.isNaN(startMs)) return 0;
   const totalMs = dep.total_duration_hours * 3600000;
   if (totalMs <= 0) return 0;
 
@@ -89,7 +89,7 @@ export function computeDeploymentProgress(dep, nowMs) {
 export function computeCountdownLabel(dep, nowMs) {
   if (!dep.started_at || !dep.total_duration_hours) return '';
   const startMs = new Date(dep.started_at).getTime();
-  if (isNaN(startMs)) return '';
+  if (Number.isNaN(startMs)) return '';
   const endMs = startMs + dep.total_duration_hours * 3600000;
   const remaining = endMs - nowMs;
   if (remaining <= 0) return '';
