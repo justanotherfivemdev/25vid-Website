@@ -421,20 +421,17 @@ def _normalize_adsb_lol(aircraft_list: list) -> list:
         else:
             position_source = 0   # ADS-B (default)
 
-        # Convert category string (e.g. "A1") to integer if possible
-        raw_cat = ac.get("category")
-        category = None
-        if raw_cat is not None:
-            try:
-                category = int(raw_cat, 16) if isinstance(raw_cat, str) else int(raw_cat)
-            except (ValueError, TypeError):
-                category = None
+        # Preserve category as-is (e.g. "A1", "A5", "B2") — these are
+        # emitter category codes, not hex numbers.
+        category = ac.get("category")
 
         # Derive absolute timestamps from "seconds ago" fields
         seen_pos = _safe_float(ac.get("seen_pos"))
         seen = _safe_float(ac.get("seen"))
         time_position = round(now - seen_pos) if seen_pos is not None else None
         last_contact = round(now - seen) if seen is not None else None
+
+        spi_val = ac.get("spi")
 
         results.append({
             "id": hex_code or callsign or f"{lat}:{lon}",
@@ -450,13 +447,13 @@ def _normalize_adsb_lol(aircraft_list: list) -> list:
             "origin_country": None,                     # not provided by ADSB.lol
             "on_ground": on_ground,
             "squawk": ac.get("squawk"),
-            "spi": bool(ac.get("spi")) if ac.get("spi") is not None else None,
+            "spi": bool(spi_val) if spi_val is not None else None,
             "position_source": position_source,
             "category": category,
             "source": "adsb.lol",
             "time_position": time_position,
             "last_contact": last_contact,
-            "timestamp": (now - seen_pos) if seen_pos is not None else ac.get("now") or now,
+            "timestamp": time_position if time_position is not None else ac.get("now") or now,
         })
     return results
 
