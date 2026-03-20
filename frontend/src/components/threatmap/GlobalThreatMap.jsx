@@ -1083,20 +1083,40 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             const mid = interpolateAlongLine(coords, 0.5);
             const countdown = computeCountdownLabel(d);
             if (!countdown) return null;
+
+            // Format departure & arrival times
+            const fmtTime = (iso) => {
+              if (!iso) return '';
+              const dt = new Date(iso);
+              if (isNaN(dt.getTime())) return '';
+              return dt.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            };
+            const depTime = fmtTime(d.start_date);
+            const arrTime = fmtTime(d.estimated_arrival);
+
             return (
-              <Marker key={`dep-timer-${d.id}`} longitude={mid[0]} latitude={mid[1]} anchor="center">
+              <Marker key={`dep-timer-${d.id}`} longitude={mid[0]} latitude={mid[1]} anchor="center" style={{ zIndex: 2 }}>
                 <div
-                  className="flex items-center gap-1 px-2 py-1 rounded border shadow-lg whitespace-nowrap select-none"
+                  className="flex flex-col items-center gap-0.5 px-2 py-1 rounded border shadow-lg whitespace-nowrap select-none"
                   style={{
                     background: 'rgba(15,23,42,0.92)',
                     borderColor: color,
                     boxShadow: `0 0 8px ${color}44`,
                   }}
                 >
-                  <span style={{ color, fontSize: 10 }}>⏱</span>
-                  <span className="font-mono font-bold text-[11px]" style={{ color }}>
-                    {countdown}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span style={{ color, fontSize: 10 }}>⏱</span>
+                    <span className="font-mono font-bold text-[11px]" style={{ color }}>
+                      {countdown}
+                    </span>
+                  </div>
+                  {(depTime || arrTime) && (
+                    <div className="flex items-center gap-1 text-[9px] text-gray-400">
+                      {depTime && <span>DEP {depTime}</span>}
+                      {depTime && arrTime && <span>→</span>}
+                      {arrTime && <span>ARR {arrTime}</span>}
+                    </div>
+                  )}
                 </div>
               </Marker>
             );
@@ -1131,6 +1151,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                 longitude={pos[0]}
                 latitude={pos[1]}
                 anchor="center"
+                style={{ zIndex: 1 }}
                 onClick={(e) => {
                   e.originalEvent.stopPropagation();
                   setDeploymentPopup({
@@ -1151,14 +1172,14 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                     width="28"
                     height="28"
                     viewBox="0 0 24 24"
-                    fill="none"
+                    fill={color}
                     stroke={color}
                     strokeWidth="1.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     style={{
                       transform: `rotate(${heading}deg)`,
-                      filter: `drop-shadow(0 0 4px ${color}88)`,
+                      filter: `drop-shadow(0 0 6px ${color})`,
                       transition: 'transform 1s ease-out',
                     }}
                   >
@@ -1224,6 +1245,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
               longitude={markerLng}
               latitude={markerLat}
               anchor="center"
+              style={{ zIndex: 3 }}
             >
               <div className="flex flex-col items-center" title={`25th ID - ${divisionDisplayLocation.name}`}>
                 <div className="relative">
@@ -1428,9 +1450,14 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                       {deploymentPopup.data.status === 'deploying' && ' — In Transit'}
                     </p>
                   )}
+                  {deploymentPopup.data.start_date && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Departure: {new Date(deploymentPopup.data.start_date).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
                   {deploymentPopup.data.estimated_arrival && (
                     <p className="text-xs text-gray-500 mt-1">
-                      ETA: {new Date(deploymentPopup.data.estimated_arrival).toLocaleDateString()}
+                      Arrival: {new Date(deploymentPopup.data.estimated_arrival).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
                   )}
                   {Array.isArray(deploymentPopup.data.waypoints) && deploymentPopup.data.waypoints.length > 0 && (

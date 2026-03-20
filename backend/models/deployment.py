@@ -228,8 +228,10 @@ class Deployment(BaseModel):
 class DeploymentCreate(BaseModel):
     title: str
     description: str = ""
-    status: str = "planning"
-    deployment_type: str = "25th_id"
+    status: Literal[
+        "planning", "deploying", "deployed", "returning", "completed", "cancelled"
+    ] = "planning"
+    deployment_type: Literal["25th_id", "partner", "allied"] = "25th_id"
     start_location_name: str = "Schofield Barracks, HI"
     start_latitude: Optional[float] = 21.4959
     start_longitude: Optional[float] = -158.0648
@@ -248,8 +250,10 @@ class DeploymentCreate(BaseModel):
 class DeploymentUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    status: Optional[str] = None
-    deployment_type: Optional[str] = None
+    status: Optional[
+        Literal["planning", "deploying", "deployed", "returning", "completed", "cancelled"]
+    ] = None
+    deployment_type: Optional[Literal["25th_id", "partner", "allied"]] = None
     start_location_name: Optional[str] = None
     start_latitude: Optional[float] = None
     start_longitude: Optional[float] = None
