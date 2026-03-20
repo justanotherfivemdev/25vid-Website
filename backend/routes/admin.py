@@ -253,13 +253,6 @@ async def delete_gallery_image(image_id: str, current_user: dict = Depends(get_c
 
 @router.put("/admin/gallery/{image_id}")
 async def update_gallery_image(image_id: str, image_data: GalleryImageCreate, current_user: dict = Depends(get_current_admin)):
-    # Reject external URLs — only locally-uploaded files are allowed
-    url = image_data.image_url or ""
-    if url.startswith("http://") or url.startswith("https://"):
-        raise HTTPException(
-            status_code=400,
-            detail="External image URLs are not allowed. Please upload a file instead.",
-        )
     result = await db.gallery.update_one(
         {"id": image_id},
         {"$set": image_data.model_dump()}

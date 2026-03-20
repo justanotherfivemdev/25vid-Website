@@ -322,7 +322,7 @@ const ErrorLogsManager = () => {
                   Go
                 </Button>
               </form>
-              {stats?.unresolved > 0 && (
+              {(stats?.total - stats?.unresolved > 0) && (
                 <Button
                   variant="outline"
                   size="sm"
