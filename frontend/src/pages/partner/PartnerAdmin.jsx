@@ -10,6 +10,15 @@ import { Shield, Users, LogOut, Home, Copy, Trash2, ChevronRight, Plus, FileText
 import { BACKEND_URL, API } from '@/utils/api';
 import { formatApiError } from '@/utils/errorMessages';
 
+/** Convert an ISO / date string into the value format required by <input type="datetime-local"> (YYYY-MM-DDTHH:mm). */
+function toDatetimeLocalValue(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return isoStr.slice(0, 16); // fallback: keep what we have
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const PartnerAdmin = () => {
   const [user, setUser] = useState(null);
   const [unit, setUnit] = useState(null);
@@ -596,12 +605,12 @@ const PartnerAdmin = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-gray-400 mb-1 block">Start Date</label>
-                        <Input type="date" value={depForm.start_date} onChange={e => setDepForm(p => ({ ...p, start_date: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                        <label className="text-xs text-gray-400 mb-1 block">Start Date & Time</label>
+                        <Input type="datetime-local" value={depForm.start_date} onChange={e => setDepForm(p => ({ ...p, start_date: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
                       </div>
                       <div>
                         <label className="text-xs text-gray-400 mb-1 block">Estimated Arrival</label>
-                        <Input type="date" value={depForm.estimated_arrival} onChange={e => setDepForm(p => ({ ...p, estimated_arrival: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                        <Input type="datetime-local" value={depForm.estimated_arrival} onChange={e => setDepForm(p => ({ ...p, estimated_arrival: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
                       </div>
                     </div>
                     <Textarea placeholder="Notes" value={depForm.notes} onChange={e => setDepForm(p => ({ ...p, notes: e.target.value }))} className="bg-black/50 border-gray-700 text-white" rows={2} />
@@ -688,8 +697,8 @@ const PartnerAdmin = () => {
                               destination_name: dep.destination_name || '',
                               destination_latitude: dep.destination_latitude ?? '',
                               destination_longitude: dep.destination_longitude ?? '',
-                              start_date: dep.start_date || '',
-                              estimated_arrival: dep.estimated_arrival || '',
+                              start_date: toDatetimeLocalValue(dep.start_date),
+                              estimated_arrival: toDatetimeLocalValue(dep.estimated_arrival),
                               notes: dep.notes || '',
                             });
                             setEditingDep(dep.id);
