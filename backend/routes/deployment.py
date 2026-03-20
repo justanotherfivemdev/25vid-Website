@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import ValidationError
 
 from database import db
@@ -20,8 +20,9 @@ from models.deployment import (
     Deployment,
     DeploymentCreate,
     DeploymentUpdate,
+    RoutePoint,
     DEPLOYMENT_STATUSES,
-    DEPLOYMENT_TYPES,
+    DEPLOYMENT_ORIGIN_TYPES,
     DivisionLocation,
     DivisionLocationUpdate,
     DIVISION_STATES,
@@ -47,7 +48,7 @@ async def get_nato_reference():
         "affiliation_labels": NATO_AFFILIATION_LABELS,
         "symbol_type_labels": NATO_SYMBOL_TYPE_LABELS,
         "echelon_labels": NATO_ECHELON_LABELS,
-        "deployment_types": DEPLOYMENT_TYPES,
+        "deployment_origin_types": DEPLOYMENT_ORIGIN_TYPES,
     }
 
 
@@ -189,9 +190,9 @@ async def delete_nato_marker(
 
 @router.get("/map/deployments")
 async def list_deployments(current_user: dict = Depends(get_current_user)):
-    """Return all active deployments for map display (25th ID + partner)."""
+    """Return active deployments for the Global Threat Map live display."""
     deployments = await db.deployments.find(
-        {"is_active": True}, {"_id": 0}
+        {"status": "active", "is_active": True}, {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     return deployments
 
@@ -209,23 +210,13 @@ async def get_deployment(
 
 @router.get("/admin/map/deployments")
 async def admin_list_deployments(
-    deployment_type: str = None,
+    origin_type: str = Query(default=None),
     current_user: dict = Depends(get_current_admin),
 ):
-    """Return deployments filtered by type, including inactive/archived."""
+    """Return deployments filtered by origin_type. Shows all if no filter given."""
     query = {}
-    if deployment_type == "allied":
-        query["deployment_type"] = "allied"
-    elif deployment_type == "partner":
-        query["deployment_type"] = "partner"
-    else:
-        # Default: show 25th ID deployments (backwards-compatible)
-        # {deployment_type: None} in MongoDB matches both null values and missing fields
-        query["$or"] = [
-            {"deployment_type": "25th_id"},
-            {"deployment_type": None},
-        ]
-        query["partner_unit_id"] = None
+    if origin_type:
+        query["origin_type"] = origin_type
     deployments = await db.deployments.find(
         query, {"_id": 0}
     ).sort("created_at", -1).to_list(200)
@@ -240,24 +231,19 @@ async def create_deployment(
     try:
         dep = Deployment(
             title=data.title,
-            description=data.description,
-            status=data.status,
-            deployment_type=data.deployment_type,
-            start_location_name=data.start_location_name,
-            start_latitude=data.start_latitude if data.start_latitude is not None else HOME_STATION["latitude"],
-            start_longitude=data.start_longitude if data.start_longitude is not None else HOME_STATION["longitude"],
-            destination_name=data.destination_name,
-            destination_latitude=data.destination_latitude,
-            destination_longitude=data.destination_longitude,
-            start_date=data.start_date,
-            estimated_arrival=data.estimated_arrival,
-            waypoints=data.waypoints,
-            notes=data.notes,
-            is_active=data.is_active,
-            created_by=current_user["id"],
-            partner_unit_id=data.partner_unit_id,
             unit_name=data.unit_name,
+            origin_type=data.origin_type,
+            origin_unit_id=data.origin_unit_id,
+            status=data.status,
+            is_active=data.is_active,
+            total_duration_hours=data.total_duration_hours,
+            route_points=data.route_points,
+            notes=data.notes,
+            created_by=current_user["id"],
         )
+        # Auto-set started_at when creating as active
+        if dep.status == "active":
+            dep.started_at = datetime.now(timezone.utc).isoformat()
     except ValidationError as exc:
         logging.error("Deployment validation failed: %s", exc)
         await log_error(
@@ -299,8 +285,8 @@ async def create_deployment(
             detail=f"Failed to save deployment: {exc}",
         )
 
-    # If deploying/deployed, update division location (only for 25th ID deployments)
-    if data.status in ("deploying", "deployed") and data.deployment_type == "25th_id":
+    # If active 25th deployment, update division location
+    if dep.status == "active" and dep.is_active and dep.origin_type == "25th":
         try:
             await _update_division_for_deployment(dep, current_user["id"])
         except Exception as exc:
@@ -339,19 +325,26 @@ async def update_deployment(
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
 
-    # Guard: start_latitude / start_longitude must be floats in the Deployment
-    # model.  If the frontend sends null, fall back to existing values (or to
-    # HOME_STATION) so we never store None in a required-float field.
-    if "start_latitude" in update_dict and update_dict["start_latitude"] is None:
-        existing_lat = existing.get("start_latitude")
-        update_dict["start_latitude"] = existing_lat if existing_lat is not None else HOME_STATION["latitude"]
-    if "start_longitude" in update_dict and update_dict["start_longitude"] is None:
-        existing_lng = existing.get("start_longitude")
-        update_dict["start_longitude"] = existing_lng if existing_lng is not None else HOME_STATION["longitude"]
+    old_status = existing.get("status")
+    new_status = update_dict.get("status")
+
+    # Auto-set started_at when transitioning to active
+    if new_status == "active" and not existing.get("started_at"):
+        update_dict["started_at"] = datetime.now(timezone.utc).isoformat()
+
+    # Serialize route_points if present
+    if "route_points" in update_dict and update_dict["route_points"] is not None:
+        update_dict["route_points"] = [
+            rp.model_dump() if isinstance(rp, RoutePoint) else rp
+            for rp in update_dict["route_points"]
+        ]
 
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     try:
-        await db.deployments.update_one({"id": deployment_id}, {"$set": sanitize_mongo_payload(update_dict)})
+        await db.deployments.update_one(
+            {"id": deployment_id},
+            {"$set": sanitize_mongo_payload(update_dict)},
+        )
     except Exception as exc:
         await log_exception(
             "deployment", exc,
@@ -366,9 +359,8 @@ async def update_deployment(
             detail=f"Failed to update deployment: {exc}",
         )
 
-    # If status changed, update division location (only for 25th ID deployments)
-    new_status = data.status
-    if new_status:
+    # Update division location for 25th origin deployments on status change
+    if new_status and new_status != old_status:
         updated = await db.deployments.find_one({"id": deployment_id}, {"_id": 0})
         try:
             dep_obj = Deployment(**updated)
@@ -391,17 +383,11 @@ async def update_deployment(
                 },
             )
             raise HTTPException(status_code=422, detail=str(exc))
-        is_25th = dep_obj.deployment_type == "25th_id" or (
-            dep_obj.deployment_type is None and dep_obj.partner_unit_id is None
-        )
-        if is_25th:
+
+        if dep_obj.origin_type == "25th":
             try:
-                if new_status in ("deploying", "deployed"):
+                if new_status == "active":
                     await _update_division_for_deployment(dep_obj, current_user["id"])
-                elif new_status in ("returning",):
-                    await _set_division_state("returning", dep_obj.start_location_name,
-                                               dep_obj.start_latitude, dep_obj.start_longitude,
-                                               deployment_id, current_user["id"])
                 elif new_status in ("completed", "cancelled"):
                     await _reset_division_home(current_user["id"])
             except Exception as exc:
@@ -547,11 +533,20 @@ async def update_division_location(
 # ── Internal helpers ─────────────────────────────────────────────────────────
 
 async def _update_division_for_deployment(dep: Deployment, user_id: str):
-    """Update division location to reflect a deploying/deployed state."""
-    state = "deploying" if dep.status == "deploying" else "deployed"
-    loc_name = dep.destination_name or dep.start_location_name
-    lat = dep.destination_latitude if dep.destination_latitude else dep.start_latitude
-    lng = dep.destination_longitude if dep.destination_longitude else dep.start_longitude
+    """Update division location based on the deployment's last route point."""
+    # Use the last route point as destination; fall back to HOME_STATION
+    if dep.route_points:
+        last_rp = max(dep.route_points, key=lambda rp: rp.order)
+        loc_name = last_rp.name
+        lat = last_rp.latitude
+        lng = last_rp.longitude
+    else:
+        loc_name = HOME_STATION["name"]
+        lat = HOME_STATION["latitude"]
+        lng = HOME_STATION["longitude"]
+
+    # This helper is only called for active deployments
+    state = "deploying"
 
     await db.division_location.update_one(
         {"id": "division_25id"},

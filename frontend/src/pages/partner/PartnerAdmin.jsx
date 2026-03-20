@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Shield, Users, LogOut, Home, Copy, Trash2, ChevronRight, Plus, FileText, Calendar, Radio, Clock, Pencil, Navigation, MapPin } from 'lucide-react';
 import { BACKEND_URL, API } from '@/utils/api';
 import { formatApiError } from '@/utils/errorMessages';
-import { toDeploymentApiValue, toDeploymentInputValue, formatDeploymentDateTime } from '@/utils/deploymentDateTime';
+import { formatDeploymentDateTime } from '@/utils/deploymentDateTime';
 
 const PartnerAdmin = () => {
   const [user, setUser] = useState(null);
@@ -32,10 +32,8 @@ const PartnerAdmin = () => {
   const [showDepForm, setShowDepForm] = useState(false);
   const [editingDep, setEditingDep] = useState(null);
   const [depForm, setDepForm] = useState({
-    title: '', description: '', status: 'planning',
-    start_location_name: '', start_latitude: '', start_longitude: '',
-    destination_name: '', destination_latitude: '', destination_longitude: '',
-    start_date: '', estimated_arrival: '', notes: '',
+    title: '', status: 'draft',
+    total_duration_hours: 24, route_points: [], notes: '',
   });
   const navigate = useNavigate();
 
@@ -565,10 +563,8 @@ const PartnerAdmin = () => {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-tropic-gold">Unit Deployments</h3>
                 <Button onClick={() => { setShowDepForm(true); setEditingDep(null); setDepForm({
-                  title: '', description: '', status: 'planning',
-                  start_location_name: '', start_latitude: '', start_longitude: '',
-                  destination_name: '', destination_latitude: '', destination_longitude: '',
-                  start_date: '', estimated_arrival: '', notes: '',
+                  title: '', status: 'draft',
+                  total_duration_hours: 24, route_points: [], notes: '',
                 }); }} className="bg-tropic-olive hover:bg-tropic-olive/80">
                   <Plus className="w-4 h-4 mr-2" />New Deployment
                 </Button>
@@ -579,51 +575,71 @@ const PartnerAdmin = () => {
                   <CardContent className="p-4 space-y-3">
                     <h4 className="text-sm font-bold text-tropic-gold">{editingDep ? 'Edit Deployment' : 'Create Deployment'}</h4>
                     <Input placeholder="Title" value={depForm.title} onChange={e => setDepForm(p => ({ ...p, title: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
-                    <Textarea placeholder="Description" value={depForm.description} onChange={e => setDepForm(p => ({ ...p, description: e.target.value }))} className="bg-black/50 border-gray-700 text-white" rows={2} />
-                    <select value={depForm.status} onChange={e => setDepForm(p => ({ ...p, status: e.target.value }))} className="w-full bg-black/50 border border-gray-700 text-white rounded px-3 py-2 text-sm">
-                      {['planning', 'deploying', 'deployed', 'returning', 'completed', 'cancelled'].map(s => (
-                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                      ))}
-                    </select>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      <Input placeholder="Start Location Name" value={depForm.start_location_name} onChange={e => setDepForm(p => ({ ...p, start_location_name: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
-                      <Input placeholder="Start Latitude" type="number" step="any" value={depForm.start_latitude} onChange={e => setDepForm(p => ({ ...p, start_latitude: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
-                      <Input placeholder="Start Longitude" type="number" step="any" value={depForm.start_longitude} onChange={e => setDepForm(p => ({ ...p, start_longitude: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      <Input placeholder="Destination Name" value={depForm.destination_name} onChange={e => setDepForm(p => ({ ...p, destination_name: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
-                      <Input placeholder="Destination Latitude" type="number" step="any" value={depForm.destination_latitude} onChange={e => setDepForm(p => ({ ...p, destination_latitude: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
-                      <Input placeholder="Destination Longitude" type="number" step="any" value={depForm.destination_longitude} onChange={e => setDepForm(p => ({ ...p, destination_longitude: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
-                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-gray-400 mb-1 block">Start Date & Time</label>
-                        <Input type="datetime-local" value={depForm.start_date} onChange={e => setDepForm(p => ({ ...p, start_date: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                        <label className="text-xs text-gray-400 mb-1 block">Status</label>
+                        <select value={depForm.status} onChange={e => setDepForm(p => ({ ...p, status: e.target.value }))} className="w-full bg-black/50 border border-gray-700 text-white rounded px-3 py-2 text-sm">
+                          {['draft', 'active', 'completed', 'cancelled'].map(s => (
+                            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                          ))}
+                        </select>
                       </div>
                       <div>
-                        <label className="text-xs text-gray-400 mb-1 block">Estimated Arrival</label>
-                        <Input type="datetime-local" value={depForm.estimated_arrival} onChange={e => setDepForm(p => ({ ...p, estimated_arrival: e.target.value }))} className="bg-black/50 border-gray-700 text-white" />
+                        <label className="text-xs text-gray-400 mb-1 block">Total Duration (hours)</label>
+                        <Input type="number" step="any" min="0" value={depForm.total_duration_hours} onChange={e => setDepForm(p => ({ ...p, total_duration_hours: parseFloat(e.target.value) || 0 }))} className="bg-black/50 border-gray-700 text-white" />
                       </div>
                     </div>
+
+                    {/* Route Points */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-gray-400 font-bold uppercase tracking-wider">Route Points</label>
+                        <Button type="button" variant="outline" size="sm" className="border-gray-700 text-gray-400 hover:text-white h-7 text-xs" onClick={() => {
+                          setDepForm(p => ({
+                            ...p,
+                            route_points: [...p.route_points, { order: p.route_points.length, name: '', latitude: '', longitude: '', description: '', stop_duration_hours: 0 }],
+                          }));
+                        }}>
+                          <Plus className="w-3 h-3 mr-1" />Add Stop
+                        </Button>
+                      </div>
+                      {depForm.route_points.map((rp, idx) => (
+                        <div key={idx} className="border border-gray-800/60 rounded p-2 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-tropic-gold font-bold">Stop {idx + 1}</span>
+                            <Button type="button" variant="outline" size="sm" className="border-red-900/50 text-red-400 h-6 w-6 p-0" onClick={() => {
+                              setDepForm(p => ({ ...p, route_points: p.route_points.filter((_, i) => i !== idx).map((rp2, i) => ({ ...rp2, order: i })) }));
+                            }}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <Input placeholder="Name" value={rp.name} onChange={e => { const v = e.target.value; setDepForm(p => ({ ...p, route_points: p.route_points.map((r, i) => i === idx ? { ...r, name: v } : r) })); }} className="bg-black/50 border-gray-700 text-white text-xs" />
+                          <div className="grid grid-cols-3 gap-1">
+                            <Input placeholder="Latitude" type="number" step="any" value={rp.latitude} onChange={e => { const v = e.target.value; setDepForm(p => ({ ...p, route_points: p.route_points.map((r, i) => i === idx ? { ...r, latitude: v } : r) })); }} className="bg-black/50 border-gray-700 text-white text-xs" />
+                            <Input placeholder="Longitude" type="number" step="any" value={rp.longitude} onChange={e => { const v = e.target.value; setDepForm(p => ({ ...p, route_points: p.route_points.map((r, i) => i === idx ? { ...r, longitude: v } : r) })); }} className="bg-black/50 border-gray-700 text-white text-xs" />
+                            <Input placeholder="Stop (hrs)" type="number" step="any" min="0" value={rp.stop_duration_hours} onChange={e => { const v = parseFloat(e.target.value) || 0; setDepForm(p => ({ ...p, route_points: p.route_points.map((r, i) => i === idx ? { ...r, stop_duration_hours: v } : r) })); }} className="bg-black/50 border-gray-700 text-white text-xs" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
                     <Textarea placeholder="Notes" value={depForm.notes} onChange={e => setDepForm(p => ({ ...p, notes: e.target.value }))} className="bg-black/50 border-gray-700 text-white" rows={2} />
                     <div className="flex gap-2">
                       <Button onClick={async () => {
                         try {
-                          const startDate = toDeploymentApiValue(depForm.start_date);
-                          const estimatedArrival = toDeploymentApiValue(depForm.estimated_arrival);
-                          if (startDate && estimatedArrival && new Date(estimatedArrival).getTime() <= new Date(startDate).getTime()) {
-                            alert('Estimated arrival must be after the start date.');
-                            return;
-                          }
-
                           const payload = {
-                            ...depForm,
-                            start_date: startDate,
-                            estimated_arrival: estimatedArrival,
-                            start_latitude: depForm.start_latitude ? parseFloat(depForm.start_latitude) : 0,
-                            start_longitude: depForm.start_longitude ? parseFloat(depForm.start_longitude) : 0,
-                            destination_latitude: depForm.destination_latitude ? parseFloat(depForm.destination_latitude) : null,
-                            destination_longitude: depForm.destination_longitude ? parseFloat(depForm.destination_longitude) : null,
+                            title: depForm.title,
+                            status: depForm.status,
+                            total_duration_hours: depForm.total_duration_hours,
+                            route_points: depForm.route_points.map((rp, idx) => ({
+                              order: idx,
+                              name: rp.name || `Stop ${idx + 1}`,
+                              latitude: parseFloat(rp.latitude) || 0,
+                              longitude: parseFloat(rp.longitude) || 0,
+                              description: rp.description || '',
+                              stop_duration_hours: rp.stop_duration_hours || 0,
+                            })),
+                            notes: depForm.notes,
                           };
                           if (editingDep) {
                             await axios.put(`${API}/partner/admin/deployments/${editingDep}`, payload);
@@ -658,48 +674,41 @@ const PartnerAdmin = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-bold text-white">{dep.title}</h4>
                             <Badge className={`text-[10px] ${
-                              dep.status === 'planning' ? 'bg-gray-600' :
-                              dep.status === 'deploying' ? 'bg-yellow-600' :
-                              dep.status === 'deployed' ? 'bg-green-600' :
-                              dep.status === 'returning' ? 'bg-blue-600' :
+                              dep.status === 'draft' ? 'bg-gray-600' :
+                              dep.status === 'active' ? 'bg-green-600' :
                               dep.status === 'completed' ? 'bg-purple-600' : 'bg-red-600'
                             }`}>{dep.status?.toUpperCase()}</Badge>
+                            {dep.is_active && <Badge className="bg-green-600/20 text-green-400 text-[10px]">ACTIVE</Badge>}
                           </div>
-                          {dep.description && <p className="text-xs text-gray-400 mb-1">{dep.description}</p>}
                           <div className="flex flex-wrap gap-3 text-xs text-gray-500 mt-1">
-                            {dep.start_location_name && (
-                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />From: {dep.start_location_name}</span>
+                            {dep.route_points && dep.route_points.length > 0 && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {dep.route_points[0]?.name || 'Origin'} → {dep.route_points[dep.route_points.length - 1]?.name || 'Destination'}
+                              </span>
                             )}
-                            {dep.destination_name && (
-                              <span className="flex items-center gap-1"><Navigation className="w-3 h-3" />To: {dep.destination_name}</span>
-                            )}
-                            {dep.start_date && (
-                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Start: {formatDeploymentDateTime(dep.start_date, { includeTime: true })}</span>
-                            )}
-                            {dep.estimated_arrival && (
-                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />ETA: {formatDeploymentDateTime(dep.estimated_arrival, { includeTime: true })}</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />{dep.total_duration_hours || 0}h total
+                            </span>
+                            {dep.route_points && (
+                              <span className="text-gray-600">{dep.route_points.length} stops</span>
                             )}
                           </div>
-                          {dep.start_latitude != null && dep.start_longitude != null && (
-                            <p className="text-[10px] text-gray-600 mt-1">Origin: {dep.start_latitude}, {dep.start_longitude}</p>
-                          )}
-                          {dep.destination_latitude != null && dep.destination_longitude != null && (
-                            <p className="text-[10px] text-gray-600">Dest: {dep.destination_latitude}, {dep.destination_longitude}</p>
-                          )}
                         </div>
                         <div className="flex gap-1 ml-2">
                           <Button size="sm" variant="outline" className="border-gray-700 text-gray-400 h-7 w-7 p-0" onClick={() => {
                             setDepForm({
-                              title: dep.title || '', description: dep.description || '',
-                              status: dep.status || 'planning',
-                              start_location_name: dep.start_location_name || '',
-                              start_latitude: dep.start_latitude ?? '',
-                              start_longitude: dep.start_longitude ?? '',
-                              destination_name: dep.destination_name || '',
-                              destination_latitude: dep.destination_latitude ?? '',
-                              destination_longitude: dep.destination_longitude ?? '',
-                              start_date: toDeploymentInputValue(dep.start_date),
-                              estimated_arrival: toDeploymentInputValue(dep.estimated_arrival),
+                              title: dep.title || '',
+                              status: dep.status || 'draft',
+                              total_duration_hours: dep.total_duration_hours || 24,
+                              route_points: (dep.route_points || []).map((rp, i) => ({
+                                order: rp.order ?? i,
+                                name: rp.name || '',
+                                latitude: rp.latitude ?? '',
+                                longitude: rp.longitude ?? '',
+                                description: rp.description || '',
+                                stop_duration_hours: rp.stop_duration_hours || 0,
+                              })),
                               notes: dep.notes || '',
                             });
                             setEditingDep(dep.id);

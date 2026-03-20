@@ -4,12 +4,12 @@ from datetime import datetime, timezone
 from typing import Optional, List, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
-# ── Deployment Types ─────────────────────────────────────────────────────────
+# ── Deployment Origin Types ──────────────────────────────────────────────────
 
-DEPLOYMENT_TYPES = ["25th_id", "partner", "allied"]
+DEPLOYMENT_ORIGIN_TYPES = ["25th", "partner", "counterpart"]
 
 
 # ── NATO Marker Symbology ────────────────────────────────────────────────────
@@ -167,92 +167,32 @@ class NATOMarkerUpdate(BaseModel):
     metadata: Optional[dict] = None
 
 
-
-
-def _normalize_deployment_datetime(value: Optional[str]) -> Optional[str]:
-    """Normalize deployment datetimes to UTC ISO-8601 strings."""
-    if value is None:
-        return None
-    if isinstance(value, str):
-        value = value.strip()
-        if not value:
-            return None
-    if not isinstance(value, str):
-        raise ValueError("must be a valid ISO-8601 datetime string")
-
-    try:
-        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise ValueError("must be a valid ISO-8601 datetime string") from exc
-
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-    return dt.isoformat().replace("+00:00", "Z")
-
-
-class DeploymentTimingMixin(BaseModel):
-    @field_validator("start_date", "estimated_arrival", mode="before", check_fields=False)
-    @classmethod
-    def normalize_datetime_fields(cls, value):
-        return _normalize_deployment_datetime(value)
-
-    @model_validator(mode="after")
-    def validate_datetime_order(self):
-        start = getattr(self, "start_date", None)
-        end = getattr(self, "estimated_arrival", None)
-        if start and end:
-            start_dt = datetime.fromisoformat(start.replace("Z", "+00:00"))
-            end_dt = datetime.fromisoformat(end.replace("Z", "+00:00"))
-            if end_dt <= start_dt:
-                raise ValueError("Estimated arrival must be after the start date")
-        return self
-
-
 # ── Deployment ───────────────────────────────────────────────────────────────
 
-DEPLOYMENT_STATUSES = [
-    "planning",
-    "deploying",
-    "deployed",
-    "returning",
-    "completed",
-    "cancelled",
-]
+DEPLOYMENT_STATUSES = ["draft", "active", "completed", "cancelled"]
 
 
-class Deployment(DeploymentTimingMixin):
+class RoutePoint(BaseModel):
+    order: int
+    name: str
+    latitude: float
+    longitude: float
+    description: str = ""
+    stop_duration_hours: float = 0
+
+
+class Deployment(BaseModel):
     id: str = Field(default_factory=lambda: f"dep_{uuid4().hex[:12]}")
     title: str
-    description: str = ""
-    status: Literal[
-        "planning", "deploying", "deployed", "returning", "completed", "cancelled"
-    ] = "planning"
-
-    # Deployment type: 25th_id | partner | allied (counterpart/support)
-    deployment_type: Literal["25th_id", "partner", "allied"] = "25th_id"
-
-    # Origin
-    start_location_name: str = "Schofield Barracks, HI"
-    start_latitude: float = 21.4959
-    start_longitude: float = -158.0648
-
-    # Destination
-    destination_name: str = ""
-    destination_latitude: Optional[float] = None
-    destination_longitude: Optional[float] = None
-
-    # Timing
-    start_date: Optional[str] = None
-    estimated_arrival: Optional[str] = None
-
-    # Waypoints – intermediate stops between origin and destination
-    # Each entry: {"name": "...", "latitude": float, "longitude": float,
-    #              "description": "...", "stop_duration_hours": float}
-    waypoints: List[dict] = Field(default_factory=list)
-
-    # Admin
+    unit_name: str = ""
+    origin_type: Literal["25th", "partner", "counterpart"] = "25th"
+    origin_unit_id: Optional[str] = None
+    status: Literal["draft", "active", "completed", "cancelled"] = "draft"
+    is_active: bool = False
+    total_duration_hours: float = 24.0
+    started_at: Optional[str] = None
+    route_points: List[RoutePoint] = Field(default_factory=list)
+    notes: str = ""
     created_by: str = ""
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
@@ -260,56 +200,42 @@ class Deployment(DeploymentTimingMixin):
     updated_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
-    is_active: bool = True
-    notes: str = ""
-
-    # Partner / allied unit scope (None = 25th ID deployment)
-    partner_unit_id: Optional[str] = None
-    unit_name: Optional[str] = None  # Display name for partner/allied unit
 
 
-class DeploymentCreate(DeploymentTimingMixin):
+class DeploymentCreate(BaseModel):
     title: str
-    description: str = ""
-    status: Literal[
-        "planning", "deploying", "deployed", "returning", "completed", "cancelled"
-    ] = "planning"
-    deployment_type: Literal["25th_id", "partner", "allied"] = "25th_id"
-    start_location_name: str = "Schofield Barracks, HI"
-    start_latitude: Optional[float] = 21.4959
-    start_longitude: Optional[float] = -158.0648
-    destination_name: str = ""
-    destination_latitude: Optional[float] = None
-    destination_longitude: Optional[float] = None
-    start_date: Optional[str] = None
-    estimated_arrival: Optional[str] = None
-    waypoints: List[dict] = Field(default_factory=list)
+    unit_name: str = ""
+    origin_type: Literal["25th", "partner", "counterpart"] = "25th"
+    origin_unit_id: Optional[str] = None
+    status: Literal["draft", "active", "completed", "cancelled"] = "draft"
+    is_active: bool = False
+    total_duration_hours: float = 24.0
+    route_points: List[RoutePoint] = Field(default_factory=list)
     notes: str = ""
-    is_active: bool = True
-    partner_unit_id: Optional[str] = None
-    unit_name: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_active_route(self):
+        if self.status == "active" and len(self.route_points) < 2:
+            raise ValueError(
+                "Active deployment requires at least 2 route points"
+                " (origin and destination)"
+            )
+        return self
 
 
-class DeploymentUpdate(DeploymentTimingMixin):
+class DeploymentUpdate(BaseModel):
     title: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[
-        Literal["planning", "deploying", "deployed", "returning", "completed", "cancelled"]
-    ] = None
-    deployment_type: Optional[Literal["25th_id", "partner", "allied"]] = None
-    start_location_name: Optional[str] = None
-    start_latitude: Optional[float] = None
-    start_longitude: Optional[float] = None
-    destination_name: Optional[str] = None
-    destination_latitude: Optional[float] = None
-    destination_longitude: Optional[float] = None
-    start_date: Optional[str] = None
-    estimated_arrival: Optional[str] = None
-    waypoints: Optional[List[dict]] = None
-    notes: Optional[str] = None
-    is_active: Optional[bool] = None
-    partner_unit_id: Optional[str] = None
     unit_name: Optional[str] = None
+    origin_type: Optional[Literal["25th", "partner", "counterpart"]] = None
+    origin_unit_id: Optional[str] = None
+    status: Optional[
+        Literal["draft", "active", "completed", "cancelled"]
+    ] = None
+    is_active: Optional[bool] = None
+    total_duration_hours: Optional[float] = None
+    started_at: Optional[str] = None
+    route_points: Optional[List[RoutePoint]] = None
+    notes: Optional[str] = None
 
 
 # ── Division Location State ──────────────────────────────────────────────────
