@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { Source, Layer, Popup } from 'react-map-gl/mapbox';
 
 // ---------------------------------------------------------------------------
@@ -99,9 +99,7 @@ export function addAircraftIcon(map) {
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-export default function AircraftLayer({ aircraft = [], visible = false }) {
-  const [popup, setPopup] = useState(null);
-
+export default function AircraftLayer({ aircraft = [], visible = false, popup = null, onClosePopup }) {
   const geojson = useMemo(() => ({
     type: 'FeatureCollection',
     features: aircraft.map((ac) => ({
@@ -127,26 +125,6 @@ export default function AircraftLayer({ aircraft = [], visible = false }) {
     })),
   }), [aircraft]);
 
-  const handleClick = useCallback((e) => {
-    if (!e.features || e.features.length === 0) return;
-    const feature = e.features[0];
-    const props = feature.properties;
-    setPopup({
-      longitude: feature.geometry.coordinates[0],
-      latitude: feature.geometry.coordinates[1],
-      callsign: props.callsign,
-      altitude: props.altitude,
-      velocity: props.velocity,
-      heading: props.heading,
-      aircraft_type: props.aircraft_type,
-      source: props.source,
-      origin_country: props.origin_country,
-      on_ground: props.on_ground,
-      vertical_rate: props.vertical_rate,
-      squawk: props.squawk,
-    });
-  }, []);
-
   if (!visible || aircraft.length === 0) return null;
 
   return (
@@ -162,7 +140,7 @@ export default function AircraftLayer({ aircraft = [], visible = false }) {
           longitude={popup.longitude}
           latitude={popup.latitude}
           closeOnClick={false}
-          onClose={() => setPopup(null)}
+          onClose={() => onClosePopup?.()}
           maxWidth="280px"
           className="threat-map-popup"
         >

@@ -459,6 +459,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
   // ADS-B military aircraft tracking
   const { aircraft: adsbAircraft } = useADSBAircraft(showADSB);
+  const [aircraftPopup, setAircraftPopup] = useState(null);
 
   // Fetch NATO markers, deployments, division location
   useEffect(() => {
