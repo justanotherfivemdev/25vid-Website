@@ -16,6 +16,7 @@ import IntelPopup from './IntelPopup';
 import CampaignPopup from './CampaignPopup';
 import CountryConflictsModal from './CountryConflictsModal';
 import AircraftLayer, { addAircraftIcon, AIRCRAFT_INTERACTIVE_LAYERS } from './AircraftLayer';
+import ADSBFilterPanel from './ADSBFilterPanel';
 import useADSBAircraft from '@/hooks/useADSBAircraft';
 import axios from 'axios';
 import { API } from '@/utils/api';
@@ -440,7 +441,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   const mapRef = useRef(null);
   const {
     viewport, showHeatmap, showClusters, showMilitaryBases, showADSB,
-    entityLocations, militaryBases, setViewport,
+    adsbFilters, entityLocations, militaryBases, setViewport,
   } = useMapStore();
   const { filteredEvents, selectEvent, selectedEvent } = useEventsStore();
 
@@ -458,8 +459,28 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   const [deploymentPopup, setDeploymentPopup] = useState(null);
 
   // ADS-B military aircraft tracking
-  const { aircraft: adsbAircraft } = useADSBAircraft(showADSB);
+  const { aircraft: adsbAircraftRaw } = useADSBAircraft(showADSB);
   const [aircraftPopup, setAircraftPopup] = useState(null);
+
+  // Client-side ADS-B filtering for instant feedback
+  const adsbAircraft = useMemo(() => {
+    if (!adsbAircraftRaw.length) return adsbAircraftRaw;
+    return adsbAircraftRaw.filter((ac) => {
+      if (adsbFilters.originCountry && ac.origin_country !== adsbFilters.originCountry) return false;
+      if (adsbFilters.altitudeMin != null && (ac.altitude == null || ac.altitude < adsbFilters.altitudeMin)) return false;
+      if (adsbFilters.altitudeMax != null && (ac.altitude == null || ac.altitude > adsbFilters.altitudeMax)) return false;
+      if (!adsbFilters.showOnGround && ac.on_ground) return false;
+      if (adsbFilters.callsignSearch && !(ac.callsign || '').toUpperCase().includes(adsbFilters.callsignSearch.toUpperCase())) return false;
+      return true;
+    });
+  }, [adsbAircraftRaw, adsbFilters]);
+
+  // Collect unique origin countries for filter dropdown
+  const adsbCountries = useMemo(() => {
+    const set = new Set();
+    adsbAircraftRaw.forEach((ac) => { if (ac.origin_country) set.add(ac.origin_country); });
+    return [...set].sort();
+  }, [adsbAircraftRaw]);
 
   // Fetch NATO markers, deployments, division location
   useEffect(() => {
@@ -1434,6 +1455,11 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           </Popup>
         )}
       </Map>
+
+      {/* ADS-B Filter Panel */}
+      {showADSB && (
+        <ADSBFilterPanel countries={adsbCountries} aircraftCount={adsbAircraft.length} />
+      )}
 
       {/* Country conflicts modal */}
       {countryModal && (
