@@ -633,7 +633,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   function computeCountdownLabel(dep) {
     if (!dep.started_at || !dep.total_duration_hours) return '';
     const startMs = new Date(dep.started_at).getTime();
-    if (isNaN(startMs)) return '';
+    if (Number.isNaN(startMs)) return '';
     const endMs = startMs + dep.total_duration_hours * 3600000;
     const remaining = endMs - nowTick;
     if (remaining <= 0) return '';
@@ -649,7 +649,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   function computeProgress(dep) {
     if (!dep.started_at || !dep.total_duration_hours) return 0;
     const startMs = new Date(dep.started_at).getTime();
-    if (isNaN(startMs)) return 0;
+    if (Number.isNaN(startMs)) return 0;
     const totalMs = dep.total_duration_hours * 3600000;
     if (totalMs <= 0) return 0;
     const elapsedMs = nowTick - startMs;
@@ -1066,7 +1066,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             const fmtTime = (iso) => {
               if (!iso) return '';
               const dt = new Date(iso);
-              if (isNaN(dt.getTime())) return '';
+              if (Number.isNaN(dt.getTime())) return '';
               return dt.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
             };
             const startedTime = fmtTime(d.started_at);
