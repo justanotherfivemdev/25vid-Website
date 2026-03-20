@@ -437,6 +437,17 @@ async def delete_deployment(
     if not existing:
         raise HTTPException(status_code=404, detail="Deployment not found")
 
+    # Archive deployment to history before permanent deletion
+    try:
+        await db.deployment_history.insert_one({
+            **existing,
+            "deleted_by": current_user["id"],
+            "deleted_at": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as exc:
+        logging.error("Failed to archive deployment %s to history: %s",
+                      deployment_id, exc)
+
     # If this was the active deployment, reset division home before deletion
     div = await db.division_location.find_one({"id": "division_25id"}, {"_id": 0})
     if div and div.get("active_deployment_id") == deployment_id:

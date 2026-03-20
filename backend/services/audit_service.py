@@ -1,7 +1,10 @@
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
 from database import db
+
+logger = logging.getLogger(__name__)
 
 
 async def log_audit(user_id: str, action_type: str, resource_type: str,
@@ -17,5 +20,9 @@ async def log_audit(user_id: str, action_type: str, resource_type: str,
         "metadata": metadata,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    await db.audit_logs.insert_one(entry)
+    try:
+        await db.audit_logs.insert_one(entry)
+    except Exception as exc:
+        logger.error("Failed to persist audit log: %s — action: %s, resource: %s/%s",
+                     exc, action_type, resource_type, resource_id)
     return entry

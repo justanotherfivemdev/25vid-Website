@@ -25,6 +25,7 @@ from services.auth_service import (
     create_access_token, set_auth_cookie, clear_auth_cookie,
     partner_user_to_response,
 )
+from services.error_log_service import log_exception
 
 router = APIRouter()
 
@@ -715,15 +716,35 @@ async def partner_create_deployment(
         partner_unit_id=unit_id,
         unit_name=data.unit_name,
     )
-    await db.deployments.insert_one(dep.model_dump())
-    await db.partner_audit_log.insert_one({
-        "action": "deployment_create",
-        "unit_id": unit_id,
-        "performed_by": partner_user["id"],
-        "performed_by_type": "partner_admin",
-        "details": {"deployment_id": dep.id, "title": dep.title},
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
+
+    try:
+        await db.deployments.insert_one(dep.model_dump())
+    except Exception as exc:
+        await log_exception(
+            "partner_deployment", exc,
+            request_path="/api/partner/admin/deployments",
+            request_method="POST",
+            request_body=data.model_dump(),
+            user_id=partner_user.get("id"),
+            metadata={"action": "partner_create_deployment", "unit_id": unit_id},
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save deployment: {exc}",
+        )
+
+    try:
+        await db.partner_audit_log.insert_one({
+            "action": "deployment_create",
+            "unit_id": unit_id,
+            "performed_by": partner_user["id"],
+            "performed_by_type": "partner_admin",
+            "details": {"deployment_id": dep.id, "title": dep.title},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as exc:
+        logging.error("Failed to write partner audit log for deployment create: %s", exc)
+
     return dep.model_dump()
 
 
@@ -746,15 +767,34 @@ async def partner_update_deployment(
         raise HTTPException(status_code=400, detail="No fields to update")
 
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
-    await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})
-    await db.partner_audit_log.insert_one({
-        "action": "deployment_update",
-        "unit_id": unit_id,
-        "performed_by": partner_user["id"],
-        "performed_by_type": "partner_admin",
-        "details": {"deployment_id": deployment_id},
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
+    try:
+        await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})
+    except Exception as exc:
+        await log_exception(
+            "partner_deployment", exc,
+            request_path=f"/api/partner/admin/deployments/{deployment_id}",
+            request_method="PUT",
+            request_body=data.model_dump(exclude_unset=True),
+            user_id=partner_user.get("id"),
+            metadata={"action": "partner_update_deployment", "deployment_id": deployment_id},
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update deployment: {exc}",
+        )
+
+    try:
+        await db.partner_audit_log.insert_one({
+            "action": "deployment_update",
+            "unit_id": unit_id,
+            "performed_by": partner_user["id"],
+            "performed_by_type": "partner_admin",
+            "details": {"deployment_id": deployment_id},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as exc:
+        logging.error("Failed to write partner audit log for deployment update: %s", exc)
+
     updated = await db.deployments.find_one({"id": deployment_id}, {"_id": 0})
     return updated
 
@@ -772,12 +812,35 @@ async def partner_delete_deployment(
     if not existing:
         raise HTTPException(status_code=404, detail="Deployment not found")
 
-    result = await db.deployments.delete_one({"id": deployment_id})
-    if result.deleted_count == 0:
-        raise HTTPException(
-            status_code=409,
-            detail="Deployment was already deleted by another request",
+    # Archive deployment to history before permanent deletion
+    try:
+        await db.deployment_history.insert_one({
+            **existing,
+            "deleted_by": partner_user["id"],
+            "deleted_at": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as exc:
+        logging.error("Failed to archive partner deployment %s to history: %s",
+                      deployment_id, exc)
+
+    try:
+        result = await db.deployments.delete_one({"id": deployment_id})
+        if result.deleted_count == 0:
+            raise HTTPException(
+                status_code=409,
+                detail="Deployment was already deleted by another request",
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        await log_exception(
+            "partner_deployment", exc,
+            request_path=f"/api/partner/admin/deployments/{deployment_id}",
+            request_method="DELETE",
+            user_id=partner_user.get("id"),
+            metadata={"action": "partner_delete_deployment", "deployment_id": deployment_id},
         )
+        raise HTTPException(status_code=500, detail=f"Failed to delete deployment: {exc}")
 
     try:
         await db.partner_audit_log.insert_one({
