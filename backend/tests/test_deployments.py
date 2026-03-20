@@ -4,8 +4,8 @@ Deployment acceptance tests for the 25th Infantry Division API.
 Covers:
   - Create: POST /admin/map/deployments returns 200 with persisted record.
   - List:   GET  /admin/map/deployments includes the new record after reload.
-  - Map:    GET  /map/deployments includes the deployment and exposes destination
-            coordinates required for path rendering on GlobalThreatMap.
+  - Map:    GET  /map/deployments includes active+is_active deployments with
+            route_points for path rendering on GlobalThreatMap.
   - Delete: DELETE /admin/map/deployments/{id} removes the record from both
             admin list and map list; second delete returns 404.
   - Error logging: malformed payloads produce 422 with a Pydantic detail array
@@ -52,21 +52,37 @@ class TestDeploymentCreate:
       - POST /api/admin/map/deployments returns 200 with the created deployment.
       - Re-fetch via GET /api/admin/map/deployments includes the new record.
       - GET /api/map/deployments (GlobalThreatMap source) includes the record
-        and exposes non-null destination coords for path rendering.
+        when status="active" and is_active=True, with route_points for path rendering.
     """
 
     @pytest.fixture(scope="class")
     def created_deployment(self, admin_cookies):
-        """Create a deployment for the class; delete it after all tests."""
+        """Create an active deployment for the class; delete it after all tests."""
         title = f"Acceptance Test Deployment {uuid.uuid4().hex[:6]}"
         payload = {
             "title": title,
-            "description": "Automated acceptance test — do not promote",
-            "status": "deploying",
-            "destination_name": "Pohnpei, Federated States of Micronesia",
-            "destination_latitude": 6.8874,
-            "destination_longitude": 158.2150,
+            "unit_name": "1-25 IN",
+            "origin_type": "25th",
+            "status": "active",
             "is_active": True,
+            "total_duration_hours": 48.0,
+            "route_points": [
+                {
+                    "order": 0,
+                    "name": "Schofield Barracks, HI",
+                    "latitude": 21.4959,
+                    "longitude": -158.0648,
+                    "description": "Origin",
+                },
+                {
+                    "order": 1,
+                    "name": "Pohnpei, Federated States of Micronesia",
+                    "latitude": 6.8874,
+                    "longitude": 158.2150,
+                    "description": "Destination",
+                },
+            ],
+            "notes": "Automated acceptance test — do not promote",
         }
         with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
             res = client.post("/admin/map/deployments", json=payload)
@@ -88,15 +104,16 @@ class TestDeploymentCreate:
         """Title in the response must match what was submitted."""
         assert "Acceptance Test Deployment" in created_deployment["title"]
 
-    def test_create_persists_destination_coords(self, created_deployment):
-        """Destination latitude and longitude must be persisted accurately."""
-        assert created_deployment["destination_latitude"] == pytest.approx(6.8874, abs=1e-4)
-        assert created_deployment["destination_longitude"] == pytest.approx(158.2150, abs=1e-4)
-
-    def test_create_defaults_start_to_schofield(self, created_deployment):
-        """When origin coords are omitted the backend defaults to Schofield Barracks."""
-        assert created_deployment["start_latitude"] == pytest.approx(21.4959, abs=1e-4)
-        assert created_deployment["start_longitude"] == pytest.approx(-158.0648, abs=1e-4)
+    def test_create_persists_route_points(self, created_deployment):
+        """Route points must be persisted with correct coordinates."""
+        route_points = created_deployment["route_points"]
+        assert len(route_points) == 2
+        origin = route_points[0]
+        dest = route_points[1]
+        assert origin["latitude"] == pytest.approx(21.4959, abs=1e-4)
+        assert origin["longitude"] == pytest.approx(-158.0648, abs=1e-4)
+        assert dest["latitude"] == pytest.approx(6.8874, abs=1e-4)
+        assert dest["longitude"] == pytest.approx(158.2150, abs=1e-4)
 
     def test_admin_list_includes_new_deployment(self, admin_cookies, created_deployment):
         """GET /admin/map/deployments must include the newly created record (simulates page reload)."""
@@ -108,20 +125,20 @@ class TestDeploymentCreate:
             "New deployment not found in admin list after creation"
         )
 
-    def test_map_deployments_includes_new_deployment(self, admin_cookies, created_deployment):
-        """GET /map/deployments (GlobalThreatMap source) must include the active deployment."""
+    def test_map_deployments_includes_active_deployment(self, admin_cookies, created_deployment):
+        """GET /map/deployments must include deployments with status=active and is_active=True."""
         with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
             res = client.get("/map/deployments")
         assert res.status_code == 200
         ids = [d["id"] for d in res.json()]
         assert created_deployment["id"] in ids, (
-            "New deployment not found in /map/deployments payload"
+            "Active deployment not found in /map/deployments payload"
         )
 
-    def test_map_deployment_exposes_destination_for_path(self, admin_cookies, created_deployment):
+    def test_map_deployment_exposes_route_points_for_path(self, admin_cookies, created_deployment):
         """
-        The map payload must expose non-null destination coords so GlobalThreatMap
-        can render a route path between origin and destination.
+        The map payload must expose route_points so GlobalThreatMap can render
+        a route path between origin and destination.
         """
         with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
             res = client.get("/map/deployments")
@@ -130,8 +147,9 @@ class TestDeploymentCreate:
             (d for d in res.json() if d["id"] == created_deployment["id"]), None
         )
         assert dep is not None, "Deployment missing from /map/deployments"
-        assert dep["destination_latitude"] is not None, "destination_latitude is null"
-        assert dep["destination_longitude"] is not None, "destination_longitude is null"
+        assert len(dep["route_points"]) >= 2, "route_points must have at least 2 entries"
+        assert dep["route_points"][0]["latitude"] is not None
+        assert dep["route_points"][0]["longitude"] is not None
 
 
 # ============================================================================
@@ -154,11 +172,10 @@ class TestDeploymentDelete:
         """Create a deployment that will be deleted by the first test in this class."""
         payload = {
             "title": f"Delete Test Deployment {uuid.uuid4().hex[:6]}",
-            "status": "planning",
-            "destination_name": "Test Deletion Site",
-            "destination_latitude": 10.0,
-            "destination_longitude": 120.0,
-            "is_active": True,
+            "status": "draft",
+            "is_active": False,
+            "route_points": [],
+            "notes": "Created for deletion test",
         }
         with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
             res = client.post("/admin/map/deployments", json=payload)
@@ -208,7 +225,7 @@ class TestDeploymentErrorLogging:
     Acceptance checks for error logging on malformed create requests.
 
     Acceptance criteria:
-      - A payload with waypoints=null (invalid List[dict]) → 422.
+      - A payload with route_points=null (invalid List[RoutePoint]) → 422.
       - A payload with an invalid status literal → 422.
       - The 422 response body contains a 'detail' array (Pydantic v2 format,
         required by the frontend's formatApiError utility).
@@ -216,9 +233,9 @@ class TestDeploymentErrorLogging:
         with source='validation' so it appears in the admin Error Logs UI.
     """
 
-    def test_null_waypoints_returns_422(self, admin_cookies):
-        """Sending waypoints=null (not a valid List[dict]) must produce a 422."""
-        payload = {"title": "Test", "waypoints": None}
+    def test_null_route_points_returns_422(self, admin_cookies):
+        """Sending route_points=null (not a valid List[RoutePoint]) must produce a 422."""
+        payload = {"title": "Test", "route_points": None}
         with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
             res = client.post("/admin/map/deployments", json=payload)
         assert res.status_code == 422
@@ -230,9 +247,9 @@ class TestDeploymentErrorLogging:
             res = client.post("/admin/map/deployments", json=payload)
         assert res.status_code == 422
 
-    def test_invalid_dest_lat_type_returns_422(self, admin_cookies):
-        """Sending a non-numeric destination_latitude must produce a 422."""
-        payload = {"title": "Test", "destination_latitude": "not-a-number"}
+    def test_invalid_total_duration_type_returns_422(self, admin_cookies):
+        """Sending a non-numeric total_duration_hours must produce a 422."""
+        payload = {"title": "Test", "total_duration_hours": "not-a-number"}
         with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
             res = client.post("/admin/map/deployments", json=payload)
         assert res.status_code == 422
@@ -243,7 +260,7 @@ class TestDeploymentErrorLogging:
         The frontend's formatApiError() iterates over this array — if it is a
         plain string, the user sees '[object Object]' instead of a real message.
         """
-        payload = {"title": "Test", "waypoints": None}
+        payload = {"title": "Test", "route_points": None}
         with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
             res = client.post("/admin/map/deployments", json=payload)
         assert res.status_code == 422
@@ -259,7 +276,7 @@ class TestDeploymentErrorLogging:
         with source='validation' (written by the RequestValidationError handler
         added to server.py).
         """
-        payload = {"title": f"ErrorLog Probe {uuid.uuid4().hex[:6]}", "waypoints": None}
+        payload = {"title": f"ErrorLog Probe {uuid.uuid4().hex[:6]}", "route_points": None}
         with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
             client.post("/admin/map/deployments", json=payload)
             # Allow the async MongoDB write to complete

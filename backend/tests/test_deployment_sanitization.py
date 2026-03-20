@@ -15,24 +15,27 @@ from services.error_log_service import _sanitise_body
 
 def test_deployment_payload_sanitizes_mongo_unsafe_keys():
     payload = {
-        "waypoints": [
+        "route_points": [
             {
                 "plane.spoof": {
                     "$type": "C-17",
                     "callsign": "RCH123",
                 },
+                "order": 0,
                 "name": "Ramstein",
+                "latitude": 49.4369,
+                "longitude": 7.6003,
             }
         ]
     }
 
     sanitized = sanitize_mongo_payload(payload)
 
-    waypoint = sanitized["waypoints"][0]
-    assert "plane_spoof" in waypoint
-    assert "plane.spoof" not in waypoint
-    assert "_type" in waypoint["plane_spoof"]
-    assert "$type" not in waypoint["plane_spoof"]
+    route_point = sanitized["route_points"][0]
+    assert "plane_spoof" in route_point
+    assert "plane.spoof" not in route_point
+    assert "_type" in route_point["plane_spoof"]
+    assert "$type" not in route_point["plane_spoof"]
 
 
 def test_error_log_body_sanitizes_mongo_unsafe_keys_and_sensitive_values():
