@@ -231,8 +231,8 @@ class DeploymentCreate(BaseModel):
     status: str = "planning"
     deployment_type: str = "25th_id"
     start_location_name: str = "Schofield Barracks, HI"
-    start_latitude: float = 21.4959
-    start_longitude: float = -158.0648
+    start_latitude: Optional[float] = 21.4959
+    start_longitude: Optional[float] = -158.0648
     destination_name: str = ""
     destination_latitude: Optional[float] = None
     destination_longitude: Optional[float] = None
@@ -240,6 +240,7 @@ class DeploymentCreate(BaseModel):
     estimated_arrival: Optional[str] = None
     waypoints: List[dict] = Field(default_factory=list)
     notes: str = ""
+    is_active: bool = True
     partner_unit_id: Optional[str] = None
     unit_name: Optional[str] = None
 

@@ -148,9 +148,7 @@ async def update_nato_marker(
     if not existing:
         raise HTTPException(status_code=404, detail="Marker not found")
 
-    update_dict = {
-        k: v for k, v in data.model_dump().items() if v is not None
-    }
+    update_dict = data.model_dump(exclude_unset=True)
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
 
@@ -241,8 +239,8 @@ async def create_deployment(
         status=data.status,
         deployment_type=data.deployment_type,
         start_location_name=data.start_location_name,
-        start_latitude=data.start_latitude,
-        start_longitude=data.start_longitude,
+        start_latitude=data.start_latitude if data.start_latitude is not None else HOME_STATION["latitude"],
+        start_longitude=data.start_longitude if data.start_longitude is not None else HOME_STATION["longitude"],
         destination_name=data.destination_name,
         destination_latitude=data.destination_latitude,
         destination_longitude=data.destination_longitude,
@@ -250,6 +248,7 @@ async def create_deployment(
         estimated_arrival=data.estimated_arrival,
         waypoints=data.waypoints,
         notes=data.notes,
+        is_active=data.is_active,
         created_by=current_user["id"],
         partner_unit_id=data.partner_unit_id,
         unit_name=data.unit_name,
@@ -279,9 +278,7 @@ async def update_deployment(
     if not existing:
         raise HTTPException(status_code=404, detail="Deployment not found")
 
-    update_dict = {
-        k: v for k, v in data.model_dump().items() if v is not None
-    }
+    update_dict = data.model_dump(exclude_unset=True)
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
 
@@ -368,9 +365,7 @@ async def update_division_location(
     data: DivisionLocationUpdate,
     current_user: dict = Depends(get_current_admin),
 ):
-    update_dict = {
-        k: v for k, v in data.model_dump().items() if v is not None
-    }
+    update_dict = data.model_dump(exclude_unset=True)
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
 
