@@ -45,6 +45,7 @@ import PartnerApply from '@/pages/partner/PartnerApply';
 import PartnerThreatMap from '@/pages/partner/PartnerThreatMap';
 import PartnerApplicationsReview from '@/pages/admin/PartnerApplicationsReview';
 import AuditLogsManager from '@/pages/admin/AuditLogsManager';
+import ErrorLogsManager from '@/pages/admin/ErrorLogsManager';
 import LOARequest from '@/pages/member/LOARequest';
 import LOAManager from '@/pages/admin/LOAManager';
 import PipelineManager from '@/pages/admin/PipelineManager';
@@ -1217,6 +1218,7 @@ function App() {
         <Route path="/admin/partner-units" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerUnitsManager /></ProtectedRoute>} />
         <Route path="/admin/partner-applications" element={<ProtectedRoute allowedRoles={['admin', 's5_liaison']}><PartnerApplicationsReview /></ProtectedRoute>} />
         <Route path="/admin/audit-logs" element={<ProtectedRoute adminOnly><AuditLogsManager /></ProtectedRoute>} />
+        <Route path="/admin/error-logs" element={<ProtectedRoute adminOnly><ErrorLogsManager /></ProtectedRoute>} />
         <Route path="/admin/loa" element={<ProtectedRoute adminOnly><LOAManager /></ProtectedRoute>} />
         <Route path="/admin/pipeline" element={<ProtectedRoute adminOnly><PipelineManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute adminOnly><AdminMemberDetail /></ProtectedRoute>} />

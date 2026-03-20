@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield, Building2, UserPlus, Radio, MapPin, ClipboardList, ScrollText, Navigation, Menu, X } from 'lucide-react';
+import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield, Building2, UserPlus, Radio, MapPin, ClipboardList, ScrollText, Navigation, Menu, X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 import { BACKEND_URL } from '@/utils/api';
@@ -39,7 +39,8 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/pipeline', icon: UserPlus, label: 'Recruit Pipeline' },
     { path: '/admin/partner-units', icon: Shield, label: 'Partner Units' },
     { path: '/admin/partner-applications', icon: ClipboardList, label: 'Partner Applications' },
-    { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs' }
+    { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs' },
+    { path: '/admin/error-logs', icon: AlertTriangle, label: 'Error Logs' },
   ];
   
   const visibleMenuItems = authUser?.role === 's5_liaison' 
