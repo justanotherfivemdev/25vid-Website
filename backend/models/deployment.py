@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Optional, List, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # ── Deployment Types ─────────────────────────────────────────────────────────
@@ -167,6 +167,49 @@ class NATOMarkerUpdate(BaseModel):
     metadata: Optional[dict] = None
 
 
+
+
+def _normalize_deployment_datetime(value: Optional[str]) -> Optional[str]:
+    """Normalize deployment datetimes to UTC ISO-8601 strings."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+    if not isinstance(value, str):
+        raise ValueError("must be a valid ISO-8601 datetime string")
+
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("must be a valid ISO-8601 datetime string") from exc
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.isoformat().replace("+00:00", "Z")
+
+
+class DeploymentTimingMixin(BaseModel):
+    @field_validator("start_date", "estimated_arrival", mode="before", check_fields=False)
+    @classmethod
+    def normalize_datetime_fields(cls, value):
+        return _normalize_deployment_datetime(value)
+
+    @model_validator(mode="after")
+    def validate_datetime_order(self):
+        start = getattr(self, "start_date", None)
+        end = getattr(self, "estimated_arrival", None)
+        if start and end:
+            start_dt = datetime.fromisoformat(start.replace("Z", "+00:00"))
+            end_dt = datetime.fromisoformat(end.replace("Z", "+00:00"))
+            if end_dt <= start_dt:
+                raise ValueError("Estimated arrival must be after the start date")
+        return self
+
+
 # ── Deployment ───────────────────────────────────────────────────────────────
 
 DEPLOYMENT_STATUSES = [
@@ -179,7 +222,7 @@ DEPLOYMENT_STATUSES = [
 ]
 
 
-class Deployment(BaseModel):
+class Deployment(DeploymentTimingMixin):
     id: str = Field(default_factory=lambda: f"dep_{uuid4().hex[:12]}")
     title: str
     description: str = ""
@@ -225,7 +268,7 @@ class Deployment(BaseModel):
     unit_name: Optional[str] = None  # Display name for partner/allied unit
 
 
-class DeploymentCreate(BaseModel):
+class DeploymentCreate(DeploymentTimingMixin):
     title: str
     description: str = ""
     status: Literal[
@@ -247,7 +290,7 @@ class DeploymentCreate(BaseModel):
     unit_name: Optional[str] = None
 
 
-class DeploymentUpdate(BaseModel):
+class DeploymentUpdate(DeploymentTimingMixin):
     title: Optional[str] = None
     description: Optional[str] = None
     status: Optional[
