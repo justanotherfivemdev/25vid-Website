@@ -284,23 +284,50 @@ const DeploymentManager = () => {
 
       const startDate = toDeploymentApiValue(deploymentForm.start_date);
       const estimatedArrival = toDeploymentApiValue(deploymentForm.estimated_arrival);
+      const trimmedTitle = (deploymentForm.title || '').trim();
+      const trimmedDestinationName = (deploymentForm.destination_name || '').trim();
+      const startLatitude = safeFloat(deploymentForm.start_latitude);
+      const startLongitude = safeFloat(deploymentForm.start_longitude);
+      const destinationLatitude = safeFloat(deploymentForm.destination_latitude);
+      const destinationLongitude = safeFloat(deploymentForm.destination_longitude);
+
+      if (!trimmedTitle) {
+        alert('Deployment title is required.');
+        return;
+      }
+
+      if (!trimmedDestinationName) {
+        alert('Destination name is required.');
+        return;
+      }
+
+      if (destinationLatitude == null || destinationLongitude == null) {
+        alert('Destination latitude and longitude are required.');
+        return;
+      }
+
+      if (startLatitude == null || startLongitude == null) {
+        alert('Origin latitude and longitude are required.');
+        return;
+      }
+
       if (startDate && estimatedArrival && new Date(estimatedArrival).getTime() <= new Date(startDate).getTime()) {
         alert('Estimated arrival must be after the start date.');
         return;
       }
 
       const payload = {
-        title: deploymentForm.title,
+        title: trimmedTitle,
         description: deploymentForm.description || '',
         status: deploymentForm.status || 'planning',
         deployment_type: deploymentForm.deployment_type || '25th_id',
         unit_name: deploymentForm.unit_name || '',
         start_location_name: deploymentForm.start_location_name || 'Schofield Barracks, HI',
-        start_latitude: safeFloat(deploymentForm.start_latitude),
-        start_longitude: safeFloat(deploymentForm.start_longitude),
-        destination_name: deploymentForm.destination_name || '',
-        destination_latitude: safeFloat(deploymentForm.destination_latitude),
-        destination_longitude: safeFloat(deploymentForm.destination_longitude),
+        start_latitude: startLatitude,
+        start_longitude: startLongitude,
+        destination_name: trimmedDestinationName,
+        destination_latitude: destinationLatitude,
+        destination_longitude: destinationLongitude,
         start_date: startDate,
         estimated_arrival: estimatedArrival,
         is_active: deploymentForm.is_active ?? true,
@@ -327,7 +354,9 @@ const DeploymentManager = () => {
       await fetchAlliedDeployments();
     } catch (err) {
       console.error('Error saving deployment:', err);
-      alert(formatApiError(err, 'Error saving deployment'));
+      const responseText = typeof err?.response?.data === 'string' ? err.response.data : '';
+      const networkMessage = err?.message && !err?.response ? `Network error: ${err.message}` : '';
+      alert(formatApiError(err, responseText || networkMessage || 'Error saving deployment'));
     }
   };
 
