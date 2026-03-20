@@ -113,13 +113,29 @@ async def log_exception(
     )
 
 
-def _sanitise_body(body: Optional[dict]) -> Optional[dict]:
-    """Strip sensitive fields from request payloads before persisting."""
-    if not body or not isinstance(body, dict):
-        return body
-    sensitive_keys = {"password", "token", "secret", "jwt", "cookie",
-                      "authorization", "access_token", "refresh_token"}
-    return {
-        k: "***" if k.lower() in sensitive_keys else v
-        for k, v in body.items()
-    }
+_SENSITIVE_KEYS = {"password", "token", "secret", "jwt", "cookie",
+                   "authorization", "access_token", "refresh_token"}
+
+_MAX_VALUE_LENGTH = 2000
+
+
+def _sanitise_body(body, *, _depth: int = 0):
+    """Strip sensitive fields from request payloads before persisting.
+
+    Recurses into nested dicts and lists so that secrets at any depth
+    are redacted.  Large string values are truncated to prevent storing
+    oversized payloads.
+    """
+    if _depth > 10:
+        return "***"
+    if isinstance(body, dict):
+        return {
+            k: "***" if k.lower() in _SENSITIVE_KEYS
+            else _sanitise_body(v, _depth=_depth + 1)
+            for k, v in body.items()
+        }
+    if isinstance(body, list):
+        return [_sanitise_body(item, _depth=_depth + 1) for item in body]
+    if isinstance(body, str) and len(body) > _MAX_VALUE_LENGTH:
+        return body[:_MAX_VALUE_LENGTH] + "...[truncated]"
+    return body
