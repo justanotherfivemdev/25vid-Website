@@ -21,7 +21,7 @@ from models.deployment import (
     DeploymentCreate,
     DeploymentUpdate,
     DEPLOYMENT_STATUSES,
-    DEPLOYMENT_TYPES,
+    DEPLOYMENT_ORIGIN_TYPES,
     DivisionLocation,
     DivisionLocationUpdate,
     DIVISION_STATES,
@@ -47,7 +47,7 @@ async def get_nato_reference():
         "affiliation_labels": NATO_AFFILIATION_LABELS,
         "symbol_type_labels": NATO_SYMBOL_TYPE_LABELS,
         "echelon_labels": NATO_ECHELON_LABELS,
-        "deployment_types": DEPLOYMENT_TYPES,
+        "deployment_types": DEPLOYMENT_ORIGIN_TYPES,
     }
 
 
