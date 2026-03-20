@@ -344,16 +344,16 @@ const DeploymentManager = () => {
     }
   };
 
-  const handleArchiveDeployment = async (id) => {
-    if (!window.confirm('Are you sure you want to archive this deployment?')) return;
+  const handleDeleteDeployment = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this deployment? This action cannot be undone.')) return;
     try {
       await axios.delete(`${API}/admin/map/deployments/${id}`, { withCredentials: true });
       // Immediately remove from local state
       setDeployments(prev => prev.filter(dep => dep.id !== id));
       setAlliedDeployments(prev => prev.filter(dep => dep.id !== id));
     } catch (err) {
-      console.error('Error archiving deployment:', err);
-      alert(err.response?.data?.detail || 'Error archiving deployment');
+      console.error('Error deleting deployment:', err);
+      alert(err.response?.data?.detail || 'Error deleting deployment');
       // Refetch to sync state after failure
       await fetchDeployments();
       await fetchAlliedDeployments();
@@ -650,7 +650,7 @@ const DeploymentManager = () => {
                             variant="outline"
                             size="sm"
                             className="border-red-800/50 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8"
-                            onClick={() => handleArchiveDeployment(dep.id)}
+                            onClick={() => handleDeleteDeployment(dep.id)}
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
@@ -773,7 +773,7 @@ const DeploymentManager = () => {
                             variant="outline"
                             size="sm"
                             className="border-red-800/50 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8"
-                            onClick={() => handleArchiveDeployment(dep.id)}
+                            onClick={() => handleDeleteDeployment(dep.id)}
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>

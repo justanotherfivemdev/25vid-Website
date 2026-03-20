@@ -281,18 +281,46 @@ async def create_deployment(
             metadata={"action": "create_deployment"},
         )
         raise
-    await db.deployments.insert_one(dep.model_dump())
+
+    try:
+        await db.deployments.insert_one(dep.model_dump())
+    except Exception as exc:
+        await log_exception(
+            "deployment", exc,
+            request_path="/api/admin/map/deployments",
+            request_method="POST",
+            request_body=data.model_dump(),
+            user_id=current_user.get("id"),
+            metadata={"action": "create_deployment", "phase": "db_insert"},
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save deployment: {exc}",
+        )
 
     # If deploying/deployed, update division location (only for 25th ID deployments)
     if data.status in ("deploying", "deployed") and data.deployment_type == "25th_id":
-        await _update_division_for_deployment(dep, current_user["id"])
+        try:
+            await _update_division_for_deployment(dep, current_user["id"])
+        except Exception as exc:
+            logging.error("Failed to update division location: %s", exc)
+            await log_exception(
+                "deployment", exc,
+                request_path="/api/admin/map/deployments",
+                request_method="POST",
+                metadata={"action": "update_division", "deployment_id": dep.id},
+            )
 
-    await log_audit(
-        user_id=current_user["id"],
-        action_type="deployment_create",
-        resource_type="deployment",
-        resource_id=dep.id,
-    )
+    try:
+        await log_audit(
+            user_id=current_user["id"],
+            action_type="deployment_create",
+            resource_type="deployment",
+            resource_id=dep.id,
+        )
+    except Exception as exc:
+        logging.error("Failed to write audit log for deployment create: %s", exc)
+
     return dep.model_dump()
 
 
@@ -321,7 +349,21 @@ async def update_deployment(
         update_dict["start_longitude"] = existing_lng if existing_lng is not None else HOME_STATION["longitude"]
 
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
-    await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})
+    try:
+        await db.deployments.update_one({"id": deployment_id}, {"$set": update_dict})
+    except Exception as exc:
+        await log_exception(
+            "deployment", exc,
+            request_path=f"/api/admin/map/deployments/{deployment_id}",
+            request_method="PUT",
+            request_body=data.model_dump(exclude_unset=True),
+            user_id=current_user.get("id"),
+            metadata={"action": "update_deployment", "deployment_id": deployment_id},
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update deployment: {exc}",
+        )
 
     # If status changed, update division location (only for 25th ID deployments)
     new_status = data.status
@@ -352,29 +394,42 @@ async def update_deployment(
             dep_obj.deployment_type is None and dep_obj.partner_unit_id is None
         )
         if is_25th:
-            if new_status in ("deploying", "deployed"):
-                await _update_division_for_deployment(dep_obj, current_user["id"])
-            elif new_status in ("returning",):
-                await _set_division_state("returning", dep_obj.start_location_name,
-                                           dep_obj.start_latitude, dep_obj.start_longitude,
-                                           deployment_id, current_user["id"])
-            elif new_status in ("completed", "cancelled"):
-                await _reset_division_home(current_user["id"])
+            try:
+                if new_status in ("deploying", "deployed"):
+                    await _update_division_for_deployment(dep_obj, current_user["id"])
+                elif new_status in ("returning",):
+                    await _set_division_state("returning", dep_obj.start_location_name,
+                                               dep_obj.start_latitude, dep_obj.start_longitude,
+                                               deployment_id, current_user["id"])
+                elif new_status in ("completed", "cancelled"):
+                    await _reset_division_home(current_user["id"])
+            except Exception as exc:
+                logging.error("Failed to update division location: %s", exc)
+                await log_exception(
+                    "deployment", exc,
+                    request_path=f"/api/admin/map/deployments/{deployment_id}",
+                    request_method="PUT",
+                    metadata={"action": "update_division", "deployment_id": deployment_id},
+                )
 
-    await log_audit(
-        user_id=current_user["id"],
-        action_type="deployment_update",
-        resource_type="deployment",
-        resource_id=deployment_id,
-        before={"status": existing.get("status")},
-        after={"status": data.status} if data.status else {},
-    )
+    try:
+        await log_audit(
+            user_id=current_user["id"],
+            action_type="deployment_update",
+            resource_type="deployment",
+            resource_id=deployment_id,
+            before={"status": existing.get("status")},
+            after={"status": data.status} if data.status else {},
+        )
+    except Exception as exc:
+        logging.error("Failed to write audit log for deployment update: %s", exc)
+
     updated = await db.deployments.find_one({"id": deployment_id}, {"_id": 0})
     return updated
 
 
 @router.delete("/admin/map/deployments/{deployment_id}")
-async def archive_deployment(
+async def delete_deployment(
     deployment_id: str,
     current_user: dict = Depends(get_current_admin),
 ):
@@ -382,24 +437,41 @@ async def archive_deployment(
     if not existing:
         raise HTTPException(status_code=404, detail="Deployment not found")
 
-    await db.deployments.update_one(
-        {"id": deployment_id},
-        {"$set": {"is_active": False, "status": "completed",
-                  "updated_at": datetime.now(timezone.utc).isoformat()}},
-    )
-
     # If this was the active deployment, reset division home
     div = await db.division_location.find_one({"id": "division_25id"}, {"_id": 0})
     if div and div.get("active_deployment_id") == deployment_id:
-        await _reset_division_home(current_user["id"])
+        try:
+            await _reset_division_home(current_user["id"])
+        except Exception as exc:
+            logging.error("Failed to reset division home on delete: %s", exc)
 
-    await log_audit(
-        user_id=current_user["id"],
-        action_type="deployment_archive",
-        resource_type="deployment",
-        resource_id=deployment_id,
-    )
-    return {"message": "Deployment archived"}
+    try:
+        result = await db.deployments.delete_one({"id": deployment_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Deployment not found")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        await log_exception(
+            "deployment", exc,
+            request_path=f"/api/admin/map/deployments/{deployment_id}",
+            request_method="DELETE",
+            user_id=current_user.get("id"),
+            metadata={"action": "delete_deployment", "deployment_id": deployment_id},
+        )
+        raise HTTPException(status_code=500, detail=f"Failed to delete deployment: {exc}")
+
+    try:
+        await log_audit(
+            user_id=current_user["id"],
+            action_type="deployment_delete",
+            resource_type="deployment",
+            resource_id=deployment_id,
+        )
+    except Exception as exc:
+        logging.error("Failed to write audit log for deployment delete: %s", exc)
+
+    return {"message": "Deployment deleted"}
 
 
 # ── Division Location ────────────────────────────────────────────────────────

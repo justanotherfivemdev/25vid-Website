@@ -707,12 +707,12 @@ const PartnerAdmin = () => {
                             <Pencil className="w-3 h-3" />
                           </Button>
                           <Button size="sm" variant="outline" className="border-red-900/50 text-red-400 h-7 w-7 p-0" onClick={async () => {
-                            if (!window.confirm('Archive this deployment?')) return;
+                            if (!window.confirm('Delete this deployment? This action cannot be undone.')) return;
                             try {
                               await axios.delete(`${API}/partner/admin/deployments/${dep.id}`);
                               fetchData();
                             } catch (err) {
-                              alert(err.response?.data?.detail || 'Failed to archive');
+                              alert(err.response?.data?.detail || 'Failed to delete deployment');
                             }
                           }}>
                             <Trash2 className="w-3 h-3" />
