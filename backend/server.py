@@ -117,9 +117,43 @@ logger = logging.getLogger(__name__)
 
 # ── Error-logging middleware — captures unhandled exceptions ──────────────────
 
+from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from services.error_log_service import log_error
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Log FastAPI/Pydantic request validation errors (422) to error_logs."""
+    import json as _json
+
+    body = None
+    try:
+        body_bytes = await request.body()
+        if body_bytes:
+            body = _json.loads(body_bytes)
+    except Exception:
+        pass
+
+    try:
+        await log_error(
+            source="validation",
+            message=f"Request validation error on {request.method} {request.url.path}",
+            severity="warning",
+            error_type="RequestValidationError",
+            request_path=str(request.url.path),
+            request_method=request.method,
+            request_body=body,
+            metadata={"errors": exc.errors()},
+        )
+    except Exception:
+        logger.error("Failed to persist validation error log")
+
+    logger.warning(
+        "Validation error on %s %s: %s", request.method, request.url.path, exc.errors()
+    )
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 
 @app.exception_handler(Exception)

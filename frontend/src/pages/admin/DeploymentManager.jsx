@@ -348,9 +348,9 @@ const DeploymentManager = () => {
     if (!window.confirm('Are you sure you want to delete this deployment? This action cannot be undone.')) return;
     try {
       await axios.delete(`${API}/admin/map/deployments/${id}`, { withCredentials: true });
-      // Immediately remove from local state
-      setDeployments(prev => prev.filter(dep => dep.id !== id));
-      setAlliedDeployments(prev => prev.filter(dep => dep.id !== id));
+      // Refetch to confirm deletion was persisted rather than relying on optimistic removal
+      await fetchDeployments();
+      await fetchAlliedDeployments();
     } catch (err) {
       console.error('Error deleting deployment:', err);
       alert(err.response?.data?.detail || 'Error deleting deployment');
