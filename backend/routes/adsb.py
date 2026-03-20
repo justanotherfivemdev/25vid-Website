@@ -303,6 +303,10 @@ def _normalize_opensky(states: list, timestamp: int) -> list:
         except (ValueError, TypeError):
             continue
 
+        # Validate WGS84 coordinate ranges for proper globe rendering
+        if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+            continue
+
         # OpenSky doesn't provide aircraft type in state vectors,
         # so we filter on callsign + ICAO hex only
         if not is_military(callsign, icao24, None):
@@ -316,6 +320,7 @@ def _normalize_opensky(states: list, timestamp: int) -> list:
             "lat": lat,
             "lon": lon,
             "altitude": _meters_to_feet(sv[7]),       # baro_altitude m → ft
+            "geo_altitude": _meters_to_feet(sv[13]) if len(sv) > 13 else None,  # m → ft
             "velocity": _ms_to_knots(sv[9]),           # m/s → knots
             "heading": _safe_float(sv[10]),             # true_track (degrees)
             "vertical_rate": _ms_to_fpm(sv[11]),        # m/s → ft/min
@@ -323,8 +328,13 @@ def _normalize_opensky(states: list, timestamp: int) -> list:
             "origin_country": origin_country,
             "on_ground": on_ground,
             "squawk": sv[14] if len(sv) > 14 else None,
+            "spi": bool(sv[15]) if len(sv) > 15 else None,
+            "position_source": sv[16] if len(sv) > 16 else None,
+            "category": sv[17] if len(sv) > 17 else None,
             "source": "opensky",
-            "timestamp": timestamp or time.time(),
+            "time_position": sv[3],                    # last position update
+            "last_contact": sv[4],                     # last contact timestamp
+            "timestamp": sv[4] or timestamp or time.time(),  # prefer per-aircraft last_contact
         })
     return results
 
@@ -349,6 +359,10 @@ def _normalize_adsbx_v2(aircraft_list: list, source: str) -> list:
             lat = float(lat)
             lon = float(lon)
         except (ValueError, TypeError):
+            continue
+
+        # Validate WGS84 coordinate ranges for proper globe rendering
+        if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
             continue
 
         alt = ac.get("alt_baro") or ac.get("altitude") or ac.get("alt_geom")

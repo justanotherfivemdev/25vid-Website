@@ -876,6 +876,29 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       return;
     }
 
+    // Check for ADS-B aircraft click
+    const aircraftFeature = features.find(
+      (f) => f.layer.id === 'adsb-aircraft-circle' || f.layer.id === 'adsb-aircraft-heading'
+    );
+    if (aircraftFeature) {
+      const props = aircraftFeature.properties;
+      setAircraftPopup({
+        longitude: aircraftFeature.geometry.coordinates[0],
+        latitude: aircraftFeature.geometry.coordinates[1],
+        callsign: props.callsign,
+        altitude: props.altitude,
+        velocity: props.velocity,
+        heading: props.heading,
+        vertical_rate: props.vertical_rate,
+        aircraft_type: props.aircraft_type,
+        origin_country: props.origin_country,
+        on_ground: props.on_ground,
+        squawk: props.squawk,
+        source: props.source,
+      });
+      return;
+    }
+
     // Check for country polygon click (for conflicts modal)
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -895,6 +918,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     setIntelPopup(null);
     setCampaignPopup(null);
     setDeploymentPopup(null);
+    setAircraftPopup(null);
   }, [selectEvent]);
 
   const onMouseEnter = useCallback(() => setCursor('pointer'), []);
@@ -933,6 +957,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       <Map
         ref={mapRef}
         {...viewport}
+        projection="globe"
         onMove={onMove}
         onClick={onMapClick}
         onLoad={onMapLoad}
@@ -1261,7 +1286,12 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         }
 
         {/* ADS-B Military Aircraft Layer */}
-        <AircraftLayer aircraft={adsbAircraft} visible={showADSB} />
+        <AircraftLayer
+          aircraft={adsbAircraft}
+          visible={showADSB}
+          popup={aircraftPopup}
+          onClosePopup={() => setAircraftPopup(null)}
+        />
 
         {/* Event popup */}
         {popupInfo && (
