@@ -31,6 +31,15 @@ const AFFILIATION_COLORS = {
   unknown: 'bg-yellow-600 text-yellow-100',
 };
 
+/** Convert an ISO / date string into the value format required by <input type="datetime-local"> (YYYY-MM-DDTHH:mm). */
+function toDatetimeLocalValue(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return isoStr.slice(0, 16); // fallback: keep what we have
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const EMPTY_DEPLOYMENT = {
   title: '',
   description: '',
@@ -260,8 +269,8 @@ const DeploymentManager = () => {
       destination_name: dep.destination_name || '',
       destination_latitude: dep.destination_latitude ?? '',
       destination_longitude: dep.destination_longitude ?? '',
-      start_date: dep.start_date ? dep.start_date.split('T')[0] : '',
-      estimated_arrival: dep.estimated_arrival ? dep.estimated_arrival.split('T')[0] : '',
+      start_date: toDatetimeLocalValue(dep.start_date),
+      estimated_arrival: toDatetimeLocalValue(dep.estimated_arrival),
       waypoints: Array.isArray(dep.waypoints) ? dep.waypoints : [],
       notes: dep.notes || '',
       is_active: dep.is_active ?? true,
@@ -1229,9 +1238,9 @@ const DeploymentManager = () => {
               {/* Dates */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Start Date</Label>
+                  <Label>Start Date & Time</Label>
                   <Input
-                    type="date"
+                    type="datetime-local"
                     value={deploymentForm.start_date}
                     onChange={(e) => setDeploymentForm({ ...deploymentForm, start_date: e.target.value })}
                     className="bg-black border-gray-700"
@@ -1240,7 +1249,7 @@ const DeploymentManager = () => {
                 <div>
                   <Label>Estimated Arrival</Label>
                   <Input
-                    type="date"
+                    type="datetime-local"
                     value={deploymentForm.estimated_arrival}
                     onChange={(e) => setDeploymentForm({ ...deploymentForm, estimated_arrival: e.target.value })}
                     className="bg-black border-gray-700"
