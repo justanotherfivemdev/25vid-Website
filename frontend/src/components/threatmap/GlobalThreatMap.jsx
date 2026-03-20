@@ -15,6 +15,8 @@ import OperationPopup from './OperationPopup';
 import IntelPopup from './IntelPopup';
 import CampaignPopup from './CampaignPopup';
 import CountryConflictsModal from './CountryConflictsModal';
+import AircraftLayer, { addAircraftIcon, AIRCRAFT_INTERACTIVE_LAYERS } from './AircraftLayer';
+import useADSBAircraft from '@/hooks/useADSBAircraft';
 import axios from 'axios';
 import { API } from '@/utils/api';
 
@@ -437,7 +439,7 @@ const deploymentArrowLayer = {
 export default function GlobalThreatMap({ operations = [], intelEvents = [], campaignEvents = [] }) {
   const mapRef = useRef(null);
   const {
-    viewport, showHeatmap, showClusters, showMilitaryBases,
+    viewport, showHeatmap, showClusters, showMilitaryBases, showADSB,
     entityLocations, militaryBases, setViewport,
   } = useMapStore();
   const { filteredEvents, selectEvent, selectedEvent } = useEventsStore();
@@ -454,6 +456,10 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   const [deployments, setDeployments] = useState([]);
   const [divisionLocation, setDivisionLocation] = useState(null);
   const [deploymentPopup, setDeploymentPopup] = useState(null);
+
+  // ADS-B military aircraft tracking
+  const { aircraft: adsbAircraft } = useADSBAircraft(showADSB);
+  const [aircraftPopup, setAircraftPopup] = useState(null);
 
   // Fetch NATO markers, deployments, division location
   useEffect(() => {
@@ -900,7 +906,15 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
   const interactiveLayerIds = useMemo(() => {
     const ids = ['clusters', 'unclustered-point', 'operations-markers', 'intel-markers', 'campaign-markers', 'deployment-path'];
+    if (showADSB) ids.push(...AIRCRAFT_INTERACTIVE_LAYERS);
     return ids;
+  }, [showADSB]);
+
+  // Add aircraft icon to map when it loads
+  const onMapLoad = useCallback(() => {
+    if (mapRef.current) {
+      addAircraftIcon(mapRef.current.getMap());
+    }
   }, []);
 
   if (!MAPBOX_TOKEN) {
@@ -921,6 +935,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         {...viewport}
         onMove={onMove}
         onClick={onMapClick}
+        onLoad={onMapLoad}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         cursor={cursor}
@@ -1035,6 +1050,79 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                   <span style={{ color, fontSize: 10 }}>⏱</span>
                   <span className="font-mono font-bold text-[11px]" style={{ color }}>
                     {countdown}
+                  </span>
+                </div>
+              </Marker>
+            );
+          })
+        }
+
+        {/* Deployment spoofed aircraft – visual plane icons following each active deployment path */}
+        {deployments
+          .filter((d) => d.status === 'deploying' && d.destination_latitude != null && d.destination_longitude != null && d.start_date && d.estimated_arrival)
+          .map((d) => {
+            const unitKey = d.partner_unit_id || (d.deployment_type === 'allied' ? d.id : null);
+            const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
+            const color = getUnitColor(unitKey, unitIdx);
+            const offsetLat = unitKey ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
+            const coords = getDeploymentCoords(d, offsetLat);
+            if (coords.length < 2) return null;
+
+            const progress = computeProgress(d);
+            if (progress <= 0 || progress >= 1) return null;
+
+            const pos = interpolateAlongLine(coords, progress);
+
+            // Compute heading from path direction at current position
+            const aheadPos = interpolateAlongLine(coords, Math.min(1, progress + 0.01));
+            const dLon = aheadPos[0] - pos[0];
+            const dLat = aheadPos[1] - pos[1];
+            const heading = (Math.atan2(dLon, dLat) * 180) / Math.PI;
+
+            return (
+              <Marker
+                key={`dep-plane-${d.id}`}
+                longitude={pos[0]}
+                latitude={pos[1]}
+                anchor="center"
+                onClick={(e) => {
+                  e.originalEvent.stopPropagation();
+                  setDeploymentPopup({
+                    longitude: pos[0],
+                    latitude: pos[1],
+                    type: 'deployment',
+                    data: d,
+                  });
+                }}
+              >
+                <div
+                  className="flex flex-col items-center"
+                  style={{ cursor: 'pointer' }}
+                  title={`${d.title} — In Transit (${Math.round(progress * 100)}%)`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={color}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                      transform: `rotate(${heading}deg)`,
+                      filter: `drop-shadow(0 0 4px ${color}88)`,
+                      transition: 'transform 1s ease-out',
+                    }}
+                  >
+                    <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+                  </svg>
+                  <span
+                    className="text-[9px] font-bold mt-0.5 whitespace-nowrap bg-black/80 px-1 rounded"
+                    style={{ color }}
+                  >
+                    {d.title}
                   </span>
                 </div>
               </Marker>
@@ -1171,6 +1259,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
               ));
           })
         }
+
+        {/* ADS-B Military Aircraft Layer */}
+        <AircraftLayer aircraft={adsbAircraft} visible={showADSB} />
 
         {/* Event popup */}
         {popupInfo && (
