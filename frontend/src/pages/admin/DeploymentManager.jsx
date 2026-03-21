@@ -15,16 +15,20 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { API } from '@/utils/api';
 import { formatApiError } from '@/utils/errorMessages';
 import { formatDeploymentDateTime } from '@/utils/deploymentDateTime';
+import { useAuth } from '@/context/AuthContext';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 const TROPIC_GOLD_HEX = '#C9A227';
 
-const DEPLOYMENT_STATUSES = ['draft', 'active', 'completed', 'cancelled'];
+const DEPLOYMENT_STATUSES = ['planning', 'deploying', 'deployed', 'endex', 'rtb', 'completed', 'cancelled'];
 const ORIGIN_TYPES = ['25th', 'partner', 'counterpart'];
 
 const STATUS_COLORS = {
-  draft: 'bg-gray-600 text-gray-100',
-  active: 'bg-green-600 text-green-100',
+  planning: 'bg-gray-600 text-gray-100',
+  deploying: 'bg-yellow-600 text-yellow-100',
+  deployed: 'bg-green-600 text-green-100',
+  endex: 'bg-orange-600 text-orange-100',
+  rtb: 'bg-blue-600 text-blue-100',
   completed: 'bg-purple-600 text-purple-100',
   cancelled: 'bg-red-600 text-red-100',
 };
@@ -46,9 +50,10 @@ const EMPTY_DEPLOYMENT = {
   title: '',
   unit_name: '',
   origin_type: '25th',
-  status: 'draft',
+  status: 'planning',
   is_active: false,
   total_duration_hours: 24,
+  return_duration_hours: 0,
   route_points: [],
   notes: '',
   metadata: {},
@@ -75,6 +80,7 @@ const EMPTY_MARKER = {
 };
 
 const DeploymentManager = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('deployments');
 
   // Deployments state
@@ -102,6 +108,10 @@ const DeploymentManager = () => {
   const [divisionLocation, setDivisionLocation] = useState(null);
   const [divisionForm, setDivisionForm] = useState({ name: '', latitude: '', longitude: '' });
   const [divisionDialogOpen, setDivisionDialogOpen] = useState(false);
+
+  // Location search state for route points
+  const [locationSearches, setLocationSearches] = useState({});
+  const [locationResults, setLocationResults] = useState({});
 
   // Shared
   const [error, setError] = useState('');
@@ -208,6 +218,48 @@ const DeploymentManager = () => {
     });
   }, [locationEntities]);
 
+  // --- Location search helpers ---
+
+  const handleLocationSearch = useCallback(async (query, idx) => {
+    setLocationSearches(prev => ({ ...prev, [idx]: query }));
+    if (!query || query.length < 3) {
+      setLocationResults(prev => ({ ...prev, [idx]: [] }));
+      return;
+    }
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&limit=5&types=place,locality,region,country,poi`
+      );
+      const data = await res.json();
+      setLocationResults(prev => ({
+        ...prev,
+        [idx]: (data.features || []).map(f => ({
+          name: f.place_name,
+          latitude: f.center[1],
+          longitude: f.center[0],
+        })),
+      }));
+    } catch {
+      setLocationResults(prev => ({ ...prev, [idx]: [{ name: '⚠ Search failed — try again', latitude: null, longitude: null }] }));
+    }
+  }, []);
+
+  const handleLocationSelect = useCallback((result, idx) => {
+    if (result.latitude == null || result.longitude == null) return; // skip error placeholders
+    setDeploymentForm((prev) => {
+      const rps = [...prev.route_points];
+      rps[idx] = {
+        ...rps[idx],
+        name: result.name,
+        latitude: result.latitude,
+        longitude: result.longitude,
+      };
+      return { ...prev, route_points: rps };
+    });
+    setLocationSearches(prev => ({ ...prev, [idx]: '' }));
+    setLocationResults(prev => ({ ...prev, [idx]: [] }));
+  }, []);
+
   // --- Route point reorder helpers ---
 
   const swapRoutePoints = useCallback((idx, targetIdx) => {
@@ -226,9 +278,10 @@ const DeploymentManager = () => {
 
   const openNewDeployment = useCallback(() => {
     setEditingDeployment(null);
-    setDeploymentForm({ ...EMPTY_DEPLOYMENT });
+    const defaultOriginType = user?.account_type === 'partner' ? 'partner' : '25th';
+    setDeploymentForm({ ...EMPTY_DEPLOYMENT, origin_type: defaultOriginType });
     setDeploymentDialogOpen(true);
-  }, []);
+  }, [user]);
 
   const openNewAlliedDeployment = useCallback(() => {
     setEditingDeployment(null);
@@ -242,9 +295,10 @@ const DeploymentManager = () => {
       title: dep.title || '',
       unit_name: dep.unit_name || '',
       origin_type: dep.origin_type || '25th',
-      status: dep.status || 'draft',
+      status: dep.status || 'planning',
       is_active: dep.is_active ?? false,
       total_duration_hours: dep.total_duration_hours ?? 24,
+      return_duration_hours: dep.return_duration_hours ?? 0,
       route_points: Array.isArray(dep.route_points)
         ? dep.route_points.map((rp) => ({
             name: rp.name || '',
@@ -279,9 +333,10 @@ const DeploymentManager = () => {
         title: trimmedTitle,
         unit_name: deploymentForm.unit_name || '',
         origin_type: deploymentForm.origin_type || '25th',
-        status: deploymentForm.status || 'draft',
+        status: deploymentForm.status || 'planning',
         is_active: deploymentForm.is_active ?? false,
         total_duration_hours: safeFloat(deploymentForm.total_duration_hours) ?? 24,
+        return_duration_hours: safeFloat(deploymentForm.return_duration_hours) ?? 0,
         notes: deploymentForm.notes || '',
         metadata: deploymentForm.metadata || {},
         route_points: (deploymentForm.route_points || [])
@@ -968,6 +1023,18 @@ const DeploymentManager = () => {
                     placeholder="24"
                   />
                 </div>
+                <div>
+                  <Label>Return Duration (hours)</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={deploymentForm.return_duration_hours ?? 0}
+                    onChange={(e) => setDeploymentForm({ ...deploymentForm, return_duration_hours: e.target.value })}
+                    className="bg-black border-gray-700"
+                    placeholder="0"
+                  />
+                </div>
               </div>
 
               {/* Route Points */}
@@ -1097,6 +1164,33 @@ const DeploymentManager = () => {
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
+                    </div>
+                    <div className="relative">
+                      <Label className="text-[10px] text-gray-500 flex items-center gap-1">
+                        <Search className="w-3 h-3" />
+                        Search Location
+                      </Label>
+                      <Input
+                        value={locationSearches[idx] || ''}
+                        onChange={(e) => handleLocationSearch(e.target.value, idx)}
+                        className="bg-black border-gray-700 h-8 text-xs"
+                        placeholder="Type a place name to search..."
+                      />
+                      {(locationResults[idx] || []).length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-gray-900 border border-gray-700 rounded shadow-lg max-h-[200px] overflow-y-auto">
+                          {locationResults[idx].map((result, rIdx) => (
+                            <button
+                              key={rIdx}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-gray-800 border-b border-gray-800 last:border-0"
+                              onClick={() => handleLocationSelect(result, idx)}
+                            >
+                              <div className="text-white">{result.name}</div>
+                              <div className="text-[10px] text-gray-500">{result.latitude.toFixed(4)}, {result.longitude.toFixed(4)}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     {(locationEntities || []).length > 0 && (
                       <div>

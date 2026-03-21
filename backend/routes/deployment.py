@@ -1,7 +1,7 @@
 """Routes for NATO markers, deployments, and division location management."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import ValidationError
@@ -191,8 +191,9 @@ async def delete_nato_marker(
 @router.get("/map/deployments")
 async def list_deployments(current_user: dict = Depends(get_current_user)):
     """Return active deployments for the Global Threat Map live display."""
+    await _auto_advance_deployment_phases()
     deployments = await db.deployments.find(
-        {"status": "active", "is_active": True}, {"_id": 0}
+        {"status": {"$in": ["deploying", "deployed", "endex", "rtb"]}, "is_active": True}, {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     return deployments
 
@@ -241,8 +242,8 @@ async def create_deployment(
             notes=data.notes,
             created_by=current_user["id"],
         )
-        # Auto-set started_at when creating as active
-        if dep.status == "active":
+        # Auto-set started_at when creating as deploying
+        if dep.status == "deploying":
             dep.started_at = datetime.now(timezone.utc).isoformat()
     except ValidationError as exc:
         logging.error("Deployment validation failed: %s", exc)
@@ -285,8 +286,8 @@ async def create_deployment(
             detail=f"Failed to save deployment: {exc}",
         )
 
-    # If active 25th deployment, update division location
-    if dep.status == "active" and dep.is_active and dep.origin_type == "25th":
+    # If deploying 25th deployment, update division location
+    if dep.status == "deploying" and dep.is_active and dep.origin_type == "25th":
         try:
             await _update_division_for_deployment(dep, current_user["id"])
         except Exception as exc:
@@ -328,9 +329,13 @@ async def update_deployment(
     old_status = existing.get("status")
     new_status = update_dict.get("status")
 
-    # Auto-set started_at when transitioning to active
-    if new_status == "active" and not existing.get("started_at"):
+    # Auto-set started_at when transitioning to deploying
+    if new_status == "deploying" and not existing.get("started_at"):
         update_dict["started_at"] = datetime.now(timezone.utc).isoformat()
+
+    # Auto-set return_started_at when transitioning to rtb
+    if new_status == "rtb" and not existing.get("return_started_at"):
+        update_dict["return_started_at"] = datetime.now(timezone.utc).isoformat()
 
     # Serialize route_points if present
     if "route_points" in update_dict and update_dict["route_points"] is not None:
@@ -386,7 +391,7 @@ async def update_deployment(
 
         if dep_obj.origin_type == "25th":
             try:
-                if new_status == "active":
+                if new_status == "deploying":
                     await _update_division_for_deployment(dep_obj, current_user["id"])
                 elif new_status in ("completed", "cancelled"):
                     await _reset_division_home(current_user["id"])
@@ -531,6 +536,49 @@ async def update_division_location(
 
 
 # ── Internal helpers ─────────────────────────────────────────────────────────
+
+async def _auto_advance_deployment_phases():
+    """Auto-advance deployments through time-based phase transitions.
+
+    - deploying → deployed  when started_at + total_duration_hours has passed.
+    - rtb → completed       when return_started_at + return_duration_hours has passed.
+    """
+    now = datetime.now(timezone.utc)
+    transitioning_deps = await db.deployments.find(
+        {"status": {"$in": ["deploying", "rtb"]}, "is_active": True}, {"_id": 0}
+    ).to_list(200)
+
+    for dep in transitioning_deps:
+        status = dep.get("status")
+        if status == "deploying" and dep.get("started_at"):
+            try:
+                started = datetime.fromisoformat(dep["started_at"])
+                duration = dep.get("total_duration_hours", 0)
+                if now >= started + timedelta(hours=duration):
+                    await db.deployments.update_one(
+                        {"id": dep["id"]},
+                        {"$set": {
+                            "status": "deployed",
+                            "updated_at": now.isoformat(),
+                        }},
+                    )
+            except (ValueError, TypeError):
+                pass
+        elif status == "rtb" and dep.get("return_started_at"):
+            try:
+                ret_started = datetime.fromisoformat(dep["return_started_at"])
+                ret_duration = dep.get("return_duration_hours", 0)
+                if now >= ret_started + timedelta(hours=ret_duration):
+                    await db.deployments.update_one(
+                        {"id": dep["id"]},
+                        {"$set": {
+                            "status": "completed",
+                            "is_active": False,
+                            "updated_at": now.isoformat(),
+                        }},
+                    )
+            except (ValueError, TypeError):
+                pass
 
 async def _update_division_for_deployment(dep: Deployment, user_id: str):
     """Update division location based on the deployment's last route point."""

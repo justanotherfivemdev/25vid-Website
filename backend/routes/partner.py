@@ -709,8 +709,8 @@ async def partner_create_deployment(
         notes=data.notes,
         created_by=partner_user["id"],
     )
-    # Auto-set started_at when creating as active
-    if dep.status == "active":
+    # Auto-set started_at when creating as deploying
+    if dep.status == "deploying":
         dep.started_at = datetime.now(timezone.utc).isoformat()
 
     try:
@@ -762,9 +762,9 @@ async def partner_update_deployment(
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
 
-    # Auto-set started_at when transitioning to active
+    # Auto-set started_at when transitioning to deploying
     new_status = update_dict.get("status")
-    if new_status == "active" and not existing.get("started_at"):
+    if new_status == "deploying" and not existing.get("started_at"):
         update_dict["started_at"] = datetime.now(timezone.utc).isoformat()
 
     # Serialize route_points if present

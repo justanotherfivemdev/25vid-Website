@@ -396,6 +396,13 @@ const UNIT_DEPLOYMENT_COLORS = [
   ...COUNTERPART_COLORS,
 ];
 
+// Phases considered "visible" on the map (everything except planning/completed)
+const VISIBLE_DEPLOYMENT_PHASES = ['deploying', 'deployed', 'endex', 'rtb'];
+
+// Maximum zoom level when tracking active deployment
+// Cap zoom during tracking so the user can see the broader region, not zoomed-in
+const TRACKING_ZOOM_CAP = 5;
+
 // Latitude offset in degrees applied to each partner unit's deployment line
 // so overlapping routes remain visually distinguishable (~16 km per unit).
 const PARTNER_LINE_OFFSET_DEG = 0.15;
@@ -471,6 +478,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   const [deployments, setDeployments] = useState([]);
   const [divisionLocation, setDivisionLocation] = useState(null);
   const [deploymentPopup, setDeploymentPopup] = useState(null);
+  const [trackDeployment, setTrackDeployment] = useState(false);
 
   // ADS-B military aircraft tracking
   const { aircraft: adsbAircraftRaw } = useADSBAircraft(showADSB);
@@ -645,6 +653,43 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     return () => clearInterval(id);
   }, []);
 
+  // Tracking mode – fly map to active deployment's current position
+  useEffect(() => {
+    if (!trackDeployment || !mapRef.current) return;
+    const activeDep = deployments.find(
+      (d) => d.origin_type === '25th' && VISIBLE_DEPLOYMENT_PHASES.includes(d.status)
+    );
+    if (!activeDep || !activeDep.route_points || activeDep.route_points.length < 2) return;
+
+    const coords = getDeploymentCoords(activeDep, 0);
+    if (coords.length < 2) return;
+
+    let trackProgress;
+    if (activeDep.status === 'rtb') {
+      const rtbStartMs = activeDep.return_started_at ? new Date(activeDep.return_started_at).getTime() : 0;
+      const rtbDurationMs = (activeDep.return_duration_hours || activeDep.total_duration_hours) * 3600000;
+      if (rtbStartMs && rtbDurationMs > 0) {
+        const rtbElapsed = nowTick - rtbStartMs;
+        trackProgress = 1 - Math.max(0, Math.min(1, rtbElapsed / rtbDurationMs));
+      } else {
+        trackProgress = 1;
+      }
+    } else if (activeDep.status === 'deployed' || activeDep.status === 'endex') {
+      trackProgress = 1;
+    } else {
+      trackProgress = computeProgress(activeDep);
+    }
+
+    const pos = interpolateAlongLine(coords, trackProgress);
+    const map = mapRef.current.getMap();
+    map.easeTo({
+      center: [pos[0], pos[1]],
+      zoom: Math.min(map.getZoom(), TRACKING_ZOOM_CAP),
+      duration: 2000,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackDeployment, nowTick, deployments]);
+
   // Countdown label: remaining time based on total_duration_hours + started_at
   function computeCountdownLabel(dep) {
     if (!dep.started_at || !dep.total_duration_hours) return '';
@@ -758,7 +803,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   const deploymentPathsGeoJson = useMemo(() => ({
     type: 'FeatureCollection',
     features: deployments
-      .filter((d) => d.route_points && d.route_points.length >= 2 && d.status === 'active')
+      .filter((d) => d.route_points && d.route_points.length >= 2 && VISIBLE_DEPLOYMENT_PHASES.includes(d.status))
       .map((d) => {
         const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
         const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
@@ -785,12 +830,12 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   // Current active deployment for the 25th ID
   const activeDeployment = useMemo(() =>
     deployments.find((d) =>
-      d.origin_type === '25th' && d.status === 'active'
+      d.origin_type === '25th' && VISIBLE_DEPLOYMENT_PHASES.includes(d.status)
     ), [deployments]);
 
   // Build legend entries for active deployments
   const deploymentLegendEntries = useMemo(() => {
-    const activeDeployments = deployments.filter((d) => d.status === 'active');
+    const activeDeployments = deployments.filter((d) => VISIBLE_DEPLOYMENT_PHASES.includes(d.status));
     if (activeDeployments.length === 0) return [];
     const entries = [];
     activeDeployments.forEach((d) => {
@@ -1084,7 +1129,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
         {/* Countdown timer UI boxes at midpoint of each active deployment path */}
         {deployments
-          .filter((d) => d.status === 'active' && d.route_points && d.route_points.length >= 2 && d.started_at)
+          .filter((d) => VISIBLE_DEPLOYMENT_PHASES.includes(d.status) && d.route_points && d.route_points.length >= 2 && d.started_at)
           .map((d) => {
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
@@ -1092,8 +1137,32 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             const offsetLat = unitKey ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
             const coords = getDeploymentCoords(d, offsetLat);
             const mid = interpolateAlongLine(coords, 0.5);
-            const countdown = computeCountdownLabel(d);
-            if (!countdown) return null;
+
+            // compute the phase label and countdown
+            let countdown = '';
+            let phaseLabel = '';
+
+            if (d.status === 'deploying') {
+              countdown = computeCountdownLabel(d);
+              phaseLabel = 'DEPLOYING';
+            } else if (d.status === 'deployed') {
+              phaseLabel = 'DEPLOYED';
+            } else if (d.status === 'endex') {
+              phaseLabel = 'ENDEX';
+            } else if (d.status === 'rtb') {
+              phaseLabel = 'RTB';
+              if (d.return_started_at && d.return_duration_hours) {
+                const rtbStartMs = new Date(d.return_started_at).getTime();
+                const rtbEndMs = rtbStartMs + d.return_duration_hours * 3600000;
+                const remaining = rtbEndMs - nowTick;
+                if (remaining > 0) {
+                  const totalMinutes = Math.floor(remaining / 60000);
+                  const hours = Math.floor(totalMinutes / 60);
+                  const mins = totalMinutes % 60;
+                  countdown = hours > 0 ? `${hours}h ${mins}m` : `0h ${mins}m`;
+                }
+              }
+            }
 
             const fmtTime = (iso) => {
               if (!iso) return '';
@@ -1105,20 +1174,26 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
             return (
               <Marker key={`dep-timer-${d.id}`} longitude={mid[0]} latitude={mid[1]} anchor="center" style={{ zIndex: 2 }}>
-                <div
-                  className="flex flex-col items-center gap-0.5 px-2 py-1 rounded border shadow-lg whitespace-nowrap select-none"
+                <div className="flex flex-col items-center gap-0.5 px-2 py-1 rounded border shadow-lg whitespace-nowrap select-none"
                   style={{
                     background: 'rgba(15,23,42,0.92)',
                     borderColor: color,
                     boxShadow: `0 0 8px ${color}44`,
                   }}
                 >
-                  <div className="flex items-center gap-1">
-                    <span style={{ color, fontSize: 10 }}>⏱</span>
-                    <span className="font-mono font-bold text-[11px]" style={{ color }}>
-                      {countdown}
-                    </span>
-                  </div>
+                  {phaseLabel && (
+                    <div className="text-[9px] font-bold tracking-wider uppercase" style={{ color }}>
+                      {phaseLabel}
+                    </div>
+                  )}
+                  {countdown && (
+                    <div className="flex items-center gap-1">
+                      <span style={{ color, fontSize: 10 }}>⏱</span>
+                      <span className="font-mono font-bold text-[11px]" style={{ color }}>
+                        {countdown}
+                      </span>
+                    </div>
+                  )}
                   {startedTime && (
                     <div className="flex items-center gap-1 text-[9px] text-gray-400">
                       <span>Started: {startedTime}</span>
@@ -1137,7 +1212,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
         {/* Deployment spoofed aircraft – visual plane icons following each active deployment path */}
         {deployments
-          .filter((d) => d.status === 'active' && d.route_points && d.route_points.length >= 2 && d.started_at && d.total_duration_hours)
+          .filter((d) => VISIBLE_DEPLOYMENT_PHASES.includes(d.status) && d.route_points && d.route_points.length >= 2 && d.started_at && d.total_duration_hours)
           .map((d) => {
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
@@ -1146,8 +1221,28 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             const coords = getDeploymentCoords(d, offsetLat);
             if (coords.length < 2) return null;
 
-            const progress = computeProgress(d);
-            if (progress <= 0 || progress >= 1) return null;
+            let progress;
+            if (d.status === 'rtb') {
+              // RTB: reverse direction from destination back to origin
+              const rtbStartMs = d.return_started_at ? new Date(d.return_started_at).getTime() : 0;
+              const rtbDurationMs = (d.return_duration_hours || d.total_duration_hours) * 3600000;
+              if (rtbStartMs && rtbDurationMs > 0) {
+                const rtbElapsed = nowTick - rtbStartMs;
+                const rtbFraction = Math.max(0, Math.min(1, rtbElapsed / rtbDurationMs));
+                progress = 1 - rtbFraction; // Reverse: start at 1 (destination), end at 0 (origin)
+              } else {
+                progress = 1;
+              }
+            } else if (d.status === 'deployed' || d.status === 'endex') {
+              progress = 1; // At destination
+            } else {
+              progress = computeProgress(d);
+            }
+            // Hide plane only when completely outside the route; allow at boundaries for deployed/endex
+            const atDestination = d.status === 'deployed' || d.status === 'endex';
+            if (progress < 0 || progress > 1) return null;
+            if (progress === 0 && !atDestination) return null;
+            if (progress === 1 && d.status === 'deploying') return null;
 
             const pos = interpolateAlongLine(coords, progress);
 
@@ -1242,11 +1337,25 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           let markerLat = divisionDisplayLocation.latitude;
 
           // When active, interpolate position along the active deployment line
-          if (activeDeployment && activeDeployment.status === 'active') {
+          if (activeDeployment && VISIBLE_DEPLOYMENT_PHASES.includes(activeDeployment.status)) {
             const coords = getDeploymentCoords(activeDeployment, 0);
             if (coords.length >= 2) {
-              const progress = computeProgress(activeDeployment);
-              const pos = interpolateAlongLine(coords, progress);
+              let divProgress;
+              if (activeDeployment.status === 'rtb') {
+                const rtbStartMs = activeDeployment.return_started_at ? new Date(activeDeployment.return_started_at).getTime() : 0;
+                const rtbDurationMs = (activeDeployment.return_duration_hours || activeDeployment.total_duration_hours) * 3600000;
+                if (rtbStartMs && rtbDurationMs > 0) {
+                  const rtbElapsed = nowTick - rtbStartMs;
+                  divProgress = 1 - Math.max(0, Math.min(1, rtbElapsed / rtbDurationMs));
+                } else {
+                  divProgress = 1;
+                }
+              } else if (activeDeployment.status === 'deployed' || activeDeployment.status === 'endex') {
+                divProgress = 1;
+              } else {
+                divProgress = computeProgress(activeDeployment);
+              }
+              const pos = interpolateAlongLine(coords, divProgress);
               markerLng = pos[0];
               markerLat = pos[1];
             }
@@ -1280,7 +1389,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
         {/* Deployment destination markers */}
         {deployments
-          .filter((d) => d.route_points && d.route_points.length > 0 && d.status === 'active')
+          .filter((d) => d.route_points && d.route_points.length > 0 && VISIBLE_DEPLOYMENT_PHASES.includes(d.status))
           .map((d) => {
             const lastRp = [...d.route_points].sort((a, b) => a.order - b.order).pop();
             if (!lastRp) return null;
@@ -1322,7 +1431,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
         {/* Intermediate route point stop markers */}
         {deployments
-          .filter((d) => d.status === 'active' && Array.isArray(d.route_points) && d.route_points.length > 2)
+          .filter((d) => VISIBLE_DEPLOYMENT_PHASES.includes(d.status) && Array.isArray(d.route_points) && d.route_points.length > 2)
           .flatMap((d) => {
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
@@ -1440,7 +1549,10 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                 <>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${
-                      deploymentPopup.data.status === 'active' ? 'bg-yellow-600/20 text-yellow-300' :
+                      deploymentPopup.data.status === 'deploying' ? 'bg-yellow-600/20 text-yellow-300' :
+                      deploymentPopup.data.status === 'deployed' ? 'bg-green-600/20 text-green-300' :
+                      deploymentPopup.data.status === 'endex' ? 'bg-orange-600/20 text-orange-300' :
+                      deploymentPopup.data.status === 'rtb' ? 'bg-blue-600/20 text-blue-300' :
                       deploymentPopup.data.status === 'completed' ? 'bg-green-600/20 text-green-300' :
                       'bg-gray-600/20 text-gray-300'
                     }`}>
@@ -1537,6 +1649,28 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       {showADSB && (
         <ADSBFilterPanel countries={adsbCountries} aircraftCount={adsbAircraft.length} />
       )}
+
+      {/* Tracking mode toggle */}
+      <div className="absolute bottom-20 right-3 z-10">
+        <button
+          onClick={() => setTrackDeployment(prev => !prev)}
+          className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
+            trackDeployment
+              ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light shadow-tropic-gold/30'
+              : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+          } backdrop-blur-md`}
+          title={trackDeployment ? 'Stop Tracking Deployment' : 'Track Active Deployment'}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" />
+            <line x1="12" y1="2" x2="12" y2="6" />
+            <line x1="12" y1="18" x2="12" y2="22" />
+            <line x1="2" y1="12" x2="6" y2="12" />
+            <line x1="18" y1="12" x2="22" y2="12" />
+          </svg>
+        </button>
+      </div>
 
       {/* Country conflicts modal */}
       {countryModal && (
