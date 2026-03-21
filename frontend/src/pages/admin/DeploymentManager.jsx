@@ -1003,7 +1003,7 @@ const DeploymentManager = () => {
                         ...prev,
                         route_points: [
                           ...(prev.route_points || []),
-                          { ...EMPTY_ROUTE_POINT, latitude: lat.toFixed(4), longitude: lng.toFixed(4), name: `Point ${(prev.route_points || []).length + 1}` },
+                          { ...EMPTY_ROUTE_POINT, latitude: parseFloat(lat.toFixed(4)), longitude: parseFloat(lng.toFixed(4)), name: `Point ${(prev.route_points || []).length + 1}` },
                         ],
                       }));
                     }}
@@ -1051,7 +1051,7 @@ const DeploymentManager = () => {
                     })()}
                   </Map>
                 </div>
-                <p className="text-[10px] text-gray-600 mt-1">Click on the map to add route points. Points appear in the list below.</p>
+                <p className="text-[10px] text-gray-600 mt-1">Click the map to add route points, which will appear in the list below.</p>
                 </>
                 ) : (
                   <p className="text-[10px] text-yellow-600 italic">Mapbox token not configured. Map preview unavailable.</p>

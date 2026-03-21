@@ -410,7 +410,7 @@ function getUnitColor(originUnitId, unitIndex, originType) {
 
 function getDeploymentTypeLabel(dep) {
   if (dep.origin_type === 'partner') return dep.unit_name || 'Partner Unit';
-  if (dep.origin_type === 'counterpart') return dep.unit_name || 'Allied / Support Unit';
+  if (dep.origin_type === 'counterpart') return dep.unit_name || 'Allied Unit';
   return '25th ID';
 }
 
