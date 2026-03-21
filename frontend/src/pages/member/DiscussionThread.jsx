@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, MessageSquare, Trash2, Send, Shield, Home, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
 
@@ -77,7 +78,7 @@ const DiscussionThread = () => {
             <h1 className="text-xl font-bold tracking-wider truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{discussion.title}</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {!isPartnerMode && user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4" /></Button></Link>}
+            {!isPartnerMode && isStaff(user?.role) && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4" /></Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -123,7 +124,7 @@ const DiscussionThread = () => {
                         </div>
                         <p className="text-gray-300 whitespace-pre-wrap">{r.content}</p>
                       </div>
-                      {user?.role === 'admin' && (
+                      {isStaff(user?.role) && (
                         <Button size="sm" variant="ghost" onClick={() => handleDeleteReply(r.id)} className="text-tropic-gold hover:bg-tropic-gold/10 shrink-0 ml-2" data-testid={`delete-reply-${r.id || idx}`}>
                           <Trash2 className="w-4 h-4" />
                         </Button>

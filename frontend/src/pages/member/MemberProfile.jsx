@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Shield, Home, LogOut, Calendar, Clock, Award, Target, MapPin, Globe } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
@@ -49,7 +50,7 @@ const MemberProfile = () => {
           </div>
           <div className="flex items-center space-x-3">
             {isOwnProfile && <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-tropic-gold text-tropic-gold hover:bg-tropic-gold/10">Edit Profile</Button></Link>}
-            {user?.role === 'admin' && <Link to={`/admin/users/${profile.id}`}><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin Edit</Button></Link>}
+            {isStaff(user?.role) && <Link to={`/admin/users/${profile.id}`}><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin Edit</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -74,7 +75,7 @@ const MemberProfile = () => {
                     {profile.rank && <span className="text-sm text-gray-400">{profile.rank}</span>}
                     <Badge className={`${STATUS_COLORS[profile.status] || 'bg-gray-700'} text-white text-xs`}>{(profile.status || 'recruit').toUpperCase()}</Badge>
                     {profile.loa_status === 'on_loa' && <Badge className="bg-yellow-600/30 text-yellow-400 border border-yellow-600/40 text-xs">LOA</Badge>}
-                    {profile.role === 'admin' && <Badge className="bg-tropic-gold/20 text-tropic-gold text-xs">ADMIN</Badge>}
+                    {isStaff(profile.role) && <Badge className="bg-tropic-gold/20 text-tropic-gold text-xs">STAFF</Badge>}
                     {profile.discord_linked && <Badge className="bg-[#5865F2]/20 text-[#5865F2] text-xs border border-[#5865F2]/30">{profile.discord_username || 'Discord'}</Badge>}
                   </div>
                 </div>

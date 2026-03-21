@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Home, LogOut, Handshake, Megaphone, Target, Users, MessageSquare, Pin, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 import { API } from '@/utils/api';
 
 const TYPE_ICONS = { announcement: Megaphone, coordination: MessageSquare, joint_operation: Target, planning: Handshake };
@@ -67,7 +68,7 @@ const SharedArea = () => {
             <h1 className="text-xl font-bold tracking-widest" style={{ fontFamily: 'Rajdhani, sans-serif' }}>SHARED COORDINATION</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && (
+            {isStaff(user?.role) && (
               <Button size="sm" onClick={() => setCreateDialog(true)} className="bg-tropic-gold hover:bg-tropic-gold-light text-black"><Plus className="w-4 h-4 mr-1" />New Post</Button>
             )}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>

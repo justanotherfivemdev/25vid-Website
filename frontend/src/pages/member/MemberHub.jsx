@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image, Globe, Handshake, Menu, X } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
 
@@ -96,7 +97,7 @@ const MemberHub = () => {
               <Link to="/hub/shared"><Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold"><Handshake className="w-4 h-4 mr-1.5" />Shared</Button></Link>
               <Link to="/hub/campaign"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><MapPin className="w-4 h-4 mr-1" />Campaigns</Button></Link>
               <Link to="/hub/threat-map"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Globe className="w-4 h-4 mr-1" />Global Threat Map</Button></Link>
-              {user?.role === 'admin' && (
+              {isStaff(user?.role) && (
                 <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
               )}
               <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4 mr-1" />Home</Button></Link>
@@ -118,7 +119,7 @@ const MemberHub = () => {
             <Link to="/hub/shared" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:text-tropic-gold rounded-lg hover:bg-tropic-gold/10"><Handshake className="w-4 h-4" />Shared</Link>
             <Link to="/hub/campaign" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-tropic-gold hover:bg-tropic-gold/10 rounded-lg"><MapPin className="w-4 h-4" />Campaigns</Link>
             <Link to="/hub/threat-map" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-tropic-gold hover:bg-tropic-gold/10 rounded-lg"><Globe className="w-4 h-4" />Global Threat Map</Link>
-            {user?.role === 'admin' && (
+            {isStaff(user?.role) && (
               <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-tropic-red hover:bg-tropic-red/10 rounded-lg"><Shield className="w-4 h-4" />Admin</Link>
             )}
             <Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:text-tropic-gold rounded-lg hover:bg-tropic-gold/10"><Home className="w-4 h-4" />Home</Link>

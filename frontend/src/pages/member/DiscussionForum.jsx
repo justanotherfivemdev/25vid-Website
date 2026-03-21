@@ -11,6 +11,7 @@ import { Plus, MessageSquare, ArrowLeft, Shield, Home, LogOut, Pin, PinOff, Sear
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
 
@@ -110,7 +111,7 @@ const DiscussionForum = () => {
             <h1 className="text-xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>DISCUSSION FORUM</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {!isPartnerMode && user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>}
+            {!isPartnerMode && isStaff(user?.role) && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -227,7 +228,7 @@ const DiscussionForum = () => {
                       </CardContent>
                     </Card>
                   </Link>
-                  {user?.role === 'admin' && (
+                  {isStaff(user?.role) && (
                     <div className="flex flex-col gap-1 shrink-0">
                       <Button size="sm" variant="outline" onClick={() => handleTogglePin(d.id)} className={`${d.pinned ? 'border-yellow-700 text-yellow-500 hover:bg-yellow-700/10' : 'border-gray-700 text-gray-400 hover:bg-gray-700/10'}`} title={d.pinned ? 'Unpin thread' : 'Pin thread'} data-testid={`pin-discussion-${d.id}`}>
                         {d.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}

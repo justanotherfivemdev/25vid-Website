@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, Search, FileText, Shield, Home, LogOut, Tag, Clock, User, ChevronRight, X, Filter, CheckCircle, Eye } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 import MapMiniView from '@/components/MapMiniView';
 import { colors } from '@/theme/theme';
 
@@ -95,7 +96,7 @@ const IntelBoard = () => {
             </h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin/intel"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold"><Shield className="w-4 h-4 mr-1" />Manage</Button></Link>}
+            {isStaff(user?.role) && <Link to="/admin/intel"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold"><Shield className="w-4 h-4 mr-1" />Manage</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>

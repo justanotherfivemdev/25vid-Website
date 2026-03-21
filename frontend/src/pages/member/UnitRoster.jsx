@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Shield, Home, LogOut, Users, ChevronRight, ChevronDown, Building2, LayoutGrid, FileSpreadsheet, Upload, X, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
@@ -47,7 +48,7 @@ const MemberCard = ({ member, compact = false }) => (
             {member.company && <span className="text-[10px] text-tropic-gold border border-tropic-gold/50 px-1.5 py-0 rounded">{member.company}</span>}
             {member.platoon && <span className="text-[10px] text-green-400 border border-green-800/50 px-1.5 py-0 rounded">{member.platoon}</span>}
             {member.squad && <span className="text-[10px] text-gray-500 border border-gray-800 px-1.5 py-0 rounded">{member.squad}</span>}
-            {member.role === 'admin' && <Badge className="bg-tropic-red/50 text-tropic-gold text-[10px] px-2 py-0">ADMIN</Badge>}
+            {isStaff(member.role) && <Badge className="bg-tropic-red/50 text-tropic-gold text-[10px] px-2 py-0">STAFF</Badge>}
           </div>
         )}
       </CardContent>
@@ -264,7 +265,7 @@ const UnitRoster = () => {
             <h1 className="text-xl font-bold tracking-widest text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>UNIT ROSTER</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4" /></Button></Link>}
+            {isStaff(user?.role) && <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4" /></Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -282,7 +283,7 @@ const UnitRoster = () => {
               </div>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              {user?.role === 'admin' && (
+              {isStaff(user?.role) && (
                 <>
                 <Button
                   size="sm"
@@ -328,7 +329,7 @@ const UnitRoster = () => {
               </div>
             </div>
           </div>
-          {user?.role === 'admin' && (
+          {isStaff(user?.role) && (
             <p className="text-xs text-gray-500 -mt-3">
               Export creates a CSV download and opens a new Google Sheet so you can import into any spreadsheet destination.
             </p>
