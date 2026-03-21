@@ -400,7 +400,8 @@ const UNIT_DEPLOYMENT_COLORS = [
 const VISIBLE_DEPLOYMENT_PHASES = ['deploying', 'deployed', 'endex', 'rtb'];
 
 // Maximum zoom level when tracking active deployment
-const MAX_TRACKING_ZOOM = 5;
+// Cap zoom during tracking so the user can see the broader region, not zoomed-in
+const TRACKING_ZOOM_CAP = 5;
 
 // Latitude offset in degrees applied to each partner unit's deployment line
 // so overlapping routes remain visually distinguishable (~16 km per unit).
@@ -683,7 +684,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     const map = mapRef.current.getMap();
     map.easeTo({
       center: [pos[0], pos[1]],
-      zoom: Math.min(map.getZoom(), MAX_TRACKING_ZOOM),
+      zoom: Math.min(map.getZoom(), TRACKING_ZOOM_CAP),
       duration: 2000,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

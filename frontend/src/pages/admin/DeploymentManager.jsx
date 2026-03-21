@@ -240,11 +240,12 @@ const DeploymentManager = () => {
         })),
       }));
     } catch {
-      setLocationResults(prev => ({ ...prev, [idx]: [] }));
+      setLocationResults(prev => ({ ...prev, [idx]: [{ name: '⚠ Search failed — try again', latitude: null, longitude: null }] }));
     }
   }, []);
 
   const handleLocationSelect = useCallback((result, idx) => {
+    if (result.latitude == null || result.longitude == null) return; // skip error placeholders
     setDeploymentForm((prev) => {
       const rps = [...prev.route_points];
       rps[idx] = {
