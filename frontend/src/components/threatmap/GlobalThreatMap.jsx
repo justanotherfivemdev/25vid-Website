@@ -421,15 +421,16 @@ function getDeploymentTypeLabel(dep) {
   return '25th ID';
 }
 
-/* Deployment path layer – uses data-driven color */
-const deploymentPathLayer = {
-  id: 'deployment-path',
+/* ── ATAK-style tactical route layers ─────────────────────────────────── */
+/* Outer glow – wide, low-opacity halo that gives the line a lit appearance */
+const deploymentPathGlowLayer = {
+  id: 'deployment-path-glow',
   type: 'line',
   paint: {
     'line-color': ['get', 'color'],
-    'line-width': 2.5,
-    'line-dasharray': [2, 2],
-    'line-opacity': 0.8,
+    'line-width': 10,
+    'line-opacity': 0.18,
+    'line-blur': 6,
   },
   layout: {
     'line-cap': 'round',
@@ -437,22 +438,40 @@ const deploymentPathLayer = {
   },
 };
 
+/* Core tactical route line – long-dash military pattern */
+const deploymentPathLayer = {
+  id: 'deployment-path',
+  type: 'line',
+  paint: {
+    'line-color': ['get', 'color'],
+    'line-width': 3,
+    'line-dasharray': [10, 5],
+    'line-opacity': 0.92,
+  },
+  layout: {
+    'line-cap': 'butt',
+    'line-join': 'miter',
+  },
+};
+
+/* Filled chevron direction indicators along the route */
 const deploymentArrowLayer = {
   id: 'deployment-arrows',
   type: 'symbol',
   layout: {
     'symbol-placement': 'line',
-    'symbol-spacing': 80,
+    'symbol-spacing': 120,
     'text-field': '▶',
-    'text-size': 14,
+    'text-size': 18,
     'text-rotate': 0,
     'text-rotation-alignment': 'map',
     'text-keep-upright': false,
     'text-allow-overlap': true,
+    'text-ignore-placement': true,
   },
   paint: {
     'text-color': ['get', 'color'],
-    'text-opacity': 0.9,
+    'text-opacity': 0.85,
   },
 };
 
@@ -1119,9 +1138,10 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           </Source>
         )}
 
-        {/* Deployment travel paths */}
+        {/* Deployment travel paths – ATAK-style tactical route lines */}
         {deployments.length > 0 && (
           <Source id="deployment-paths" type="geojson" data={deploymentPathsGeoJson}>
+            <Layer {...deploymentPathGlowLayer} />
             <Layer {...deploymentPathLayer} />
             <Layer {...deploymentArrowLayer} />
           </Source>
@@ -1174,34 +1194,41 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
             return (
               <Marker key={`dep-timer-${d.id}`} longitude={mid[0]} latitude={mid[1]} anchor="center" style={{ zIndex: 2 }}>
-                <div className="flex flex-col items-center gap-0.5 px-2 py-1 rounded border shadow-lg whitespace-nowrap select-none"
+                {/* ATAK-style tactical data box */}
+                <div
+                  className="flex flex-col items-start gap-0.5 px-2 py-1.5 whitespace-nowrap select-none"
                   style={{
-                    background: 'rgba(15,23,42,0.92)',
-                    borderColor: color,
-                    boxShadow: `0 0 8px ${color}44`,
+                    background: 'rgba(10,18,36,0.95)',
+                    border: `1px solid ${color}`,
+                    borderLeft: `3px solid ${color}`,
+                    boxShadow: `0 0 10px ${color}33, inset 0 0 6px ${color}0d`,
+                    borderRadius: 2,
+                    minWidth: 80,
                   }}
                 >
                   {phaseLabel && (
-                    <div className="text-[9px] font-bold tracking-wider uppercase" style={{ color }}>
+                    <div
+                      className="text-[8px] font-black tracking-[0.18em] uppercase w-full"
+                      style={{ color }}
+                    >
                       {phaseLabel}
                     </div>
                   )}
                   {countdown && (
                     <div className="flex items-center gap-1">
-                      <span style={{ color, fontSize: 10 }}>⏱</span>
+                      <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                        <circle cx="5" cy="5" r="4" stroke={color} strokeWidth="1.2" />
+                        <line x1="5" y1="5" x2="5" y2="2" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+                        <line x1="5" y1="5" x2="7.5" y2="6.5" stroke={color} strokeWidth="1" strokeLinecap="round" />
+                      </svg>
                       <span className="font-mono font-bold text-[11px]" style={{ color }}>
                         {countdown}
                       </span>
                     </div>
                   )}
                   {startedTime && (
-                    <div className="flex items-center gap-1 text-[9px] text-gray-400">
-                      <span>Started: {startedTime}</span>
-                    </div>
-                  )}
-                  {d.total_duration_hours && (
-                    <div className="text-[9px] text-gray-500">
-                      Duration: {d.total_duration_hours}h
+                    <div className="text-[8px] text-gray-400 leading-tight">
+                      {startedTime}
                     </div>
                   )}
                 </div>
@@ -1210,9 +1237,15 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           })
         }
 
-        {/* Deployment spoofed aircraft – visual plane icons following each active deployment path */}
+        {/* Deployment aircraft icons – C-17 military transport silhouette oriented to direction of travel.
+            25th ID deployments are represented by the NATO HQ marker instead (avoids label overlap). */}
         {deployments
-          .filter((d) => VISIBLE_DEPLOYMENT_PHASES.includes(d.status) && d.route_points && d.route_points.length >= 2 && d.started_at && d.total_duration_hours)
+          .filter((d) =>
+            d.origin_type !== '25th' &&
+            VISIBLE_DEPLOYMENT_PHASES.includes(d.status) &&
+            d.route_points && d.route_points.length >= 2 &&
+            d.started_at && d.total_duration_hours
+          )
           .map((d) => {
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
@@ -1223,22 +1256,20 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
             let progress;
             if (d.status === 'rtb') {
-              // RTB: reverse direction from destination back to origin
               const rtbStartMs = d.return_started_at ? new Date(d.return_started_at).getTime() : 0;
               const rtbDurationMs = (d.return_duration_hours || d.total_duration_hours) * 3600000;
               if (rtbStartMs && rtbDurationMs > 0) {
                 const rtbElapsed = nowTick - rtbStartMs;
                 const rtbFraction = Math.max(0, Math.min(1, rtbElapsed / rtbDurationMs));
-                progress = 1 - rtbFraction; // Reverse: start at 1 (destination), end at 0 (origin)
+                progress = 1 - rtbFraction;
               } else {
                 progress = 1;
               }
             } else if (d.status === 'deployed' || d.status === 'endex') {
-              progress = 1; // At destination
+              progress = 1;
             } else {
               progress = computeProgress(d);
             }
-            // Hide plane only when completely outside the route; allow at boundaries for deployed/endex
             const atDestination = d.status === 'deployed' || d.status === 'endex';
             if (progress < 0 || progress > 1) return null;
             if (progress === 0 && !atDestination) return null;
@@ -1246,7 +1277,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
             const pos = interpolateAlongLine(coords, progress);
 
-            // Compute heading from path direction at current position
+            // Compute heading (degrees, 0 = north) from path tangent at current position
             const aheadPos = interpolateAlongLine(coords, Math.min(1, progress + 0.01));
             const dLon = aheadPos[0] - pos[0];
             const dLat = aheadPos[1] - pos[1];
@@ -1258,7 +1289,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                 longitude={pos[0]}
                 latitude={pos[1]}
                 anchor="center"
-                style={{ zIndex: 1 }}
+                style={{ zIndex: 4 }}
                 onClick={(e) => {
                   e.originalEvent.stopPropagation();
                   setDeploymentPopup({
@@ -1272,31 +1303,66 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                 <div
                   className="flex flex-col items-center"
                   style={{ cursor: 'pointer' }}
-                  title={`${d.title} — In Transit (${Math.round(progress * 100)}%)`}
+                  title={`${d.title} — ${Math.round(progress * 100)}%`}
                 >
+                  {/* C-17 Globemaster top-down silhouette, nose pointing up (north=0°) */}
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill={color}
-                    stroke={color}
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    width="34"
+                    height="34"
+                    viewBox="0 0 32 32"
+                    aria-label={`${d.unit_name || d.title} — deployment aircraft`}
                     style={{
                       transform: `rotate(${heading}deg)`,
-                      filter: `drop-shadow(0 0 6px ${color})`,
-                      transition: 'transform 1s ease-out',
+                      filter: `drop-shadow(0 0 5px ${color}cc)`,
+                      transition: 'transform 0.8s ease-out',
                     }}
                   >
-                    <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+                    <title>{d.unit_name || d.title} — C-17 in transit</title>
+                    {/* Fuselage */}
+                    <path
+                      d="M15.5,2 C14.5,4 14,7 14,11 L14,23 C14.3,25 14.8,27.5 15.5,30 C16.2,27.5 16.7,25 17,23 L17,11 C17,7 16.5,4 15.5,2 Z"
+                      fill={color}
+                    />
+                    {/* Left main wing */}
+                    <path
+                      d="M14,10 L1,15 L1,16.5 L14,13 Z"
+                      fill={color}
+                    />
+                    {/* Right main wing */}
+                    <path
+                      d="M17,10 L31,15 L31,16.5 L17,13 Z"
+                      fill={color}
+                    />
+                    {/* Left outer engine */}
+                    <ellipse cx="4.5" cy="15.5" rx="2.5" ry="1" fill={color} opacity="0.9" />
+                    {/* Left inner engine */}
+                    <ellipse cx="9" cy="14" rx="2.2" ry="0.9" fill={color} opacity="0.9" />
+                    {/* Right inner engine */}
+                    <ellipse cx="23" cy="14" rx="2.2" ry="0.9" fill={color} opacity="0.9" />
+                    {/* Right outer engine */}
+                    <ellipse cx="27.5" cy="15.5" rx="2.5" ry="1" fill={color} opacity="0.9" />
+                    {/* Left horizontal stabilizer */}
+                    <path
+                      d="M14,23 L8,27 L8.5,28 L14,25 Z"
+                      fill={color}
+                    />
+                    {/* Right horizontal stabilizer */}
+                    <path
+                      d="M17,23 L24,27 L23.5,28 L17,25 Z"
+                      fill={color}
+                    />
                   </svg>
                   <span
-                    className="text-[9px] font-bold mt-0.5 whitespace-nowrap bg-black/80 px-1 rounded"
-                    style={{ color }}
+                    className="text-[9px] font-bold mt-0.5 whitespace-nowrap px-1 py-0.5 rounded tracking-wide"
+                    style={{
+                      color,
+                      background: 'rgba(0,0,0,0.82)',
+                      border: `1px solid ${color}55`,
+                      letterSpacing: '0.05em',
+                    }}
                   >
-                    {d.title}
+                    {d.unit_name || d.title}
                   </span>
                 </div>
               </Marker>
@@ -1331,16 +1397,17 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           </Marker>
         ))}
 
-        {/* 25th ID Division Location Marker – moves along deployment path when deploying */}
+        {/* 25th ID Division Location Marker – moves along deployment path when deploying.
+            Shows a C-17 silhouette while in transit (deploying/rtb) and the NATO HQ symbol at rest. */}
         {divisionDisplayLocation && (() => {
           let markerLng = divisionDisplayLocation.longitude;
           let markerLat = divisionDisplayLocation.latitude;
+          let divHeading = 0;
+          let divProgress = null;
 
-          // When active, interpolate position along the active deployment line
           if (activeDeployment && VISIBLE_DEPLOYMENT_PHASES.includes(activeDeployment.status)) {
             const coords = getDeploymentCoords(activeDeployment, 0);
             if (coords.length >= 2) {
-              let divProgress;
               if (activeDeployment.status === 'rtb') {
                 const rtbStartMs = activeDeployment.return_started_at ? new Date(activeDeployment.return_started_at).getTime() : 0;
                 const rtbDurationMs = (activeDeployment.return_duration_hours || activeDeployment.total_duration_hours) * 3600000;
@@ -1358,29 +1425,88 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
               const pos = interpolateAlongLine(coords, divProgress);
               markerLng = pos[0];
               markerLat = pos[1];
+
+              // Compute heading for C-17 icon orientation
+              const aheadPos = interpolateAlongLine(coords, Math.min(1, divProgress + 0.01));
+              const dLon = aheadPos[0] - pos[0];
+              const dLat = aheadPos[1] - pos[1];
+              divHeading = (Math.atan2(dLon, dLat) * 180) / Math.PI;
             }
           }
+
+          const isInTransit = activeDeployment &&
+            (activeDeployment.status === 'deploying' || activeDeployment.status === 'rtb');
 
           return (
             <Marker
               longitude={markerLng}
               latitude={markerLat}
               anchor="center"
-              style={{ zIndex: 3 }}
+              style={{ zIndex: 5 }}
             >
-              <div className="flex flex-col items-center" title={`25th ID - ${divisionDisplayLocation.name}`}>
-                <div className="relative">
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: buildNATOMarkerSVG('friendly', 'headquarters', 40),
+              <div
+                className="flex flex-col items-center"
+                title={`25th Infantry Division — ${activeDeployment ? activeDeployment.title : divisionDisplayLocation.name}`}
+                onClick={(e) => {
+                  if (!activeDeployment) return;
+                  e.stopPropagation();
+                  setDeploymentPopup({
+                    longitude: markerLng,
+                    latitude: markerLat,
+                    type: 'deployment',
+                    data: activeDeployment,
+                  });
+                }}
+                style={{ cursor: activeDeployment ? 'pointer' : 'default' }}
+              >
+                {isInTransit ? (
+                  /* C-17 silhouette for 25th ID while in transit – gold with glow */
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="38"
+                    height="38"
+                    viewBox="0 0 32 32"
+                    aria-label="25th Infantry Division — C-17 in transit"
+                    style={{
+                      transform: `rotate(${divHeading}deg)`,
+                      filter: 'drop-shadow(0 0 8px #C9A227cc)',
+                      transition: 'transform 0.8s ease-out',
                     }}
-                  />
-                  {divisionDisplayLocation.state !== 'home_station' && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-tropic-gold rounded-full animate-pulse border border-black" />
-                  )}
-                </div>
-                <span className="text-[10px] font-bold text-tropic-gold mt-0.5 whitespace-nowrap bg-black/70 px-1 rounded">
-                  25th ID
+                  >
+                    <title>25th Infantry Division — C-17 in transit</title>
+                    <path d="M15.5,2 C14.5,4 14,7 14,11 L14,23 C14.3,25 14.8,27.5 15.5,30 C16.2,27.5 16.7,25 17,23 L17,11 C17,7 16.5,4 15.5,2 Z" fill="#C9A227" />
+                    <path d="M14,10 L1,15 L1,16.5 L14,13 Z" fill="#C9A227" />
+                    <path d="M17,10 L31,15 L31,16.5 L17,13 Z" fill="#C9A227" />
+                    <ellipse cx="4.5" cy="15.5" rx="2.5" ry="1" fill="#C9A227" />
+                    <ellipse cx="9" cy="14" rx="2.2" ry="0.9" fill="#C9A227" />
+                    <ellipse cx="23" cy="14" rx="2.2" ry="0.9" fill="#C9A227" />
+                    <ellipse cx="27.5" cy="15.5" rx="2.5" ry="1" fill="#C9A227" />
+                    <path d="M14,23 L8,27 L8.5,28 L14,25 Z" fill="#C9A227" />
+                    <path d="M17,23 L24,27 L23.5,28 L17,25 Z" fill="#C9A227" />
+                  </svg>
+                ) : (
+                  /* NATO HQ marker at rest / deployed */
+                  <div className="relative">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: buildNATOMarkerSVG('friendly', 'headquarters', 40),
+                      }}
+                    />
+                    {divisionDisplayLocation.state !== 'home_station' && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-tropic-gold rounded-full animate-pulse border border-black" />
+                    )}
+                  </div>
+                )}
+                <span
+                  className="text-[9px] font-black whitespace-nowrap px-1.5 py-0.5 rounded tracking-widest uppercase mt-0.5"
+                  style={{
+                    color: '#C9A227',
+                    background: 'rgba(0,0,0,0.85)',
+                    border: '1px solid rgba(201,162,39,0.45)',
+                    letterSpacing: '0.12em',
+                  }}
+                >
+                  {isInTransit ? `25th ID · ${activeDeployment.title}` : '25th ID'}
                 </span>
               </div>
             </Marker>
@@ -1526,82 +1652,133 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             maxWidth="320px"
             className="threat-map-popup"
           >
-            <div className="p-3 bg-gray-900 text-white rounded-lg border border-tropic-gold/20">
+            <div
+              className="text-white"
+              style={{
+                background: 'rgba(10,18,36,0.97)',
+                border: '1px solid rgba(201,162,39,0.35)',
+                borderTop: '2px solid #C9A227',
+                borderRadius: 4,
+                padding: '10px 12px',
+                minWidth: 220,
+              }}
+            >
               {deploymentPopup.type === 'nato' ? (
                 <>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-600/20 text-blue-300 uppercase">
+                  {/* NATO marker header */}
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-[9px] font-black tracking-[0.15em] uppercase px-2 py-0.5 bg-blue-800/30 text-blue-300 border border-blue-700/30 rounded-sm">
                       {deploymentPopup.data.affiliation}
                     </span>
-                    <span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300">
-                      {deploymentPopup.data.symbol_type}
+                    <span className="text-[9px] tracking-wider uppercase px-2 py-0.5 bg-gray-800 text-gray-400 border border-gray-700/40 rounded-sm">
+                      {deploymentPopup.data.symbol_type?.replace(/_/g, ' ')}
                     </span>
                   </div>
-                  <h3 className="font-bold text-tropic-gold text-sm">{deploymentPopup.data.title}</h3>
+                  <h3 className="font-bold text-tropic-gold text-sm tracking-wide">{deploymentPopup.data.title}</h3>
                   {deploymentPopup.data.designator && (
-                    <p className="text-xs text-gray-400 mt-1">{deploymentPopup.data.designator}</p>
+                    <p className="text-[11px] text-gray-400 mt-1 font-mono">{deploymentPopup.data.designator}</p>
                   )}
                   {deploymentPopup.data.description && (
-                    <p className="text-xs text-gray-300 mt-1">{deploymentPopup.data.description}</p>
+                    <p className="text-[11px] text-gray-300 mt-1 leading-snug">{deploymentPopup.data.description}</p>
                   )}
                 </>
               ) : (
                 <>
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${
-                      deploymentPopup.data.status === 'deploying' ? 'bg-yellow-600/20 text-yellow-300' :
-                      deploymentPopup.data.status === 'deployed' ? 'bg-green-600/20 text-green-300' :
-                      deploymentPopup.data.status === 'endex' ? 'bg-orange-600/20 text-orange-300' :
-                      deploymentPopup.data.status === 'rtb' ? 'bg-blue-600/20 text-blue-300' :
-                      deploymentPopup.data.status === 'completed' ? 'bg-green-600/20 text-green-300' :
-                      'bg-gray-600/20 text-gray-300'
+                  {/* Deployment status + type chips */}
+                  <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                    <span className={`text-[9px] font-black tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm border ${
+                      deploymentPopup.data.status === 'deploying' ? 'bg-yellow-900/30 text-yellow-300 border-yellow-700/30' :
+                      deploymentPopup.data.status === 'deployed'  ? 'bg-green-900/30 text-green-300 border-green-700/30' :
+                      deploymentPopup.data.status === 'endex'     ? 'bg-orange-900/30 text-orange-300 border-orange-700/30' :
+                      deploymentPopup.data.status === 'rtb'       ? 'bg-blue-900/30 text-blue-300 border-blue-700/30' :
+                      'bg-gray-800/50 text-gray-300 border-gray-700/30'
                     }`}>
                       {deploymentPopup.data.status}
                     </span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                      deploymentPopup.data.origin_type === 'counterpart' ? 'bg-purple-600/20 text-purple-300' :
-                      deploymentPopup.data.origin_type === 'partner' ? 'bg-cyan-600/20 text-cyan-300' :
-                      'bg-tropic-gold/20 text-tropic-gold'
+                    <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-sm border ${
+                      deploymentPopup.data.origin_type === 'counterpart' ? 'bg-purple-900/30 text-purple-300 border-purple-700/30' :
+                      deploymentPopup.data.origin_type === 'partner'     ? 'bg-cyan-900/30 text-cyan-300 border-cyan-700/30' :
+                      'bg-tropic-gold/10 text-tropic-gold border-tropic-gold/30'
                     }`}>
                       {getDeploymentTypeLabel(deploymentPopup.data)}
                     </span>
                   </div>
-                  <h3 className="font-bold text-tropic-gold text-sm">{deploymentPopup.data.title}</h3>
+
+                  {/* Title */}
+                  <h3
+                    className="font-black text-sm tracking-wide uppercase"
+                    style={{ color: '#C9A227' }}
+                  >
+                    {deploymentPopup.data.title}
+                  </h3>
+
+                  {/* Origin → Destination */}
                   {(() => {
-                    const rps = Array.isArray(deploymentPopup.data.route_points) ? [...deploymentPopup.data.route_points].sort((a, b) => a.order - b.order) : [];
+                    const rps = Array.isArray(deploymentPopup.data.route_points)
+                      ? [...deploymentPopup.data.route_points].sort((a, b) => a.order - b.order)
+                      : [];
                     const firstName = rps.length > 0 ? rps[0].name : '';
                     const lastName = rps.length > 1 ? rps[rps.length - 1].name : '';
                     if (firstName && lastName) {
-                      return <p className="text-xs text-gray-400 mt-1">{firstName} → {lastName}</p>;
+                      return (
+                        <p className="text-[11px] text-gray-300 mt-1 flex items-center gap-1">
+                          <span className="text-gray-500 font-mono">{firstName}</span>
+                          <span className="text-tropic-gold/60">→</span>
+                          <span className="text-gray-300 font-mono">{lastName}</span>
+                        </p>
+                      );
                     }
                     return null;
                   })()}
-                  <p className="text-xs text-gray-500 mt-1">
-                    ⏱ {computeCountdownLabel(deploymentPopup.data) || 'Arrived'}
-                  </p>
+
+                  {/* Countdown */}
+                  <div className="mt-1.5 flex items-center gap-1 text-[11px]">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <circle cx="5" cy="5" r="4" stroke="#C9A227" strokeWidth="1.2" />
+                      <line x1="5" y1="5" x2="5" y2="2" stroke="#C9A227" strokeWidth="1.2" strokeLinecap="round" />
+                      <line x1="5" y1="5" x2="7.5" y2="6.5" stroke="#C9A227" strokeWidth="1" strokeLinecap="round" />
+                    </svg>
+                    <span className="font-mono text-tropic-gold">
+                      {computeCountdownLabel(deploymentPopup.data) || 'Arrived'}
+                    </span>
+                  </div>
+
+                  {/* Start time */}
                   {deploymentPopup.data.started_at && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Started: {new Date(deploymentPopup.data.started_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    <p className="text-[10px] text-gray-500 mt-1 font-mono">
+                      {new Date(deploymentPopup.data.started_at).toLocaleString(undefined, {
+                        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                      })}
                     </p>
                   )}
-                  {deploymentPopup.data.total_duration_hours && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Total duration: {deploymentPopup.data.total_duration_hours}h
-                    </p>
-                  )}
+
+                  {/* Route points */}
                   {Array.isArray(deploymentPopup.data.route_points) && deploymentPopup.data.route_points.length > 0 && (
-                    <div className="mt-2 border-t border-gray-700 pt-2">
-                      <p className="text-[10px] text-gray-400 font-semibold mb-1 uppercase">Route Points</p>
+                    <div className="mt-2 border-t pt-2" style={{ borderColor: 'rgba(201,162,39,0.2)' }}>
+                      <p className="text-[9px] font-black tracking-[0.15em] text-tropic-gold uppercase mb-1">
+                        Route
+                      </p>
                       <ul className="space-y-0.5">
-                        {[...deploymentPopup.data.route_points].sort((a, b) => a.order - b.order).map((rp, i) => (
-                          <li key={i} className="text-[10px] text-gray-300 flex items-center gap-1">
-                            <span className="text-gray-500">•</span>
-                            <span>{rp.name || `Point ${rp.order}`}</span>
-                            {rp.stop_duration_hours != null && rp.stop_duration_hours > 0 && (
-                              <span className="text-gray-500 ml-auto">{rp.stop_duration_hours}h stop</span>
-                            )}
-                          </li>
-                        ))}
+                        {[...deploymentPopup.data.route_points]
+                          .sort((a, b) => a.order - b.order)
+                          .map((rp, i, arr) => (
+                            <li key={i} className="text-[10px] text-gray-300 flex items-center gap-1.5">
+                              <span
+                                className="shrink-0"
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: i === 0 || i === arr.length - 1 ? 1 : '50%',
+                                  backgroundColor: i === 0 ? '#22c55e' : i === arr.length - 1 ? '#ef4444' : '#C9A227',
+                                  display: 'inline-block',
+                                }}
+                              />
+                              <span className="font-mono">{rp.name || `WP${i + 1}`}</span>
+                              {rp.stop_duration_hours != null && rp.stop_duration_hours > 0 && (
+                                <span className="text-gray-600 ml-auto text-[9px]">{rp.stop_duration_hours}h</span>
+                              )}
+                            </li>
+                          ))}
                       </ul>
                     </div>
                   )}
@@ -1612,32 +1789,56 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         )}
       </Map>
 
-      {/* Deployment Legend – shows active deployment color-to-unit mappings */}
+      {/* Deployment Legend – positioned above the bottom-left control buttons (zIndex 15 to stay on top).
+          Uses 288px (= 18rem at default 16px root font) as a fixed pixel value so it's unaffected
+          by user font-size changes. This clears the ~264px tall ThreatMapControls stack. */}
       {deploymentLegendEntries.length > 0 && (
         <div
-          className="absolute bottom-4 left-4 rounded-lg border shadow-lg"
+          className="absolute left-4 rounded border shadow-lg"
           style={{
-            background: 'rgba(15,23,42,0.92)',
-            borderColor: 'rgba(201,162,39,0.3)',
-            maxWidth: 260,
-            zIndex: 5,
+            bottom: 288,   /* px – clears the 4-button ThreatMapControls stack (~264px from bottom) */
+            background: 'rgba(10,18,36,0.94)',
+            borderColor: 'rgba(201,162,39,0.4)',
+            maxWidth: 240,
+            zIndex: 15,
           }}
         >
-          <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(201,162,39,0.2)' }}>
-            <span className="text-[10px] font-bold tracking-wider text-tropic-gold uppercase">
-              Active Deployments
+          {/* Legend header */}
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 border-b"
+            style={{ borderColor: 'rgba(201,162,39,0.25)' }}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <title>Deployment indicator</title>
+              <polygon points="5,0 10,10 0,10" fill="#C9A227" />
+            </svg>
+            <span className="text-[9px] font-black tracking-[0.15em] text-tropic-gold uppercase">
+              25th ID · Active Deployments
             </span>
           </div>
-          <div className="px-3 py-2 space-y-1.5 max-h-[200px] overflow-y-auto">
+          <div className="px-3 py-2 space-y-1.5 max-h-[160px] overflow-y-auto">
             {deploymentLegendEntries.map((entry) => (
               <div key={entry.id} className="flex items-center gap-2">
                 <div
-                  className="w-3 h-3 rounded-sm shrink-0 border border-black/40"
-                  style={{ backgroundColor: entry.color }}
+                  className="shrink-0"
+                  style={{
+                    width: 12,
+                    height: 3,
+                    backgroundColor: entry.color,
+                    borderRadius: 1,
+                    boxShadow: `0 0 4px ${entry.color}88`,
+                  }}
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[10px] text-white truncate leading-tight">{entry.title}</div>
-                  <div className="text-[9px] text-gray-500 leading-tight">{entry.label} · {entry.category}</div>
+                  <div
+                    className="text-[9px] font-bold truncate leading-tight tracking-wide uppercase"
+                    style={{ color: entry.color }}
+                  >
+                    {entry.title}
+                  </div>
+                  <div className="text-[8px] text-gray-500 leading-tight">
+                    {entry.label} · {entry.category}
+                  </div>
                 </div>
               </div>
             ))}
