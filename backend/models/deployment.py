@@ -193,6 +193,7 @@ class Deployment(BaseModel):
     started_at: Optional[str] = None
     route_points: List[RoutePoint] = Field(default_factory=list)
     notes: str = ""
+    metadata: dict = Field(default_factory=dict)
     created_by: str = ""
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
@@ -212,6 +213,7 @@ class DeploymentCreate(BaseModel):
     total_duration_hours: float = 24.0
     route_points: List[RoutePoint] = Field(default_factory=list)
     notes: str = ""
+    metadata: dict = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_active_route(self):
@@ -236,6 +238,7 @@ class DeploymentUpdate(BaseModel):
     started_at: Optional[str] = None
     route_points: Optional[List[RoutePoint]] = None
     notes: Optional[str] = None
+    metadata: Optional[dict] = None
 
 
 # ── Division Location State ──────────────────────────────────────────────────
