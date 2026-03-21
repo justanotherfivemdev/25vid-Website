@@ -27,6 +27,8 @@ class Role(str, Enum):
 class Permission(str, Enum):
     # Personnel / admin
     MANAGE_USERS = "manage_users"
+    VIEW_MEMBERS = "view_members"
+    EDIT_MEMBER_TRAINING_FIELDS = "edit_member_training_fields"
     MANAGE_RECRUITMENT = "manage_recruitment"
     MANAGE_LOA = "manage_loa"
     # Operations domain
@@ -101,6 +103,10 @@ _S6_PERMISSIONS = {
 _TRAINING_STAFF_PERMISSIONS = {
     Permission.VIEW_DASHBOARD,
     Permission.MANAGE_TRAINING,
+    Permission.VIEW_MEMBERS,
+    Permission.EDIT_MEMBER_TRAINING_FIELDS,
+    Permission.MANAGE_RECRUITMENT,
+    Permission.VIEW_ROSTER,
 }
 
 ROLE_PERMISSIONS = {
@@ -119,6 +125,10 @@ ROLE_PERMISSIONS = {
     Role.GUEST: set(),
     Role.RECRUIT: set(),
 }
+
+# --- Training Staff field-level restrictions on member profiles ---
+# When a training_staff user edits a member profile, only these fields are allowed.
+TRAINING_STAFF_ALLOWED_MEMBER_FIELDS = {"awards", "training_history"}
 
 
 def _resolve_role(role_str: str) -> Role:

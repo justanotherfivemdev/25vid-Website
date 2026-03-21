@@ -20,7 +20,7 @@ from models.operations import OperationCreate
 from models.content import AnnouncementCreate, GalleryImageCreate, TrainingCreate
 from models.common import HistoryEntry, HistoryEntryCreate
 from middleware.auth import get_current_user, get_current_admin
-from middleware.rbac import require_permission, Permission
+from middleware.rbac import require_permission, require_any_permission, Permission, has_permission, TRAINING_STAFF_ALLOWED_MEMBER_FIELDS
 from services.auth_service import user_to_response, normalize_email
 from services.audit_service import log_audit
 from services.map_service import upsert_map_event, remove_map_event
@@ -313,10 +313,21 @@ async def update_training(training_id: str, training_data: TrainingCreate, curre
 # Admin profile & history management
 
 @router.put("/admin/users/{user_id}/profile")
-async def admin_update_profile(user_id: str, profile_data: AdminProfileUpdate, current_user: dict = Depends(get_current_admin)):
+async def admin_update_profile(user_id: str, profile_data: AdminProfileUpdate, current_user: dict = Depends(require_any_permission(Permission.MANAGE_USERS, Permission.EDIT_MEMBER_TRAINING_FIELDS))):
     update_dict = {k: v for k, v in profile_data.model_dump().items() if v is not None}
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
+
+    role_str = current_user.get("role", "member")
+    # Training Staff: enforce field-level restrictions
+    if not has_permission(role_str, Permission.MANAGE_USERS):
+        disallowed = set(update_dict.keys()) - TRAINING_STAFF_ALLOWED_MEMBER_FIELDS
+        if disallowed:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Training Staff may only edit: {', '.join(sorted(TRAINING_STAFF_ALLOWED_MEMBER_FIELDS))}. Rejected fields: {', '.join(sorted(disallowed))}"
+            )
+
     result = await db.users.update_one({"id": user_id}, {"$set": update_dict})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
@@ -422,7 +433,7 @@ async def delete_mission_history(user_id: str, entry_id: str, current_user: dict
 
 
 @router.post("/admin/users/{user_id}/training-history")
-async def add_training_history(user_id: str, entry: TrainingHistoryEntry, current_user: dict = Depends(get_current_admin)):
+async def add_training_history(user_id: str, entry: TrainingHistoryEntry, current_user: dict = Depends(require_any_permission(Permission.MANAGE_USERS, Permission.EDIT_MEMBER_TRAINING_FIELDS))):
     entry_dict = entry.model_dump()
     entry_dict["id"] = str(uuid.uuid4())
     result = await db.users.update_one({"id": user_id}, {"$push": {"training_history": entry_dict}})
@@ -432,7 +443,7 @@ async def add_training_history(user_id: str, entry: TrainingHistoryEntry, curren
 
 
 @router.delete("/admin/users/{user_id}/training-history/{entry_id}")
-async def delete_training_history(user_id: str, entry_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_training_history(user_id: str, entry_id: str, current_user: dict = Depends(require_any_permission(Permission.MANAGE_USERS, Permission.EDIT_MEMBER_TRAINING_FIELDS))):
     result = await db.users.update_one({"id": user_id}, {"$pull": {"training_history": {"id": entry_id}}})
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Entry not found")
@@ -440,7 +451,7 @@ async def delete_training_history(user_id: str, entry_id: str, current_user: dic
 
 
 @router.post("/admin/users/{user_id}/awards")
-async def add_award(user_id: str, entry: AwardEntry, current_user: dict = Depends(get_current_admin)):
+async def add_award(user_id: str, entry: AwardEntry, current_user: dict = Depends(require_any_permission(Permission.MANAGE_USERS, Permission.EDIT_MEMBER_TRAINING_FIELDS))):
     entry_dict = entry.model_dump()
     entry_dict["id"] = str(uuid.uuid4())
     result = await db.users.update_one({"id": user_id}, {"$push": {"awards": entry_dict}})
@@ -450,7 +461,7 @@ async def add_award(user_id: str, entry: AwardEntry, current_user: dict = Depend
 
 
 @router.delete("/admin/users/{user_id}/awards/{entry_id}")
-async def delete_award(user_id: str, entry_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_award(user_id: str, entry_id: str, current_user: dict = Depends(require_any_permission(Permission.MANAGE_USERS, Permission.EDIT_MEMBER_TRAINING_FIELDS))):
     result = await db.users.update_one({"id": user_id}, {"$pull": {"awards": {"id": entry_id}}})
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Entry not found")
@@ -460,7 +471,7 @@ async def delete_award(user_id: str, entry_id: str, current_user: dict = Depends
 # User management
 
 @router.get("/admin/users")
-async def get_all_users(current_user: dict = Depends(get_current_admin)):
+async def get_all_users(current_user: dict = Depends(require_any_permission(Permission.MANAGE_USERS, Permission.VIEW_MEMBERS))):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return [user_to_response(u) for u in users]
 
