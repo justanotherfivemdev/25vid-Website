@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from database import db
 from models.operations import Operation, OperationCreate, RSVPSubmit
 from middleware.auth import get_current_user, get_current_admin
+from middleware.rbac import require_permission, Permission
 from services.map_service import upsert_map_event
 from utils.mos_mapping import get_mos_display
 from utils.billet_mapping import get_billet_display
@@ -57,7 +58,7 @@ async def get_operation(operation_id: str):
 
 
 @router.post("/operations", response_model=Operation)
-async def create_operation(operation_data: OperationCreate, current_user: dict = Depends(get_current_admin)):
+async def create_operation(operation_data: OperationCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_OPERATIONS))):
     op_dict = operation_data.model_dump()
     op_dict["created_by"] = current_user["id"]
     operation_obj = Operation(**op_dict)

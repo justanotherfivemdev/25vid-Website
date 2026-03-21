@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Calendar, Clock, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown, Globe, MapPin } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 import MapMiniView from '@/components/MapMiniView';
 import { colors } from '@/theme/theme';
 
@@ -45,7 +46,7 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
         </div>
         <div className="flex items-center gap-2">
           {r.specialization && <span className="text-[10px] text-tropic-gold hidden sm:inline">{r.specialization}</span>}
-          {user?.role === 'admin' && group.label === 'WAITLISTED' && (
+          {isStaff(user?.role) && group.label === 'WAITLISTED' && (
             <Button size="sm" onClick={(e) => { e.stopPropagation(); onPromote(r.user_id); }} className="bg-green-700 hover:bg-green-600 text-xs px-2 py-1 h-auto" data-testid={`promote-${r.user_id}`}><ChevronUp className="w-3 h-3 mr-1" />Promote</Button>
           )}
           <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${expanded ? 'rotate-180' : ''}`} />
@@ -156,7 +157,7 @@ const OperationDetail = () => {
             <h1 className="text-xl font-bold tracking-widest truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin/operations"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4" /></Button></Link>}
+            {isStaff(user?.role) && <Link to="/admin/operations"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4" /></Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>

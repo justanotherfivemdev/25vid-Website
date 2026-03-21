@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from database import db
 from models.loa import LOARequest, LOASubmit, LOAReview, LOAAdminCreate
 from middleware.auth import get_current_user, get_current_admin
+from middleware.rbac import require_permission, Permission
 from services.audit_service import log_audit
 
 router = APIRouter()
@@ -80,7 +81,7 @@ async def get_my_active_loa(current_user: dict = Depends(get_current_user)):
 # ── Admin endpoints ──────────────────────────────────────────────────────────
 
 @router.get("/admin/loa")
-async def admin_list_loa(status: str = None, current_user: dict = Depends(get_current_admin)):
+async def admin_list_loa(status: str = None, current_user: dict = Depends(require_permission(Permission.MANAGE_LOA))):
     query = {}
     if status:
         query["status"] = status
@@ -89,7 +90,7 @@ async def admin_list_loa(status: str = None, current_user: dict = Depends(get_cu
 
 
 @router.get("/admin/loa/stats")
-async def admin_loa_stats(current_user: dict = Depends(get_current_admin)):
+async def admin_loa_stats(current_user: dict = Depends(require_permission(Permission.MANAGE_LOA))):
     pipeline = [
         {"$group": {"_id": "$status", "count": {"$sum": 1}}}
     ]
@@ -99,7 +100,7 @@ async def admin_loa_stats(current_user: dict = Depends(get_current_admin)):
 
 
 @router.get("/admin/loa/{loa_id}")
-async def admin_get_loa(loa_id: str, current_user: dict = Depends(get_current_admin)):
+async def admin_get_loa(loa_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_LOA))):
     loa = await db.loa_requests.find_one({"id": loa_id}, {"_id": 0})
     if not loa:
         raise HTTPException(status_code=404, detail="LOA request not found")
@@ -107,7 +108,7 @@ async def admin_get_loa(loa_id: str, current_user: dict = Depends(get_current_ad
 
 
 @router.put("/admin/loa/{loa_id}/review")
-async def admin_review_loa(loa_id: str, review: LOAReview, current_user: dict = Depends(get_current_admin)):
+async def admin_review_loa(loa_id: str, review: LOAReview, current_user: dict = Depends(require_permission(Permission.MANAGE_LOA))):
     loa = await db.loa_requests.find_one({"id": loa_id}, {"_id": 0})
     if not loa:
         raise HTTPException(status_code=404, detail="LOA request not found")
@@ -134,7 +135,7 @@ async def admin_review_loa(loa_id: str, review: LOAReview, current_user: dict = 
 
 
 @router.put("/admin/loa/{loa_id}/activate")
-async def admin_activate_loa(loa_id: str, current_user: dict = Depends(get_current_admin)):
+async def admin_activate_loa(loa_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_LOA))):
     loa = await db.loa_requests.find_one({"id": loa_id}, {"_id": 0})
     if not loa:
         raise HTTPException(status_code=404, detail="LOA request not found")
@@ -156,7 +157,7 @@ async def admin_activate_loa(loa_id: str, current_user: dict = Depends(get_curre
 
 
 @router.put("/admin/loa/{loa_id}/return")
-async def admin_return_loa(loa_id: str, current_user: dict = Depends(get_current_admin)):
+async def admin_return_loa(loa_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_LOA))):
     loa = await db.loa_requests.find_one({"id": loa_id}, {"_id": 0})
     if not loa:
         raise HTTPException(status_code=404, detail="LOA request not found")
@@ -181,7 +182,7 @@ async def admin_return_loa(loa_id: str, current_user: dict = Depends(get_current
 
 
 @router.post("/admin/loa/place")
-async def admin_place_loa(data: LOAAdminCreate, current_user: dict = Depends(get_current_admin)):
+async def admin_place_loa(data: LOAAdminCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_LOA))):
     _validate_loa_dates(data.start_date, data.end_date)
 
     user = await db.users.find_one({"id": data.user_id}, {"_id": 0, "password_hash": 0})

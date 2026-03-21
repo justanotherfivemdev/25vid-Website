@@ -66,9 +66,9 @@ async def get_shared_user(request: Request):
 
 
 async def get_shared_admin(request: Request):
-    """Require admin or partner_admin role via shared auth."""
+    """Require admin/S1 or partner_admin role via shared auth."""
     user = await get_shared_user(request)
-    if user["auth_type"] == "member" and user["role"] != "admin":
+    if user["auth_type"] == "member" and user["role"] not in ("admin", "s1_personnel"):
         raise HTTPException(status_code=403, detail="Admin access required")
     if user["auth_type"] == "partner" and user["role"] != "partner_admin":
         raise HTTPException(status_code=403, detail="Partner admin access required")

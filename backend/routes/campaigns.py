@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from database import db
 from models.campaign import CampaignCreate, CampaignUpdate
 from middleware.auth import get_current_user, get_current_admin
+from middleware.rbac import require_permission, Permission
 from services.map_service import upsert_map_event, remove_map_event
 
 router = APIRouter()
@@ -45,7 +46,7 @@ async def get_campaign(campaign_id: str, current_user: dict = Depends(get_curren
 
 
 @router.post("/admin/campaigns")
-async def create_campaign(data: CampaignCreate, current_user: dict = Depends(get_current_admin)):
+async def create_campaign(data: CampaignCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_CAMPAIGNS))):
     d = data.model_dump()
     d["id"] = str(uuid.uuid4())
     d["created_by"] = current_user["id"]
@@ -65,7 +66,7 @@ async def create_campaign(data: CampaignCreate, current_user: dict = Depends(get
 
 
 @router.put("/admin/campaigns/{campaign_id}")
-async def update_campaign(campaign_id: str, data: CampaignUpdate, current_user: dict = Depends(get_current_admin)):
+async def update_campaign(campaign_id: str, data: CampaignUpdate, current_user: dict = Depends(require_permission(Permission.MANAGE_CAMPAIGNS))):
     existing = await db.campaigns.find_one({"id": campaign_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -86,7 +87,7 @@ async def update_campaign(campaign_id: str, data: CampaignUpdate, current_user: 
 
 
 @router.delete("/admin/campaigns/{campaign_id}")
-async def delete_campaign(campaign_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_campaign(campaign_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_CAMPAIGNS))):
     result = await db.campaigns.delete_one({"id": campaign_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Campaign not found")

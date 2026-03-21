@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Home, LogOut, Shield, MapPin, Target, Calendar, ChevronRight, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 import Map, { NavigationControl, Source, Layer, Popup } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -273,7 +274,7 @@ const CampaignMap = () => {
             </h1>
           </div>
           <div className="flex items-center space-x-3">
-            {user?.role === 'admin' && <Link to="/admin/campaigns"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Manage</Button></Link>}
+            {isStaff(user?.role) && <Link to="/admin/campaigns"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Manage</Button></Link>}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
             <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
           </div>
@@ -424,7 +425,7 @@ const CampaignMap = () => {
                             <Button size="sm" className="mt-2 bg-tropic-red hover:bg-tropic-red-dark">Open Linked Operation <ChevronRight className="w-4 h-4 ml-1" /></Button>
                           </Link>
                         )}
-                        {user?.role === 'admin' && (
+                        {isStaff(user?.role) && (
                           <form onSubmit={handleCreateActivity} className="mt-3 space-y-2 border-t border-gray-800 pt-3">
                             <div className="text-xs tracking-wider text-tropic-gold">CREATE EVENT / ONGOING ACTIVITY</div>
                             <Input required value={activityForm.title} onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })} className="bg-black border-gray-700" placeholder="Activity title" />

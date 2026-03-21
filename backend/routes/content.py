@@ -12,6 +12,7 @@ from models.content import (
     Training, TrainingCreate,
 )
 from middleware.auth import get_current_user, get_current_admin
+from middleware.rbac import require_permission, Permission
 
 router = APIRouter()
 
@@ -28,7 +29,7 @@ async def get_announcements():
 
 
 @router.post("/announcements", response_model=Announcement)
-async def create_announcement(announcement_data: AnnouncementCreate, current_user: dict = Depends(get_current_admin)):
+async def create_announcement(announcement_data: AnnouncementCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_ANNOUNCEMENTS))):
     ann_dict = announcement_data.model_dump()
     ann_dict["author_id"] = current_user["id"]
     ann_dict["author_name"] = current_user["username"]
@@ -112,7 +113,7 @@ async def get_gallery(category: Optional[str] = None):
 
 
 @router.post("/gallery", response_model=GalleryImage)
-async def upload_image(image_data: GalleryImageCreate, current_user: dict = Depends(get_current_admin)):
+async def upload_image(image_data: GalleryImageCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_GALLERY))):
     img_dict = image_data.model_dump()
     img_dict["uploaded_by"] = current_user["username"]
     image_obj = GalleryImage(**img_dict)
@@ -136,7 +137,7 @@ async def get_training():
 
 
 @router.post("/training", response_model=Training)
-async def create_training(training_data: TrainingCreate, current_user: dict = Depends(get_current_admin)):
+async def create_training(training_data: TrainingCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_TRAINING))):
     training_obj = Training(**training_data.model_dump())
 
     doc = training_obj.model_dump()

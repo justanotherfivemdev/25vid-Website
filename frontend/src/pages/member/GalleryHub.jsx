@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Image as ImageIcon, Home, LogOut, Shield, User, Users, Filter, ChevronLeft, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
 
@@ -121,7 +122,7 @@ const GalleryHub = () => {
             <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
             <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
             <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><LayoutDashboard className="w-4 h-4 mr-1" />Hub</Button></Link>
-            {user?.role === 'admin' && (
+            {isStaff(user?.role) && (
               <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
             )}
             <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4 mr-1" />Home</Button></Link>

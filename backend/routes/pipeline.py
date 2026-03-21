@@ -5,13 +5,14 @@ from fastapi import APIRouter, HTTPException, Depends
 from database import db
 from models.pipeline import PipelineStatusUpdate, PipelineNote, PIPELINE_STAGES
 from middleware.auth import get_current_admin
+from middleware.rbac import require_permission, Permission
 from services.audit_service import log_audit
 
 router = APIRouter()
 
 
 @router.get("/admin/pipeline")
-async def list_pipeline(stage: str = None, current_user: dict = Depends(get_current_admin)):
+async def list_pipeline(stage: str = None, current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     query = {}
     if stage:
         query["pipeline_stage"] = stage
@@ -35,7 +36,7 @@ async def list_pipeline(stage: str = None, current_user: dict = Depends(get_curr
 
 
 @router.get("/admin/pipeline/stats")
-async def pipeline_stats(current_user: dict = Depends(get_current_admin)):
+async def pipeline_stats(current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     pipeline = [
         {"$group": {"_id": "$pipeline_stage", "count": {"$sum": 1}}}
     ]
@@ -45,7 +46,7 @@ async def pipeline_stats(current_user: dict = Depends(get_current_admin)):
 
 
 @router.get("/admin/pipeline/{user_id}")
-async def get_pipeline_detail(user_id: str, current_user: dict = Depends(get_current_admin)):
+async def get_pipeline_detail(user_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -66,7 +67,7 @@ async def get_pipeline_detail(user_id: str, current_user: dict = Depends(get_cur
 async def update_pipeline_stage(
     user_id: str,
     data: PipelineStatusUpdate,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT)),
 ):
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
     if not user:
@@ -115,7 +116,7 @@ async def update_pipeline_stage(
 async def add_pipeline_note(
     user_id: str,
     data: PipelineNote,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT)),
 ):
     user = await db.users.find_one({"id": user_id}, {"_id": 0})
     if not user:

@@ -13,6 +13,8 @@ import { Save, Plus, Trash2, CheckCircle, AlertCircle, ArrowLeft, Target, Award,
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ImageUpload from '@/components/admin/ImageUpload';
+import { useAuth } from '@/context/AuthContext';
+import { hasPermission, PERMISSIONS } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
@@ -20,6 +22,7 @@ const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) r
 const AdminMemberDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +34,12 @@ const AdminMemberDetail = () => {
   const [trainingDialogOpen, setTrainingDialogOpen] = useState(false);
   const [awardDialogOpen, setAwardDialogOpen] = useState(false);
   const [unitTags, setUnitTags] = useState(null);
+
+  // Role-based access: full admin vs training-staff (limited to training fields only)
+  const role = authUser?.role || 'member';
+  const canManageUsers = hasPermission(role, PERMISSIONS.MANAGE_USERS);
+  const canEditTrainingFields = hasPermission(role, PERMISSIONS.EDIT_MEMBER_TRAINING_FIELDS);
+  const isTrainingStaffOnly = !canManageUsers && canEditTrainingFields;
 
   useEffect(() => { 
     fetchMember(); 
@@ -177,12 +186,36 @@ const AdminMemberDetail = () => {
               <p className="text-sm text-gray-500">{member.email}</p>
             </div>
           </div>
-          <Button onClick={handleSaveProfile} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="admin-save-profile-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>
+          {!isTrainingStaffOnly && <Button onClick={handleSaveProfile} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="admin-save-profile-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>}
         </div>
 
         {message.text && <Alert className={message.type === 'success' ? 'bg-green-900/20 border-green-700' : 'bg-tropic-red/10 border-tropic-red/60'}>{message.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}<AlertDescription>{message.text}</AlertDescription></Alert>}
 
         {/* Profile fields */}
+        {isTrainingStaffOnly ? (
+          /* Training Staff: read-only view of identity */
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider">IDENTITY & ASSIGNMENT</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              {member.avatar_url && <img src={resolveImg(member.avatar_url)} alt="avatar" className="w-16 h-16 rounded-lg object-cover" />}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><Label className="text-gray-500">Username</Label><p className="text-sm">{member.username || '—'}</p></div>
+                <div><Label className="text-gray-500">Role</Label><p className="text-sm">{member.role || '—'}</p></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><Label className="text-gray-500">Rank</Label><p className="text-sm">{member.rank || '—'}</p></div>
+                <div><Label className="text-gray-500">Specialization / MOS</Label><p className="text-sm">{member.specialization || '—'}</p></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div><Label className="text-gray-500">Status</Label><p className="text-sm">{member.status || '—'}</p></div>
+                <div><Label className="text-gray-500">Squad / Team</Label><p className="text-sm">{member.squad || '—'}</p></div>
+                <div><Label className="text-gray-500">Timezone</Label><p className="text-sm">{member.timezone || '—'}</p></div>
+              </div>
+              {member.favorite_role && <div><Label className="text-gray-500">Preferred Role / Loadout</Label><p className="text-sm">{member.favorite_role}</p></div>}
+              {member.bio && <div><Label className="text-gray-500">Bio</Label><p className="text-sm text-gray-400 whitespace-pre-wrap">{member.bio}</p></div>}
+            </CardContent>
+          </Card>
+        ) : (
         <Card className="bg-gray-900 border-gray-800">
           <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider">IDENTITY & ASSIGNMENT</CardTitle></CardHeader>
           <CardContent className="space-y-4">
@@ -192,7 +225,17 @@ const AdminMemberDetail = () => {
               <div><Label>Role</Label>
                 <Select value={member.role} onValueChange={v => setMember({ ...member, role: v })}>
                   <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700"><SelectItem value="member">Member</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
+                  <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="admin">Admin (S-1)</SelectItem>
+                    <SelectItem value="s1_personnel">S-1 Personnel</SelectItem>
+                    <SelectItem value="s2_intelligence">S-2 Intelligence</SelectItem>
+                    <SelectItem value="s3_operations">S-3 Operations</SelectItem>
+                    <SelectItem value="s4_logistics">S-4 Logistics</SelectItem>
+                    <SelectItem value="s5_civil_affairs">S-5 Civil Affairs</SelectItem>
+                    <SelectItem value="s6_communications">S-6 Communications</SelectItem>
+                    <SelectItem value="training_staff">Training Staff</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
             </div>
@@ -214,7 +257,11 @@ const AdminMemberDetail = () => {
             <div><Label>Bio</Label><Textarea value={member.bio || ''} onChange={e => setMember({ ...member, bio: e.target.value })} rows={3} className="bg-black border-gray-700" /></div>
           </CardContent>
         </Card>
+        )}
 
+        {/* Unit Assignment, Discord, Mission History — hidden for training staff */}
+        {!isTrainingStaffOnly && (
+        <>
         {/* Unit Assignment (Hierarchy) */}
         <Card className="bg-gray-900 border-gray-800" data-testid="admin-unit-assignment">
           <CardHeader className="pb-3">
@@ -309,6 +356,8 @@ const AdminMemberDetail = () => {
             )}
           </CardContent>
         </Card>
+        </>
+        )}
 
         {/* Training History */}
         <Card className="bg-gray-900 border-gray-800" data-testid="admin-training-history">
