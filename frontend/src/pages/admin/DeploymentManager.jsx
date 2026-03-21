@@ -10,9 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, MapPin, Navigation, RefreshCw, ChevronUp, ChevronDown, Search } from 'lucide-react';
+import Map, { Marker as MapMarker, Source as MapSource, Layer as MapLayer } from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { API } from '@/utils/api';
 import { formatApiError } from '@/utils/errorMessages';
 import { formatDeploymentDateTime } from '@/utils/deploymentDateTime';
+
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+const TROPIC_GOLD_HEX = '#C9A227';
 
 const DEPLOYMENT_STATUSES = ['draft', 'active', 'completed', 'cancelled'];
 const ORIGIN_TYPES = ['25th', 'partner', 'counterpart'];
@@ -46,6 +51,7 @@ const EMPTY_DEPLOYMENT = {
   total_duration_hours: 24,
   route_points: [],
   notes: '',
+  metadata: {},
 };
 
 const EMPTY_ROUTE_POINT = {
@@ -170,6 +176,10 @@ const DeploymentManager = () => {
     return deployments.filter((dep) => dep.origin_type === originTypeFilter);
   }, [deployments, originTypeFilter]);
 
+  const alliedDeployments = useMemo(() => {
+    return deployments.filter((dep) => dep.origin_type === 'counterpart');
+  }, [deployments]);
+
   // --- Entity picker helpers ---
 
   const groupedEntities = useMemo(() => {
@@ -220,6 +230,12 @@ const DeploymentManager = () => {
     setDeploymentDialogOpen(true);
   }, []);
 
+  const openNewAlliedDeployment = useCallback(() => {
+    setEditingDeployment(null);
+    setDeploymentForm({ ...EMPTY_DEPLOYMENT, origin_type: 'counterpart' });
+    setDeploymentDialogOpen(true);
+  }, []);
+
   const openEditDeployment = useCallback((dep) => {
     setEditingDeployment(dep);
     setDeploymentForm({
@@ -239,6 +255,7 @@ const DeploymentManager = () => {
           }))
         : [],
       notes: dep.notes || '',
+      metadata: dep.metadata || {},
     });
     setDeploymentDialogOpen(true);
   }, []);
@@ -266,6 +283,7 @@ const DeploymentManager = () => {
         is_active: deploymentForm.is_active ?? false,
         total_duration_hours: safeFloat(deploymentForm.total_duration_hours) ?? 24,
         notes: deploymentForm.notes || '',
+        metadata: deploymentForm.metadata || {},
         route_points: (deploymentForm.route_points || [])
           .map((rp, idx) => ({
             order: idx,
@@ -469,6 +487,7 @@ const DeploymentManager = () => {
         <div className="flex gap-2 border-b border-gray-800 pb-2">
           {[
             { key: 'deployments', label: 'DEPLOYMENTS' },
+            { key: 'allied', label: 'ALLIED DEPLOYMENTS' },
             { key: 'nato-markers', label: 'NATO MARKERS' },
             { key: 'division-location', label: 'DIVISION LOCATION' },
           ].map((tab) => (
@@ -537,6 +556,117 @@ const DeploymentManager = () => {
             ) : (
               <div className="space-y-3">
                 {filteredDeployments.map((dep) => (
+                  <Card key={dep.id || dep._id} className="bg-black/40 border-gray-800 hover:border-gray-700 transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <h3 className="text-lg font-bold text-white truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                              {dep.title}
+                            </h3>
+                            <Badge className={STATUS_COLORS[dep.status] || 'bg-gray-600'}>
+                              {dep.status?.toUpperCase()}
+                            </Badge>
+                            <Badge className={ORIGIN_TYPE_COLORS[dep.origin_type] || 'bg-gray-600'}>
+                              {dep.origin_type?.toUpperCase()}
+                            </Badge>
+                            {dep.is_active && (
+                              <Badge variant="outline" className="border-green-500/50 text-green-400 text-[10px]">
+                                ACTIVE
+                              </Badge>
+                            )}
+                          </div>
+                          {dep.unit_name && (
+                            <p className="text-gray-300 text-sm mb-1">{dep.unit_name}</p>
+                          )}
+                          <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                            {Array.isArray(dep.route_points) && dep.route_points.length > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Navigation className="w-3 h-3" />
+                                {dep.route_points.map((rp) => rp.name || 'point').join(' → ')}
+                              </span>
+                            )}
+                            {dep.total_duration_hours != null && (
+                              <span>Duration: {dep.total_duration_hours}h</span>
+                            )}
+                            {dep.started_at && (
+                              <span>Started: {formatDeploymentDateTime(dep.started_at, { includeTime: true })}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={`h-8 text-xs ${
+                              dep.is_active
+                                ? 'border-green-500/50 text-green-400 hover:bg-green-900/20'
+                                : 'border-gray-700 text-gray-400 hover:text-white'
+                            }`}
+                            onClick={() => handleToggleActive(dep)}
+                          >
+                            {dep.is_active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-gray-700 text-gray-400 hover:text-white h-8"
+                            onClick={() => openEditDeployment(dep)}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-red-800/50 text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8"
+                            onClick={() => handleDeleteDeployment(dep.id || dep._id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===================== ALLIED DEPLOYMENTS TAB ===================== */}
+        {activeTab === 'allied' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <p className="text-gray-400 text-sm">{alliedDeployments.length} allied deployment(s)</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-700 text-gray-400 hover:text-white"
+                  onClick={fetchDeployments}
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Refresh
+                </Button>
+                <Button
+                  className="bg-tropic-gold hover:bg-tropic-gold-dark text-black"
+                  onClick={openNewAlliedDeployment}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Allied Deployment
+                </Button>
+              </div>
+            </div>
+
+            {deploymentsLoading ? (
+              <div className="text-center text-gray-500 py-12">Loading allied deployments...</div>
+            ) : alliedDeployments.length === 0 ? (
+              <div className="text-center text-gray-600 py-12">No allied deployments found. Create your first allied deployment.</div>
+            ) : (
+              <div className="space-y-3">
+                {alliedDeployments.map((dep) => (
                   <Card key={dep.id || dep._id} className="bg-black/40 border-gray-800 hover:border-gray-700 transition-colors">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
@@ -858,6 +988,74 @@ const DeploymentManager = () => {
                     Add Stop
                   </Button>
                 </div>
+                {/* Mini map for click-to-add route points */}
+                {MAPBOX_TOKEN ? (
+                <>
+                <div className="rounded border border-gray-700 overflow-hidden" style={{ height: 200 }}>
+                  <Map
+                    mapboxAccessToken={MAPBOX_TOKEN}
+                    initialViewState={{ longitude: -98, latitude: 38, zoom: 1.5 }}
+                    style={{ width: '100%', height: '100%' }}
+                    mapStyle="mapbox://styles/mapbox/dark-v11"
+                    onClick={(e) => {
+                      const { lng, lat } = e.lngLat;
+                      setDeploymentForm((prev) => ({
+                        ...prev,
+                        route_points: [
+                          ...(prev.route_points || []),
+                          { ...EMPTY_ROUTE_POINT, latitude: parseFloat(lat.toFixed(4)), longitude: parseFloat(lng.toFixed(4)), name: `Point ${(prev.route_points || []).length + 1}` },
+                        ],
+                      }));
+                    }}
+                    cursor="crosshair"
+                    interactive
+                    attributionControl={false}
+                  >
+                    {/* Show route points on mini map */}
+                    {(deploymentForm.route_points || [])
+                      .filter(rp => rp.latitude && rp.longitude && !isNaN(parseFloat(rp.latitude)) && !isNaN(parseFloat(rp.longitude)))
+                      .map((rp, idx) => (
+                        <MapMarker
+                          key={`form-rp-${idx}`}
+                          longitude={parseFloat(rp.longitude)}
+                          latitude={parseFloat(rp.latitude)}
+                          anchor="center"
+                        >
+                          <div className="flex items-center justify-center w-5 h-5 rounded-full bg-tropic-gold text-black text-[9px] font-bold border border-black">
+                            {idx + 1}
+                          </div>
+                        </MapMarker>
+                      ))
+                    }
+                    {/* Route line preview */}
+                    {(() => {
+                      const validPts = (deploymentForm.route_points || [])
+                        .filter(rp => rp.latitude && rp.longitude && !isNaN(parseFloat(rp.latitude)) && !isNaN(parseFloat(rp.longitude)));
+                      if (validPts.length < 2) return null;
+                      const lineGeoJson = {
+                        type: 'Feature',
+                        geometry: {
+                          type: 'LineString',
+                          coordinates: validPts.map(rp => [parseFloat(rp.longitude), parseFloat(rp.latitude)]),
+                        },
+                      };
+                      return (
+                        <MapSource id="form-route-preview" type="geojson" data={lineGeoJson}>
+                          <MapLayer
+                            id="form-route-line"
+                            type="line"
+                            paint={{ 'line-color': TROPIC_GOLD_HEX, 'line-width': 2, 'line-dasharray': [2, 2], 'line-opacity': 0.8 }}
+                          />
+                        </MapSource>
+                      );
+                    })()}
+                  </Map>
+                </div>
+                <p className="text-[10px] text-gray-600 mt-1">Click the map to add route points, which will appear in the list below.</p>
+                </>
+                ) : (
+                  <p className="text-[10px] text-yellow-600 italic">Mapbox token not configured. Map preview unavailable.</p>
+                )}
                 {(deploymentForm.route_points || []).length === 0 && (
                   <p className="text-xs text-gray-600 italic">No route points. Add stops to define the deployment route.</p>
                 )}

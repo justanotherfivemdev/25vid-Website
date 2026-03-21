@@ -348,53 +348,69 @@ function buildNATOMarkerSVG(affiliation, symbolType, size = 32) {
 }
 
 /* ── Deployment path colours per unit ────────────────────────────────────── */
-const UNIT_DEPLOYMENT_COLORS = [
-  '#C9A227', // gold  – 25th ID (default)
+// 25th ID fixed branded color
+const TWENTY_FIFTH_COLOR = '#C9A227';
+
+// Partner unit palette – blues / cyans / teals (allied tones)
+const PARTNER_COLORS = [
   '#3B82F6', // blue
-  '#EF4444', // red
-  '#10B981', // emerald
-  '#A855F7', // purple
-  '#F59E0B', // amber
-  '#EC4899', // pink
   '#06B6D4', // cyan
-  '#F97316', // orange
-  '#6366F1', // indigo
   '#14B8A6', // teal
+  '#0EA5E9', // sky
+  '#22D3EE', // bright cyan
+  '#38BDF8', // light sky
+  '#60A5FA', // light blue
+  '#2DD4BF', // aquamarine
+  '#34D399', // light emerald
+  '#818CF8', // light indigo
+  '#10B981', // emerald
+  '#67E8F9', // ice cyan
+  '#93C5FD', // pale blue
+  '#5EEAD4', // pale teal
+  '#7DD3FC', // powder blue
+];
+
+// Counterpart / support unit palette – purples / pinks / oranges / warm tones
+const COUNTERPART_COLORS = [
+  '#A855F7', // purple
+  '#EC4899', // pink
+  '#F97316', // orange
+  '#EF4444', // red
+  '#F59E0B', // amber
+  '#6366F1', // indigo
+  '#D946EF', // fuchsia
   '#F43F5E', // rose
   '#8B5CF6', // violet
   '#84CC16', // lime
-  '#0EA5E9', // sky
-  '#D946EF', // fuchsia
-  '#22D3EE', // bright cyan
   '#FB923C', // light orange
-  '#A3E635', // yellow-green
   '#E879F9', // light fuchsia
-  '#2DD4BF', // aquamarine
-  '#FBBF24', // bright amber
-  '#818CF8', // light indigo
-  '#34D399', // light emerald
-  '#F87171', // light red
-  '#38BDF8', // light sky
   '#C084FC', // light purple
-  '#4ADE80', // green
   '#FB7185', // light rose
-  '#FACC15', // yellow
-  '#60A5FA', // light blue
-  '#A78BFA', // lavender
+  '#FBBF24', // bright amber
+];
+
+// Combined palette for backward compatibility (index 0 = 25th gold, rest = unique)
+const UNIT_DEPLOYMENT_COLORS = [
+  TWENTY_FIFTH_COLOR,
+  ...PARTNER_COLORS,
+  ...COUNTERPART_COLORS,
 ];
 
 // Latitude offset in degrees applied to each partner unit's deployment line
 // so overlapping routes remain visually distinguishable (~16 km per unit).
 const PARTNER_LINE_OFFSET_DEG = 0.15;
 
-function getUnitColor(originUnitId, unitIndex) {
-  if (!originUnitId) return UNIT_DEPLOYMENT_COLORS[0]; // 25th ID gold
-  return UNIT_DEPLOYMENT_COLORS[(unitIndex % (UNIT_DEPLOYMENT_COLORS.length - 1)) + 1];
+function getUnitColor(originUnitId, unitIndex, originType) {
+  if (!originUnitId) return TWENTY_FIFTH_COLOR; // 25th ID gold
+  if (originType === 'counterpart') {
+    return COUNTERPART_COLORS[unitIndex % COUNTERPART_COLORS.length];
+  }
+  return PARTNER_COLORS[unitIndex % PARTNER_COLORS.length];
 }
 
 function getDeploymentTypeLabel(dep) {
   if (dep.origin_type === 'partner') return dep.unit_name || 'Partner Unit';
-  if (dep.origin_type === 'counterpart') return dep.unit_name || 'Counterpart Unit';
+  if (dep.origin_type === 'counterpart') return dep.unit_name || 'Allied Unit';
   return '25th ID';
 }
 
@@ -746,7 +762,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       .map((d) => {
         const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
         const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
-        const color = getUnitColor(unitKey, unitIdx);
+        const color = getUnitColor(unitKey, unitIdx, d.origin_type);
         const offsetLat = unitKey ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
         const coords = getDeploymentCoords(d, offsetLat);
         return {
@@ -771,6 +787,22 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     deployments.find((d) =>
       d.origin_type === '25th' && d.status === 'active'
     ), [deployments]);
+
+  // Build legend entries for active deployments
+  const deploymentLegendEntries = useMemo(() => {
+    const activeDeployments = deployments.filter((d) => d.status === 'active');
+    if (activeDeployments.length === 0) return [];
+    const entries = [];
+    activeDeployments.forEach((d) => {
+      const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
+      const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
+      const color = getUnitColor(unitKey, unitIdx, d.origin_type);
+      const label = getDeploymentTypeLabel(d);
+      const category = d.origin_type === '25th' ? '25th ID' : d.origin_type === 'partner' ? 'Partner' : 'Allied';
+      entries.push({ id: d.id, color, label, title: d.title, category });
+    });
+    return entries;
+  }, [deployments, partnerUnitIndexMap]);
 
   // Division display location
   const divisionDisplayLocation = useMemo(() => {
@@ -1056,7 +1088,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           .map((d) => {
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
-            const color = getUnitColor(unitKey, unitIdx);
+            const color = getUnitColor(unitKey, unitIdx, d.origin_type);
             const offsetLat = unitKey ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
             const coords = getDeploymentCoords(d, offsetLat);
             const mid = interpolateAlongLine(coords, 0.5);
@@ -1109,7 +1141,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           .map((d) => {
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
-            const color = getUnitColor(unitKey, unitIdx);
+            const color = getUnitColor(unitKey, unitIdx, d.origin_type);
             const offsetLat = unitKey ? (unitIdx + 1) * PARTNER_LINE_OFFSET_DEG : 0;
             const coords = getDeploymentCoords(d, offsetLat);
             if (coords.length < 2) return null;
@@ -1254,7 +1286,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             if (!lastRp) return null;
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
-            const color = getUnitColor(unitKey, unitIdx);
+            const color = getUnitColor(unitKey, unitIdx, d.origin_type);
             return (
             <Marker
               key={`dep-dest-${d.id}`}
@@ -1294,7 +1326,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           .flatMap((d) => {
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
-            const color = getUnitColor(unitKey, unitIdx);
+            const color = getUnitColor(unitKey, unitIdx, d.origin_type);
             const sorted = [...d.route_points].sort((a, b) => a.order - b.order);
             // Show intermediate stops (indices 1 to length-2)
             return sorted.slice(1, -1)
@@ -1467,6 +1499,39 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           </Popup>
         )}
       </Map>
+
+      {/* Deployment Legend – shows active deployment color-to-unit mappings */}
+      {deploymentLegendEntries.length > 0 && (
+        <div
+          className="absolute bottom-4 left-4 rounded-lg border shadow-lg"
+          style={{
+            background: 'rgba(15,23,42,0.92)',
+            borderColor: 'rgba(201,162,39,0.3)',
+            maxWidth: 260,
+            zIndex: 5,
+          }}
+        >
+          <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(201,162,39,0.2)' }}>
+            <span className="text-[10px] font-bold tracking-wider text-tropic-gold uppercase">
+              Active Deployments
+            </span>
+          </div>
+          <div className="px-3 py-2 space-y-1.5 max-h-[200px] overflow-y-auto">
+            {deploymentLegendEntries.map((entry) => (
+              <div key={entry.id} className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-sm shrink-0 border border-black/40"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] text-white truncate leading-tight">{entry.title}</div>
+                  <div className="text-[9px] text-gray-500 leading-tight">{entry.label} · {entry.category}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ADS-B Filter Panel */}
       {showADSB && (
