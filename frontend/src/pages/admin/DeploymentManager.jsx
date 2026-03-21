@@ -20,6 +20,12 @@ import { useAuth } from '@/context/AuthContext';
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 const TROPIC_GOLD_HEX = '#C9A227';
 
+const SCHOFIELD_BARRACKS = {
+  name: 'Schofield Barracks, HI',
+  latitude: 21.495052920207087,
+  longitude: -158.06280285176283,
+};
+
 const DEPLOYMENT_STATUSES = ['planning', 'deploying', 'deployed', 'endex', 'rtb', 'completed', 'cancelled'];
 const ORIGIN_TYPES = ['25th', 'partner', 'counterpart'];
 
@@ -279,7 +285,10 @@ const DeploymentManager = () => {
   const openNewDeployment = useCallback(() => {
     setEditingDeployment(null);
     const defaultOriginType = user?.account_type === 'partner' ? 'partner' : '25th';
-    setDeploymentForm({ ...EMPTY_DEPLOYMENT, origin_type: defaultOriginType });
+    const initialRoutePoints = defaultOriginType === '25th'
+      ? [{ name: SCHOFIELD_BARRACKS.name, latitude: SCHOFIELD_BARRACKS.latitude, longitude: SCHOFIELD_BARRACKS.longitude, description: '', stop_duration_hours: 0 }]
+      : [];
+    setDeploymentForm({ ...EMPTY_DEPLOYMENT, origin_type: defaultOriginType, route_points: initialRoutePoints });
     setDeploymentDialogOpen(true);
   }, [user]);
 
@@ -291,6 +300,24 @@ const DeploymentManager = () => {
 
   const openEditDeployment = useCallback((dep) => {
     setEditingDeployment(dep);
+    let existingPoints = Array.isArray(dep.route_points)
+      ? dep.route_points.map((rp) => ({
+          name: rp.name || '',
+          latitude: rp.latitude ?? '',
+          longitude: rp.longitude ?? '',
+          description: rp.description || '',
+          stop_duration_hours: rp.stop_duration_hours ?? 0,
+        }))
+      : [];
+
+    // For 25th deployments, always ensure first route point is Schofield Barracks
+    if ((dep.origin_type || '25th') === '25th') {
+      const schofield = { name: SCHOFIELD_BARRACKS.name, latitude: SCHOFIELD_BARRACKS.latitude, longitude: SCHOFIELD_BARRACKS.longitude, description: '', stop_duration_hours: 0 };
+      existingPoints = existingPoints.length === 0
+        ? [schofield]
+        : [schofield, ...existingPoints.slice(1)];
+    }
+
     setDeploymentForm({
       title: dep.title || '',
       unit_name: dep.unit_name || '',
@@ -299,15 +326,7 @@ const DeploymentManager = () => {
       is_active: dep.is_active ?? false,
       total_duration_hours: dep.total_duration_hours ?? 24,
       return_duration_hours: dep.return_duration_hours ?? 0,
-      route_points: Array.isArray(dep.route_points)
-        ? dep.route_points.map((rp) => ({
-            name: rp.name || '',
-            latitude: rp.latitude ?? '',
-            longitude: rp.longitude ?? '',
-            description: rp.description || '',
-            stop_duration_hours: rp.stop_duration_hours ?? 0,
-          }))
-        : [],
+      route_points: existingPoints,
       notes: dep.notes || '',
       metadata: dep.metadata || {},
     });
@@ -509,34 +528,6 @@ const DeploymentManager = () => {
             DEPLOYMENT MANAGER
           </h1>
         </div>
-
-        {/* Division Location Card */}
-        <Card className="bg-black/60 border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-tropic-gold" />
-                <div>
-                  <div className="text-xs text-gray-500 tracking-wider font-bold">DIVISION HQ LOCATION</div>
-                  <div className="text-sm text-white">
-                    {divisionLocation
-                      ? `${divisionLocation.current_location_name || 'Unknown'} (${divisionLocation.current_latitude?.toFixed(4)}, ${divisionLocation.current_longitude?.toFixed(4)})`
-                      : 'Not set'}
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10"
-                onClick={openDivisionDialog}
-              >
-                <Edit className="w-3 h-3 mr-1" />
-                Update
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Tab Navigation */}
         <div className="flex gap-2 border-b border-gray-800 pb-2">
@@ -969,7 +960,18 @@ const DeploymentManager = () => {
                   <Label>Origin Type</Label>
                   <Select
                     value={deploymentForm.origin_type}
-                    onValueChange={(val) => setDeploymentForm({ ...deploymentForm, origin_type: val })}
+                    onValueChange={(val) => {
+                      const prev = deploymentForm;
+                      let newRoutePoints = prev.route_points || [];
+                      if (val === '25th') {
+                        const schofield = { name: SCHOFIELD_BARRACKS.name, latitude: SCHOFIELD_BARRACKS.latitude, longitude: SCHOFIELD_BARRACKS.longitude, description: '', stop_duration_hours: 0 };
+                        const rest = prev.origin_type === '25th' ? newRoutePoints.slice(1) : newRoutePoints;
+                        newRoutePoints = [schofield, ...rest];
+                      } else if (prev.origin_type === '25th') {
+                        newRoutePoints = newRoutePoints.slice(1);
+                      }
+                      setDeploymentForm({ ...prev, origin_type: val, route_points: newRoutePoints });
+                    }}
                   >
                     <SelectTrigger className="bg-black border-gray-700">
                       <SelectValue />
@@ -1126,10 +1128,14 @@ const DeploymentManager = () => {
                 {(deploymentForm.route_points || []).length === 0 && (
                   <p className="text-xs text-gray-600 italic">No route points. Add stops to define the deployment route.</p>
                 )}
-                {(deploymentForm.route_points || []).map((rp, idx) => (
-                  <div key={idx} className="border border-gray-800/60 rounded p-2 space-y-2">
+                {(deploymentForm.route_points || []).map((rp, idx) => {
+                  const isLockedOrigin = idx === 0 && deploymentForm.origin_type === '25th';
+                  return (
+                  <div key={idx} className={`border rounded p-2 space-y-2 ${isLockedOrigin ? 'border-tropic-gold/40 bg-tropic-gold/5' : 'border-gray-800/60'}`}>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-tropic-gold font-bold tracking-wider">Stop {idx + 1}</span>
+                      <span className="text-[10px] text-tropic-gold font-bold tracking-wider">
+                        {isLockedOrigin ? 'ORIGIN — SCHOFIELD BARRACKS (LOCKED)' : `Stop ${idx + 1}`}
+                      </span>
                       <div className="flex items-center gap-1">
                         <Button
                           type="button"
@@ -1147,7 +1153,7 @@ const DeploymentManager = () => {
                           size="sm"
                           className="border-gray-700 text-gray-400 hover:text-white h-6 w-6 p-0 shrink-0"
                           onClick={() => moveRoutePointDown(idx)}
-                          disabled={idx === (deploymentForm.route_points || []).length - 1}
+                          disabled={isLockedOrigin || idx === (deploymentForm.route_points || []).length - 1}
                         >
                           <ChevronDown className="w-3 h-3" />
                         </Button>
@@ -1160,11 +1166,13 @@ const DeploymentManager = () => {
                             const rps = deploymentForm.route_points.filter((_, i) => i !== idx);
                             setDeploymentForm({ ...deploymentForm, route_points: rps });
                           }}
+                          disabled={isLockedOrigin}
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
+                    {!isLockedOrigin && (
                     <div className="relative">
                       <Label className="text-[10px] text-gray-500 flex items-center gap-1">
                         <Search className="w-3 h-3" />
@@ -1192,7 +1200,8 @@ const DeploymentManager = () => {
                         </div>
                       )}
                     </div>
-                    {(locationEntities || []).length > 0 && (
+                    )}
+                    {!isLockedOrigin && (locationEntities || []).length > 0 && (
                       <div>
                         <Label className="text-[10px] text-gray-500 flex items-center gap-1">
                           <Search className="w-3 h-3" />
@@ -1232,6 +1241,7 @@ const DeploymentManager = () => {
                           }}
                           className="bg-black border-gray-700 h-8 text-xs"
                           placeholder="e.g., Schofield Barracks"
+                          disabled={isLockedOrigin}
                         />
                       </div>
                       <div className="w-24 space-y-1">
@@ -1246,6 +1256,7 @@ const DeploymentManager = () => {
                             setDeploymentForm({ ...deploymentForm, route_points: rps });
                           }}
                           className="bg-black border-gray-700 h-8 text-xs"
+                          disabled={isLockedOrigin}
                         />
                       </div>
                       <div className="w-24 space-y-1">
@@ -1260,9 +1271,11 @@ const DeploymentManager = () => {
                             setDeploymentForm({ ...deploymentForm, route_points: rps });
                           }}
                           className="bg-black border-gray-700 h-8 text-xs"
+                          disabled={isLockedOrigin}
                         />
                       </div>
                     </div>
+                    {!isLockedOrigin && (
                     <div className="flex items-end gap-2">
                       <div className="flex-1 space-y-1">
                         <Label className="text-[10px] text-gray-500">Description</Label>
@@ -1294,8 +1307,10 @@ const DeploymentManager = () => {
                         />
                       </div>
                     </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div>

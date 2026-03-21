@@ -253,8 +253,8 @@ DIVISION_STATES = ["home_station", "deploying", "deployed", "returning"]
 # Default home station: Schofield Barracks, Oahu, Hawaii
 HOME_STATION = {
     "name": "Schofield Barracks, HI",
-    "latitude": 21.4959,
-    "longitude": -158.0648,
+    "latitude": 21.495052920207087,
+    "longitude": -158.06280285176283,
 }
 
 
