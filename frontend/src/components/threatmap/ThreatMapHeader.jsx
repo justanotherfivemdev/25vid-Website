@@ -2,7 +2,7 @@ import React from 'react';
 import { useEventsStore } from '@/stores/threatMapStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Globe, RefreshCw, Activity, ArrowLeft } from 'lucide-react';
+import { RefreshCw, Activity, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ThreatMapHeader({ onRefresh, isLoading }) {
@@ -14,52 +14,103 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
   }, {});
 
   return (
-    <header className="relative flex h-14 items-center justify-between border-b border-tropic-gold-dark/30 bg-black px-4">
+    <header className="relative flex h-14 items-center justify-between border-b px-4"
+      style={{
+        background: 'rgba(5,10,20,0.98)',
+        borderColor: 'rgba(201,162,39,0.35)',
+        borderBottom: '1px solid rgba(201,162,39,0.35)',
+      }}
+    >
       <div className="flex items-center gap-3">
         <Link
           to="/hub"
-          className="flex items-center gap-1 text-tropic-gold/70 hover:text-tropic-gold transition-colors mr-2"
+          className="flex items-center gap-1 transition-colors mr-1"
+          style={{ color: 'rgba(201,162,39,0.6)' }}
           title="Back to Hub"
+          onMouseEnter={(e) => e.currentTarget.style.color = '#C9A227'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(201,162,39,0.6)'}
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <div className="flex items-center gap-2">
-          <Globe className="h-6 w-6 text-tropic-gold" />
-          <h1 className="text-lg font-bold text-tropic-gold-light">
-            Global Threat Map
-          </h1>
+
+        {/* 25th ID Branding */}
+        <div className="flex items-center gap-2.5">
+          {/* Tropic Lightning bolt badge */}
+          <div
+            className="flex items-center justify-center rounded-sm border"
+            style={{
+              width: 28,
+              height: 28,
+              background: 'rgba(201,162,39,0.12)',
+              borderColor: 'rgba(201,162,39,0.4)',
+            }}
+          >
+            <svg width="14" height="18" viewBox="0 0 14 18" fill="none" aria-label="Tropic Lightning bolt">
+              <title>Tropic Lightning — 25th Infantry Division</title>
+              <polygon points="8,0 2,10 7,10 6,18 12,8 7,8" fill="#C9A227" />
+            </svg>
+          </div>
+          <div className="flex flex-col leading-none">
+            <span
+              className="text-[10px] font-black tracking-[0.22em] uppercase"
+              style={{ color: 'rgba(201,162,39,0.7)' }}
+            >
+              25th Infantry Division
+            </span>
+            <span
+              className="text-[13px] font-black tracking-[0.08em] uppercase"
+              style={{ color: '#C9A227' }}
+            >
+              Global Threat Map
+            </span>
+          </div>
         </div>
-        <Badge variant="outline" className="hidden md:flex border-tropic-gold/40 text-tropic-gold bg-tropic-gold/10">
-          <Activity className="mr-1 h-3 w-3" />
-          Live
+
+        <Badge
+          variant="outline"
+          className="hidden md:flex border-green-700/50 text-green-400 bg-green-900/20 gap-1"
+        >
+          <Activity className="h-3 w-3" />
+          <span className="text-[10px] font-bold tracking-wider">LIVE</span>
         </Badge>
       </div>
 
-      <div className="absolute left-1/2 -translate-x-1/2 text-sm text-gray-500 hidden lg:block">
-        Powered by{' '}
+      {/* Center tagline */}
+      <div className="absolute left-1/2 -translate-x-1/2 text-[11px] text-gray-600 hidden lg:flex items-center gap-1.5">
+        <span>Intelligence powered by</span>
         <a
           href="https://www.valyu.ai"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-bold text-tropic-gold hover:text-tropic-gold-light hover:underline"
+          className="font-bold hover:underline"
+          style={{ color: '#C9A227' }}
         >
           Valyu
         </a>
       </div>
 
-      <div className="flex items-center gap-4">
+      {/* Right – threat counts + refresh */}
+      <div className="flex items-center gap-3">
         <div className="hidden items-center gap-2 md:flex">
           {threatCounts.critical > 0 && (
-            <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10">
+            <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10 text-[10px]">
               {threatCounts.critical} Critical
             </Badge>
           )}
           {threatCounts.high > 0 && (
-            <Badge variant="outline" className="border-orange-500/50 text-orange-400 bg-orange-500/10">
+            <Badge variant="outline" className="border-orange-500/50 text-orange-400 bg-orange-500/10 text-[10px]">
               {threatCounts.high} High
             </Badge>
           )}
-          <Badge variant="outline" className="border-tropic-gold-dark/50 text-tropic-gold bg-tropic-gold/5">
+          <Badge
+            variant="outline"
+            className="text-[10px]"
+            style={{
+              borderColor: 'rgba(201,162,39,0.4)',
+              color: '#C9A227',
+              background: 'rgba(201,162,39,0.06)',
+            }}
+          >
             {filteredEvents.length} Events
           </Badge>
         </div>
@@ -70,7 +121,8 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
           onClick={onRefresh}
           disabled={isLoading}
           title="Refresh events"
-          className="text-tropic-gold/70 hover:text-tropic-gold hover:bg-tropic-gold/10"
+          className="hover:bg-tropic-gold/10"
+          style={{ color: 'rgba(201,162,39,0.7)' }}
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         </Button>
