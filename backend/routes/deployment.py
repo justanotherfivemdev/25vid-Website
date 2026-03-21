@@ -544,11 +544,11 @@ async def _auto_advance_deployment_phases():
     - rtb → completed       when return_started_at + return_duration_hours has passed.
     """
     now = datetime.now(timezone.utc)
-    active_deps = await db.deployments.find(
+    transitioning_deps = await db.deployments.find(
         {"status": {"$in": ["deploying", "rtb"]}, "is_active": True}, {"_id": 0}
     ).to_list(200)
 
-    for dep in active_deps:
+    for dep in transitioning_deps:
         status = dep.get("status")
         if status == "deploying" and dep.get("started_at"):
             try:
