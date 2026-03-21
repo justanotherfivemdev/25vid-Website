@@ -258,42 +258,71 @@ async def partner_get_me(request: Request):
 
 
 # Partner hub endpoints
+# Tenant-scoped: partner users see their own unit's data + 25th-shared data,
+# but NOT data from other partner units.
+
+def _partner_tenant_filter(partner_unit_id: str) -> dict:
+    """Return a MongoDB filter that scopes to the partner's own unit data
+    plus main-unit (25th) data which has no origin_unit_id."""
+    return {"$or": [
+        {"origin_unit_id": partner_unit_id},
+        {"origin_unit_id": {"$exists": False}},
+    ]}
+
 
 @router.get("/partner/discussions")
 async def partner_get_discussions(partner_user: dict = Depends(get_current_partner_user)):
-    discussions = await db.discussions.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    unit_id = partner_user["partner_unit_id"]
+    query = {"$or": [
+        {"origin_unit_id": unit_id},
+        {"origin_unit_id": {"$exists": False}},
+    ]}
+    discussions = await db.discussions.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return discussions
 
 
 @router.get("/partner/operations")
 async def partner_get_operations(partner_user: dict = Depends(get_current_partner_user)):
-    operations = await db.operations.find({}, {"_id": 0}).sort("date", -1).to_list(100)
+    query = _partner_tenant_filter(partner_user["partner_unit_id"])
+    operations = await db.operations.find(query, {"_id": 0}).sort("date", -1).to_list(100)
     return operations
 
 
 @router.get("/partner/training")
 async def partner_get_training(partner_user: dict = Depends(get_current_partner_user)):
-    training = await db.training.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    query = _partner_tenant_filter(partner_user["partner_unit_id"])
+    training = await db.training.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return training
 
 
 @router.get("/partner/intel")
 async def partner_get_intel(partner_user: dict = Depends(get_current_partner_user)):
+    unit_id = partner_user["partner_unit_id"]
     intel = await db.intel_briefings.find(
-        {"visibility_scope": {"$ne": "admin_only"}}, {"_id": 0}
+        {"$and": [
+            {"visibility_scope": {"$ne": "admin_only"}},
+            {"$or": [
+                {"origin_unit_id": unit_id},
+                {"origin_unit_id": {"$exists": False}},
+            ]},
+        ]}, {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     return intel
 
 
 @router.get("/partner/campaigns")
 async def partner_get_campaigns(partner_user: dict = Depends(get_current_partner_user)):
-    campaigns = await db.campaigns.find({}, {"_id": 0}).sort("name", 1).to_list(100)
+    query = _partner_tenant_filter(partner_user["partner_unit_id"])
+    campaigns = await db.campaigns.find(query, {"_id": 0}).sort("name", 1).to_list(100)
     return campaigns
 
 
 @router.post("/partner/operations/{operation_id}/rsvp")
 async def partner_rsvp_operation(operation_id: str, rsvp_data: RSVPSubmit, partner_user: dict = Depends(get_current_partner_user)):
-    op = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+    # Scope: partner can only RSVP to operations visible to them
+    tenant_filter = _partner_tenant_filter(partner_user["partner_unit_id"])
+    tenant_filter["id"] = operation_id
+    op = await db.operations.find_one(tenant_filter, {"_id": 0})
     if not op:
         raise HTTPException(status_code=404, detail="Operation not found")
 
@@ -322,10 +351,18 @@ async def partner_rsvp_operation(operation_id: str, rsvp_data: RSVPSubmit, partn
 
 @router.get("/partner/map/overlays")
 async def partner_get_map_overlays(partner_user: dict = Depends(get_current_partner_user)):
-    campaigns = await db.campaigns.find({}, {"_id": 0, "id": 1, "name": 1, "theater": 1, "status": 1, "objectives": 1}).to_list(200)
-    operations = await db.operations.find({}, {"_id": 0}).to_list(2000)
+    tenant_filter = _partner_tenant_filter(partner_user["partner_unit_id"])
+    campaigns = await db.campaigns.find(tenant_filter, {"_id": 0, "id": 1, "name": 1, "theater": 1, "status": 1, "objectives": 1}).to_list(200)
+    operations = await db.operations.find(tenant_filter, {"_id": 0}).to_list(2000)
+    unit_id = partner_user["partner_unit_id"]
     intel_briefings = await db.intel_briefings.find(
-        {"visibility_scope": {"$ne": "admin_only"}}, {"_id": 0}
+        {"$and": [
+            {"visibility_scope": {"$ne": "admin_only"}},
+            {"$or": [
+                {"origin_unit_id": unit_id},
+                {"origin_unit_id": {"$exists": False}},
+            ]},
+        ]}, {"_id": 0}
     ).sort("created_at", -1).to_list(1000)
 
     objective_markers = []
