@@ -11,6 +11,7 @@ from models.recruitment import (
     RecruitApplication,
 )
 from middleware.auth import get_current_user, get_current_admin
+from middleware.rbac import require_permission, Permission
 from services.auth_service import normalize_email
 
 router = APIRouter()
@@ -26,13 +27,13 @@ async def get_open_billets():
 
 
 @router.get("/admin/recruitment/billets")
-async def get_all_billets(current_user: dict = Depends(get_current_admin)):
+async def get_all_billets(current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     billets = await db.open_billets.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return billets
 
 
 @router.post("/admin/recruitment/billets")
-async def create_billet(billet: OpenBillet, current_user: dict = Depends(get_current_admin)):
+async def create_billet(billet: OpenBillet, current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     billet_dict = billet.model_dump()
     billet_dict["created_at"] = billet_dict["created_at"].isoformat()
     await db.open_billets.insert_one(billet_dict)
@@ -40,7 +41,7 @@ async def create_billet(billet: OpenBillet, current_user: dict = Depends(get_cur
 
 
 @router.put("/admin/recruitment/billets/{billet_id}")
-async def update_billet(billet_id: str, updates: OpenBilletUpdate, current_user: dict = Depends(get_current_admin)):
+async def update_billet(billet_id: str, updates: OpenBilletUpdate, current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     update_dict = {k: v for k, v in updates.model_dump().items() if v is not None}
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
@@ -54,7 +55,7 @@ async def update_billet(billet_id: str, updates: OpenBilletUpdate, current_user:
 
 
 @router.delete("/admin/recruitment/billets/{billet_id}")
-async def delete_billet(billet_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_billet(billet_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     result = await db.open_billets.delete_one({"id": billet_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Billet not found")
@@ -76,7 +77,7 @@ async def submit_application(application: PublicApplicationCreate):
 
 
 @router.get("/admin/recruitment/applications")
-async def get_applications(status: Optional[str] = None, current_user: dict = Depends(get_current_admin)):
+async def get_applications(status: Optional[str] = None, current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     query = {}
     if status:
         query["status"] = status
@@ -85,7 +86,7 @@ async def get_applications(status: Optional[str] = None, current_user: dict = De
 
 
 @router.get("/admin/recruitment/applications/{application_id}")
-async def get_application(application_id: str, current_user: dict = Depends(get_current_admin)):
+async def get_application(application_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     app = await db.applications.find_one({"id": application_id}, {"_id": 0})
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
@@ -93,7 +94,7 @@ async def get_application(application_id: str, current_user: dict = Depends(get_
 
 
 @router.put("/admin/recruitment/applications/{application_id}")
-async def update_application(application_id: str, updates: ApplicationReviewUpdate, current_user: dict = Depends(get_current_admin)):
+async def update_application(application_id: str, updates: ApplicationReviewUpdate, current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     update_dict = {k: v for k, v in updates.model_dump().items() if v is not None}
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
@@ -109,7 +110,7 @@ async def update_application(application_id: str, updates: ApplicationReviewUpda
 
 
 @router.get("/admin/recruitment/stats")
-async def get_recruitment_stats(current_user: dict = Depends(get_current_admin)):
+async def get_recruitment_stats(current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
     total = await db.applications.count_documents({})
     pending = await db.applications.count_documents({"status": "pending"})
     reviewing = await db.applications.count_documents({"status": "reviewing"})

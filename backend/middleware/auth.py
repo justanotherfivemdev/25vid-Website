@@ -35,15 +35,24 @@ async def get_current_user(request: Request) -> dict:
 
 
 async def get_current_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    if current_user.get("role") != "admin":
+    """Require full admin access (admin / S1 Personnel)."""
+    if current_user.get("role") not in ("admin", "s1_personnel"):
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
 
 async def get_current_admin_or_liaison(current_user: dict = Depends(get_current_user)) -> dict:
-    """Allow both admin and s5_liaison roles for partner-management endpoints."""
-    if current_user.get("role") not in ("admin", "s5_liaison"):
-        raise HTTPException(status_code=403, detail="Admin or S-5 Liaison access required")
+    """Allow admin, S1, S5 (civil affairs), or legacy s5_liaison roles."""
+    if current_user.get("role") not in ("admin", "s1_personnel", "s5_liaison", "s5_civil_affairs"):
+        raise HTTPException(status_code=403, detail="Admin or S-5 access required")
+    return current_user
+
+
+async def get_current_staff(current_user: dict = Depends(get_current_user)) -> dict:
+    """Require any staff role (S1–S6 or training_staff)."""
+    from middleware.rbac import is_staff
+    if not is_staff(current_user.get("role", "member")):
+        raise HTTPException(status_code=403, detail="Staff access required")
     return current_user
 
 

@@ -29,6 +29,7 @@ from models.deployment import (
     HOME_STATION,
 )
 from middleware.auth import get_current_user, get_current_admin
+from middleware.rbac import require_permission, Permission
 from services.audit_service import log_audit
 from services.error_log_service import log_error, log_exception
 from services.mongo_sanitize import sanitize_mongo_payload
@@ -53,7 +54,7 @@ async def get_nato_reference():
 
 
 @router.get("/map/location-entities")
-async def get_location_entities(current_user: dict = Depends(get_current_admin)):
+async def get_location_entities(current_user: dict = Depends(require_permission(Permission.MANAGE_DEPLOYMENTS))):
     """Return campaigns, operations, and intel with coordinates for the entity picker."""
     entities = []
 
@@ -119,7 +120,7 @@ async def list_nato_markers(current_user: dict = Depends(get_current_user)):
 @router.post("/admin/map/nato-markers")
 async def create_nato_marker(
     data: NATOMarkerCreate,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_DEPLOYMENTS)),
 ):
     marker = NATOMarker(
         title=data.title,
@@ -147,7 +148,7 @@ async def create_nato_marker(
 async def update_nato_marker(
     marker_id: str,
     data: NATOMarkerUpdate,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_DEPLOYMENTS)),
 ):
     existing = await db.nato_markers.find_one({"id": marker_id}, {"_id": 0})
     if not existing:
@@ -172,7 +173,7 @@ async def update_nato_marker(
 @router.delete("/admin/map/nato-markers/{marker_id}")
 async def delete_nato_marker(
     marker_id: str,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_DEPLOYMENTS)),
 ):
     result = await db.nato_markers.delete_one({"id": marker_id})
     if result.deleted_count == 0:
@@ -212,7 +213,7 @@ async def get_deployment(
 @router.get("/admin/map/deployments")
 async def admin_list_deployments(
     origin_type: str = Query(default=None),
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_DEPLOYMENTS)),
 ):
     """Return deployments filtered by origin_type. Shows all if no filter given."""
     query = {}
@@ -227,7 +228,7 @@ async def admin_list_deployments(
 @router.post("/admin/map/deployments")
 async def create_deployment(
     data: DeploymentCreate,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_DEPLOYMENTS)),
 ):
     try:
         dep = Deployment(
@@ -316,7 +317,7 @@ async def create_deployment(
 async def update_deployment(
     deployment_id: str,
     data: DeploymentUpdate,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_DEPLOYMENTS)),
 ):
     existing = await db.deployments.find_one({"id": deployment_id}, {"_id": 0})
     if not existing:
@@ -423,7 +424,7 @@ async def update_deployment(
 @router.delete("/admin/map/deployments/{deployment_id}")
 async def delete_deployment(
     deployment_id: str,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_DEPLOYMENTS)),
 ):
     existing = await db.deployments.find_one({"id": deployment_id}, {"_id": 0})
     if not existing:
@@ -510,7 +511,7 @@ async def get_division_location(current_user: dict = Depends(get_current_user)):
 @router.put("/admin/map/division-location")
 async def update_division_location(
     data: DivisionLocationUpdate,
-    current_user: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission(Permission.MANAGE_DEPLOYMENTS)),
 ):
     update_dict = data.model_dump(exclude_unset=True)
     if not update_dict:

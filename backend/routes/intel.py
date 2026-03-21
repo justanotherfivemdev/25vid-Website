@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from database import db
 from models.intel import IntelBriefingCreate, IntelBriefingUpdate
 from middleware.auth import get_current_user, get_current_admin
+from middleware.rbac import require_permission, Permission
 from services.map_service import upsert_map_event, remove_map_event
 
 router = APIRouter()
@@ -118,7 +119,7 @@ async def unacknowledge_briefing(briefing_id: str, current_user: dict = Depends(
 
 
 @router.get("/admin/intel/{briefing_id}/acknowledgments")
-async def get_briefing_acknowledgments(briefing_id: str, current_user: dict = Depends(get_current_admin)):
+async def get_briefing_acknowledgments(briefing_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_INTEL))):
     acks = await db.intel_acknowledgments.find({"briefing_id": briefing_id}, {"_id": 0}).sort("acknowledged_at", -1).to_list(500)
     for a in acks:
         if isinstance(a.get("acknowledged_at"), str):
@@ -127,7 +128,7 @@ async def get_briefing_acknowledgments(briefing_id: str, current_user: dict = De
 
 
 @router.post("/admin/intel")
-async def create_intel_briefing(data: IntelBriefingCreate, current_user: dict = Depends(get_current_admin)):
+async def create_intel_briefing(data: IntelBriefingCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_INTEL))):
     briefing_dict = data.model_dump()
     briefing_dict["id"] = str(uuid.uuid4())
     briefing_dict["author_id"] = current_user["id"]
@@ -142,7 +143,7 @@ async def create_intel_briefing(data: IntelBriefingCreate, current_user: dict = 
 
 
 @router.put("/admin/intel/{briefing_id}")
-async def update_intel_briefing(briefing_id: str, data: IntelBriefingUpdate, current_user: dict = Depends(get_current_admin)):
+async def update_intel_briefing(briefing_id: str, data: IntelBriefingUpdate, current_user: dict = Depends(require_permission(Permission.MANAGE_INTEL))):
     existing = await db.intel_briefings.find_one({"id": briefing_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Briefing not found")
@@ -160,7 +161,7 @@ async def update_intel_briefing(briefing_id: str, data: IntelBriefingUpdate, cur
 
 
 @router.delete("/admin/intel/{briefing_id}")
-async def delete_intel_briefing(briefing_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_intel_briefing(briefing_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_INTEL))):
     result = await db.intel_briefings.delete_one({"id": briefing_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Briefing not found")

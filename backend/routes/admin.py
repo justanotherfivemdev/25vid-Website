@@ -20,6 +20,7 @@ from models.operations import OperationCreate
 from models.content import AnnouncementCreate, GalleryImageCreate, TrainingCreate
 from models.common import HistoryEntry, HistoryEntryCreate
 from middleware.auth import get_current_user, get_current_admin
+from middleware.rbac import require_permission, Permission
 from services.auth_service import user_to_response, normalize_email
 from services.audit_service import log_audit
 from services.map_service import upsert_map_event, remove_map_event
@@ -39,7 +40,7 @@ router = APIRouter()
 # Site content management
 
 @router.get("/admin/site-content")
-async def get_site_content(current_user: dict = Depends(get_current_admin)):
+async def get_site_content(current_user: dict = Depends(require_permission(Permission.MANAGE_CONTENT))):
     content = await db.site_content.find_one({"id": "site_content"}, {"_id": 0})
     if not content:
         return {
@@ -59,7 +60,7 @@ async def get_site_content(current_user: dict = Depends(get_current_admin)):
 
 
 @router.put("/admin/site-content")
-async def update_site_content(content: dict, current_user: dict = Depends(get_current_admin)):
+async def update_site_content(content: dict, current_user: dict = Depends(require_permission(Permission.MANAGE_CONTENT))):
     content["id"] = "site_content"
     content["updated_at"] = datetime.now(timezone.utc).isoformat()
 
@@ -139,7 +140,7 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
 # Admin CRUD for operations, announcements, discussions, gallery, training
 
 @router.delete("/admin/operations/{operation_id}")
-async def delete_operation(operation_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_operation(operation_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_OPERATIONS))):
     try:
         result = await db.operations.delete_one({"id": operation_id})
         if result.deleted_count == 0:
@@ -164,7 +165,7 @@ async def delete_operation(operation_id: str, current_user: dict = Depends(get_c
 
 
 @router.put("/admin/operations/{operation_id}")
-async def update_operation(operation_id: str, operation_data: OperationCreate, current_user: dict = Depends(get_current_admin)):
+async def update_operation(operation_id: str, operation_data: OperationCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_OPERATIONS))):
     result = await db.operations.update_one(
         {"id": operation_id},
         {"$set": operation_data.model_dump()}
@@ -178,7 +179,7 @@ async def update_operation(operation_id: str, operation_data: OperationCreate, c
 
 
 @router.put("/admin/operations/{operation_id}/rsvp/{user_id}/promote")
-async def promote_from_waitlist(operation_id: str, user_id: str, current_user: dict = Depends(get_current_admin)):
+async def promote_from_waitlist(operation_id: str, user_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_OPERATIONS))):
     operation = await db.operations.find_one({"id": operation_id}, {"_id": 0})
     if not operation:
         raise HTTPException(status_code=404, detail="Operation not found")
@@ -196,7 +197,7 @@ async def promote_from_waitlist(operation_id: str, user_id: str, current_user: d
 
 
 @router.delete("/admin/announcements/{announcement_id}")
-async def delete_announcement(announcement_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_announcement(announcement_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_ANNOUNCEMENTS))):
     result = await db.announcements.delete_one({"id": announcement_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Announcement not found")
@@ -208,7 +209,7 @@ async def delete_announcement(announcement_id: str, current_user: dict = Depends
 
 
 @router.put("/admin/announcements/{announcement_id}")
-async def update_announcement(announcement_id: str, announcement_data: AnnouncementCreate, current_user: dict = Depends(get_current_admin)):
+async def update_announcement(announcement_id: str, announcement_data: AnnouncementCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_ANNOUNCEMENTS))):
     update_data = announcement_data.model_dump()
     update_data["author_id"] = current_user["id"]
     update_data["author_name"] = current_user["username"]
@@ -223,7 +224,7 @@ async def update_announcement(announcement_id: str, announcement_data: Announcem
 
 
 @router.delete("/admin/discussions/{discussion_id}")
-async def delete_discussion(discussion_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_discussion(discussion_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_CONTENT))):
     result = await db.discussions.delete_one({"id": discussion_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Discussion not found")
@@ -231,7 +232,7 @@ async def delete_discussion(discussion_id: str, current_user: dict = Depends(get
 
 
 @router.put("/admin/discussions/{discussion_id}/pin")
-async def toggle_pin_discussion(discussion_id: str, current_user: dict = Depends(get_current_admin)):
+async def toggle_pin_discussion(discussion_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_CONTENT))):
     disc = await db.discussions.find_one({"id": discussion_id}, {"_id": 0})
     if not disc:
         raise HTTPException(status_code=404, detail="Discussion not found")
@@ -241,7 +242,7 @@ async def toggle_pin_discussion(discussion_id: str, current_user: dict = Depends
 
 
 @router.delete("/admin/gallery/{image_id}")
-async def delete_gallery_image(image_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_gallery_image(image_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_GALLERY))):
     result = await db.gallery.delete_one({"id": image_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Image not found")
@@ -252,8 +253,20 @@ async def delete_gallery_image(image_id: str, current_user: dict = Depends(get_c
     return {"message": "Image deleted successfully"}
 
 
+@router.delete("/admin/gallery")
+async def delete_all_gallery_images(current_user: dict = Depends(require_permission(Permission.FULL_ACCESS))):
+    """Remove ALL gallery images. Restricted to S1/admin roles only."""
+    result = await db.gallery.delete_many({})
+    await log_audit(
+        user_id=current_user["id"], action_type="delete_all_gallery",
+        resource_type="gallery", resource_id="all",
+        details={"deleted_count": result.deleted_count},
+    )
+    return {"message": f"Deleted {result.deleted_count} gallery images", "deleted_count": result.deleted_count}
+
+
 @router.put("/admin/gallery/{image_id}")
-async def update_gallery_image(image_id: str, image_data: GalleryImageCreate, current_user: dict = Depends(get_current_admin)):
+async def update_gallery_image(image_id: str, image_data: GalleryImageCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_GALLERY))):
     result = await db.gallery.update_one(
         {"id": image_id},
         {"$set": image_data.model_dump()}
@@ -264,7 +277,7 @@ async def update_gallery_image(image_id: str, image_data: GalleryImageCreate, cu
 
 
 @router.delete("/admin/discussions/{discussion_id}/reply/{reply_id}")
-async def delete_reply(discussion_id: str, reply_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_reply(discussion_id: str, reply_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_CONTENT))):
     result = await db.discussions.update_one(
         {"id": discussion_id},
         {"$pull": {"replies": {"id": reply_id}}}
@@ -275,7 +288,7 @@ async def delete_reply(discussion_id: str, reply_id: str, current_user: dict = D
 
 
 @router.delete("/admin/training/{training_id}")
-async def delete_training(training_id: str, current_user: dict = Depends(get_current_admin)):
+async def delete_training(training_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_TRAINING))):
     result = await db.training.delete_one({"id": training_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Training not found")
@@ -287,7 +300,7 @@ async def delete_training(training_id: str, current_user: dict = Depends(get_cur
 
 
 @router.put("/admin/training/{training_id}")
-async def update_training(training_id: str, training_data: TrainingCreate, current_user: dict = Depends(get_current_admin)):
+async def update_training(training_id: str, training_data: TrainingCreate, current_user: dict = Depends(require_permission(Permission.MANAGE_TRAINING))):
     result = await db.training.update_one(
         {"id": training_id},
         {"$set": training_data.model_dump()}
