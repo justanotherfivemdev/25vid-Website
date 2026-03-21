@@ -32,7 +32,7 @@ const PartnerAdmin = () => {
   const [showDepForm, setShowDepForm] = useState(false);
   const [editingDep, setEditingDep] = useState(null);
   const [depForm, setDepForm] = useState({
-    title: '', status: 'draft',
+    title: '', status: 'planning',
     total_duration_hours: 24, route_points: [], notes: '',
   });
   const navigate = useNavigate();
@@ -563,7 +563,7 @@ const PartnerAdmin = () => {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-tropic-gold">Unit Deployments</h3>
                 <Button onClick={() => { setShowDepForm(true); setEditingDep(null); setDepForm({
-                  title: '', status: 'draft',
+                  title: '', status: 'planning',
                   total_duration_hours: 24, route_points: [], notes: '',
                 }); }} className="bg-tropic-olive hover:bg-tropic-olive/80">
                   <Plus className="w-4 h-4 mr-2" />New Deployment
@@ -579,7 +579,7 @@ const PartnerAdmin = () => {
                       <div>
                         <label className="text-xs text-gray-400 mb-1 block">Status</label>
                         <select value={depForm.status} onChange={e => setDepForm(p => ({ ...p, status: e.target.value }))} className="w-full bg-black/50 border border-gray-700 text-white rounded px-3 py-2 text-sm">
-                          {['draft', 'active', 'completed', 'cancelled'].map(s => (
+                          {['planning', 'deploying', 'deployed', 'endex', 'rtb', 'completed', 'cancelled'].map(s => (
                             <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
                           ))}
                         </select>
@@ -674,8 +674,11 @@ const PartnerAdmin = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-bold text-white">{dep.title}</h4>
                             <Badge className={`text-[10px] ${
-                              dep.status === 'draft' ? 'bg-gray-600' :
-                              dep.status === 'active' ? 'bg-green-600' :
+                              dep.status === 'planning' ? 'bg-gray-600' :
+                              dep.status === 'deploying' ? 'bg-yellow-600' :
+                              dep.status === 'deployed' ? 'bg-green-600' :
+                              dep.status === 'endex' ? 'bg-orange-600' :
+                              dep.status === 'rtb' ? 'bg-blue-600' :
                               dep.status === 'completed' ? 'bg-purple-600' : 'bg-red-600'
                             }`}>{dep.status?.toUpperCase()}</Badge>
                             {dep.is_active && <Badge className="bg-green-600/20 text-green-400 text-[10px]">ACTIVE</Badge>}
@@ -699,7 +702,7 @@ const PartnerAdmin = () => {
                           <Button size="sm" variant="outline" className="border-gray-700 text-gray-400 h-7 w-7 p-0" onClick={() => {
                             setDepForm({
                               title: dep.title || '',
-                              status: dep.status || 'draft',
+                              status: dep.status || 'planning',
                               total_duration_hours: dep.total_duration_hours || 24,
                               route_points: (dep.route_points || []).map((rp, i) => ({
                                 order: rp.order ?? i,
