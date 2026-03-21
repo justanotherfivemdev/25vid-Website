@@ -52,18 +52,18 @@ class TestDeploymentCreate:
       - POST /api/admin/map/deployments returns 200 with the created deployment.
       - Re-fetch via GET /api/admin/map/deployments includes the new record.
       - GET /api/map/deployments (GlobalThreatMap source) includes the record
-        when status="active" and is_active=True, with route_points for path rendering.
+        when status is deploying/deployed/endex/rtb and is_active=True, with route_points for path rendering.
     """
 
     @pytest.fixture(scope="class")
     def created_deployment(self, admin_cookies):
-        """Create an active deployment for the class; delete it after all tests."""
+        """Create a deploying deployment for the class; delete it after all tests."""
         title = f"Acceptance Test Deployment {uuid.uuid4().hex[:6]}"
         payload = {
             "title": title,
             "unit_name": "1-25 IN",
             "origin_type": "25th",
-            "status": "active",
+            "status": "deploying",
             "is_active": True,
             "total_duration_hours": 48.0,
             "route_points": [
@@ -126,7 +126,7 @@ class TestDeploymentCreate:
         )
 
     def test_map_deployments_includes_active_deployment(self, admin_cookies, created_deployment):
-        """GET /map/deployments must include deployments with status=active and is_active=True."""
+        """GET /map/deployments must include deployments with deploying/deployed/endex/rtb status and is_active=True."""
         with httpx.Client(base_url=BASE_URL, cookies=admin_cookies) as client:
             res = client.get("/map/deployments")
         assert res.status_code == 200
@@ -172,7 +172,7 @@ class TestDeploymentDelete:
         """Create a deployment that will be deleted by the first test in this class."""
         payload = {
             "title": f"Delete Test Deployment {uuid.uuid4().hex[:6]}",
-            "status": "draft",
+            "status": "planning",
             "is_active": False,
             "route_points": [],
             "notes": "Created for deletion test",

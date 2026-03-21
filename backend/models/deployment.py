@@ -169,7 +169,7 @@ class NATOMarkerUpdate(BaseModel):
 
 # ── Deployment ───────────────────────────────────────────────────────────────
 
-DEPLOYMENT_STATUSES = ["draft", "active", "completed", "cancelled"]
+DEPLOYMENT_STATUSES = ["planning", "deploying", "deployed", "endex", "rtb", "completed", "cancelled"]
 
 
 class RoutePoint(BaseModel):
@@ -187,10 +187,12 @@ class Deployment(BaseModel):
     unit_name: str = ""
     origin_type: Literal["25th", "partner", "counterpart"] = "25th"
     origin_unit_id: Optional[str] = None
-    status: Literal["draft", "active", "completed", "cancelled"] = "draft"
+    status: Literal["planning", "deploying", "deployed", "endex", "rtb", "completed", "cancelled"] = "planning"
     is_active: bool = False
     total_duration_hours: float = 24.0
     started_at: Optional[str] = None
+    return_duration_hours: float = 0
+    return_started_at: Optional[str] = None
     route_points: List[RoutePoint] = Field(default_factory=list)
     notes: str = ""
     metadata: dict = Field(default_factory=dict)
@@ -208,18 +210,19 @@ class DeploymentCreate(BaseModel):
     unit_name: str = ""
     origin_type: Literal["25th", "partner", "counterpart"] = "25th"
     origin_unit_id: Optional[str] = None
-    status: Literal["draft", "active", "completed", "cancelled"] = "draft"
+    status: Literal["planning", "deploying", "deployed", "endex", "rtb", "completed", "cancelled"] = "planning"
     is_active: bool = False
     total_duration_hours: float = 24.0
+    return_duration_hours: float = 0
     route_points: List[RoutePoint] = Field(default_factory=list)
     notes: str = ""
     metadata: dict = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_active_route(self):
-        if self.status == "active" and len(self.route_points) < 2:
+        if self.status == "deploying" and len(self.route_points) < 2:
             raise ValueError(
-                "Active deployment requires at least 2 route points"
+                "Deploying status requires at least 2 route points"
                 " (origin and destination)"
             )
         return self
@@ -231,11 +234,13 @@ class DeploymentUpdate(BaseModel):
     origin_type: Optional[Literal["25th", "partner", "counterpart"]] = None
     origin_unit_id: Optional[str] = None
     status: Optional[
-        Literal["draft", "active", "completed", "cancelled"]
+        Literal["planning", "deploying", "deployed", "endex", "rtb", "completed", "cancelled"]
     ] = None
     is_active: Optional[bool] = None
     total_duration_hours: Optional[float] = None
     started_at: Optional[str] = None
+    return_duration_hours: Optional[float] = None
+    return_started_at: Optional[str] = None
     route_points: Optional[List[RoutePoint]] = None
     notes: Optional[str] = None
     metadata: Optional[dict] = None
