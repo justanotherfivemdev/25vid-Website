@@ -192,7 +192,17 @@ const AdminMemberDetail = () => {
               <div><Label>Role</Label>
                 <Select value={member.role} onValueChange={v => setMember({ ...member, role: v })}>
                   <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700"><SelectItem value="member">Member</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
+                  <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="admin">Admin (S-1)</SelectItem>
+                    <SelectItem value="s1_personnel">S-1 Personnel</SelectItem>
+                    <SelectItem value="s2_intelligence">S-2 Intelligence</SelectItem>
+                    <SelectItem value="s3_operations">S-3 Operations</SelectItem>
+                    <SelectItem value="s4_logistics">S-4 Logistics</SelectItem>
+                    <SelectItem value="s5_civil_affairs">S-5 Civil Affairs</SelectItem>
+                    <SelectItem value="s6_communications">S-6 Communications</SelectItem>
+                    <SelectItem value="training_staff">Training Staff</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
             </div>

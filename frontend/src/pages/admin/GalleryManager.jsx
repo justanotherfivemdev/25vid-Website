@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageUpload from '@/components/admin/ImageUpload';
+import { useAuth } from '@/context/AuthContext';
+import { hasPermission, PERMISSIONS } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
 
@@ -28,12 +30,17 @@ const CATEGORIES = [
 ];
 
 const GalleryManager = () => {
+  const { user: authUser } = useAuth();
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('all');
   const [form, setForm] = useState({ title: '', image_url: '', category: 'operation' });
+  const [removeAllOpen, setRemoveAllOpen] = useState(false);
+  const [removingAll, setRemovingAll] = useState(false);
+
+  const canRemoveAll = hasPermission(authUser?.role, PERMISSIONS.FULL_ACCESS);
 
   useEffect(() => { fetchImages(); }, []);
 
@@ -80,6 +87,19 @@ const GalleryManager = () => {
     }
   };
 
+  const handleRemoveAll = async () => {
+    setRemovingAll(true);
+    try {
+      await axios.delete(`${API}/admin/gallery`);
+      setImages([]);
+      setRemoveAllOpen(false);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Error removing all images');
+    } finally {
+      setRemovingAll(false);
+    }
+  };
+
   const resetForm = () => {
     setForm({ title: '', image_url: '', category: 'operation' });
     setEditing(null);
@@ -97,33 +117,63 @@ const GalleryManager = () => {
             <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="gallery-manager-title">GALLERY MANAGEMENT</h1>
             <p className="text-gray-400 mt-2">Upload and manage mission photos</p>
           </div>
-          <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-gallery-btn"><Plus className="w-4 h-4 mr-2" />Add Image</Button>
-            </DialogTrigger>
-            <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>{editing ? 'Edit Image' : 'Add Gallery Image'}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div><Label>Title</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Operation Night Storm - Team Alpha" data-testid="gallery-title-input" /></div>
-                <div><Label>Category</Label>
-                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                    <SelectTrigger className="bg-black border-gray-700" data-testid="gallery-category-select"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
-                      {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Image" description="Upload a file. Recommended: 600x600px or larger. Max 10MB." previewClass="w-full h-48 object-cover" />
-                <div className="flex justify-end space-x-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
-                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="gallery-submit-btn">{editing ? 'Update' : 'Add'}</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2">
+            {canRemoveAll && images.length > 0 && (
+              <Button
+                variant="outline"
+                className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"
+                onClick={() => setRemoveAllOpen(true)}
+                data-testid="gallery-remove-all-btn"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />Remove All
+              </Button>
+            )}
+            <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) resetForm(); }}>
+              <DialogTrigger asChild>
+                <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-gallery-btn"><Plus className="w-4 h-4 mr-2" />Add Image</Button>
+              </DialogTrigger>
+              <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>{editing ? 'Edit Image' : 'Add Gallery Image'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div><Label>Title</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Operation Night Storm - Team Alpha" data-testid="gallery-title-input" /></div>
+                  <div><Label>Category</Label>
+                    <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                      <SelectTrigger className="bg-black border-gray-700" data-testid="gallery-category-select"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-gray-900 border-gray-700">
+                        {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Image" description="Upload a file. Recommended: 600x600px or larger. Max 10MB." previewClass="w-full h-48 object-cover" />
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
+                    <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="gallery-submit-btn">{editing ? 'Update' : 'Add'}</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
+
+        {/* Remove All confirmation dialog */}
+        <Dialog open={removeAllOpen} onOpenChange={setRemoveAllOpen}>
+          <DialogContent className="bg-gray-900 text-white border-gray-800">
+            <DialogHeader>
+              <DialogTitle className="text-tropic-red" style={{ fontFamily: 'Rajdhani, sans-serif' }}>REMOVE ALL IMAGES</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Are you sure you want to delete <strong>ALL {images.length}</strong> gallery images? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setRemoveAllOpen(false)} className="border-gray-700" disabled={removingAll}>Cancel</Button>
+              <Button onClick={handleRemoveAll} className="bg-tropic-red hover:bg-tropic-red/80 text-white" disabled={removingAll} data-testid="gallery-confirm-remove-all">
+                {removingAll ? 'Removing...' : 'Yes, Remove All'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Category filter */}
         <div className="flex gap-2 flex-wrap">

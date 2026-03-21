@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, FileText, Megaphone, MessageSquare, Image, Users, Calendar, Settings, LogOut, Home, BookOpen, Shield, Building2, UserPlus, Radio, MapPin, ClipboardList, ScrollText, Navigation, Menu, X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { hasPermission, PERMISSIONS, getCommandCenterTitle, getCommandCenterTitleShort } from '@/utils/permissions';
 
 import { BACKEND_URL } from '@/utils/api';
 
@@ -20,35 +21,36 @@ const AdminLayout = ({ children }) => {
     await logout();
     navigate('/');
   };
+
+  const role = authUser?.role || 'member';
+  const hp = (perm) => hasPermission(role, perm);
   
   const menuItems = [
     // Primary navigation — fixed order per requirements
-    { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/admin/site-content', icon: Settings, label: 'Command Center' },
-    { path: '/admin/recruitment', icon: UserPlus, label: 'Recruitment' },
-    { path: '/admin/pipeline', icon: UserPlus, label: 'Recruit Pipeline' },
-    { path: '/admin/users', icon: Users, label: 'Members' },
-    { path: '/admin/training', icon: FileText, label: 'Training' },
-    { path: '/admin/deployments', icon: Navigation, label: 'Deployments' },
-    { path: '/admin/operations', icon: Calendar, label: 'Operations' },
-    { path: '/admin/campaigns', icon: MapPin, label: 'Campaigns' },
+    { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', show: true },
+    { path: '/admin/site-content', icon: Settings, label: 'Command Center', show: hp(PERMISSIONS.MANAGE_CONTENT) },
+    { path: '/admin/recruitment', icon: UserPlus, label: 'Recruitment', show: hp(PERMISSIONS.MANAGE_RECRUITMENT) },
+    { path: '/admin/pipeline', icon: UserPlus, label: 'Recruit Pipeline', show: hp(PERMISSIONS.MANAGE_RECRUITMENT) },
+    { path: '/admin/users', icon: Users, label: 'Members', show: hp(PERMISSIONS.MANAGE_USERS) },
+    { path: '/admin/training', icon: FileText, label: 'Training', show: hp(PERMISSIONS.MANAGE_TRAINING) },
+    { path: '/admin/deployments', icon: Navigation, label: 'Deployments', show: hp(PERMISSIONS.MANAGE_DEPLOYMENTS) },
+    { path: '/admin/operations', icon: Calendar, label: 'Operations', show: hp(PERMISSIONS.MANAGE_OPERATIONS) },
+    { path: '/admin/campaigns', icon: MapPin, label: 'Campaigns', show: hp(PERMISSIONS.MANAGE_CAMPAIGNS) },
     // Secondary navigation — remaining sections
-    { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
-    { path: '/admin/gallery', icon: Image, label: 'Gallery' },
-    { path: '/admin/intel', icon: Radio, label: 'Intel & Briefings' },
-    { path: '/admin/history', icon: BookOpen, label: 'Unit History' },
-    { path: '/admin/unit-config', icon: Building2, label: 'Unit Config' },
-    { path: '/admin/loa', icon: Calendar, label: 'LOA Management' },
-    { path: '/admin/partner-units', icon: Shield, label: 'Partner Units' },
-    { path: '/admin/partner-applications', icon: ClipboardList, label: 'Partner Applications' },
+    { path: '/admin/announcements', icon: Megaphone, label: 'Announcements', show: hp(PERMISSIONS.MANAGE_ANNOUNCEMENTS) },
+    { path: '/admin/gallery', icon: Image, label: 'Gallery', show: hp(PERMISSIONS.MANAGE_GALLERY) },
+    { path: '/admin/intel', icon: Radio, label: 'Intel & Briefings', show: hp(PERMISSIONS.MANAGE_INTEL) },
+    { path: '/admin/history', icon: BookOpen, label: 'Unit History', show: hp(PERMISSIONS.MANAGE_CONTENT) },
+    { path: '/admin/unit-config', icon: Building2, label: 'Unit Config', show: hp(PERMISSIONS.MANAGE_USERS) },
+    { path: '/admin/loa', icon: Calendar, label: 'LOA Management', show: hp(PERMISSIONS.MANAGE_LOA) },
+    { path: '/admin/partner-units', icon: Shield, label: 'Partner Units', show: hp(PERMISSIONS.MANAGE_PARTNERS) },
+    { path: '/admin/partner-applications', icon: ClipboardList, label: 'Partner Applications', show: hp(PERMISSIONS.MANAGE_PARTNERS) },
     // Logs — always at the bottom
-    { path: '/admin/error-logs', icon: AlertTriangle, label: 'Error Logs' },
-    { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs' },
+    { path: '/admin/error-logs', icon: AlertTriangle, label: 'Error Logs', show: hp(PERMISSIONS.VIEW_LOGS) },
+    { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs', show: hp(PERMISSIONS.VIEW_LOGS) },
   ];
   
-  const visibleMenuItems = authUser?.role === 's5_liaison' 
-    ? menuItems.filter(item => item.path === '/admin' || item.path === '/admin/partner-units' || item.path === '/admin/partner-applications')
-    : menuItems;
+  const visibleMenuItems = menuItems.filter(item => item.show);
   
   return (
     <div className="min-h-screen bg-black text-white">
@@ -65,8 +67,8 @@ const AdminLayout = ({ children }) => {
             </button>
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
             <h1 className="text-2xl font-bold text-tropic-gold tracking-[0.1em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-              <span className="hidden sm:inline">{authUser?.role === 's5_liaison' ? 'S-5 LIAISON CENTER' : '25TH ID COMMAND CENTER'}</span>
-              <span className="sm:hidden">{authUser?.role === 's5_liaison' ? 'S-5' : '25TH ID'}</span>
+              <span className="hidden sm:inline">{getCommandCenterTitle(role)}</span>
+              <span className="sm:hidden">{getCommandCenterTitleShort(role)}</span>
             </h1>
           </div>
           <div className="flex items-center space-x-2 md:space-x-3">

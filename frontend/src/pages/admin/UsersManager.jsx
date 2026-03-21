@@ -141,8 +141,14 @@ const UsersManager = () => {
                   <Label className="text-xs">Role</Label>
                   <select value={preCreateForm.role} onChange={e => setPreCreateForm({...preCreateForm, role: e.target.value})} className="w-full bg-black border border-gray-700 rounded-md px-3 py-2 text-sm text-white">
                     <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                    <option value="s5_liaison">S5 Liaison</option>
+                    <option value="admin">Admin (S-1)</option>
+                    <option value="s1_personnel">S-1 Personnel</option>
+                    <option value="s2_intelligence">S-2 Intelligence</option>
+                    <option value="s3_operations">S-3 Operations</option>
+                    <option value="s4_logistics">S-4 Logistics</option>
+                    <option value="s5_civil_affairs">S-5 Civil Affairs</option>
+                    <option value="s6_communications">S-6 Communications</option>
+                    <option value="training_staff">Training Staff</option>
                   </select>
                 </div>
                 <div>
