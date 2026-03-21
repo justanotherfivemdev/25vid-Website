@@ -4,10 +4,10 @@ import { Link } from 'react-router-dom';
 import { Flag, ExternalLink } from 'lucide-react';
 
 const THREAT_LEVEL_COLORS = {
-  low: 'bg-green-700/20 text-green-400',
-  medium: 'bg-tropic-gold/20 text-tropic-gold',
-  high: 'bg-orange-700/20 text-orange-400',
-  critical: 'bg-tropic-red/20 text-tropic-red',
+  low: 'bg-green-700/15 text-green-400',
+  medium: 'bg-tropic-gold/15 text-tropic-gold',
+  high: 'bg-orange-700/15 text-orange-400',
+  critical: 'bg-tropic-red/15 text-tropic-red',
 };
 
 export default function CampaignPopup({ campaign }) {
@@ -39,19 +39,19 @@ export default function CampaignPopup({ campaign }) {
       <div className="flex flex-col gap-1 text-xs text-gray-400">
         {campaign.theater && (
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-500">Theater:</span>
-            <span>{campaign.theater}</span>
+            <span className="text-gray-500 text-[10px] uppercase tracking-wider">Theater</span>
+            <span className="font-mono text-[11px]">{campaign.theater}</span>
           </div>
         )}
         {campaign.status && (
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-500">Status:</span>
-            <span className="capitalize">{campaign.status}</span>
+            <span className="text-gray-500 text-[10px] uppercase tracking-wider">Status</span>
+            <span className="capitalize font-mono text-[11px]">{campaign.status}</span>
           </div>
         )}
       </div>
 
-      <div className="mt-3 pt-2 border-t border-gray-700">
+      <div className="mt-3 pt-2 border-t" style={{ borderColor: 'rgba(201,162,39,0.15)' }}>
         <Link
           to={campaign.related_entity_id ? `/hub/campaign?id=${campaign.related_entity_id}` : '/hub/campaign'}
           className="inline-flex items-center gap-1 text-xs text-tropic-gold hover:text-tropic-gold-light transition-colors"

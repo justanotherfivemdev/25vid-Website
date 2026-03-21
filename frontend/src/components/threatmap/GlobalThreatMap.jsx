@@ -422,15 +422,15 @@ function getDeploymentTypeLabel(dep) {
 }
 
 /* ── ATAK-style tactical route layers ─────────────────────────────────── */
-/* Outer glow – wide, low-opacity halo that gives the line a lit appearance */
+/* Outer glow – subtle halo for tactical route visibility */
 const deploymentPathGlowLayer = {
   id: 'deployment-path-glow',
   type: 'line',
   paint: {
     'line-color': ['get', 'color'],
-    'line-width': 10,
-    'line-opacity': 0.18,
-    'line-blur': 6,
+    'line-width': 8,
+    'line-opacity': 0.12,
+    'line-blur': 4,
   },
   layout: {
     'line-cap': 'round',
@@ -438,15 +438,15 @@ const deploymentPathGlowLayer = {
   },
 };
 
-/* Core tactical route line – long-dash military pattern */
+/* Core tactical route line – refined military dash pattern */
 const deploymentPathLayer = {
   id: 'deployment-path',
   type: 'line',
   paint: {
     'line-color': ['get', 'color'],
-    'line-width': 3,
-    'line-dasharray': [10, 5],
-    'line-opacity': 0.92,
+    'line-width': 2.5,
+    'line-dasharray': [8, 4],
+    'line-opacity': 0.88,
   },
   layout: {
     'line-cap': 'butt',
@@ -454,15 +454,15 @@ const deploymentPathLayer = {
   },
 };
 
-/* Filled chevron direction indicators along the route */
+/* Directional chevrons along the route – subtle, evenly spaced */
 const deploymentArrowLayer = {
   id: 'deployment-arrows',
   type: 'symbol',
   layout: {
     'symbol-placement': 'line',
-    'symbol-spacing': 120,
-    'text-field': '▶',
-    'text-size': 18,
+    'symbol-spacing': 140,
+    'text-field': '▸',
+    'text-size': 14,
     'text-rotate': 0,
     'text-rotation-alignment': 'map',
     'text-keep-upright': false,
@@ -471,7 +471,7 @@ const deploymentArrowLayer = {
   },
   paint: {
     'text-color': ['get', 'color'],
-    'text-opacity': 0.85,
+    'text-opacity': 0.7,
   },
 };
 
@@ -1194,22 +1194,23 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
             return (
               <Marker key={`dep-timer-${d.id}`} longitude={mid[0]} latitude={mid[1]} anchor="center" style={{ zIndex: 2 }}>
-                {/* ATAK-style tactical data box */}
+                {/* Tactical data box – compact, clean, command-center style */}
                 <div
-                  className="flex flex-col items-start gap-0.5 px-2 py-1.5 whitespace-nowrap select-none"
+                  className="flex flex-col items-start gap-0.5 px-2 py-1 whitespace-nowrap select-none"
                   style={{
-                    background: 'rgba(10,18,36,0.95)',
-                    border: `1px solid ${color}`,
-                    borderLeft: `3px solid ${color}`,
-                    boxShadow: `0 0 10px ${color}33, inset 0 0 6px ${color}0d`,
-                    borderRadius: 2,
-                    minWidth: 80,
+                    background: 'rgba(8,14,28,0.92)',
+                    border: `1px solid ${color}66`,
+                    borderLeft: `2px solid ${color}`,
+                    boxShadow: `0 0 6px ${color}22`,
+                    borderRadius: 3,
+                    minWidth: 72,
+                    backdropFilter: 'blur(4px)',
                   }}
                 >
                   {phaseLabel && (
                     <div
-                      className="text-[8px] font-black tracking-[0.18em] uppercase w-full"
-                      style={{ color }}
+                      className="text-[7px] font-black tracking-[0.2em] uppercase w-full"
+                      style={{ color, opacity: 0.9 }}
                     >
                       {phaseLabel}
                     </div>
@@ -1217,17 +1218,17 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                   {countdown && (
                     <div className="flex items-center gap-1">
                       <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
-                        <circle cx="5" cy="5" r="4" stroke={color} strokeWidth="1.2" />
-                        <line x1="5" y1="5" x2="5" y2="2" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
-                        <line x1="5" y1="5" x2="7.5" y2="6.5" stroke={color} strokeWidth="1" strokeLinecap="round" />
+                        <circle cx="5" cy="5" r="4" stroke={color} strokeWidth="1" opacity="0.7" />
+                        <line x1="5" y1="5" x2="5" y2="2.5" stroke={color} strokeWidth="1" strokeLinecap="round" opacity="0.8" />
+                        <line x1="5" y1="5" x2="7" y2="6.5" stroke={color} strokeWidth="0.8" strokeLinecap="round" opacity="0.8" />
                       </svg>
-                      <span className="font-mono font-bold text-[11px]" style={{ color }}>
+                      <span className="font-mono font-bold text-[10px]" style={{ color }}>
                         {countdown}
                       </span>
                     </div>
                   )}
                   {startedTime && (
-                    <div className="text-[8px] text-gray-400 leading-tight">
+                    <div className="text-[7px] text-gray-500 leading-tight font-mono">
                       {startedTime}
                     </div>
                   )}
@@ -1305,61 +1306,41 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                   style={{ cursor: 'pointer' }}
                   title={`${d.title} — ${Math.round(progress * 100)}%`}
                 >
-                  {/* C-17 Globemaster top-down silhouette, nose pointing up (north=0°) */}
+                  {/* C-17 tactical silhouette – compact, centered, nose-up */}
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="34"
-                    height="34"
+                    width="24"
+                    height="24"
                     viewBox="0 0 32 32"
                     aria-label={`${d.unit_name || d.title} — deployment aircraft`}
                     style={{
                       transform: `rotate(${heading}deg)`,
-                      filter: `drop-shadow(0 0 5px ${color}cc)`,
-                      transition: 'transform 0.8s ease-out',
+                      filter: `drop-shadow(0 0 4px ${color}aa)`,
+                      transition: 'transform 1s cubic-bezier(0.4,0,0.2,1)',
                     }}
                   >
                     <title>{d.unit_name || d.title} — C-17 in transit</title>
                     {/* Fuselage */}
-                    <path
-                      d="M15.5,2 C14.5,4 14,7 14,11 L14,23 C14.3,25 14.8,27.5 15.5,30 C16.2,27.5 16.7,25 17,23 L17,11 C17,7 16.5,4 15.5,2 Z"
-                      fill={color}
-                    />
-                    {/* Left main wing */}
-                    <path
-                      d="M14,10 L1,15 L1,16.5 L14,13 Z"
-                      fill={color}
-                    />
-                    {/* Right main wing */}
-                    <path
-                      d="M17,10 L31,15 L31,16.5 L17,13 Z"
-                      fill={color}
-                    />
-                    {/* Left outer engine */}
-                    <ellipse cx="4.5" cy="15.5" rx="2.5" ry="1" fill={color} opacity="0.9" />
-                    {/* Left inner engine */}
-                    <ellipse cx="9" cy="14" rx="2.2" ry="0.9" fill={color} opacity="0.9" />
-                    {/* Right inner engine */}
-                    <ellipse cx="23" cy="14" rx="2.2" ry="0.9" fill={color} opacity="0.9" />
-                    {/* Right outer engine */}
-                    <ellipse cx="27.5" cy="15.5" rx="2.5" ry="1" fill={color} opacity="0.9" />
-                    {/* Left horizontal stabilizer */}
-                    <path
-                      d="M14,23 L8,27 L8.5,28 L14,25 Z"
-                      fill={color}
-                    />
-                    {/* Right horizontal stabilizer */}
-                    <path
-                      d="M17,23 L24,27 L23.5,28 L17,25 Z"
-                      fill={color}
-                    />
+                    <path d="M16,3 C15,5.5 14.5,8 14.5,12 L14.5,22 C14.8,24 15.3,26 16,29 C16.7,26 17.2,24 17.5,22 L17.5,12 C17.5,8 17,5.5 16,3 Z" fill={color} />
+                    {/* Wings */}
+                    <path d="M14.5,11 L3,15.5 L3,16.8 L14.5,13.5 Z" fill={color} />
+                    <path d="M17.5,11 L29,15.5 L29,16.8 L17.5,13.5 Z" fill={color} />
+                    {/* Engines */}
+                    <ellipse cx="6" cy="15.8" rx="1.8" ry="0.7" fill={color} opacity="0.85" />
+                    <ellipse cx="10" cy="14.5" rx="1.6" ry="0.65" fill={color} opacity="0.85" />
+                    <ellipse cx="22" cy="14.5" rx="1.6" ry="0.65" fill={color} opacity="0.85" />
+                    <ellipse cx="26" cy="15.8" rx="1.8" ry="0.7" fill={color} opacity="0.85" />
+                    {/* Tail stabilizers */}
+                    <path d="M14.5,22 L9.5,25.5 L10,26.5 L14.5,24 Z" fill={color} opacity="0.9" />
+                    <path d="M17.5,22 L22.5,25.5 L22,26.5 L17.5,24 Z" fill={color} opacity="0.9" />
                   </svg>
                   <span
-                    className="text-[9px] font-bold mt-0.5 whitespace-nowrap px-1 py-0.5 rounded tracking-wide"
+                    className="text-[8px] font-bold mt-0.5 whitespace-nowrap px-1 py-0.5 rounded tracking-wide"
                     style={{
                       color,
-                      background: 'rgba(0,0,0,0.82)',
-                      border: `1px solid ${color}55`,
-                      letterSpacing: '0.05em',
+                      background: 'rgba(0,0,0,0.85)',
+                      border: `1px solid ${color}44`,
+                      letterSpacing: '0.06em',
                     }}
                   >
                     {d.unit_name || d.title}
@@ -1460,29 +1441,29 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                 style={{ cursor: activeDeployment ? 'pointer' : 'default' }}
               >
                 {isInTransit ? (
-                  /* C-17 silhouette for 25th ID while in transit – gold with glow */
+                  /* C-17 tactical silhouette for 25th ID – gold with glow */
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="38"
-                    height="38"
+                    width="28"
+                    height="28"
                     viewBox="0 0 32 32"
                     aria-label="25th Infantry Division — C-17 in transit"
                     style={{
                       transform: `rotate(${divHeading}deg)`,
-                      filter: 'drop-shadow(0 0 8px #C9A227cc)',
-                      transition: 'transform 0.8s ease-out',
+                      filter: 'drop-shadow(0 0 6px #C9A227aa)',
+                      transition: 'transform 1s cubic-bezier(0.4,0,0.2,1)',
                     }}
                   >
                     <title>25th Infantry Division — C-17 in transit</title>
-                    <path d="M15.5,2 C14.5,4 14,7 14,11 L14,23 C14.3,25 14.8,27.5 15.5,30 C16.2,27.5 16.7,25 17,23 L17,11 C17,7 16.5,4 15.5,2 Z" fill="#C9A227" />
-                    <path d="M14,10 L1,15 L1,16.5 L14,13 Z" fill="#C9A227" />
-                    <path d="M17,10 L31,15 L31,16.5 L17,13 Z" fill="#C9A227" />
-                    <ellipse cx="4.5" cy="15.5" rx="2.5" ry="1" fill="#C9A227" />
-                    <ellipse cx="9" cy="14" rx="2.2" ry="0.9" fill="#C9A227" />
-                    <ellipse cx="23" cy="14" rx="2.2" ry="0.9" fill="#C9A227" />
-                    <ellipse cx="27.5" cy="15.5" rx="2.5" ry="1" fill="#C9A227" />
-                    <path d="M14,23 L8,27 L8.5,28 L14,25 Z" fill="#C9A227" />
-                    <path d="M17,23 L24,27 L23.5,28 L17,25 Z" fill="#C9A227" />
+                    <path d="M16,3 C15,5.5 14.5,8 14.5,12 L14.5,22 C14.8,24 15.3,26 16,29 C16.7,26 17.2,24 17.5,22 L17.5,12 C17.5,8 17,5.5 16,3 Z" fill="#C9A227" />
+                    <path d="M14.5,11 L3,15.5 L3,16.8 L14.5,13.5 Z" fill="#C9A227" />
+                    <path d="M17.5,11 L29,15.5 L29,16.8 L17.5,13.5 Z" fill="#C9A227" />
+                    <ellipse cx="6" cy="15.8" rx="1.8" ry="0.7" fill="#C9A227" opacity="0.85" />
+                    <ellipse cx="10" cy="14.5" rx="1.6" ry="0.65" fill="#C9A227" opacity="0.85" />
+                    <ellipse cx="22" cy="14.5" rx="1.6" ry="0.65" fill="#C9A227" opacity="0.85" />
+                    <ellipse cx="26" cy="15.8" rx="1.8" ry="0.7" fill="#C9A227" opacity="0.85" />
+                    <path d="M14.5,22 L9.5,25.5 L10,26.5 L14.5,24 Z" fill="#C9A227" opacity="0.9" />
+                    <path d="M17.5,22 L22.5,25.5 L22,26.5 L17.5,24 Z" fill="#C9A227" opacity="0.9" />
                   </svg>
                 ) : (
                   /* NATO HQ marker at rest / deployed */
@@ -1493,16 +1474,16 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                       }}
                     />
                     {divisionDisplayLocation.state !== 'home_station' && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-tropic-gold rounded-full animate-pulse border border-black" />
+                      <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-tropic-gold rounded-full animate-pulse border border-black/80" />
                     )}
                   </div>
                 )}
                 <span
-                  className="text-[9px] font-black whitespace-nowrap px-1.5 py-0.5 rounded tracking-widest uppercase mt-0.5"
+                  className="text-[8px] font-black whitespace-nowrap px-1.5 py-0.5 rounded tracking-widest uppercase mt-0.5"
                   style={{
                     color: '#C9A227',
-                    background: 'rgba(0,0,0,0.85)',
-                    border: '1px solid rgba(201,162,39,0.45)',
+                    background: 'rgba(0,0,0,0.88)',
+                    border: '1px solid rgba(201,162,39,0.35)',
                     letterSpacing: '0.12em',
                   }}
                 >
@@ -1541,12 +1522,12 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
               <div className="flex flex-col items-center" style={{ cursor: 'pointer' }}>
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: buildNATOMarkerSVG('friendly', 'objective', 32),
+                    __html: buildNATOMarkerSVG('friendly', 'objective', 28),
                   }}
                 />
                 <span
-                  className="text-[9px] mt-0.5 whitespace-nowrap bg-black/70 px-1 rounded max-w-[100px] truncate"
-                  style={{ color }}
+                  className="text-[8px] mt-0.5 whitespace-nowrap px-1 py-0.5 rounded max-w-[100px] truncate font-mono"
+                  style={{ color, background: 'rgba(0,0,0,0.8)', border: `1px solid ${color}33` }}
                 >
                   {lastRp.name || d.title}
                 </span>
@@ -1570,8 +1551,8 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                 <Marker key={`wp-${d.id}-${rpIdx}`} longitude={rp.longitude} latitude={rp.latitude} anchor="center">
                   <div
                     title={`${rp.name || `Stop ${rpIdx + 1}`}${rp.stop_duration_hours ? ` (${rp.stop_duration_hours}h stop)` : ''}`}
-                    className="rounded-full border-2 border-black"
-                    style={{ width: 10, height: 10, backgroundColor: color, opacity: 0.8 }}
+                    className="rounded-full border border-black/80"
+                    style={{ width: 8, height: 8, backgroundColor: color, opacity: 0.75, boxShadow: `0 0 3px ${color}44` }}
                   />
                 </Marker>
               ));
@@ -1655,12 +1636,13 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             <div
               className="text-white"
               style={{
-                background: 'rgba(10,18,36,0.97)',
-                border: '1px solid rgba(201,162,39,0.35)',
+                background: 'rgba(8,14,28,0.97)',
+                border: '1px solid rgba(201,162,39,0.3)',
                 borderTop: '2px solid #C9A227',
                 borderRadius: 4,
                 padding: '10px 12px',
                 minWidth: 220,
+                backdropFilter: 'blur(6px)',
               }}
             >
               {deploymentPopup.type === 'nato' ? (
@@ -1732,13 +1714,13 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                   })()}
 
                   {/* Countdown */}
-                  <div className="mt-1.5 flex items-center gap-1 text-[11px]">
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <circle cx="5" cy="5" r="4" stroke="#C9A227" strokeWidth="1.2" />
-                      <line x1="5" y1="5" x2="5" y2="2" stroke="#C9A227" strokeWidth="1.2" strokeLinecap="round" />
-                      <line x1="5" y1="5" x2="7.5" y2="6.5" stroke="#C9A227" strokeWidth="1" strokeLinecap="round" />
+                      <circle cx="5" cy="5" r="4" stroke="#C9A227" strokeWidth="1" opacity="0.7" />
+                      <line x1="5" y1="5" x2="5" y2="2.5" stroke="#C9A227" strokeWidth="1" strokeLinecap="round" opacity="0.8" />
+                      <line x1="5" y1="5" x2="7" y2="6.5" stroke="#C9A227" strokeWidth="0.8" strokeLinecap="round" opacity="0.8" />
                     </svg>
-                    <span className="font-mono text-tropic-gold">
+                    <span className="font-mono text-tropic-gold text-[11px]">
                       {computeCountdownLabel(deploymentPopup.data) || 'Arrived'}
                     </span>
                   </div>
@@ -1796,24 +1778,25 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         <div
           className="absolute left-4 rounded border shadow-lg"
           style={{
-            bottom: 288,   /* px – clears the 4-button ThreatMapControls stack (~264px from bottom) */
-            background: 'rgba(10,18,36,0.94)',
-            borderColor: 'rgba(201,162,39,0.4)',
+            bottom: 288,
+            background: 'rgba(8,14,28,0.94)',
+            borderColor: 'rgba(201,162,39,0.35)',
             maxWidth: 240,
             zIndex: 15,
+            backdropFilter: 'blur(6px)',
           }}
         >
           {/* Legend header */}
           <div
             className="flex items-center gap-2 px-3 py-1.5 border-b"
-            style={{ borderColor: 'rgba(201,162,39,0.25)' }}
+            style={{ borderColor: 'rgba(201,162,39,0.2)' }}
           >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true">
               <title>Deployment indicator</title>
-              <polygon points="5,0 10,10 0,10" fill="#C9A227" />
+              <polygon points="5,0 10,10 0,10" fill="#C9A227" opacity="0.8" />
             </svg>
-            <span className="text-[9px] font-black tracking-[0.15em] text-tropic-gold uppercase">
-              25th ID · Active Deployments
+            <span className="text-[8px] font-black tracking-[0.15em] text-tropic-gold uppercase">
+              Active Deployments
             </span>
           </div>
           <div className="px-3 py-2 space-y-1.5 max-h-[160px] overflow-y-auto">
@@ -1822,21 +1805,21 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                 <div
                   className="shrink-0"
                   style={{
-                    width: 12,
-                    height: 3,
+                    width: 10,
+                    height: 2.5,
                     backgroundColor: entry.color,
                     borderRadius: 1,
-                    boxShadow: `0 0 4px ${entry.color}88`,
+                    boxShadow: `0 0 3px ${entry.color}66`,
                   }}
                 />
                 <div className="min-w-0 flex-1">
                   <div
-                    className="text-[9px] font-bold truncate leading-tight tracking-wide uppercase"
+                    className="text-[8px] font-bold truncate leading-tight tracking-wide uppercase"
                     style={{ color: entry.color }}
                   >
                     {entry.title}
                   </div>
-                  <div className="text-[8px] text-gray-500 leading-tight">
+                  <div className="text-[7px] text-gray-500 leading-tight">
                     {entry.label} · {entry.category}
                   </div>
                 </div>
