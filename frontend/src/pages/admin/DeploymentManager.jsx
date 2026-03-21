@@ -17,6 +17,7 @@ import { formatApiError } from '@/utils/errorMessages';
 import { formatDeploymentDateTime } from '@/utils/deploymentDateTime';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+const TROPIC_GOLD_HEX = '#C9A227';
 
 const DEPLOYMENT_STATUSES = ['draft', 'active', 'completed', 'cancelled'];
 const ORIGIN_TYPES = ['25th', 'partner', 'counterpart'];
@@ -988,6 +989,8 @@ const DeploymentManager = () => {
                   </Button>
                 </div>
                 {/* Mini map for click-to-add route points */}
+                {MAPBOX_TOKEN ? (
+                <>
                 <div className="rounded border border-gray-700 overflow-hidden" style={{ height: 200 }}>
                   <Map
                     mapboxAccessToken={MAPBOX_TOKEN}
@@ -1041,7 +1044,7 @@ const DeploymentManager = () => {
                           <MapLayer
                             id="form-route-line"
                             type="line"
-                            paint={{ 'line-color': '#C9A227', 'line-width': 2, 'line-dasharray': [2, 2], 'line-opacity': 0.8 }}
+                            paint={{ 'line-color': TROPIC_GOLD_HEX, 'line-width': 2, 'line-dasharray': [2, 2], 'line-opacity': 0.8 }}
                           />
                         </MapSource>
                       );
@@ -1049,6 +1052,10 @@ const DeploymentManager = () => {
                   </Map>
                 </div>
                 <p className="text-[10px] text-gray-600 mt-1">Click on the map to add route points. Points appear in the list below.</p>
+                </>
+                ) : (
+                  <p className="text-[10px] text-yellow-600 italic">Mapbox token not configured. Map preview unavailable.</p>
+                )}
                 {(deploymentForm.route_points || []).length === 0 && (
                   <p className="text-xs text-gray-600 italic">No route points. Add stops to define the deployment route.</p>
                 )}
