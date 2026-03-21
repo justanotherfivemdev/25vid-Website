@@ -31,7 +31,7 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/site-content', icon: Settings, label: 'Command Center', show: hp(PERMISSIONS.MANAGE_CONTENT) },
     { path: '/admin/recruitment', icon: UserPlus, label: 'Recruitment', show: hp(PERMISSIONS.MANAGE_RECRUITMENT) },
     { path: '/admin/pipeline', icon: UserPlus, label: 'Recruit Pipeline', show: hp(PERMISSIONS.MANAGE_RECRUITMENT) },
-    { path: '/admin/users', icon: Users, label: 'Members', show: hp(PERMISSIONS.MANAGE_USERS) },
+    { path: '/admin/users', icon: Users, label: 'Members', show: hp(PERMISSIONS.MANAGE_USERS) || hp(PERMISSIONS.VIEW_MEMBERS) },
     { path: '/admin/training', icon: FileText, label: 'Training', show: hp(PERMISSIONS.MANAGE_TRAINING) },
     { path: '/admin/deployments', icon: Navigation, label: 'Deployments', show: hp(PERMISSIONS.MANAGE_DEPLOYMENTS) },
     { path: '/admin/operations', icon: Calendar, label: 'Operations', show: hp(PERMISSIONS.MANAGE_OPERATIONS) },

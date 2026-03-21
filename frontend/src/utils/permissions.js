@@ -29,6 +29,8 @@ export const ROLES = {
 
 export const PERMISSIONS = {
   MANAGE_USERS: 'manage_users',
+  VIEW_MEMBERS: 'view_members',
+  EDIT_MEMBER_TRAINING_FIELDS: 'edit_member_training_fields',
   MANAGE_RECRUITMENT: 'manage_recruitment',
   MANAGE_LOA: 'manage_loa',
   MANAGE_OPERATIONS: 'manage_operations',
@@ -98,6 +100,10 @@ const ROLE_PERMISSIONS = {
   [ROLES.TRAINING_STAFF]: new Set([
     PERMISSIONS.VIEW_DASHBOARD,
     PERMISSIONS.MANAGE_TRAINING,
+    PERMISSIONS.VIEW_MEMBERS,
+    PERMISSIONS.EDIT_MEMBER_TRAINING_FIELDS,
+    PERMISSIONS.MANAGE_RECRUITMENT,
+    PERMISSIONS.VIEW_ROSTER,
   ]),
 
   // Legacy alias
