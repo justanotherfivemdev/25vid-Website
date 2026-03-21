@@ -399,6 +399,9 @@ const UNIT_DEPLOYMENT_COLORS = [
 // Phases considered "visible" on the map (everything except planning/completed)
 const VISIBLE_DEPLOYMENT_PHASES = ['deploying', 'deployed', 'endex', 'rtb'];
 
+// Maximum zoom level when tracking active deployment
+const MAX_TRACKING_ZOOM = 5;
+
 // Latitude offset in degrees applied to each partner unit's deployment line
 // so overlapping routes remain visually distinguishable (~16 km per unit).
 const PARTNER_LINE_OFFSET_DEG = 0.15;
@@ -680,7 +683,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     const map = mapRef.current.getMap();
     map.easeTo({
       center: [pos[0], pos[1]],
-      zoom: Math.min(map.getZoom(), 5),
+      zoom: Math.min(map.getZoom(), MAX_TRACKING_ZOOM),
       duration: 2000,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1234,7 +1237,11 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
             } else {
               progress = computeProgress(d);
             }
-            if (progress <= 0 || progress >= 1) return null;
+            // Hide plane only when completely outside the route; allow at boundaries for deployed/endex
+            const atDestination = d.status === 'deployed' || d.status === 'endex';
+            if (progress < 0 || progress > 1) return null;
+            if (progress === 0 && !atDestination) return null;
+            if (progress === 1 && d.status === 'deploying') return null;
 
             const pos = interpolateAlongLine(coords, progress);
 
