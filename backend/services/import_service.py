@@ -1,5 +1,6 @@
 import uuid
 import secrets
+import re
 from datetime import datetime, timezone
 from typing import Dict, Any
 
@@ -33,6 +34,13 @@ def sanitize_import_user_fields(raw: Dict[str, str]) -> Dict[str, Any]:
         payload["rank"] = raw["rank"]
     if raw.get("role"):
         payload["role"] = raw["role"].lower()
+    if raw.get("billet"):
+        payload["billet"] = raw["billet"]
+        payload.setdefault("favorite_role", raw["billet"])
+    if raw.get("favorite_role"):
+        payload["favorite_role"] = raw["favorite_role"]
+    if raw.get("specialization"):
+        payload["specialization"] = raw["specialization"]
     if raw.get("permissions"):
         payload["permissions"] = split_permissions(raw["permissions"])
     if raw.get("unit"):
@@ -44,35 +52,68 @@ def sanitize_import_user_fields(raw: Dict[str, str]) -> Dict[str, Any]:
     return payload
 
 
+def build_generated_import_email(update_fields: Dict[str, Any]) -> str:
+    if update_fields.get("email"):
+        return update_fields["email"]
+
+    raw_identifier = (
+        update_fields.get("discord_id")
+        or update_fields.get("username")
+        or update_fields.get("discord_username")
+        or f"prereg-{uuid.uuid4()}"
+    )
+    safe_identifier = re.sub(r"[^a-z0-9]+", "_", str(raw_identifier).strip().lower()).strip("_")
+    if not safe_identifier:
+        safe_identifier = f"prereg_{uuid.uuid4().hex[:8]}"
+    return f"imported_{safe_identifier}@25thid.local"
+
+
 async def upsert_user_from_import(mapped_fields: Dict[str, str]) -> tuple:
     update_fields = sanitize_import_user_fields(mapped_fields)
     email = update_fields.get("email")
     discord_id = update_fields.get("discord_id")
+    username = update_fields.get("username")
+    discord_username = update_fields.get("discord_username")
 
-    existing_by_email = None
-    existing_by_discord = None
+    existing_records = []
 
     if email:
-        existing_by_email = await db.users.find_one({"email": email}, {"_id": 0})
+        found = await db.users.find_one({"email": email}, {"_id": 0})
+        if found:
+            existing_records.append(found)
     if discord_id:
-        existing_by_discord = await db.users.find_one({"discord_id": discord_id}, {"_id": 0})
+        found = await db.users.find_one({"discord_id": discord_id}, {"_id": 0})
+        if found:
+            existing_records.append(found)
+    if username:
+        found = await db.users.find_one({"username": username}, {"_id": 0})
+        if found:
+            existing_records.append(found)
+    if discord_username:
+        found = await db.users.find_one({"discord_username": discord_username}, {"_id": 0})
+        if found:
+            existing_records.append(found)
 
-    if existing_by_email and existing_by_discord and existing_by_email["id"] != existing_by_discord["id"]:
+    unique_existing = {record["id"]: record for record in existing_records}
+    if len(unique_existing) > 1:
         raise ValueError(
-            "Conflicting identifiers: provided email and discord_id belong to different existing accounts"
+            "Conflicting identifiers: the imported fields match multiple existing accounts"
         )
 
-    existing = existing_by_email or existing_by_discord
+    existing = next(iter(unique_existing.values()), None)
 
     if existing:
         update_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.users.update_one({"id": existing["id"]}, {"$set": update_fields})
-        return "updated", existing.get("email") or existing.get("discord_id") or existing.get("id")
+        return "updated", (
+            existing.get("email")
+            or existing.get("discord_id")
+            or existing.get("username")
+            or existing.get("discord_username")
+            or existing.get("id")
+        )
 
-    if email and not discord_id:
-        return "skipped_missing_discord", email
-
-    generated_email = email or f"imported_discord_{discord_id}@25thid.local"
+    generated_email = build_generated_import_email(update_fields)
     generated_username = (
         update_fields.get("username")
         or update_fields.get("discord_username")
@@ -85,7 +126,9 @@ async def upsert_user_from_import(mapped_fields: Dict[str, str]) -> tuple:
         password_hash=pwd_context.hash(secrets.token_urlsafe(32)),
         role=update_fields.get("role", "member"),
         rank=update_fields.get("rank"),
+        specialization=update_fields.get("specialization"),
         status=update_fields.get("status", "recruit"),
+        favorite_role=update_fields.get("favorite_role"),
         discord_id=update_fields.get("discord_id"),
         discord_username=update_fields.get("discord_username"),
         discord_linked=bool(update_fields.get("discord_id")),
@@ -93,6 +136,7 @@ async def upsert_user_from_import(mapped_fields: Dict[str, str]) -> tuple:
         permissions=update_fields.get("permissions", []),
         unit=update_fields.get("unit"),
         company=update_fields.get("company"),
+        billet=update_fields.get("billet"),
         is_active=False,
     )
 

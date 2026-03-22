@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
@@ -6,6 +7,7 @@ from urllib.parse import quote
 import httpx
 
 GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets"
+GOOGLE_SHEETS_GVIZ_BASE = "https://docs.google.com/spreadsheets/d"
 
 SUPPORTED_IMPORT_FIELDS = {
     "username",
@@ -17,18 +19,49 @@ SUPPORTED_IMPORT_FIELDS = {
     "permissions",
     "unit",
     "status",
+    "billet",
+    "specialization",
+    "favorite_role",
 }
 
 AUTO_COLUMN_ALIASES = {
-    "username": ["username", "display_name", "displayname", "name", "user"],
+    "username": [
+        "username",
+        "ingamename",
+        "in game name",
+        "in_game_name",
+        "member_username",
+        "member username",
+        "display_name",
+        "displayname",
+        "name",
+        "user",
+    ],
     "email": ["email", "email_address", "mail"],
-    "discord_username": ["discord_username", "discord_name", "discord user", "discorduser", "discord"],
-    "discord_id": ["discord_id", "discord_user_id", "discord user id", "discordid"],
+    "discord_username": [
+        "discord_username",
+        "discord username",
+        "personnel",
+        "discord_name",
+        "discord user",
+        "discorduser",
+        "discord",
+    ],
+    "discord_id": [
+        "discord_id",
+        "discord user id",
+        "discord_user_id",
+        "discord uid",
+        "discordid",
+    ],
     "rank": ["rank", "grade"],
-    "role": ["role", "user_role"],
+    "role": ["site_role", "user_role", "account_role", "access_role"],
     "permissions": ["permissions", "permission", "scopes"],
     "unit": ["unit", "company", "platoon", "squad", "section"],
     "status": ["status", "member_status"],
+    "billet": ["role", "role / phase", "role_phase", "assignment", "duty_position"],
+    "favorite_role": ["favorite_role", "preferred_role", "primary_role"],
+    "specialization": ["extra duties", "extra_duties", "additional_duties", "notes"],
 }
 
 
@@ -89,6 +122,40 @@ def build_field_mapping(headers: List[str], manual_mapping: Optional[Dict[str, s
     return mapping
 
 
+def detect_header_row(
+    values: List[List[Any]],
+    manual_mapping: Optional[Dict[str, str]] = None,
+    search_limit: int = 25,
+) -> Tuple[int, List[str], Dict[str, int]]:
+    best_index = -1
+    best_headers: List[str] = []
+    best_mapping: Dict[str, int] = {}
+    best_score = -1
+
+    for idx, row in enumerate(values[:search_limit]):
+        headers = [str(cell).strip() if cell is not None else "" for cell in row]
+        mapping = build_field_mapping(headers, manual_mapping)
+        score = len(mapping)
+        if "discord_id" in mapping or "email" in mapping:
+            score += 2
+        if "username" in mapping:
+            score += 1
+
+        if score > best_score:
+            best_index = idx
+            best_headers = headers
+            best_mapping = mapping
+            best_score = score
+
+    if best_index < 0 or not best_mapping:
+        raise GoogleSheetsImportError(
+            "Unable to detect a usable header row in the Google Sheet. "
+            "Include headers such as Name, Username, Discord, Discord ID, Rank, or Email."
+        )
+
+    return best_index, best_headers, best_mapping
+
+
 def row_to_mapped_fields(row: List[Any], mapping: Dict[str, int]) -> Dict[str, str]:
     mapped: Dict[str, str] = {}
     for field, index in mapping.items():
@@ -107,53 +174,108 @@ def split_permissions(value: str) -> List[str]:
     return [p.strip() for p in re.split(r"[,;|]", value) if p.strip()]
 
 
+def _parse_gviz_payload(text: str) -> Dict[str, Any]:
+    start = text.find("(")
+    end = text.rfind(")")
+    if start == -1 or end == -1 or end <= start:
+        raise GoogleSheetsImportError("Unexpected response format from the public Google Sheet feed")
+    try:
+        return json.loads(text[start + 1:end])
+    except json.JSONDecodeError as exc:
+        raise GoogleSheetsImportError("Unable to parse the public Google Sheet feed") from exc
+
+
+def _gviz_table_to_values(table: Dict[str, Any]) -> List[List[str]]:
+    cols = table.get("cols", [])
+    col_count = len(cols)
+    rows: List[List[str]] = []
+
+    for row in table.get("rows", []):
+        cells = row.get("c", []) or []
+        materialized: List[str] = []
+        for idx in range(col_count):
+            cell = cells[idx] if idx < len(cells) else None
+            value = ""
+            if isinstance(cell, dict):
+                raw = cell.get("f")
+                if raw is None:
+                    raw = cell.get("v")
+                if raw is not None:
+                    value = str(raw)
+            materialized.append(value.strip())
+        if any(materialized):
+            rows.append(materialized)
+
+    return rows
+
+
+async def _fetch_sheet_rows_via_public_feed(
+    client: httpx.AsyncClient,
+    spreadsheet_id: str,
+    sheet_name: Optional[str] = None,
+) -> Tuple[str, List[List[str]]]:
+    params = {"tqx": "out:json"}
+    if sheet_name:
+        params["sheet"] = sheet_name
+
+    try:
+        response = await client.get(
+            f"{GOOGLE_SHEETS_GVIZ_BASE}/{spreadsheet_id}/gviz/tq",
+            params=params,
+        )
+    except httpx.HTTPError as exc:
+        raise GoogleSheetsImportError(
+            f"Error communicating with the public Google Sheet feed: {exc}"
+        ) from exc
+
+    if response.status_code >= 400:
+        raise GoogleSheetsImportError(
+            f"Unable to read the public Google Sheet feed (status {response.status_code})."
+        )
+
+    payload = _parse_gviz_payload(response.text)
+    if payload.get("status") != "ok":
+        raise GoogleSheetsImportError("Google Sheets reported an error while reading the public feed")
+
+    values = _gviz_table_to_values(payload.get("table", {}))
+    if not values:
+        raise GoogleSheetsImportError("Sheet is empty")
+
+    return sheet_name or "Sheet1", values
+
+
 async def fetch_sheet_rows(spreadsheet_id: str, sheet_name: Optional[str] = None) -> Tuple[str, List[List[str]]]:
     api_key = os.environ.get("GOOGLE_SHEETS_API_KEY", "").strip()
-    if not api_key:
-        raise GoogleSheetsImportError("GOOGLE_SHEETS_API_KEY is not configured")
 
     async with httpx.AsyncClient(timeout=20.0) as client:
-        try:
-            metadata_res = await client.get(
-                f"{GOOGLE_SHEETS_API_BASE}/{spreadsheet_id}",
-                params={"key": api_key},
-            )
-        except httpx.HTTPError as exc:
-            raise GoogleSheetsImportError(
-                f"Error communicating with Google Sheets API while fetching spreadsheet metadata: {exc}"
-            ) from exc
+        if api_key:
+            try:
+                metadata_res = await client.get(
+                    f"{GOOGLE_SHEETS_API_BASE}/{spreadsheet_id}",
+                    params={"key": api_key},
+                )
+                metadata_res.raise_for_status()
+                metadata = metadata_res.json()
+                sheets = metadata.get("sheets", [])
+                available_sheet_names = [
+                    s.get("properties", {}).get("title")
+                    for s in sheets
+                    if s.get("properties", {}).get("title")
+                ]
 
-        if metadata_res.status_code >= 400:
-            raise GoogleSheetsImportError(
-                f"Unable to access spreadsheet metadata (status {metadata_res.status_code}). "
-                "Ensure the sheet is accessible to the configured API key."
-            )
+                target_sheet = sheet_name or (available_sheet_names[0] if available_sheet_names else None)
+                if not target_sheet:
+                    raise GoogleSheetsImportError("Spreadsheet has no sheets to import")
 
-        metadata = metadata_res.json()
-        sheets = metadata.get("sheets", [])
-        available_sheet_names = [s.get("properties", {}).get("title") for s in sheets if s.get("properties", {}).get("title")]
+                values_res = await client.get(
+                    f"{GOOGLE_SHEETS_API_BASE}/{spreadsheet_id}/values/{quote(target_sheet, safe='')}",
+                    params={"key": api_key},
+                )
+                values_res.raise_for_status()
+                values = values_res.json().get("values", [])
+                if values:
+                    return target_sheet, values
+            except (httpx.HTTPError, GoogleSheetsImportError):
+                pass
 
-        target_sheet = sheet_name or (available_sheet_names[0] if available_sheet_names else None)
-        if not target_sheet:
-            raise GoogleSheetsImportError("Spreadsheet has no sheets to import")
-
-        try:
-            values_res = await client.get(
-                f"{GOOGLE_SHEETS_API_BASE}/{spreadsheet_id}/values/{quote(target_sheet, safe='')}",
-                params={"key": api_key},
-            )
-        except httpx.HTTPError as exc:
-            raise GoogleSheetsImportError(
-                f"Error communicating with Google Sheets API while fetching values from '{target_sheet}': {exc}"
-            ) from exc
-
-        if values_res.status_code >= 400:
-            raise GoogleSheetsImportError(
-                f"Unable to read sheet values from '{target_sheet}' (status {values_res.status_code})."
-            )
-
-        values = values_res.json().get("values", [])
-        if not values:
-            raise GoogleSheetsImportError("Sheet is empty")
-
-        return target_sheet, values
+        return await _fetch_sheet_rows_via_public_feed(client, spreadsheet_id, sheet_name)

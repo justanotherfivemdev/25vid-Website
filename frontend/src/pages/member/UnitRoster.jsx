@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Shield, Home, LogOut, Users, ChevronRight, ChevronDown, Building2, LayoutGrid, FileSpreadsheet, Upload, X, Loader2 } from 'lucide-react';
+import { Search, Shield, Home, LogOut, Users, ChevronRight, ChevronDown, Building2, LayoutGrid, FileSpreadsheet, Upload, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
 import { isStaff } from '@/utils/permissions';
@@ -21,6 +21,8 @@ const STATUS_COLORS = {
   command: 'bg-tropic-red',
   inactive: 'bg-gray-700'
 };
+
+const PERSONNEL_LOG_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1pwfgKVRvGjA0ycWodum47Bj41Jj25U7XvlkaZ8VycfA/edit?usp=sharing';
 
 const MemberCard = ({ member, compact = false }) => (
   <Link to={`/roster/${member.id}`}>
@@ -96,9 +98,6 @@ const UnitRoster = () => {
   const [rankFilter, setRankFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importUrl, setImportUrl] = useState('');
-  const [importSheetName, setImportSheetName] = useState('');
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [importError, setImportError] = useState('');
@@ -152,13 +151,11 @@ const UnitRoster = () => {
   };
 
   const handleGoogleSheetsImport = async () => {
-    if (!importUrl.trim()) return;
     setImporting(true);
     setImportError('');
     setImportResult(null);
     try {
-      const payload = { spreadsheetUrl: importUrl.trim() };
-      if (importSheetName.trim()) payload.sheetName = importSheetName.trim();
+      const payload = { spreadsheetUrl: PERSONNEL_LOG_SHEET_URL };
       const res = await axios.post(`${API}/admin/import-users`, payload);
       setImportResult(res.data);
       await fetchData();
@@ -171,11 +168,9 @@ const UnitRoster = () => {
   };
 
   const handleOpenImportDialog = () => {
-    setImportDialogOpen(true);
     setImportResult(null);
     setImportError('');
-    setImportUrl('');
-    setImportSheetName('');
+    handleGoogleSheetsImport();
   };
 
   const ranks = [...new Set(members.map(m => m.rank).filter(Boolean))].sort();
@@ -292,7 +287,7 @@ const UnitRoster = () => {
                   onClick={handleOpenImportDialog}
                   data-testid="import-google-sheets"
                 >
-                  <Upload className="w-4 h-4 mr-1" />Import from Google Sheets
+                  {importing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}Sync Personnel Log
                 </Button>
                 <Button
                   size="sm"
@@ -330,9 +325,14 @@ const UnitRoster = () => {
             </div>
           </div>
           {isStaff(user?.role) && (
-            <p className="text-xs text-gray-500 -mt-3">
-              Export creates a CSV download and opens a new Google Sheet so you can import into any spreadsheet destination.
-            </p>
+            <div className="text-xs text-gray-500 -mt-3 space-y-1">
+              <p>
+                Sync Personnel Log pulls directly from the shared 25VID personnel sheet and reads the Personnel, In-Game Name, Rank, Role, and Extra Duties columns for pre-sign-up data.
+              </p>
+              <p>
+                Export creates a CSV download and opens a new Google Sheet so you can import into any spreadsheet destination.
+              </p>
+            </div>
           )}
 
           {/* Roster Tab: 25th Members vs Partner Units */}
@@ -550,45 +550,22 @@ const UnitRoster = () => {
         </div>
       </div>
 
-      {/* Google Sheets Import Dialog */}
-      {importDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-tropic-gold/30 rounded-lg shadow-2xl max-w-lg w-full mx-4">
-            <div className="flex items-center justify-between p-4 border-b border-gray-800">
-              <h2 className="text-lg font-bold text-tropic-gold tracking-wider flex items-center gap-2" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-                <Upload className="w-5 h-5" />IMPORT FROM GOOGLE SHEETS
-              </h2>
-              <button onClick={() => setImportDialogOpen(false)} className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <p className="text-xs text-gray-400">
-                Paste a Google Spreadsheet URL or ID. The spreadsheet must be shared publicly or accessible via a Google API key.
-                Columns will be auto-mapped based on headers (username, email, discord_id, rank, role, status, etc.).
-              </p>
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-gray-300">Spreadsheet URL or ID</label>
-                <Input
-                  type="text"
-                  placeholder="https://docs.google.com/spreadsheets/d/..."
-                  value={importUrl}
-                  onChange={(e) => setImportUrl(e.target.value)}
-                  className="bg-black border-gray-700"
-                  data-testid="import-sheet-url"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-gray-300">Sheet Name <span className="text-gray-600">(optional)</span></label>
-                <Input
-                  type="text"
-                  placeholder="Sheet1"
-                  value={importSheetName}
-                  onChange={(e) => setImportSheetName(e.target.value)}
-                  className="bg-black border-gray-700"
-                  data-testid="import-sheet-name"
-                />
-              </div>
+      {(importing || importError || importResult) && (
+        <div className="fixed bottom-4 right-4 z-50 w-full max-w-xl px-4 sm:px-0">
+          <Card className="bg-gray-950/95 border-gray-800 shadow-2xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg tracking-wider text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                PERSONNEL LOG SYNC
+              </CardTitle>
+              <p className="text-xs text-gray-400 break-all">{PERSONNEL_LOG_SHEET_URL}</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {importing && (
+                <div className="rounded border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-100">
+                  <Loader2 className="inline w-4 h-4 mr-2 animate-spin" />
+                  Syncing pre-sign-up data from the shared sheet...
+                </div>
+              )}
 
               {importError && (
                 <div className="bg-tropic-red/10 border border-tropic-red/20 rounded p-3 text-sm text-tropic-red-light" data-testid="import-error">
@@ -598,7 +575,7 @@ const UnitRoster = () => {
 
               {importResult && (
                 <div className="bg-green-900/20 border border-green-800/30 rounded p-3 space-y-2" data-testid="import-result">
-                  <div className="text-sm font-medium text-green-400">Import Complete</div>
+                  <div className="text-sm font-medium text-green-400">Sync Complete</div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
                     <div>Imported: <span className="text-green-400 font-bold">{importResult.imported}</span></div>
                     <div>Updated: <span className="text-blue-400 font-bold">{importResult.updated}</span></div>
@@ -615,20 +592,8 @@ const UnitRoster = () => {
                   )}
                 </div>
               )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={() => setImportDialogOpen(false)} className="border-gray-700">Cancel</Button>
-                <Button
-                  onClick={handleGoogleSheetsImport}
-                  disabled={importing || !importUrl.trim()}
-                  className="bg-tropic-gold hover:bg-tropic-gold-dark text-black"
-                  data-testid="import-submit"
-                >
-                  {importing ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Importing...</> : <><Upload className="w-4 h-4 mr-1" />Import Members</>}
-                </Button>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

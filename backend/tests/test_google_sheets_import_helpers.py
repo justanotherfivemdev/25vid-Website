@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from google_sheets_import import (
     parse_spreadsheet_id,
     build_field_mapping,
+    detect_header_row,
     row_to_mapped_fields,
 )
 
@@ -41,3 +42,33 @@ def test_row_to_mapped_fields_applies_mapping_and_trims_values():
         "email": "echo@example.com",
         "discord_id": "12345",
     }
+
+
+def test_detect_header_row_skips_intro_rows_and_finds_personnel_headers():
+    values = [
+        ["25th Virtual Infantry Division - Personnel Logs", "", ""],
+        ["Legend", "Rank", "Meaning"],
+        ["Name", "Discord Username", "Discord ID", "Rank"],
+        ["Ghost", "ghost_actual", "555123", "SGT"],
+    ]
+
+    header_row_index, headers, mapping = detect_header_row(values)
+
+    assert header_row_index == 2
+    assert headers[0] == "Name"
+    assert mapping["username"] == 0
+    assert mapping["discord_username"] == 1
+    assert mapping["discord_id"] == 2
+    assert mapping["rank"] == 3
+
+
+def test_build_field_mapping_supports_personnel_log_columns():
+    headers = ["Personnel", "In-Game Name", "Rank", "Role", "Extra Duties"]
+
+    mapping = build_field_mapping(headers)
+
+    assert mapping["discord_username"] == 0
+    assert mapping["username"] == 1
+    assert mapping["rank"] == 2
+    assert mapping["billet"] == 3
+    assert mapping["specialization"] == 4

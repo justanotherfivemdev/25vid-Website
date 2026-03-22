@@ -29,7 +29,7 @@ from google_sheets_import import (
     GoogleSheetsImportError,
     parse_spreadsheet_id,
     fetch_sheet_rows,
-    build_field_mapping,
+    detect_header_row,
     row_to_mapped_fields,
 )
 
@@ -345,13 +345,15 @@ async def import_users_from_google_sheet(payload: UserImportRequest, current_use
     except GoogleSheetsImportError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    headers = values[0]
-    field_mapping = build_field_mapping(headers, payload.fieldMapping)
+    header_row_index, headers, field_mapping = detect_header_row(values, payload.fieldMapping)
 
-    if "email" not in field_mapping and "discord_id" not in field_mapping:
+    if not any(field in field_mapping for field in ("email", "discord_id", "username", "discord_username")):
         raise HTTPException(
             status_code=400,
-            detail="Unable to map required identifiers. Include an email or discord_id column (or provide fieldMapping).",
+            detail=(
+                "Unable to map required identifiers. Include one of: email, discord_id, "
+                "In-Game Name/username, or Personnel/discord username."
+            ),
         )
 
     report = UserImportResponse(
@@ -359,17 +361,22 @@ async def import_users_from_google_sheet(payload: UserImportRequest, current_use
         field_mapping={field: headers[idx] for field, idx in field_mapping.items()},
     )
 
-    for row_index, row in enumerate(values[1:], start=2):
+    for row_index, row in enumerate(values[header_row_index + 1:], start=header_row_index + 2):
         mapped = row_to_mapped_fields(row, field_mapping)
-        identifier = mapped.get("email") or mapped.get("discord_id") or mapped.get("username")
+        identifier = (
+            mapped.get("email")
+            or mapped.get("discord_id")
+            or mapped.get("username")
+            or mapped.get("discord_username")
+        )
 
-        if not mapped.get("email") and not mapped.get("discord_id"):
+        if not any(mapped.get(field) for field in ("email", "discord_id", "username", "discord_username")):
             report.skipped += 1
             report.results.append(
                 UserImportRowResult(
                     row_number=row_index,
                     action="skipped",
-                    message="Missing required identifier (email or discord_id)",
+                    message="Missing required identifier (email, discord_id, username, or personnel)",
                     identifier=identifier,
                 )
             )
