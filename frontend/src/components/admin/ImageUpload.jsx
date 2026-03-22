@@ -51,14 +51,25 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || 'Upload failed');
+        let errorMsg = `Upload failed (${res.status})`;
+        try {
+          const errData = await res.json();
+          errorMsg = errData.detail || errorMsg;
+        } catch {
+          // Response body was not JSON (e.g. HTML error from a proxy)
+        }
+        throw new Error(errorMsg);
       }
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error('Unexpected response from server. Please try again.');
+      }
       onChange(data.url);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
