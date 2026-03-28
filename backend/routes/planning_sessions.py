@@ -32,6 +32,7 @@ from models.planning_session import (
     SessionJoin,
     SessionParticipant,
 )
+from routes.operations_events import record_event
 
 router = APIRouter()
 logger = logging.getLogger("planning_sessions")
@@ -387,6 +388,12 @@ async def ws_planning(websocket: WebSocket, session_id: str):
                             "$inc": {"version": 1},
                         },
                     )
+                    # Record event for timeline replay
+                    await record_event(
+                        plan_id=plan["id"], event_type="UNIT_CREATE",
+                        user_id=user_id, username=username,
+                        payload={"unit": unit}, session_id=session_id,
+                    )
                     await _broadcast(session_id, {
                         "type": "UNIT_CREATE",
                         "payload": {"unit": unit},
@@ -400,12 +407,23 @@ async def ws_planning(websocket: WebSocket, session_id: str):
                 unit_id = payload.get("unit_id")
                 changes = payload.get("changes", {})
                 if unit_id and changes:
+                    # Determine event sub-type: positional moves vs other updates
+                    is_move = set(changes.keys()) <= {"x", "y"}
+                    ev_type = "UNIT_MOVE" if is_move else "UNIT_UPDATE"
+
                     # Last-write-wins: update the specific unit in the array
                     set_fields = {f"units.$.{k}": v for k, v in changes.items()}
                     set_fields["last_synced_at"] = now_iso
                     await db.operations_plans.update_one(
                         {"id": plan["id"], "units.id": unit_id},
                         {"$set": set_fields, "$inc": {"version": 1}},
+                    )
+                    # Record event for timeline replay
+                    await record_event(
+                        plan_id=plan["id"], event_type=ev_type,
+                        user_id=user_id, username=username,
+                        payload={"unit_id": unit_id, "changes": changes},
+                        session_id=session_id,
                     )
                     await _broadcast(session_id, {
                         "type": "UNIT_UPDATE",
@@ -427,6 +445,12 @@ async def ws_planning(websocket: WebSocket, session_id: str):
                             "$inc": {"version": 1},
                         },
                     )
+                    # Record event for timeline replay
+                    await record_event(
+                        plan_id=plan["id"], event_type="UNIT_DELETE",
+                        user_id=user_id, username=username,
+                        payload={"unit_id": unit_id}, session_id=session_id,
+                    )
                     await _broadcast(session_id, {
                         "type": "UNIT_DELETE",
                         "payload": {"unit_id": unit_id},
@@ -445,6 +469,12 @@ async def ws_planning(websocket: WebSocket, session_id: str):
                     await db.operations_plans.update_one(
                         {"id": plan["id"]},
                         {"$set": update_fields, "$inc": {"version": 1}},
+                    )
+                    # Record event for timeline replay
+                    await record_event(
+                        plan_id=plan["id"], event_type="PLAN_METADATA_UPDATE",
+                        user_id=user_id, username=username,
+                        payload=update_fields, session_id=session_id,
                     )
                     await _broadcast(session_id, {
                         "type": "PLAN_UPDATE",

@@ -54,6 +54,8 @@ from routes.deployment import router as deployment_router
 from routes.adsb import router as adsb_router
 from routes.operations_plans import router as operations_plans_router
 from routes.planning_sessions import router as planning_sessions_router
+from routes.operations_events import router as operations_events_router
+from routes.voice import router as voice_router
 
 
 # Create the main app
@@ -82,6 +84,8 @@ api_router.include_router(deployment_router)
 api_router.include_router(adsb_router)
 api_router.include_router(operations_plans_router)
 api_router.include_router(planning_sessions_router)
+api_router.include_router(operations_events_router)
+api_router.include_router(voice_router)
 
 
 @api_router.get("/")
@@ -478,6 +482,15 @@ async def startup_event():
         await db.planning_sessions.create_index("plan_id")
         await db.planning_sessions.create_index("join_code")
         await db.planning_sessions.create_index("status")
+        # Operations Events (timeline / replay)
+        await db.operations_events.create_index("id", unique=True)
+        await db.operations_events.create_index("plan_id")
+        await db.operations_events.create_index([("plan_id", 1), ("version", 1)])
+        await db.operations_events.create_index([("plan_id", 1), ("timestamp", 1)])
+        # Voice Logs (comms system)
+        await db.voice_logs.create_index("id", unique=True)
+        await db.voice_logs.create_index("plan_id")
+        await db.voice_logs.create_index([("plan_id", 1), ("timestamp", 1)])
     except Exception as e:
         vlog.warning(f"Index creation note: {e}")
 

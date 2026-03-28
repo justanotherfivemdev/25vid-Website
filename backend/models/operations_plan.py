@@ -92,6 +92,10 @@ class OperationsPlan(BaseModel):
     allow_live_viewing: bool = False
     version: int = 1
     last_synced_at: Optional[datetime] = None
+    # ── Threat Map integration ────────────────────────────────────────────
+    threat_map_link: Optional[str] = None  # optional link to a threat map event
+    geo_lat: Optional[float] = None  # optional geo coordinates for map overlay
+    geo_lng: Optional[float] = None
     # ── Audit ────────────────────────────────────────────────────────────
     created_by: str
     updated_by: Optional[str] = None
@@ -107,6 +111,9 @@ class OperationsPlanCreate(BaseModel):
     is_published: bool = False
     visibility_scope: Literal["all_members", "staff_only"] = "all_members"
     allow_live_viewing: bool = False
+    threat_map_link: Optional[str] = None
+    geo_lat: Optional[float] = None
+    geo_lng: Optional[float] = None
 
 
 class OperationsPlanUpdate(BaseModel):
@@ -117,3 +124,6 @@ class OperationsPlanUpdate(BaseModel):
     is_published: Optional[bool] = None
     visibility_scope: Optional[Literal["all_members", "staff_only"]] = None
     allow_live_viewing: Optional[bool] = None
+    threat_map_link: Optional[str] = None
+    geo_lat: Optional[float] = None
+    geo_lng: Optional[float] = None
