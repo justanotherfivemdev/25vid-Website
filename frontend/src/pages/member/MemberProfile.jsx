@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
+import { useMemberLayout } from '@/components/MemberLayout';
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
 const STATUS_COLORS = {
   recruit: 'bg-tropic-gold-dark',
@@ -20,6 +21,7 @@ const STATUS_COLORS = {
 };
 
 const MemberProfile = () => {
+  const inLayout = useMemberLayout();
   const { id } = useParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,8 @@ const MemberProfile = () => {
   const isOwnProfile = user?.id === profile.id;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className={inLayout ? '' : 'min-h-screen bg-black text-white'}>
+      {!inLayout && (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -56,8 +59,9 @@ const MemberProfile = () => {
           </div>
         </div>
       </nav>
+      )}
 
-      <div className="pt-20 pb-12 px-4 md:px-6">
+      <div className={`${inLayout ? 'pt-4' : 'pt-20'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-4xl space-y-6">
           {/* Header card */}
           <Card className="bg-gray-900/80 border-gray-800 overflow-hidden" data-testid="profile-header">

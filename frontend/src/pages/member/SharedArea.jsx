@@ -13,11 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useAuth } from '@/context/AuthContext';
 import { isStaff } from '@/utils/permissions';
 import { API } from '@/utils/api';
+import { useMemberLayout } from '@/components/MemberLayout';
 
 const TYPE_ICONS = { announcement: Megaphone, coordination: MessageSquare, joint_operation: Target, planning: Handshake };
 const TYPE_COLORS = { announcement: 'bg-tropic-gold/20 text-tropic-gold', coordination: 'bg-blue-500/20 text-blue-400', joint_operation: 'bg-tropic-red/20 text-tropic-red', planning: 'bg-green-500/20 text-green-400' };
 
 const SharedArea = () => {
+  const inLayout = useMemberLayout();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
@@ -60,7 +62,8 @@ const SharedArea = () => {
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className={inLayout ? '' : 'min-h-screen bg-black text-white'}>
+      {!inLayout && (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -76,8 +79,9 @@ const SharedArea = () => {
           </div>
         </div>
       </nav>
+      )}
 
-      <div className="pt-20 pb-12 px-4 md:px-6">
+      <div className={`${inLayout ? 'pt-4' : 'pt-20'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-4xl space-y-6">
           {/* Stats Bar */}
           {stats && (

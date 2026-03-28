@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
+import { useMemberLayout } from '@/components/MemberLayout';
 
 const CATEGORIES = [
   { value: 'general', label: 'General' },
@@ -23,6 +24,7 @@ const CATEGORIES = [
 ];
 
 const DiscussionForum = () => {
+  const inLayout = useMemberLayout();
   const [discussions, setDiscussions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -103,7 +105,8 @@ const DiscussionForum = () => {
   const getCatColor = (c) => ({ general: 'border-gray-500 text-gray-400', operations: 'border-tropic-red text-tropic-red', training: 'border-tropic-gold text-tropic-gold', feedback: 'border-green-500 text-green-400' }[c] || 'border-gray-500 text-gray-400');
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className={inLayout ? '' : 'min-h-screen bg-black text-white'}>
+      {!inLayout && (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -117,8 +120,9 @@ const DiscussionForum = () => {
           </div>
         </div>
       </nav>
+      )}
 
-      <div className="pt-20 pb-12 px-4 md:px-6">
+      <div className={`${inLayout ? 'pt-4' : 'pt-20'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-5xl space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>

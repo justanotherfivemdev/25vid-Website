@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
+import { useMemberLayout } from '@/components/MemberLayout';
 
 const resolveImg = (url) => {
   if (!url) return '';
@@ -44,6 +45,7 @@ const MediaFrame = ({ src, alt }) => {
 };
 
 const GalleryHub = () => {
+  const inLayout = useMemberLayout();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [galleryImages, setGalleryImages] = useState([]);
@@ -111,7 +113,8 @@ const GalleryHub = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className={inLayout ? '' : 'min-h-screen bg-black text-white'}>
+      {!inLayout && (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="member-gallery-nav">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -130,8 +133,9 @@ const GalleryHub = () => {
           </div>
         </div>
       </nav>
+      )}
 
-      <div className="pt-24 pb-12 px-4 md:px-6">
+      <div className={`${inLayout ? 'pt-4' : 'pt-24'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-7xl space-y-6">
           <Card className="bg-gradient-to-r from-tropic-red/20 to-gray-900 border border-tropic-red/30" data-testid="gallery-hero-card">
             <CardHeader>

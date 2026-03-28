@@ -53,6 +53,7 @@ import DeploymentManager from '@/pages/admin/DeploymentManager';
 import SharedArea from '@/pages/member/SharedArea';
 import PartnerSharedArea from '@/pages/partner/PartnerSharedArea';
 import JoinUs from '@/pages/JoinUs';
+import MemberLayout from '@/components/MemberLayout';
 import { isStaff, STAFF_ROLES } from '@/utils/permissions';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
@@ -1235,19 +1236,24 @@ function App() {
         <Route path="/admin/pipeline" element={<ProtectedRoute staffOnly><PipelineManager /></ProtectedRoute>} />
         <Route path="/admin/users/:id" element={<ProtectedRoute staffOnly><AdminMemberDetail /></ProtectedRoute>} />
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
-        <Route path="/hub" element={<ProtectedRoute><MemberHub /></ProtectedRoute>} />
-        <Route path="/hub/profile" element={<ProtectedRoute allowRecruit><EditProfile /></ProtectedRoute>} />
-        <Route path="/hub/discussions" element={<ProtectedRoute><DiscussionForum /></ProtectedRoute>} />
-        <Route path="/hub/discussions/:id" element={<ProtectedRoute><DiscussionThread /></ProtectedRoute>} />
-        <Route path="/hub/operations/:id" element={<ProtectedRoute><OperationDetail /></ProtectedRoute>} />
-        <Route path="/hub/intel" element={<ProtectedRoute><IntelBoard /></ProtectedRoute>} />
-        <Route path="/hub/campaign" element={<ProtectedRoute><CampaignMap /></ProtectedRoute>} />
+        {/* ── Member routes with sidebar layout ─────────────────────────── */}
+        <Route element={<ProtectedRoute><MemberLayout /></ProtectedRoute>}>
+          <Route path="/hub" element={<MemberHub />} />
+          <Route path="/hub/discussions" element={<DiscussionForum />} />
+          <Route path="/hub/discussions/:id" element={<DiscussionThread />} />
+          <Route path="/hub/operations/:id" element={<OperationDetail />} />
+          <Route path="/hub/intel" element={<IntelBoard />} />
+          <Route path="/hub/campaign" element={<CampaignMap />} />
+          <Route path="/hub/gallery" element={<GalleryHub />} />
+          <Route path="/hub/loa" element={<LOARequest />} />
+          <Route path="/hub/shared" element={<SharedArea />} />
+          <Route path="/roster" element={<UnitRoster />} />
+          <Route path="/roster/:id" element={<MemberProfile />} />
+        </Route>
+        {/* Profile allows recruits, still gets sidebar layout */}
+        <Route path="/hub/profile" element={<ProtectedRoute allowRecruit><MemberLayout><EditProfile /></MemberLayout></ProtectedRoute>} />
+        {/* Threat map: full-screen layout, no sidebar */}
         <Route path="/hub/threat-map" element={<ProtectedRoute><ThreatMapPage /></ProtectedRoute>} />
-        <Route path="/hub/gallery" element={<ProtectedRoute><GalleryHub /></ProtectedRoute>} />
-        <Route path="/hub/loa" element={<ProtectedRoute><LOARequest /></ProtectedRoute>} />
-        <Route path="/hub/shared" element={<ProtectedRoute><SharedArea /></ProtectedRoute>} />
-        <Route path="/roster" element={<ProtectedRoute><UnitRoster /></ProtectedRoute>} />
-        <Route path="/roster/:id" element={<ProtectedRoute><MemberProfile /></ProtectedRoute>} />
         <Route path="/partner-login" element={<PartnerLoginPage />} />
         <Route path="/partner-apply" element={<PartnerApply />} />
         <Route path="/partner" element={<PartnerHub />} />
