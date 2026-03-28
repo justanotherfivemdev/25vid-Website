@@ -24,6 +24,7 @@ import {
   ClipboardList,
   ScrollText,
   AlertTriangle,
+  Network,
 } from 'lucide-react';
 
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
@@ -114,6 +115,14 @@ export const ADMIN_NAV_GROUPS = [
         label: 'Campaigns',
         icon: MapPin,
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_CAMPAIGNS),
+      },
+      {
+        path: '/hub/orbat-mapper',
+        label: 'ORBAT Mapper',
+        icon: Network,
+        show: (role) =>
+          hasPermission(role, PERMISSIONS.MANAGE_PLANS) ||
+          hasPermission(role, PERMISSIONS.MANAGE_OPERATIONS),
       },
     ],
   },
