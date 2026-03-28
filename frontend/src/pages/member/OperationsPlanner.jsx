@@ -510,7 +510,16 @@ export default function OperationsPlanner() {
         title: planTitle,
         description: planDescription,
         map_id: planMapId,
-        units: units.map(({ id, ...rest }) => rest),
+        units: units.map(({ id, ...rest }) => {
+          const lat = rest.geo_lat === '' || rest.geo_lat === null || rest.geo_lat === undefined ? null : parseFloat(rest.geo_lat);
+          const lng = rest.geo_lng === '' || rest.geo_lng === null || rest.geo_lng === undefined ? null : parseFloat(rest.geo_lng);
+          return {
+            ...rest,
+            geo_lat: (lat !== null && !Number.isNaN(lat)) ? lat : null,
+            geo_lng: (lng !== null && !Number.isNaN(lng)) ? lng : null,
+            location_name: rest.location_name || '',
+          };
+        }),
         is_published: publish !== null ? publish : planPublished,
         visibility_scope: planVisibility,
         threat_map_link: threatMapLink || null,
@@ -553,6 +562,9 @@ export default function OperationsPlanner() {
       scale: 1,
       z_index: units.length,
       notes: '',
+      geo_lat: '',
+      geo_lng: '',
+      location_name: '',
     };
     setUnits((prev) => [...prev, newUnit]);
     setSelectedUnitId(newUnit.id);
@@ -1199,6 +1211,67 @@ export default function OperationsPlanner() {
                     className="bg-gray-900 border-gray-700 text-sm"
                   />
                 )}
+              </div>
+
+              {/* ── Unit Geo Coordinates ─────────────────────────── */}
+              <div className="pt-2 border-t border-gray-800">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                  <Globe2 className="w-3 h-3 inline mr-1" />Geo Location
+                </p>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                    Location Name
+                  </label>
+                  {isViewOnly ? (
+                    <p className="text-sm text-gray-300">{selectedUnit.location_name || '—'}</p>
+                  ) : (
+                    <Input
+                      value={selectedUnit.location_name || ''}
+                      onChange={(e) => updateUnit(selectedUnit.id, { location_name: e.target.value })}
+                      placeholder="e.g. Schofield Barracks, HI"
+                      className="bg-gray-900 border-gray-700 text-sm"
+                    />
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                      Latitude
+                    </label>
+                    {isViewOnly ? (
+                      <p className="text-sm text-gray-300">{selectedUnit.geo_lat ?? '—'}</p>
+                    ) : (
+                      <Input
+                        type="number"
+                        step="any"
+                        value={selectedUnit.geo_lat ?? ''}
+                        onChange={(e) => updateUnit(selectedUnit.id, { geo_lat: e.target.value })}
+                        placeholder="e.g. 21.49"
+                        className="bg-gray-900 border-gray-700 text-sm"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                      Longitude
+                    </label>
+                    {isViewOnly ? (
+                      <p className="text-sm text-gray-300">{selectedUnit.geo_lng ?? '—'}</p>
+                    ) : (
+                      <Input
+                        type="number"
+                        step="any"
+                        value={selectedUnit.geo_lng ?? ''}
+                        onChange={(e) => updateUnit(selectedUnit.id, { geo_lng: e.target.value })}
+                        placeholder="e.g. -158.06"
+                        className="bg-gray-900 border-gray-700 text-sm"
+                      />
+                    )}
+                  </div>
+                </div>
+                <p className="text-[9px] text-gray-600 mt-1">
+                  Optional. Real-world coordinates for Global Threat Map placement.
+                </p>
               </div>
 
               <div>

@@ -60,6 +60,10 @@ class PlanUnit(BaseModel):
     scale: float = 1.0
     z_index: int = 0
     notes: str = ""
+    # User-supplied geo coordinates for Global Threat Map integration
+    geo_lat: Optional[float] = None
+    geo_lng: Optional[float] = None
+    location_name: str = ""
 
 
 class PlanUnitCreate(BaseModel):
@@ -72,6 +76,9 @@ class PlanUnitCreate(BaseModel):
     scale: float = 1.0
     z_index: int = 0
     notes: str = ""
+    geo_lat: Optional[float] = None
+    geo_lng: Optional[float] = None
+    location_name: str = ""
 
 
 # ── Operations Plan ─────────────────────────────────────────────────────────
