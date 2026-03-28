@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -172,11 +171,11 @@ const AdminMemberDetail = () => {
     );
   };
 
-  if (loading) return <AdminLayout><div className="text-center py-12">Loading member...</div></AdminLayout>;
-  if (!member) return <AdminLayout><div className="text-center py-12">Member not found</div></AdminLayout>;
+  if (loading) return <div className="text-center py-12">Loading member...</div>;
+  if (!member) return <div className="text-center py-12">Member not found</div>;
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6 max-w-4xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -428,7 +427,7 @@ const AdminMemberDetail = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -154,7 +153,7 @@ const ErrorLogsManager = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -562,7 +561,7 @@ const ErrorLogsManager = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

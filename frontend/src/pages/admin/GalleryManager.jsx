@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,7 +109,7 @@ const GalleryManager = () => {
   const getCatColor = (c) => ({ operation: 'bg-tropic-red', training: 'bg-tropic-gold-dark', team: 'bg-green-600', equipment: 'bg-gray-600' }[c] || 'bg-gray-600');
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -205,7 +204,7 @@ const GalleryManager = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

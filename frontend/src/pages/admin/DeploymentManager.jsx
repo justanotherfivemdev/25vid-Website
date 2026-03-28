@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -520,7 +519,7 @@ const DeploymentManager = () => {
   const getNatoLabel = (value, labelsMap) => labelsMap[value] || formatLabel(value);
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -1536,7 +1535,7 @@ const DeploymentManager = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

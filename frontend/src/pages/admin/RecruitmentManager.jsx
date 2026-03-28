@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -118,10 +117,10 @@ const RecruitmentManager = () => {
     ? applications 
     : applications.filter(a => a.status === statusFilter);
 
-  if (loading) return <AdminLayout><div className="text-center py-12">Loading recruitment data...</div></AdminLayout>;
+  if (loading) return <div className="text-center py-12">Loading recruitment data...</div>;
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -427,7 +426,7 @@ const RecruitmentManager = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

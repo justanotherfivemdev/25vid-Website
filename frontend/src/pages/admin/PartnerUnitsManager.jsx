@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -115,7 +114,7 @@ const PartnerUnitsManager = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -299,7 +298,7 @@ const PartnerUnitsManager = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 };
 
