@@ -96,7 +96,12 @@ export default function OperationsPlanView() {
     fetchPlan();
   }, [id]);
 
-  /* ── Live polling: refresh plan data every 5 seconds when live ─────── */
+  /* ── Live polling: refresh plan data when live ───────────────────────
+       Uses polling (not WebSocket) for read-only viewers to keep the
+       implementation simple and avoid maintaining a separate WS path for
+       view-only connections.  8-second interval balances responsiveness
+       with server load.
+     ──────────────────────────────────────────────────────────────────── */
 
   useEffect(() => {
     if (!isLive || !plan) return;
@@ -132,7 +137,7 @@ export default function OperationsPlanView() {
       } catch {
         // Ignore polling errors
       }
-    }, 5000);
+    }, 8000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLive, id, plan?.map_width, plan?.map_height]);
