@@ -30,6 +30,10 @@ import {
   FileText, X, Check, Move, Pencil, Radio, Users, Lock, LogIn, LogOut,
 } from 'lucide-react';
 
+import ExportControls from '@/components/operations/ExportControls';
+import CommsChannel from '@/components/operations/CommsChannel';
+import VersionHistory from '@/components/operations/VersionHistory';
+
 /* ── OpenLayers ────────────────────────────────────────────────────────────── */
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -135,6 +139,9 @@ export default function OperationsPlanner() {
   const [selectedUnitId, setSelectedUnitId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!planId);
+  const [threatMapLink, setThreatMapLink] = useState('');
+  const [geoLat, setGeoLat] = useState('');
+  const [geoLng, setGeoLng] = useState('');
 
   /* ── UI state ───────────────────────────────────────────────────────────── */
   const [availableMaps, setAvailableMaps] = useState([]);
@@ -289,6 +296,9 @@ export default function OperationsPlanner() {
       setPlanPublished(!!plan.is_published);
       setPlanVisibility(plan.visibility_scope || 'all_members');
       setAllowLiveViewing(!!plan.allow_live_viewing);
+      setThreatMapLink(plan.threat_map_link || '');
+      setGeoLat(plan.geo_lat != null ? String(plan.geo_lat) : '');
+      setGeoLng(plan.geo_lng != null ? String(plan.geo_lng) : '');
       // If the plan has an active live session, auto-connect
       if (plan.live_session_id && plan.is_live_session_active) {
         setSessionId(plan.live_session_id);
@@ -494,6 +504,8 @@ export default function OperationsPlanner() {
     }
     setSaving(true);
     try {
+      const parsedGeoLat = geoLat === '' ? null : parseFloat(geoLat);
+      const parsedGeoLng = geoLng === '' ? null : parseFloat(geoLng);
       const payload = {
         title: planTitle,
         description: planDescription,
@@ -501,6 +513,9 @@ export default function OperationsPlanner() {
         units: units.map(({ id, ...rest }) => rest),
         is_published: publish !== null ? publish : planPublished,
         visibility_scope: planVisibility,
+        threat_map_link: threatMapLink || null,
+        geo_lat: (parsedGeoLat != null && !Number.isNaN(parsedGeoLat)) ? parsedGeoLat : null,
+        geo_lng: (parsedGeoLng != null && !Number.isNaN(parsedGeoLng)) ? parsedGeoLng : null,
       };
 
       let res;
@@ -749,6 +764,13 @@ export default function OperationsPlanner() {
             >
               <Eye className="w-4 h-4 mr-1" /> Publish
             </Button>
+            <ExportControls
+              mapRef={mapRef}
+              planTitle={planTitle}
+              planDescription={planDescription}
+              unitCount={units.length}
+              createdBy={user?.username || ''}
+            />
             <Button
               size="sm"
               variant="outline"
@@ -952,7 +974,77 @@ export default function OperationsPlanner() {
                     {planPublished ? 'Yes' : 'Draft'}
                   </Badge>
                 </div>
+
+                {/* ── Threat Map Integration ──────────────────────────── */}
+                <div className="pt-2 border-t border-gray-800">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                    <Globe2 className="w-3 h-3 inline mr-1" />Threat Map Integration
+                  </p>
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                      Threat Map Link
+                    </label>
+                    <Input
+                      value={threatMapLink}
+                      onChange={(e) => setThreatMapLink(e.target.value)}
+                      placeholder="Operation or event ID…"
+                      className="bg-gray-900 border-gray-700 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                        Geo Latitude
+                      </label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={geoLat}
+                        onChange={(e) => setGeoLat(e.target.value)}
+                        placeholder="e.g. 21.49"
+                        className="bg-gray-900 border-gray-700 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                        Geo Longitude
+                      </label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={geoLng}
+                        onChange={(e) => setGeoLng(e.target.value)}
+                        placeholder="e.g. -158.06"
+                        className="bg-gray-900 border-gray-700 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-gray-600 mt-1">
+                    Optional. If set, this plan appears on the Global Threat Map.
+                  </p>
+                </div>
               </div>
+            )}
+
+            {/* ── Comms Channel (below panels) ───────────────────────── */}
+            {planId && (
+              <div className="border-t border-gray-800">
+                <CommsChannel
+                  planId={planId}
+                  sessionId={sessionId}
+                  readOnly={isViewOnly}
+                  username={user?.username || ''}
+                />
+              </div>
+            )}
+
+            {/* ── Version History ─────────────────────────────────────── */}
+            {planId && (
+              <VersionHistory
+                planId={planId}
+                canRollback={canEdit}
+                onRollback={() => loadPlan(planId)}
+              />
             )}
           </div>
         )}

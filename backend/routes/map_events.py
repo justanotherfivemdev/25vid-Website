@@ -128,7 +128,30 @@ async def get_map_overlays(current_user: dict = Depends(get_current_user)):
         "operations": operation_markers,
         "intel": intel_markers,
         "events": [],
+        "operation_plans": await _get_geo_plans(),
     }
+
+
+async def _get_geo_plans():
+    """Return published operations plans that have geo coordinates set."""
+    plans = await db.operations_plans.find(
+        {"is_published": True, "geo_lat": {"$ne": None}, "geo_lng": {"$ne": None}},
+        {"_id": 0, "id": 1, "title": 1, "description": 1, "geo_lat": 1, "geo_lng": 1,
+         "threat_map_link": 1, "is_live_session_active": 1},
+    ).to_list(200)
+    return [
+        {
+            "id": p["id"],
+            "title": p.get("title", ""),
+            "description": (p.get("description") or "")[:200],
+            "lat": p["geo_lat"],
+            "lng": p["geo_lng"],
+            "threat_map_link": p.get("threat_map_link"),
+            "is_live": bool(p.get("is_live_session_active")),
+        }
+        for p in plans
+        if p.get("geo_lat") is not None and p.get("geo_lng") is not None
+    ]
 
 
 @router.get("/map/events")

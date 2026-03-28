@@ -21,7 +21,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import {
   ChevronLeft, Pencil, Calendar, User, Eye, Crosshair, Radio,
+  Play, Download, Globe2,
 } from 'lucide-react';
+
+import useReplayTimeline from '@/hooks/useReplayTimeline';
+import TimelinePlayer from '@/components/operations/TimelinePlayer';
+import CommsChannel from '@/components/operations/CommsChannel';
+import ExportControls from '@/components/operations/ExportControls';
 
 /* ── OpenLayers ────────────────────────────────────────────────────────────── */
 import Map from 'ol/Map';
@@ -78,6 +84,7 @@ export default function OperationsPlanView() {
   const [error, setError] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [isLive, setIsLive] = useState(false);
+  const [replayMode, setReplayMode] = useState(false);
 
   /* ── Fetch plan ──────────────────────────────────────────────────────── */
 
@@ -95,6 +102,35 @@ export default function OperationsPlanView() {
     };
     fetchPlan();
   }, [id]);
+
+  /* ── Replay timeline hook ────────────────────────────────────────────── */
+
+  const replay = useReplayTimeline({ planId: id, enabled: replayMode });
+
+  // When replay provides units, update the map features
+  useEffect(() => {
+    if (!replayMode || !vectorSourceRef.current || !plan?.map_width || !plan?.map_height) return;
+    const vs = vectorSourceRef.current;
+    vs.clear();
+    (replay.units || []).forEach((u) => {
+      const url = renderSymbolDataURL(u.symbol_code, Math.round(32 * (u.scale || 1)));
+      if (!url) return;
+      const feature = new Feature({
+        geometry: new Point([u.x * plan.map_width, u.y * plan.map_height]),
+      });
+      feature.set('unitData', u);
+      feature.setStyle(
+        new Style({
+          image: new Icon({
+            src: url,
+            anchor: [0.5, 0.5],
+            rotation: ((u.rotation || 0) * Math.PI) / 180,
+          }),
+        }),
+      );
+      vs.addFeature(feature);
+    });
+  }, [replayMode, replay.units, plan?.map_width, plan?.map_height]);
 
   /* ── Live polling: refresh plan data when live ───────────────────────
        Uses polling (not WebSocket) for read-only viewers to keep the
@@ -285,6 +321,25 @@ export default function OperationsPlanView() {
 
         <div className="flex-1" />
 
+        {/* Replay toggle */}
+        <Button
+          size="sm"
+          variant="outline"
+          className={`${replayMode ? 'border-[#C9A227] text-[#C9A227] bg-[#C9A227]/10' : 'border-gray-600 text-gray-400'}`}
+          onClick={() => setReplayMode(!replayMode)}
+        >
+          <Play className="w-4 h-4 mr-1" /> {replayMode ? 'Exit Replay' : 'Replay'}
+        </Button>
+
+        {/* Export controls */}
+        <ExportControls
+          mapRef={mapRef}
+          planTitle={plan.title}
+          planDescription={plan.description}
+          unitCount={plan.units?.length || 0}
+          createdBy={plan.created_by_username || ''}
+        />
+
         {canEdit && (
           <Link to={`/hub/operations-planner/${plan.id}`}>
             <Button
@@ -383,8 +438,50 @@ export default function OperationsPlanView() {
               )}
             </CardContent>
           </Card>
+
+          {/* Comms Channel */}
+          <Card className="bg-[#0c1322] border-gray-800">
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm text-gray-400 uppercase tracking-wider">
+                Comms Channel
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <CommsChannel
+                planId={id}
+                readOnly={true}
+                username={user?.username || ''}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Threat map link */}
+          {plan.threat_map_link && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <Globe2 className="w-3 h-3 text-[#C9A227]" />
+              <span>Linked to threat map: {plan.threat_map_link}</span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Timeline Player (replay mode) */}
+      {replayMode && (
+        <TimelinePlayer
+          playing={replay.playing}
+          progress={replay.progress}
+          currentIndex={replay.currentIndex}
+          totalEvents={replay.totalEvents}
+          speed={replay.speed}
+          currentEvent={replay.currentEvent}
+          totalDurationMs={replay.totalDurationMs}
+          onPlay={replay.play}
+          onPause={replay.pause}
+          onReset={replay.reset}
+          onSeek={replay.seekTo}
+          onSetSpeed={replay.setSpeed}
+        />
+      )}
     </div>
   );
 }
