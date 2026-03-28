@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -129,10 +128,10 @@ const SiteContentManager = () => {
     });
   };
 
-  if (loading) return <AdminLayout><div className="text-center py-12">Loading content editor...</div></AdminLayout>;
+  if (loading) return <div className="text-center py-12">Loading content editor...</div>;
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6 max-w-5xl">
         {/* Header */}
         <div className="flex items-center justify-between sticky top-0 z-10 bg-gray-950/95 backdrop-blur-sm py-4 -mx-2 px-2 border-b border-gray-800/50">
@@ -430,7 +429,7 @@ const SiteContentManager = () => {
           </Button>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

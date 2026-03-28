@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -170,7 +169,7 @@ const IntelManager = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -386,7 +385,7 @@ const IntelManager = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Shield, Users } from 'lucide-react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { API } from '@/utils/api';
 
 const statusColor = (s) => ({
@@ -66,7 +65,7 @@ const PartnerApplicationsReview = () => {
   const pendingCount = applications.filter(a => a.status === 'pending').length;
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -218,7 +217,7 @@ const PartnerApplicationsReview = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

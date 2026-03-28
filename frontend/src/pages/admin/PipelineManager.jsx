@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -83,7 +82,7 @@ const PipelineManager = () => {
   const filtered = users.filter(u => u.username.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>RECRUIT PIPELINE</h1>
@@ -218,7 +217,7 @@ const PipelineManager = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

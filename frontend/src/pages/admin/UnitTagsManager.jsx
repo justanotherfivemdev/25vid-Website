@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -189,14 +188,14 @@ const UnitTagsManager = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
+      <>
         <div className="text-center py-12">Loading unit tags...</div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6 max-w-4xl">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -247,7 +246,7 @@ const UnitTagsManager = () => {
           ))}
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 
