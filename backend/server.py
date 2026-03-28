@@ -53,6 +53,7 @@ from routes.shared import router as shared_router
 from routes.deployment import router as deployment_router
 from routes.adsb import router as adsb_router
 from routes.operations_plans import router as operations_plans_router
+from routes.planning_sessions import router as planning_sessions_router
 
 
 # Create the main app
@@ -80,6 +81,7 @@ api_router.include_router(shared_router)
 api_router.include_router(deployment_router)
 api_router.include_router(adsb_router)
 api_router.include_router(operations_plans_router)
+api_router.include_router(planning_sessions_router)
 
 
 @api_router.get("/")
@@ -472,6 +474,10 @@ async def startup_event():
         await db.operations_plans.create_index("id", unique=True)
         await db.operations_plans.create_index("is_published")
         await db.operations_plans.create_index("created_by")
+        await db.planning_sessions.create_index("id", unique=True)
+        await db.planning_sessions.create_index("plan_id")
+        await db.planning_sessions.create_index("join_code")
+        await db.planning_sessions.create_index("status")
     except Exception as e:
         vlog.warning(f"Index creation note: {e}")
 

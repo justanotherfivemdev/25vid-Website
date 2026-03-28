@@ -174,18 +174,27 @@ async def create_plan(
 @router.get("/operations-plans")
 async def list_plans(
     published_only: bool = Query(False),
+    live_only: bool = Query(False),
     current_user: dict = Depends(get_current_user),
 ):
     """List operations plans.
 
     - Staff with MANAGE_PLANS see all plans (drafts + published).
     - Regular members see only published plans with appropriate visibility.
+    - live_only=true returns only plans with an active live session + live viewing enabled.
     """
     role = current_user.get("role", "member")
     can_manage = has_permission(role, Permission.MANAGE_PLANS)
 
     query: dict = {}
-    if not can_manage or published_only:
+
+    if live_only:
+        # Live plans: session active AND live viewing enabled for members
+        query["is_live_session_active"] = True
+        if not can_manage:
+            query["allow_live_viewing"] = True
+
+    elif not can_manage or published_only:
         query["is_published"] = True
         # Non-staff members can only see "all_members" scope
         if not can_manage:
@@ -230,11 +239,13 @@ async def get_plan(plan_id: str, current_user: dict = Depends(get_current_user))
     role = current_user.get("role", "member")
     can_manage = has_permission(role, Permission.MANAGE_PLANS)
 
-    # Access control: non-managers can only see published + all_members plans
+    # Access control: non-managers can see published plans OR live-viewing plans
     if not can_manage:
-        if not doc.get("is_published"):
+        is_published = doc.get("is_published")
+        is_live_viewable = doc.get("is_live_session_active") and doc.get("allow_live_viewing")
+        if not is_published and not is_live_viewable:
             raise HTTPException(status_code=403, detail="Plan is not published")
-        if doc.get("visibility_scope") == "staff_only":
+        if doc.get("visibility_scope") == "staff_only" and not is_live_viewable:
             raise HTTPException(status_code=403, detail="Plan is restricted to staff")
 
     # Enrich with map info

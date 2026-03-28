@@ -86,6 +86,13 @@ class OperationsPlan(BaseModel):
     units: List[PlanUnit] = Field(default_factory=list)
     is_published: bool = False
     visibility_scope: Literal["all_members", "staff_only"] = "all_members"
+    # ── Collaboration fields ─────────────────────────────────────────────
+    is_live_session_active: bool = False
+    live_session_id: Optional[str] = None
+    allow_live_viewing: bool = False
+    version: int = 1
+    last_synced_at: Optional[datetime] = None
+    # ── Audit ────────────────────────────────────────────────────────────
     created_by: str
     updated_by: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -99,6 +106,7 @@ class OperationsPlanCreate(BaseModel):
     units: List[PlanUnitCreate] = Field(default_factory=list)
     is_published: bool = False
     visibility_scope: Literal["all_members", "staff_only"] = "all_members"
+    allow_live_viewing: bool = False
 
 
 class OperationsPlanUpdate(BaseModel):
@@ -108,3 +116,4 @@ class OperationsPlanUpdate(BaseModel):
     units: Optional[List[PlanUnitCreate]] = None
     is_published: Optional[bool] = None
     visibility_scope: Optional[Literal["all_members", "staff_only"]] = None
+    allow_live_viewing: Optional[bool] = None
