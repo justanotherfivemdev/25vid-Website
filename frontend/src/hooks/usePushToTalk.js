@@ -48,7 +48,7 @@ export function classifyKey(code) {
   }
   if (CAUTION_CODES.has(code)) {
     const warnings = {
-      CapsLock: 'CapsLock toggles caps state — this may cause unexpected text capitalisation.',
+      CapsLock: 'CapsLock toggles caps state — this may cause unexpected text capitalization.',
       ShiftLeft: 'Shift is a modifier key and may conflict with keyboard shortcuts.',
       ShiftRight: 'Shift is a modifier key and may conflict with keyboard shortcuts.',
       ControlLeft: 'Ctrl is a modifier key used in many shortcuts (Ctrl+C, Ctrl+V, etc.).',

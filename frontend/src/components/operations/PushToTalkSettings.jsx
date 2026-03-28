@@ -6,7 +6,7 @@
  * and displays appropriate warnings for caution / high-risk keys.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Settings, AlertTriangle, ShieldAlert, ShieldCheck, RotateCcw } from 'lucide-react';
@@ -18,6 +18,10 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
   const [pendingCode, setPendingCode] = useState(null);
   const [pendingClassification, setPendingClassification] = useState(null);
   const [saved, setSaved] = useState(false);
+  const savedTimerRef = useRef(null);
+
+  // Clean up saved-indicator timer on unmount
+  useEffect(() => () => { clearTimeout(savedTimerRef.current); }, []);
 
   // ── Key capture listener ──────────────────────────────────────────────
 
@@ -48,7 +52,8 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
       setSaved(true);
       setPendingCode(null);
       setPendingClassification(null);
-      setTimeout(() => setSaved(false), 2000);
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     }
   };
 
@@ -62,7 +67,8 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
     setPendingCode(null);
     setPendingClassification(null);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
   };
 
   // ── Warning badge for classification ──────────────────────────────────

@@ -2,7 +2,7 @@
  * CommsChannel.jsx
  *
  * Voice communications panel for operations planning.
- * Provides push-to-talk recording with a user-customisable key (default:
+ * Provides push-to-talk recording with a user-customizable key (default:
  * CapsLock) and playback of voice clips.  Clips are uploaded to the
  * backend and timestamped so they can be synced with the timeline replay.
  *
