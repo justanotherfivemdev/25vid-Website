@@ -54,6 +54,7 @@ import SharedArea from '@/pages/member/SharedArea';
 import PartnerSharedArea from '@/pages/partner/PartnerSharedArea';
 import JoinUs from '@/pages/JoinUs';
 import MemberLayout from '@/components/MemberLayout';
+import AdminLayout from '@/components/admin/AdminLayout';
 import { isStaff, STAFF_ROLES } from '@/utils/permissions';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
@@ -1215,26 +1216,29 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/join" element={<JoinUs />} />
         <Route path="/join-us" element={<Navigate to="/join" replace />} />
-        <Route path="/admin" element={<ProtectedRoute staffOnly><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/operations" element={<ProtectedRoute staffOnly><OperationsManager /></ProtectedRoute>} />
-        <Route path="/admin/site-content" element={<ProtectedRoute staffOnly><SiteContentManager /></ProtectedRoute>} />
-        <Route path="/admin/announcements" element={<ProtectedRoute staffOnly><AnnouncementsManager /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute staffOnly><UsersManager /></ProtectedRoute>} />
-        <Route path="/admin/training" element={<ProtectedRoute staffOnly><TrainingManager /></ProtectedRoute>} />
-        <Route path="/admin/gallery" element={<ProtectedRoute staffOnly><GalleryManager /></ProtectedRoute>} />
-        <Route path="/admin/history" element={<ProtectedRoute staffOnly><HistoryManager /></ProtectedRoute>} />
-        <Route path="/admin/recruitment" element={<ProtectedRoute staffOnly><RecruitmentManager /></ProtectedRoute>} />
-        <Route path="/admin/intel" element={<ProtectedRoute staffOnly><IntelManager /></ProtectedRoute>} />
-        <Route path="/admin/campaigns" element={<ProtectedRoute staffOnly><CampaignManager /></ProtectedRoute>} />
-        <Route path="/admin/deployments" element={<ProtectedRoute staffOnly><DeploymentManager /></ProtectedRoute>} />
-        <Route path="/admin/unit-config" element={<ProtectedRoute staffOnly><UnitTagsManager /></ProtectedRoute>} />
-        <Route path="/admin/partner-units" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's5_liaison', 's5_civil_affairs']}><PartnerUnitsManager /></ProtectedRoute>} />
-        <Route path="/admin/partner-applications" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's5_liaison', 's5_civil_affairs']}><PartnerApplicationsReview /></ProtectedRoute>} />
-        <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel']}><AuditLogsManager /></ProtectedRoute>} />
-        <Route path="/admin/error-logs" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel']}><ErrorLogsManager /></ProtectedRoute>} />
-        <Route path="/admin/loa" element={<ProtectedRoute staffOnly><LOAManager /></ProtectedRoute>} />
-        <Route path="/admin/pipeline" element={<ProtectedRoute staffOnly><PipelineManager /></ProtectedRoute>} />
-        <Route path="/admin/users/:id" element={<ProtectedRoute staffOnly><AdminMemberDetail /></ProtectedRoute>} />
+        {/* ── Admin routes with Command Center sidebar layout ──────────── */}
+        <Route element={<ProtectedRoute staffOnly><AdminLayout /></ProtectedRoute>}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/operations" element={<OperationsManager />} />
+          <Route path="/admin/site-content" element={<SiteContentManager />} />
+          <Route path="/admin/announcements" element={<AnnouncementsManager />} />
+          <Route path="/admin/users" element={<UsersManager />} />
+          <Route path="/admin/training" element={<TrainingManager />} />
+          <Route path="/admin/gallery" element={<GalleryManager />} />
+          <Route path="/admin/history" element={<HistoryManager />} />
+          <Route path="/admin/recruitment" element={<RecruitmentManager />} />
+          <Route path="/admin/intel" element={<IntelManager />} />
+          <Route path="/admin/campaigns" element={<CampaignManager />} />
+          <Route path="/admin/deployments" element={<DeploymentManager />} />
+          <Route path="/admin/unit-config" element={<UnitTagsManager />} />
+          <Route path="/admin/partner-units" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's5_liaison', 's5_civil_affairs']}><PartnerUnitsManager /></ProtectedRoute>} />
+          <Route path="/admin/partner-applications" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's5_liaison', 's5_civil_affairs']}><PartnerApplicationsReview /></ProtectedRoute>} />
+          <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel']}><AuditLogsManager /></ProtectedRoute>} />
+          <Route path="/admin/error-logs" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel']}><ErrorLogsManager /></ProtectedRoute>} />
+          <Route path="/admin/loa" element={<LOAManager />} />
+          <Route path="/admin/pipeline" element={<PipelineManager />} />
+          <Route path="/admin/users/:id" element={<AdminMemberDetail />} />
+        </Route>
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         {/* ── Member routes with sidebar layout ─────────────────────────── */}
         <Route element={<ProtectedRoute><MemberLayout /></ProtectedRoute>}>
