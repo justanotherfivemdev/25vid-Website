@@ -52,6 +52,8 @@ import PipelineManager from '@/pages/admin/PipelineManager';
 import DeploymentManager from '@/pages/admin/DeploymentManager';
 import SharedArea from '@/pages/member/SharedArea';
 import PartnerSharedArea from '@/pages/partner/PartnerSharedArea';
+import OperationsPlanner from '@/pages/member/OperationsPlanner';
+import OperationsPlanView from '@/pages/member/OperationsPlanView';
 import JoinUs from '@/pages/JoinUs';
 import MemberLayout from '@/components/MemberLayout';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -1251,6 +1253,7 @@ function App() {
           <Route path="/hub/gallery" element={<GalleryHub />} />
           <Route path="/hub/loa" element={<LOARequest />} />
           <Route path="/hub/shared" element={<SharedArea />} />
+          <Route path="/hub/plans/:id" element={<OperationsPlanView />} />
           <Route path="/roster" element={<UnitRoster />} />
           <Route path="/roster/:id" element={<MemberProfile />} />
         </Route>
@@ -1258,6 +1261,9 @@ function App() {
         <Route path="/hub/profile" element={<ProtectedRoute allowRecruit><MemberLayout><EditProfile /></MemberLayout></ProtectedRoute>} />
         {/* Threat map: full-screen layout, no sidebar */}
         <Route path="/hub/threat-map" element={<ProtectedRoute><ThreatMapPage /></ProtectedRoute>} />
+        {/* Operations Planner: full-screen layout, no sidebar */}
+        <Route path="/hub/operations-planner" element={<ProtectedRoute><OperationsPlanner /></ProtectedRoute>} />
+        <Route path="/hub/operations-planner/:id" element={<ProtectedRoute><OperationsPlanner /></ProtectedRoute>} />
         <Route path="/partner-login" element={<PartnerLoginPage />} />
         <Route path="/partner-apply" element={<PartnerApply />} />
         <Route path="/partner" element={<PartnerHub />} />

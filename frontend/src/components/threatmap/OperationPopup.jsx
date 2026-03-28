@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, ExternalLink } from 'lucide-react';
+import { Calendar, Users, ExternalLink, Map } from 'lucide-react';
 
 export default function OperationPopup({ operation }) {
   const stateColors = {
@@ -45,13 +45,21 @@ export default function OperationPopup({ operation }) {
         )}
       </div>
 
-      <div className="mt-3 pt-2 border-t" style={{ borderColor: 'rgba(201,162,39,0.15)' }}>
+      <div className="mt-3 pt-2 border-t flex flex-col gap-1.5" style={{ borderColor: 'rgba(201,162,39,0.15)' }}>
         <Link
           to={`/hub/operations/${operation.id}`}
           className="inline-flex items-center gap-1 text-xs text-tropic-gold hover:text-tropic-gold-light transition-colors"
         >
           View Details <ExternalLink className="h-3 w-3" />
         </Link>
+        {operation.linked_plan_id && (
+          <Link
+            to={`/hub/plan/${operation.linked_plan_id}`}
+            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            <Map className="h-3 w-3" /> View Operations Plan
+          </Link>
+        )}
       </div>
     </div>
   );
