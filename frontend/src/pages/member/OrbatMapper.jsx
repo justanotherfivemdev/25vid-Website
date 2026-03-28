@@ -83,9 +83,21 @@ const ECHELON_TEXT_COLORS = {
   team: 'text-red-400',
 };
 
+const ECHELON_DOT_COLORS = {
+  division: 'bg-purple-500',
+  brigade: 'bg-blue-500',
+  regiment: 'bg-cyan-500',
+  battalion: 'bg-teal-500',
+  company: 'bg-green-500',
+  platoon: 'bg-yellow-500',
+  squad: 'bg-orange-500',
+  team: 'bg-red-500',
+};
+
 const LOCAL_STORAGE_KEY = 'orbat_mapper_data';
 
-const uid = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+let _uidCounter = 0;
+const uid = () => crypto.randomUUID?.() ?? `${Date.now()}-${++_uidCounter}-${Math.random().toString(36).slice(2)}`;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    UNIT NODE COMPONENT
@@ -520,7 +532,7 @@ export default function OrbatMapper() {
                 <div className="space-y-1">
                   {UNIT_ECHELONS.map(e => (
                     <div key={e.value} className="flex items-center gap-2 text-[11px]">
-                      <span className={`w-2 h-2 rounded-full ${ECHELON_COLORS[e.value]?.replace('bg-', 'bg-').split(' ')[0]?.replace('border-', 'bg-') || 'bg-gray-600'}`} />
+                      <span className={`w-2 h-2 rounded-full ${ECHELON_DOT_COLORS[e.value] || 'bg-gray-600'}`} />
                       <span className={ECHELON_TEXT_COLORS[e.value]}>{e.label}</span>
                       <span className="text-gray-600 ml-auto">{e.size}</span>
                     </div>
