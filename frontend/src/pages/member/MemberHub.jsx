@@ -135,11 +135,11 @@ const MemberHub = () => {
       <div className={`${inLayout ? 'pt-4' : 'pt-20'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-7xl space-y-8">
           {/* Welcome banner with search - 25th ID colors */}
-          <div className="bg-gradient-to-r from-tropic-red/15 via-gray-900/80 to-gray-900 border border-tropic-gold/15 rounded-lg p-6" data-testid="member-welcome-banner">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="bg-gradient-to-r from-tropic-red/15 via-gray-900/80 to-gray-900 border border-tropic-gold/15 rounded-lg p-4 sm:p-6" data-testid="member-welcome-banner">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
               <div>
-                <h2 className="text-3xl font-bold text-tropic-gold tracking-[0.1em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>OPERATIONS HUB</h2>
-                <p className="text-gray-400 mt-1 text-sm tracking-wide">Your tactical command overview — stay informed, stay ready.</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-tropic-gold tracking-[0.1em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>OPERATIONS HUB</h2>
+                <p className="text-gray-400 mt-1 text-xs sm:text-sm tracking-wide">Your tactical command overview — stay informed, stay ready.</p>
               </div>
               <form onSubmit={handleSearch} className="flex gap-2 w-full md:w-auto">
                 <div className="relative flex-1 md:w-72">
@@ -152,10 +152,10 @@ const MemberHub = () => {
                     data-testid="hub-search-input"
                   />
                 </div>
-                <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-tropic-red hover:bg-tropic-red-dark" data-testid="hub-search-btn">
+                <Button type="submit" disabled={searching || searchQuery.length < 2} className="bg-tropic-red hover:bg-tropic-red-dark shrink-0" data-testid="hub-search-btn">
                   {searching ? '...' : 'Search'}
                 </Button>
-                {searchResults && <Button type="button" variant="outline" onClick={clearSearch} className="border-gray-700" data-testid="hub-search-clear">Clear</Button>}
+                {searchResults && <Button type="button" variant="outline" onClick={clearSearch} className="border-gray-700 shrink-0" data-testid="hub-search-clear">Clear</Button>}
               </form>
             </div>
           </div>
@@ -299,24 +299,24 @@ const MemberHub = () => {
           )}
 
           {/* Quick nav - 25th ID colors */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <Link to="/hub/discussions" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-discussions">
-              <MessageSquare className="w-8 h-8 mx-auto mb-2 text-tropic-red" /><span className="font-medium text-sm">Discussions</span>
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            <Link to="/hub/discussions" className="bg-gray-900 border border-gray-800 rounded-lg p-3 sm:p-4 hover:border-tropic-red/50 active:bg-gray-800 transition-colors text-center" data-testid="hub-nav-discussions">
+              <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1.5 sm:mb-2 text-tropic-red" /><span className="font-medium text-xs sm:text-sm">Discussions</span>
             </Link>
-            <a href="#ops" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center">
-              <Calendar className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Operations</span>
+            <a href="#ops" className="bg-gray-900 border border-gray-800 rounded-lg p-3 sm:p-4 hover:border-tropic-red/50 active:bg-gray-800 transition-colors text-center">
+              <Calendar className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1.5 sm:mb-2 text-tropic-gold" /><span className="font-medium text-xs sm:text-sm">Operations</span>
             </a>
-            <a href="#training" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center">
-              <BookOpen className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Training</span>
+            <a href="#training" className="bg-gray-900 border border-gray-800 rounded-lg p-3 sm:p-4 hover:border-tropic-red/50 active:bg-gray-800 transition-colors text-center">
+              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1.5 sm:mb-2 text-tropic-gold" /><span className="font-medium text-xs sm:text-sm">Training</span>
             </a>
-            <Link to="/hub/intel" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-intel">
-              <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Intel Board</span>
+            <Link to="/hub/intel" className="bg-gray-900 border border-gray-800 rounded-lg p-3 sm:p-4 hover:border-tropic-red/50 active:bg-gray-800 transition-colors text-center" data-testid="hub-nav-intel">
+              <Megaphone className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1.5 sm:mb-2 text-tropic-gold" /><span className="font-medium text-xs sm:text-sm">Intel Board</span>
             </Link>
-            <Link to="/hub/campaign" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-gold/50 transition-colors text-center" data-testid="hub-nav-campaign">
-              <MapPin className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Campaigns</span>
+            <Link to="/hub/campaign" className="bg-gray-900 border border-gray-800 rounded-lg p-3 sm:p-4 hover:border-tropic-gold/50 active:bg-gray-800 transition-colors text-center" data-testid="hub-nav-campaign">
+              <MapPin className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1.5 sm:mb-2 text-tropic-gold" /><span className="font-medium text-xs sm:text-sm">Campaigns</span>
             </Link>
-            <Link to="/hub/gallery" className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-tropic-red/50 transition-colors text-center" data-testid="hub-nav-gallery">
-              <Image className="w-8 h-8 mx-auto mb-2 text-tropic-gold" /><span className="font-medium text-sm">Gallery</span>
+            <Link to="/hub/gallery" className="bg-gray-900 border border-gray-800 rounded-lg p-3 sm:p-4 hover:border-tropic-red/50 active:bg-gray-800 transition-colors text-center" data-testid="hub-nav-gallery">
+              <Image className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1.5 sm:mb-2 text-tropic-gold" /><span className="font-medium text-xs sm:text-sm">Gallery</span>
             </Link>
           </div>
 
@@ -421,17 +421,19 @@ const MemberHub = () => {
               <div className="space-y-2">
                 {discussions.map((d) => (
                   <Link to={`/hub/discussions/${d.id}`} key={d.id} className="block">
-                    <Card className={`bg-gray-900 border-gray-800 hover:border-tropic-red/30 transition-colors ${d.pinned ? 'border-l-2 border-l-tropic-gold' : ''}`} data-testid={`hub-discussion-${d.id}`}>
-                      <CardContent className="py-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {d.pinned && <Pin className="w-3.5 h-3.5 text-tropic-gold shrink-0" />}
-                          <Badge variant="outline" className="text-xs border-gray-700">{d.category}</Badge>
-                          <span className="font-medium">{d.title}</span>
-                          <span className="text-xs text-gray-500">by {d.author_name}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-sm text-gray-500">
-                          <span><MessageSquare className="inline w-3 h-3 mr-1" />{d.replies?.length || 0}</span>
-                          <span>{new Date(d.created_at).toLocaleDateString()}</span>
+                    <Card className={`bg-gray-900 border-gray-800 hover:border-tropic-red/30 active:bg-gray-800/50 transition-colors ${d.pinned ? 'border-l-2 border-l-tropic-gold' : ''}`} data-testid={`hub-discussion-${d.id}`}>
+                      <CardContent className="py-3">
+                        <div className="flex items-start sm:items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+                            {d.pinned && <Pin className="w-3.5 h-3.5 text-tropic-gold shrink-0" />}
+                            <Badge variant="outline" className="text-xs border-gray-700 shrink-0">{d.category}</Badge>
+                            <span className="font-medium truncate">{d.title}</span>
+                            <span className="text-xs text-gray-500 hidden sm:inline">by {d.author_name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 sm:gap-3 text-sm text-gray-500 shrink-0">
+                            <span><MessageSquare className="inline w-3 h-3 mr-1" />{d.replies?.length || 0}</span>
+                            <span className="hidden sm:inline">{new Date(d.created_at).toLocaleDateString()}</span>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
