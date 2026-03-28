@@ -9,11 +9,13 @@ import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home,
 
 import { useAuth } from '@/context/AuthContext';
 import { isStaff } from '@/utils/permissions';
+import { useMemberLayout } from '@/components/MemberLayout';
 
 import { BACKEND_URL, API } from '@/utils/api';
 
 const MemberHub = () => {
   const { user, logout } = useAuth();
+  const inLayout = useMemberLayout();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [operations, setOperations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
@@ -75,11 +77,12 @@ const MemberHub = () => {
   const getTypeColor = (t) => ({ combat: 'bg-tropic-red', training: 'bg-tropic-gold-dark', recon: 'bg-green-600', support: 'bg-gray-600' }[t] || 'bg-gray-600');
   const getPriorityColor = (p) => ({ urgent: 'text-tropic-red border-tropic-red', high: 'text-orange-500 border-orange-500', normal: 'text-tropic-gold border-tropic-gold', low: 'text-gray-400 border-gray-400' }[p] || 'text-gray-400 border-gray-400');
 
-  if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
+  if (loading) return <div className={`${inLayout ? '' : 'min-h-screen'} bg-black text-white flex items-center justify-center`}>Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Top bar - 25th ID colors */}
+    <div className={inLayout ? '' : 'min-h-screen bg-black text-white'}>
+      {/* Top bar — only when NOT inside MemberLayout sidebar */}
+      {!inLayout && (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="member-nav">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -127,8 +130,9 @@ const MemberHub = () => {
           </div>
         )}
       </nav>
+      )}
 
-      <div className="pt-20 pb-12 px-4 md:px-6">
+      <div className={`${inLayout ? 'pt-4' : 'pt-20'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-7xl space-y-8">
           {/* Welcome banner with search - 25th ID colors */}
           <div className="bg-gradient-to-r from-tropic-red/15 via-gray-900/80 to-gray-900 border border-tropic-gold/15 rounded-lg p-6" data-testid="member-welcome-banner">

@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isStaff } from '@/utils/permissions';
 
 import { BACKEND_URL, API } from '@/utils/api';
+import { useMemberLayout } from '@/components/MemberLayout';
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
 
 const STATUS_COLORS = {
@@ -85,6 +86,7 @@ const HierarchySection = ({ title, members, icon: Icon, color, defaultOpen = tru
 };
 
 const UnitRoster = () => {
+  const inLayout = useMemberLayout();
   const [members, setMembers] = useState([]);
   const [hierarchy, setHierarchy] = useState(null);
   const [hierarchyError, setHierarchyError] = useState(false);
@@ -252,7 +254,8 @@ const UnitRoster = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className={inLayout ? '' : 'min-h-screen bg-black text-white'}>
+      {!inLayout && (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -266,8 +269,9 @@ const UnitRoster = () => {
           </div>
         </div>
       </nav>
+      )}
 
-      <div className="pt-20 pb-12 px-4 md:px-6">
+      <div className={`${inLayout ? 'pt-4' : 'pt-20'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-7xl space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-3">
