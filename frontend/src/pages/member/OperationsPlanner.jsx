@@ -16,6 +16,7 @@ import axios from 'axios';
 import { API, BACKEND_URL } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
+import usePlanningSession from '@/hooks/usePlanningSession';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Upload, Save, Globe2, Trash2, Plus, ChevronLeft, Eye, EyeOff,
   RotateCw, ZoomIn, ZoomOut, Crosshair, Layers, Settings, MapPin,
-  FileText, X, Check, Move, Pencil,
+  FileText, X, Check, Move, Pencil, Radio, Users, Lock, LogIn, LogOut,
 } from 'lucide-react';
 
 /* ── OpenLayers ────────────────────────────────────────────────────────────── */
@@ -119,6 +120,7 @@ export default function OperationsPlanner() {
   const mapContainerRef = useRef(null);
   const vectorSourceRef = useRef(null);
   const translateRef = useRef(null);
+  const sessionBroadcastRef = useRef({ sessionId: null, sendUnitUpdate: null });
   const [mapReady, setMapReady] = useState(false);
   const [mapImageUrl, setMapImageUrl] = useState(null);
   const [mapDimensions, setMapDimensions] = useState({ w: 0, h: 0 });
@@ -143,6 +145,128 @@ export default function OperationsPlanner() {
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [existingPlans, setExistingPlans] = useState([]);
 
+  /* ── Session / collaboration state ─────────────────────────────────────── */
+  const [sessionId, setSessionId] = useState(null);
+  const [joinCode, setJoinCode] = useState('');
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [allowLiveViewing, setAllowLiveViewing] = useState(false);
+
+  /* ── WebSocket collaboration hook ──────────────────────────────────────── */
+  const {
+    connected: wsConnected,
+    participants: wsParticipants,
+    isLocked: wsLocked,
+    sendUnitCreate,
+    sendUnitUpdate,
+    sendUnitDelete,
+    sendPlanUpdate,
+    createSession: apiCreateSession,
+    joinSession: apiJoinSession,
+    leaveSession: apiLeaveSession,
+    closeSession: apiCloseSession,
+    lockSession: apiLockSession,
+  } = usePlanningSession({
+    sessionId,
+    onUnitCreate: (unit) => {
+      setUnits((prev) => {
+        if (prev.some((u) => u.id === unit.id)) return prev;
+        return [...prev, unit];
+      });
+    },
+    onUnitUpdate: (unitId, changes) => {
+      setUnits((prev) => prev.map((u) => (u.id === unitId ? { ...u, ...changes } : u)));
+    },
+    onUnitDelete: (unitId) => {
+      setUnits((prev) => prev.filter((u) => u.id !== unitId));
+      setSelectedUnitId((prev) => (prev === unitId ? null : prev));
+    },
+    onPlanUpdate: (fields) => {
+      if (fields.title !== undefined) setPlanTitle(fields.title);
+      if (fields.description !== undefined) setPlanDescription(fields.description);
+      if (fields.allow_live_viewing !== undefined) setAllowLiveViewing(fields.allow_live_viewing);
+    },
+    onSyncState: (state) => {
+      if (state.units) {
+        setUnits(state.units.map((u) => ({ ...u, id: u.id || crypto.randomUUID() })));
+      }
+      if (state.title) setPlanTitle(state.title);
+      if (state.description) setPlanDescription(state.description);
+    },
+    onSessionClose: () => {
+      setSessionId(null);
+      setJoinCode('');
+    },
+    onSessionLock: () => {
+      // isLocked comes from hook state
+    },
+  });
+
+  /* ── Session control handlers ──────────────────────────────────────────── */
+
+  const handleStartSession = async () => {
+    if (!planId) {
+      alert('Save the plan first before starting a session.');
+      return;
+    }
+    try {
+      const data = await apiCreateSession(planId);
+      setSessionId(data.id);
+      setJoinCode(data.join_code);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to start session');
+    }
+  };
+
+  const handleJoinSession = async () => {
+    if (!joinCodeInput.trim()) return;
+    try {
+      const data = await apiJoinSession(joinCodeInput.trim().toUpperCase());
+      setSessionId(data.session_id);
+      setJoinCode(data.join_code);
+      setShowJoinDialog(false);
+      setJoinCodeInput('');
+      // Navigate to the plan if not already there
+      if (data.plan_id && data.plan_id !== planId) {
+        navigate(`/hub/operations-planner/${data.plan_id}`);
+      }
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to join session');
+    }
+  };
+
+  const handleEndSession = async () => {
+    if (!sessionId) return;
+    if (!window.confirm('End the live session for all participants?')) return;
+    try {
+      await apiCloseSession(sessionId);
+      setSessionId(null);
+      setJoinCode('');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to end session');
+    }
+  };
+
+  const handleToggleLiveViewing = async () => {
+    const newVal = !allowLiveViewing;
+    setAllowLiveViewing(newVal);
+    // Persist to backend
+    if (planId) {
+      try {
+        await axios.put(`${API}/operations-plans/${planId}`, { allow_live_viewing: newVal });
+      } catch { /* ignore */ }
+    }
+    // Broadcast via WS if connected
+    if (sessionId) {
+      sendPlanUpdate({ allow_live_viewing: newVal });
+    }
+  };
+
+  /* ── Keep broadcast ref in sync for OL callbacks ─────────────────────── */
+  useEffect(() => {
+    sessionBroadcastRef.current = { sessionId, sendUnitUpdate };
+  }, [sessionId, sendUnitUpdate]);
+
   /* ══════════════════════════════════════════════════════════════════════════
      Load existing plan (if planId provided)
      ══════════════════════════════════════════════════════════════════════════ */
@@ -164,6 +288,11 @@ export default function OperationsPlanner() {
       setPlanMapId(plan.map_id || '');
       setPlanPublished(!!plan.is_published);
       setPlanVisibility(plan.visibility_scope || 'all_members');
+      setAllowLiveViewing(!!plan.allow_live_viewing);
+      // If the plan has an active live session, auto-connect
+      if (plan.live_session_id && plan.is_live_session_active) {
+        setSessionId(plan.live_session_id);
+      }
       setUnits(
         (plan.units || []).map((u) => ({
           ...u,
@@ -246,13 +375,18 @@ export default function OperationsPlanner() {
           const coords = feat.getGeometry().getCoordinates();
           const nx = coords[0] / mapDimensions.w;
           const ny = coords[1] / mapDimensions.h;
+          const clampedX = Math.max(0, Math.min(1, nx));
+          const clampedY = Math.max(0, Math.min(1, ny));
           setUnits((prev) =>
             prev.map((u) =>
-              u.id === uid
-                ? { ...u, x: Math.max(0, Math.min(1, nx)), y: Math.max(0, Math.min(1, ny)) }
-                : u,
+              u.id === uid ? { ...u, x: clampedX, y: clampedY } : u,
             ),
           );
+          // Broadcast position change via WS
+          const br = sessionBroadcastRef.current;
+          if (br.sessionId && br.sendUnitUpdate) {
+            br.sendUnitUpdate(uid, { x: clampedX, y: clampedY });
+          }
         });
       });
 
@@ -408,15 +542,21 @@ export default function OperationsPlanner() {
     setUnits((prev) => [...prev, newUnit]);
     setSelectedUnitId(newUnit.id);
     setActivePanel('properties');
+    // Broadcast if in session
+    if (sessionId) sendUnitCreate(newUnit);
   };
 
   const updateUnit = (id, changes) => {
     setUnits((prev) => prev.map((u) => (u.id === id ? { ...u, ...changes } : u)));
+    // Broadcast if in session
+    if (sessionId) sendUnitUpdate(id, changes);
   };
 
   const deleteUnit = (id) => {
     setUnits((prev) => prev.filter((u) => u.id !== id));
     if (selectedUnitId === id) setSelectedUnitId(null);
+    // Broadcast if in session
+    if (sessionId) sendUnitDelete(id);
   };
 
   const selectedUnit = units.find((u) => u.id === selectedUnitId);
@@ -482,10 +622,100 @@ export default function OperationsPlanner() {
           <Badge className="bg-gray-700 text-gray-300 ml-2">View Only</Badge>
         )}
 
+        {/* Session / live indicator */}
+        {sessionId && wsConnected && (
+          <Badge className="bg-red-600/80 text-white animate-pulse ml-1 text-[10px]">
+            <Radio className="w-3 h-3 mr-1" /> LIVE
+          </Badge>
+        )}
+        {wsLocked && (
+          <Badge className="bg-yellow-700/60 text-yellow-300 ml-1 text-[10px]">
+            <Lock className="w-3 h-3 mr-1" /> LOCKED
+          </Badge>
+        )}
+
+        {/* Active collaborators */}
+        {wsParticipants.length > 0 && (
+          <div className="flex items-center gap-1 ml-2">
+            <Users className="w-3.5 h-3.5 text-gray-500" />
+            <div className="flex -space-x-1">
+              {wsParticipants.slice(0, 5).map((p) => (
+                <div
+                  key={p.user_id}
+                  className="w-6 h-6 rounded-full bg-[#C9A227]/30 border border-[#C9A227]/50 flex items-center justify-center text-[9px] font-bold text-[#C9A227]"
+                  title={p.username}
+                >
+                  {(p.username || '?')[0].toUpperCase()}
+                </div>
+              ))}
+            </div>
+            {wsParticipants.length > 5 && (
+              <span className="text-[10px] text-gray-500">+{wsParticipants.length - 5}</span>
+            )}
+          </div>
+        )}
+
         <div className="flex-1" />
 
         {!isViewOnly && (
           <>
+            {/* Session controls */}
+            {!sessionId ? (
+              <>
+                {planId && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-green-700 text-green-400 hover:bg-green-900/30"
+                    onClick={handleStartSession}
+                  >
+                    <Radio className="w-4 h-4 mr-1" /> Start Session
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-blue-700 text-blue-400 hover:bg-blue-900/30"
+                  onClick={() => setShowJoinDialog(true)}
+                >
+                  <LogIn className="w-4 h-4 mr-1" /> Join
+                </Button>
+              </>
+            ) : (
+              <>
+                {joinCode && (
+                  <div className="flex items-center gap-1 bg-gray-800/60 rounded px-2 py-1">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">Code:</span>
+                    <span className="text-sm font-mono text-[#C9A227] select-all">{joinCode}</span>
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`${
+                    allowLiveViewing
+                      ? 'border-green-600 text-green-400'
+                      : 'border-gray-600 text-gray-400'
+                  }`}
+                  onClick={handleToggleLiveViewing}
+                  title="Allow Hub members to view this session live"
+                >
+                  {allowLiveViewing ? <Eye className="w-4 h-4 mr-1" /> : <EyeOff className="w-4 h-4 mr-1" />}
+                  Live View
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-red-800 text-red-400 hover:bg-red-900/30"
+                  onClick={handleEndSession}
+                >
+                  <X className="w-4 h-4 mr-1" /> End Session
+                </Button>
+              </>
+            )}
+
+            <div className="w-px h-5 bg-gray-700 mx-1" />
+
             <Button
               size="sm"
               variant="outline"
@@ -530,6 +760,41 @@ export default function OperationsPlanner() {
           </>
         )}
       </div>
+
+      {/* ── Join Session Dialog ─────────────────────────────────────────── */}
+      {showJoinDialog && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <Card className="w-full max-w-sm bg-[#0c1322] border-gray-800">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[#C9A227]">Join Session</CardTitle>
+                <button onClick={() => setShowJoinDialog(false)}>
+                  <X className="w-5 h-5 text-gray-400 hover:text-white" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-400">
+                Enter the session join code shared by the session host.
+              </p>
+              <Input
+                value={joinCodeInput}
+                onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
+                placeholder="e.g. A1B2C3D4"
+                className="bg-gray-900 border-gray-700 font-mono text-center text-lg tracking-widest"
+                maxLength={8}
+              />
+              <Button
+                className="w-full bg-[#C9A227] text-black hover:bg-[#b8931f]"
+                onClick={handleJoinSession}
+                disabled={!joinCodeInput.trim()}
+              >
+                <LogIn className="w-4 h-4 mr-1" /> Join Session
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* ── Main Content ─────────────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
