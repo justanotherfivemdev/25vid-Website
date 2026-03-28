@@ -2,9 +2,9 @@
  * CommsChannel.jsx
  *
  * Voice communications panel for operations planning.
- * Provides push-to-talk recording (CapsLock key) and playback of voice
- * clips.  Clips are uploaded to the backend and timestamped so they can
- * be synced with the timeline replay.
+ * Provides push-to-talk recording with a user-customisable key (default:
+ * CapsLock) and playback of voice clips.  Clips are uploaded to the
+ * backend and timestamped so they can be synced with the timeline replay.
  *
  * Used in both the live planner (OperationsPlanner) and the read-only
  * viewer (OperationsPlanView) for replay.
@@ -18,6 +18,9 @@ import { Badge } from '@/components/ui/badge';
 import {
   Mic, MicOff, Volume2, VolumeX, Radio, User,
 } from 'lucide-react';
+
+import usePushToTalk from '@/hooks/usePushToTalk';
+import PushToTalkSettings from '@/components/operations/PushToTalkSettings';
 
 export default function CommsChannel({
   planId,
@@ -79,7 +82,7 @@ export default function CommsChannel({
     }
   };
 
-  // ── Push-to-talk (CapsLock or button) ─────────────────────────────
+  // ── Recording logic ───────────────────────────────────────────────
 
   const startRecording = useCallback(() => {
     if (!streamRef.current || recording || readOnly) return;
@@ -127,31 +130,15 @@ export default function CommsChannel({
     setRecording(false);
   }, []);
 
-  // ── CapsLock push-to-talk ─────────────────────────────────────────
+  // ── Push-to-talk hook (customisable key, input-guard built in) ────
 
-  useEffect(() => {
-    if (!joined || readOnly) return;
-
-    const handleKeyDown = (e) => {
-      if (e.code === 'CapsLock' && !recording) {
-        e.preventDefault();
-        startRecording();
-      }
-    };
-    const handleKeyUp = (e) => {
-      if (e.code === 'CapsLock' && recording) {
-        e.preventDefault();
-        stopRecording();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [joined, readOnly, recording, startRecording, stopRecording]);
+  const {
+    pttKey, pttKeyLabel, changeKey, resetKey,
+  } = usePushToTalk({
+    enabled: joined && !readOnly,
+    onKeyDown: startRecording,
+    onKeyUp: stopRecording,
+  });
 
   // ── Play a clip ───────────────────────────────────────────────────
 
@@ -212,7 +199,7 @@ export default function CommsChannel({
         </div>
       </div>
 
-      {/* Push-to-talk */}
+      {/* Push-to-talk button + recording indicator */}
       {!readOnly && (
         <div className="px-3">
           <button
@@ -224,18 +211,28 @@ export default function CommsChannel({
             onMouseDown={startRecording}
             onMouseUp={stopRecording}
             onMouseLeave={recording ? stopRecording : undefined}
-            title="Hold to talk (or use CapsLock)"
+            title={`Hold to talk (or press ${pttKeyLabel})`}
           >
             {recording ? (
-              <><Mic className="w-4 h-4 inline mr-1" /> Transmitting…</>
+              <><Mic className="w-4 h-4 inline mr-1" /> Recording (Push-to-Talk Active)</>
             ) : (
               <><MicOff className="w-4 h-4 inline mr-1" /> Push to Talk</>
             )}
           </button>
           <p className="text-[9px] text-gray-600 mt-1 text-center">
-            Hold button or press CapsLock to transmit
+            Hold button or press <kbd className="px-1 py-0.5 bg-gray-800 rounded text-gray-400 font-mono border border-gray-700">{pttKeyLabel}</kbd> to transmit
           </p>
         </div>
+      )}
+
+      {/* Push-to-talk key settings */}
+      {!readOnly && (
+        <PushToTalkSettings
+          pttKey={pttKey}
+          pttKeyLabel={pttKeyLabel}
+          onChangeKey={changeKey}
+          onReset={resetKey}
+        />
       )}
 
       {/* Voice log */}
