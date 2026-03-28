@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import {
-  ChevronLeft, Pencil, Calendar, User, Eye, Crosshair,
+  ChevronLeft, Pencil, Calendar, User, Eye, Crosshair, Radio,
 } from 'lucide-react';
 
 /* ── OpenLayers ────────────────────────────────────────────────────────────── */
@@ -71,11 +71,13 @@ export default function OperationsPlanView() {
 
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const vectorSourceRef = useRef(null);
 
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
+  const [isLive, setIsLive] = useState(false);
 
   /* ── Fetch plan ──────────────────────────────────────────────────────── */
 
@@ -84,6 +86,7 @@ export default function OperationsPlanView() {
       try {
         const res = await axios.get(`${API}/operations-plans/${id}`);
         setPlan(res.data);
+        setIsLive(!!res.data.is_live_session_active && !!res.data.allow_live_viewing);
       } catch (err) {
         setError(err.response?.data?.detail || 'Failed to load plan');
       } finally {
@@ -92,6 +95,47 @@ export default function OperationsPlanView() {
     };
     fetchPlan();
   }, [id]);
+
+  /* ── Live polling: refresh plan data every 5 seconds when live ─────── */
+
+  useEffect(() => {
+    if (!isLive || !plan) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`${API}/operations-plans/${id}`);
+        const updated = res.data;
+        setPlan(updated);
+        setIsLive(!!updated.is_live_session_active && !!updated.allow_live_viewing);
+        // Update map features if vector source exists
+        if (vectorSourceRef.current && updated.map_width && updated.map_height) {
+          const vs = vectorSourceRef.current;
+          vs.clear();
+          (updated.units || []).forEach((u) => {
+            const url = renderSymbolDataURL(u.symbol_code, Math.round(32 * (u.scale || 1)));
+            if (!url) return;
+            const feature = new Feature({
+              geometry: new Point([u.x * updated.map_width, u.y * updated.map_height]),
+            });
+            feature.set('unitData', u);
+            feature.setStyle(
+              new Style({
+                image: new Icon({
+                  src: url,
+                  anchor: [0.5, 0.5],
+                  rotation: ((u.rotation || 0) * Math.PI) / 180,
+                }),
+              }),
+            );
+            vs.addFeature(feature);
+          });
+        }
+      } catch {
+        // Ignore polling errors
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLive, id, plan?.map_width, plan?.map_height]);
 
   /* ── Setup map when plan is loaded ───────────────────────────────────── */
 
@@ -123,6 +167,7 @@ export default function OperationsPlanView() {
     });
 
     const vectorSource = new VectorSource();
+    vectorSourceRef.current = vectorSource;
 
     // Place units
     (plan.units || []).forEach((u) => {
@@ -227,6 +272,11 @@ export default function OperationsPlanView() {
         >
           {plan.is_published ? 'Published' : 'Draft'}
         </Badge>
+        {isLive && (
+          <Badge className="bg-red-600/80 text-white animate-pulse text-[10px]">
+            <Radio className="w-3 h-3 mr-1" /> LIVE
+          </Badge>
+        )}
 
         <div className="flex-1" />
 

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image, Globe, Handshake, Menu, X, Map as MapIcon } from 'lucide-react';
+import { Calendar, Clock, Megaphone, MessageSquare, Users, Shield, LogOut, Home, ChevronRight, BookOpen, User, Search, Pin, Bell, CalendarCheck, Star, MapPin, Image, Globe, Handshake, Menu, X, Map as MapIcon, Radio } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { isStaff, hasPermission, PERMISSIONS } from '@/utils/permissions';
@@ -28,6 +28,7 @@ const MemberHub = () => {
   const [mySchedule, setMySchedule] = useState([]);
   const [motw, setMotw] = useState(null);
   const [operationsPlans, setOperationsPlans] = useState([]);
+  const [livePlans, setLivePlans] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,7 +37,7 @@ const MemberHub = () => {
 
   const fetchAll = async () => {
     try {
-      const [ops, ann, train, disc, sched, motwRes, plansRes] = await Promise.all([
+      const [ops, ann, train, disc, sched, motwRes, plansRes, liveRes] = await Promise.all([
         axios.get(`${API}/operations`),
         axios.get(`${API}/announcements`),
         axios.get(`${API}/training`),
@@ -44,6 +45,7 @@ const MemberHub = () => {
         axios.get(`${API}/my-schedule`).catch(() => ({ data: [] })),
         axios.get(`${API}/soldier-of-the-month`).catch(() => ({ data: null })),
         axios.get(`${API}/operations-plans?published_only=true`).catch(() => ({ data: [] })),
+        axios.get(`${API}/operations-plans?live_only=true`).catch(() => ({ data: [] })),
       ]);
       setOperations(ops.data.slice(0, 4));
       setAnnouncements(ann.data.slice(0, 4));
@@ -52,6 +54,7 @@ const MemberHub = () => {
       setMySchedule(sched.data || []);
       setMotw(motwRes.data);
       setOperationsPlans((plansRes.data || []).slice(0, 4));
+      setLivePlans((liveRes.data || []).slice(0, 4));
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -387,6 +390,47 @@ const MemberHub = () => {
               </div>
             )}
           </section>
+
+          {/* Live Planning Sessions */}
+          {livePlans.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>LIVE PLANNING</h3>
+                  <Badge className="bg-red-600/80 text-white animate-pulse text-[10px]">
+                    <Radio className="w-3 h-3 mr-1" /> LIVE
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {livePlans.map((plan) => (
+                  <Card key={plan.id} className="bg-gray-900 border-red-900/40 hover:border-red-600/50 transition-colors relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-600 animate-pulse" />
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <Badge className="bg-red-600/20 text-red-400 border border-red-600/40">
+                          <Radio className="w-3 h-3 mr-1" /> LIVE SESSION
+                        </Badge>
+                        {plan.units && <span className="text-xs text-gray-400"><MapIcon className="inline w-3 h-3 mr-1" />{plan.units.length} units</span>}
+                      </div>
+                      <CardTitle className="text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{plan.title}</CardTitle>
+                      {plan.description && <CardDescription className="text-gray-500 line-clamp-2">{plan.description}</CardDescription>}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                        <span>by {plan.created_by_username || 'Unknown'}</span>
+                      </div>
+                      <Link to={`/hub/plans/${plan.id}`}>
+                        <Button size="sm" className="bg-red-600 text-white hover:bg-red-700 w-full">
+                          <Eye className="w-4 h-4 mr-1" /> VIEW LIVE <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Operations Plans */}
           {operationsPlans.length > 0 && (
