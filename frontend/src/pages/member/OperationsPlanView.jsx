@@ -429,6 +429,21 @@ export default function OperationsPlanView() {
                       <p className="text-sm text-gray-300">{selectedUnit.notes}</p>
                     </div>
                   )}
+                  {(selectedUnit.location_name || selectedUnit.geo_lat != null || selectedUnit.geo_lng != null) && (
+                    <div className="pt-2 border-t border-gray-800">
+                      <p className="text-[10px] text-gray-500 uppercase mb-1">
+                        <Globe2 className="w-3 h-3 inline mr-1" />Geo Location
+                      </p>
+                      {selectedUnit.location_name && (
+                        <p className="text-sm text-gray-300">{selectedUnit.location_name}</p>
+                      )}
+                      {(selectedUnit.geo_lat != null || selectedUnit.geo_lng != null) && (
+                        <p className="text-xs text-gray-500 font-mono mt-1">
+                          {selectedUnit.geo_lat != null ? selectedUnit.geo_lat : '—'}, {selectedUnit.geo_lng != null ? selectedUnit.geo_lng : '—'}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center text-gray-600 py-4">
