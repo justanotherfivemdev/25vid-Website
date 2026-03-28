@@ -110,6 +110,16 @@ const MemberLayout = ({ children }) => {
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
+  // Allow Escape key to close mobile sidebar
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
@@ -211,7 +221,12 @@ const MemberLayout = ({ children }) => {
             className="absolute inset-0 bg-black/60"
             onClick={closeMobileSidebar}
           />
-          <div className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-black/95 border-r border-tropic-gold/10 overflow-y-auto overscroll-contain pt-14">
+          <div
+            className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-black/95 border-r border-tropic-gold/10 overflow-y-auto overscroll-contain pt-14"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+          >
             <div className="flex items-center justify-between p-3 border-b border-tropic-gold/10">
               <span
                 className="text-[10px] font-bold tracking-[0.25em] text-tropic-gold"
