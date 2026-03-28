@@ -79,12 +79,18 @@ async def upload_map(
         )
 
     # --- Validate actual image content ---
+    # imghdr may detect JPEG as "jpeg" and certain SGI images as "rgb"
     detected_type = imghdr.what(None, h=data)
     if detected_type not in ("jpeg", "png", "webp", "rgb"):
         raise HTTPException(status_code=400, detail="File does not appear to be a valid image.")
 
     # --- Determine dimensions ---
     width, height = _get_image_dimensions(data)
+    if width == 0 or height == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to determine image dimensions. Please upload a valid JPEG, PNG, or WebP file.",
+        )
 
     # --- Safe filename ---
     map_id = str(uuid.uuid4())
@@ -293,8 +299,12 @@ async def delete_plan(
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
-def _get_image_dimensions(data: bytes) -> tuple:
-    """Extract width × height from raw image bytes (PNG / JPEG / WebP)."""
+def _get_image_dimensions(data: bytes) -> tuple[int, int]:
+    """Extract width × height from raw image bytes (PNG / JPEG / WebP).
+
+    Returns (0, 0) if dimensions cannot be determined, which the caller
+    should treat as a valid but dimension-unknown image.
+    """
     import struct
 
     # PNG: bytes 16-23 contain width(4) + height(4) in the IHDR chunk
