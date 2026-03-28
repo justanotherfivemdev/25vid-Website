@@ -511,12 +511,12 @@ export default function OperationsPlanner() {
         description: planDescription,
         map_id: planMapId,
         units: units.map(({ id, ...rest }) => {
-          const lat = rest.geo_lat === '' || rest.geo_lat == null ? null : parseFloat(rest.geo_lat);
-          const lng = rest.geo_lng === '' || rest.geo_lng == null ? null : parseFloat(rest.geo_lng);
+          const lat = rest.geo_lat === '' || rest.geo_lat === null || rest.geo_lat === undefined ? null : parseFloat(rest.geo_lat);
+          const lng = rest.geo_lng === '' || rest.geo_lng === null || rest.geo_lng === undefined ? null : parseFloat(rest.geo_lng);
           return {
             ...rest,
-            geo_lat: (lat != null && !Number.isNaN(lat)) ? lat : null,
-            geo_lng: (lng != null && !Number.isNaN(lng)) ? lng : null,
+            geo_lat: (lat !== null && !Number.isNaN(lat)) ? lat : null,
+            geo_lng: (lng !== null && !Number.isNaN(lng)) ? lng : null,
             location_name: rest.location_name || '',
           };
         }),
