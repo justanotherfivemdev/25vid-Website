@@ -7,12 +7,13 @@
  * link to an existing operation or be used "on-the-fly" for
  * ad-hoc planning.
  *
- * Persists ORBAT data to the backend when an operation is linked;
- * otherwise saves to localStorage for quick ad-hoc use.
+ * Persists ORBAT data to localStorage for quick ad-hoc use.
+ * When linked to an operation, the ORBAT context is associated with
+ * that operation but persistence is still handled client-side here.
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 
 import { API } from '@/utils/api';
@@ -22,13 +23,13 @@ import { hasPermission, PERMISSIONS } from '@/utils/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   ChevronLeft, Plus, Trash2, ChevronDown, ChevronUp,
-  Users, Shield, Copy, Download, Upload, Save, GripVertical,
+  Users, Copy, Download, Upload, Save, GripVertical,
   Network,
 } from 'lucide-react';
 
@@ -151,7 +152,7 @@ const OrbatUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicat
   }, [unit, onUpdate]);
 
   return (
-    <div className={`ml-${Math.min(depth * 4, 16)}`} style={{ marginLeft: depth > 0 ? `${depth * 1.25}rem` : 0 }}>
+    <div style={{ marginLeft: depth > 0 ? `${depth * 1.25}rem` : 0 }}>
       <div className={`border rounded-lg p-3 ${colorClass} transition-all`}>
         {/* Header row */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -308,7 +309,6 @@ function countNodes(nodes) {
 
 export default function OrbatMapper() {
   const { operationId } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const canEdit = hasPermission(user?.role, PERMISSIONS.MANAGE_PLANS) || hasPermission(user?.role, PERMISSIONS.MANAGE_OPERATIONS);
 
@@ -317,9 +317,10 @@ export default function OrbatMapper() {
   const [units, setUnits] = useState([]);
   const [operation, setOperation] = useState(null);
   const [operations, setOperations] = useState([]);
-  const [linkedOperationId, setLinkedOperationId] = useState(operationId || '');
+  const [linkedOperationId, setLinkedOperationId] = useState(operationId || 'none');
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const initialLoadRef = useRef(true);
 
   /* ── Load linked operation (if any) ────────────────────────────────── */
   useEffect(() => {
@@ -345,13 +346,20 @@ export default function OrbatMapper() {
         const parsed = JSON.parse(raw);
         setUnits(parsed.units || []);
         setOrbatTitle(parsed.title || '');
-        setLinkedOperationId(parsed.linkedOperationId || '');
+        setLinkedOperationId(parsed.linkedOperationId || 'none');
       }
     } catch { /* ignore corrupt data */ }
   }, [operationId]);
 
-  /* ── Mark dirty on change ──────────────────────────────────────────── */
-  useEffect(() => { setDirty(true); setSaved(false); }, [units, orbatTitle, linkedOperationId]);
+  /* ── Mark dirty on change (skip initial mount) ─────────────────────── */
+  useEffect(() => {
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      return;
+    }
+    setDirty(true);
+    setSaved(false);
+  }, [units, orbatTitle, linkedOperationId]);
 
   /* ── Handlers ───────────────────────────────────────────────────────── */
   const addRootUnit = () => {
@@ -447,7 +455,7 @@ export default function OrbatMapper() {
     if (!window.confirm('Clear all units? This cannot be undone.')) return;
     setUnits([]);
     setOrbatTitle('');
-    setLinkedOperationId('');
+    setLinkedOperationId('none');
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
@@ -499,13 +507,14 @@ export default function OrbatMapper() {
                   onChange={(e) => setOrbatTitle(e.target.value)}
                   placeholder="e.g., TF Warhorse ORBAT"
                   className="bg-gray-900 border-gray-700 text-sm"
+                  disabled={!canEdit}
                 />
               </div>
 
               {/* Link to Operation */}
               <div>
                 <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Link to Operation (optional)</label>
-                <Select value={linkedOperationId} onValueChange={(v) => setLinkedOperationId(v)}>
+                <Select value={linkedOperationId} onValueChange={(v) => setLinkedOperationId(v)} disabled={!canEdit}>
                   <SelectTrigger className="bg-gray-900 border-gray-700 text-sm h-8">
                     <SelectValue placeholder="None — Ad-hoc ORBAT" />
                   </SelectTrigger>
@@ -519,12 +528,14 @@ export default function OrbatMapper() {
               </div>
 
               {/* Quick-add root unit */}
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-2">Add Root Unit</label>
-                <Button onClick={addRootUnit} size="sm" className="w-full bg-[#C9A227] text-black hover:bg-[#b8931f]">
-                  <Plus className="w-4 h-4 mr-1" /> Add Unit
-                </Button>
-              </div>
+              {canEdit && (
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-2">Add Root Unit</label>
+                  <Button onClick={addRootUnit} size="sm" className="w-full bg-[#C9A227] text-black hover:bg-[#b8931f]">
+                    <Plus className="w-4 h-4 mr-1" /> Add Unit
+                  </Button>
+                </div>
+              )}
 
               {/* Echelon legend */}
               <div>
@@ -542,16 +553,16 @@ export default function OrbatMapper() {
 
               {/* Actions */}
               <div className="space-y-2 pt-2 border-t border-gray-800">
-                <Button onClick={handleSave} size="sm" variant="outline" className="w-full border-gray-700 text-xs">
+                <Button onClick={handleSave} size="sm" variant="outline" className="w-full border-gray-700 text-xs" disabled={!canEdit}>
                   <Save className="w-3 h-3 mr-1" /> Save Locally
                 </Button>
                 <Button onClick={handleExportJSON} size="sm" variant="outline" className="w-full border-gray-700 text-xs">
                   <Download className="w-3 h-3 mr-1" /> Export JSON
                 </Button>
-                <Button onClick={handleImportJSON} size="sm" variant="outline" className="w-full border-gray-700 text-xs">
+                <Button onClick={handleImportJSON} size="sm" variant="outline" className="w-full border-gray-700 text-xs" disabled={!canEdit}>
                   <Upload className="w-3 h-3 mr-1" /> Import JSON
                 </Button>
-                <Button onClick={handleClear} size="sm" variant="outline" className="w-full border-red-900/60 text-red-400 text-xs hover:bg-red-900/20">
+                <Button onClick={handleClear} size="sm" variant="outline" className="w-full border-red-900/60 text-red-400 text-xs hover:bg-red-900/20" disabled={!canEdit}>
                   <Trash2 className="w-3 h-3 mr-1" /> Clear All
                 </Button>
               </div>
@@ -563,18 +574,22 @@ export default function OrbatMapper() {
         <main className="flex-1 overflow-y-auto">
           {/* Mobile action bar (visible below md breakpoint) */}
           <div className="md:hidden flex items-center gap-2 p-3 border-b border-gray-800 bg-[#0c1322] flex-wrap">
-            <Button onClick={addRootUnit} size="sm" className="bg-[#C9A227] text-black text-xs">
-              <Plus className="w-3 h-3 mr-1" /> Add Unit
-            </Button>
-            <Button onClick={handleSave} size="sm" variant="outline" className="border-gray-700 text-xs">
+            {canEdit && (
+              <Button onClick={addRootUnit} size="sm" className="bg-[#C9A227] text-black text-xs">
+                <Plus className="w-3 h-3 mr-1" /> Add Unit
+              </Button>
+            )}
+            <Button onClick={handleSave} size="sm" variant="outline" className="border-gray-700 text-xs" disabled={!canEdit}>
               <Save className="w-3 h-3 mr-1" /> Save
             </Button>
             <Button onClick={handleExportJSON} size="sm" variant="outline" className="border-gray-700 text-xs">
               <Download className="w-3 h-3" />
             </Button>
-            <Button onClick={handleImportJSON} size="sm" variant="outline" className="border-gray-700 text-xs">
-              <Upload className="w-3 h-3" />
-            </Button>
+            {canEdit && (
+              <Button onClick={handleImportJSON} size="sm" variant="outline" className="border-gray-700 text-xs">
+                <Upload className="w-3 h-3" />
+              </Button>
+            )}
           </div>
 
           <div className="p-4 space-y-2">
@@ -585,15 +600,19 @@ export default function OrbatMapper() {
                   <div>
                     <p className="text-lg text-gray-400 font-semibold">No units in ORBAT</p>
                     <p className="text-sm text-gray-600 mt-1">
-                      Click <strong>"Add Unit"</strong> to begin building your Order of Battle.
+                      {canEdit
+                        ? <>Click <strong>"Add Unit"</strong> to begin building your Order of Battle.</>
+                        : 'No units have been added yet.'}
                     </p>
                     <p className="text-xs text-gray-600 mt-3">
                       You can build an ORBAT independently or link it to an existing operation.
                     </p>
                   </div>
-                  <Button onClick={addRootUnit} className="bg-[#C9A227] text-black hover:bg-[#b8931f]">
-                    <Plus className="w-4 h-4 mr-2" /> Add First Unit
-                  </Button>
+                  {canEdit && (
+                    <Button onClick={addRootUnit} className="bg-[#C9A227] text-black hover:bg-[#b8931f]">
+                      <Plus className="w-4 h-4 mr-2" /> Add First Unit
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
