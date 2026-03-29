@@ -25,6 +25,8 @@ import {
   ScrollText,
   AlertTriangle,
   Network,
+  Compass,
+  Target,
 } from 'lucide-react';
 
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
@@ -118,8 +120,24 @@ export const ADMIN_NAV_GROUPS = [
       },
       {
         path: '/hub/orbat-mapper',
-        label: 'ORBAT Mapper',
+        label: 'ORBAT Creator',
         icon: Network,
+        show: (role) =>
+          hasPermission(role, PERMISSIONS.MANAGE_PLANS) ||
+          hasPermission(role, PERMISSIONS.MANAGE_OPERATIONS),
+      },
+      {
+        path: '/hub/reforger-maps',
+        label: 'Reforger Maps',
+        icon: Compass,
+        show: (role) =>
+          hasPermission(role, PERMISSIONS.MANAGE_PLANS) ||
+          hasPermission(role, PERMISSIONS.MANAGE_OPERATIONS),
+      },
+      {
+        path: '/hub/mortar-calc',
+        label: 'Mortar Calculator',
+        icon: Target,
         show: (role) =>
           hasPermission(role, PERMISSIONS.MANAGE_PLANS) ||
           hasPermission(role, PERMISSIONS.MANAGE_OPERATIONS),

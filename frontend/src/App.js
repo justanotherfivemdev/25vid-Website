@@ -55,6 +55,8 @@ import PartnerSharedArea from '@/pages/partner/PartnerSharedArea';
 import OperationsPlanner from '@/pages/member/OperationsPlanner';
 import OperationsPlanView from '@/pages/member/OperationsPlanView';
 import OrbatMapper from '@/pages/member/OrbatMapper';
+import ReforgerMapPage from '@/pages/member/ReforgerMapPage';
+import MortarCalculator from '@/pages/member/MortarCalculator';
 import JoinUs from '@/pages/JoinUs';
 import MemberLayout from '@/components/MemberLayout';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -1265,9 +1267,13 @@ function App() {
         {/* Operations Planner: full-screen layout, no sidebar */}
         <Route path="/hub/operations-planner" element={<ProtectedRoute><OperationsPlanner /></ProtectedRoute>} />
         <Route path="/hub/operations-planner/:id" element={<ProtectedRoute><OperationsPlanner /></ProtectedRoute>} />
-        {/* ORBAT Mapper: full-screen layout, no sidebar */}
+        {/* ORBAT Creator: full-screen layout, no sidebar */}
         <Route path="/hub/orbat-mapper" element={<ProtectedRoute><OrbatMapper /></ProtectedRoute>} />
         <Route path="/hub/orbat-mapper/:operationId" element={<ProtectedRoute><OrbatMapper /></ProtectedRoute>} />
+        {/* Reforger Maps: full-screen layout, no sidebar */}
+        <Route path="/hub/reforger-maps" element={<ProtectedRoute><ReforgerMapPage /></ProtectedRoute>} />
+        {/* Mortar Calculator: full-screen layout, no sidebar */}
+        <Route path="/hub/mortar-calc" element={<ProtectedRoute><MortarCalculator /></ProtectedRoute>} />
         <Route path="/partner-login" element={<PartnerLoginPage />} />
         <Route path="/partner-apply" element={<PartnerApply />} />
         <Route path="/partner" element={<PartnerHub />} />

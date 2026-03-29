@@ -40,6 +40,7 @@ import VersionHistory from '@/components/operations/VersionHistory';
 import DrawingToolbar, { DEFAULT_STYLE } from '@/components/operations/DrawingToolbar';
 import DrawingPropertiesPanel from '@/components/operations/DrawingPropertiesPanel';
 import MovementPathPanel from '@/components/operations/MovementPathPanel';
+import { REFORGER_MAPS } from '@/config/reforgerMaps';
 
 /* ── OpenLayers ────────────────────────────────────────────────────────────── */
 import Map from 'ol/Map';
@@ -299,6 +300,19 @@ export default function OperationsPlanner() {
   useEffect(() => {
     if (planId) {
       loadPlan(planId);
+    } else {
+      // Check for ORBAT export data (from ORBAT Creator)
+      try {
+        const raw = localStorage.getItem('orbat_export_to_planner');
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (data.units?.length) {
+            setUnits(data.units);
+            setPlanTitle(data.title || '');
+          }
+          localStorage.removeItem('orbat_export_to_planner');
+        }
+      } catch { /* ignore corrupt data */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId]);
@@ -777,6 +791,13 @@ export default function OperationsPlanner() {
     setPlanMapId(map.id);
     setMapImageUrl(`${BACKEND_URL}${map.image_url}`);
     setMapDimensions({ w: map.width, h: map.height });
+    setShowLoadDialog(false);
+  };
+
+  const selectReforgerMap = (rMap) => {
+    setPlanMapId(`reforger_${rMap.id}`);
+    setMapImageUrl(rMap.imageUrl);
+    setMapDimensions({ w: rMap.xMax, h: rMap.yMax });
     setShowLoadDialog(false);
   };
 
@@ -1733,6 +1754,31 @@ export default function OperationsPlanner() {
                   No plans or maps found. Upload a map to get started.
                 </p>
               )}
+
+              {/* Reforger Maps */}
+              <div>
+                <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-2">
+                  Arma Reforger Maps
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {REFORGER_MAPS.map((rm) => (
+                    <button
+                      key={rm.id}
+                      className="flex flex-col items-center gap-1 p-2 rounded border border-gray-800 hover:border-[#C9A227]/50 transition"
+                      onClick={() => selectReforgerMap(rm)}
+                    >
+                      <img
+                        src={rm.imageUrl}
+                        alt={rm.name}
+                        className="w-full h-20 object-cover rounded"
+                      />
+                      <span className="text-[10px] text-gray-400 truncate w-full text-center">
+                        {rm.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

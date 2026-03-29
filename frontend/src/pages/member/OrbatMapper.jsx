@@ -1,11 +1,12 @@
 /**
  * OrbatMapper.jsx
  *
- * Standalone ORBAT (Order of Battle) hierarchy mapper.
+ * Standalone ORBAT (Order of Battle) hierarchy creator.
  * Allows staff to build and visualise unit organisation charts
  * independently of the Operations creation flow.  Can optionally
  * link to an existing operation or be used "on-the-fly" for
- * ad-hoc planning.
+ * ad-hoc planning.  Created ORBATs can be exported into the
+ * Operations Planner as placed unit symbols.
  *
  * Persists ORBAT data to localStorage for quick ad-hoc use.
  * When linked to an operation, the ORBAT context is associated with
@@ -13,7 +14,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 import { API } from '@/utils/api';
@@ -30,7 +31,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 import {
   ChevronLeft, Plus, Trash2, ChevronDown, ChevronUp,
   Users, Copy, Download, Upload, Save, GripVertical,
-  Network,
+  Network, Send,
 } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -96,6 +97,7 @@ const ECHELON_DOT_COLORS = {
 };
 
 const LOCAL_STORAGE_KEY = 'orbat_mapper_data';
+const ORBAT_EXPORT_KEY = 'orbat_export_to_planner';
 
 let _uidCounter = 0;
 const uid = () => crypto.randomUUID?.() ?? `${Date.now()}-${++_uidCounter}-${Math.random().toString(36).slice(2)}`;
@@ -309,6 +311,7 @@ function countNodes(nodes) {
 
 export default function OrbatMapper() {
   const { operationId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const canEdit = hasPermission(user?.role, PERMISSIONS.MANAGE_PLANS) || hasPermission(user?.role, PERMISSIONS.MANAGE_OPERATIONS);
 
@@ -459,6 +462,68 @@ export default function OrbatMapper() {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
+  /**
+   * Export the ORBAT tree to the Operations Planner.
+   * Flattens all units into planner-compatible format with NATO SIDC codes
+   * and navigates to the Operations Planner for placement.
+   */
+  const handleExportToPlanner = () => {
+    if (units.length === 0) {
+      alert('No units to export. Add units first.');
+      return;
+    }
+
+    const BRANCH_TO_SIDC = {
+      infantry:   { friendly: '10031000001211000000', hostile: '10061000001211000000' },
+      armor:      { friendly: '10031000001205000000', hostile: '10061000001205000000' },
+      artillery:  { friendly: '10031000001206000000', hostile: '10061000001206000000' },
+      aviation:   { friendly: '10031000001210000000', hostile: '10061000001210000000' },
+      engineer:   { friendly: '10031000001207000000', hostile: '10061000001207000000' },
+      signal:     { friendly: '10031000001209000000', hostile: '10061000001209000000' },
+      medical:    { friendly: '10031000001213000000', hostile: '10061000001213000000' },
+      logistics:  { friendly: '10031000001216000000', hostile: '10061000001216000000' },
+      recon:      { friendly: '10031000001220000000', hostile: '10061000001220000000' },
+      hq:         { friendly: '10031000001200000000', hostile: '10061000001200000000' },
+      other:      { friendly: '10031000001211000000', hostile: '10061000001211000000' },
+    };
+
+    const flattenUnits = (nodes, depth = 0) => {
+      const result = [];
+      nodes.forEach((node, i) => {
+        const sidc = BRANCH_TO_SIDC[node.branch]?.friendly || BRANCH_TO_SIDC.infantry.friendly;
+        const spread = 0.08;
+        result.push({
+          id: crypto.randomUUID(),
+          symbol_code: sidc,
+          name: node.designation || `${node.echelon} ${i + 1}`,
+          affiliation: 'friendly',
+          x: 0.3 + (depth * spread),
+          y: 0.2 + (result.length * 0.05),
+          rotation: 0,
+          scale: 1,
+          z_index: result.length,
+          notes: [node.callsign && `Callsign: ${node.callsign}`, node.commander && `CDR: ${node.commander}`, node.personnel && `PAX: ${node.personnel}`, node.notes].filter(Boolean).join(' | '),
+          geo_lat: '',
+          geo_lng: '',
+          location_name: '',
+        });
+        if (node.children?.length) {
+          result.push(...flattenUnits(node.children, depth + 1));
+        }
+      });
+      return result;
+    };
+
+    const exportData = {
+      title: orbatTitle || 'Imported ORBAT',
+      units: flattenUnits(units),
+      exportedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem(ORBAT_EXPORT_KEY, JSON.stringify(exportData));
+    navigate('/hub/operations-planner');
+  };
+
   const totalUnits = useMemo(() => countNodes(units), [units]);
 
   /* ── Render ─────────────────────────────────────────────────────────── */
@@ -471,7 +536,7 @@ export default function OrbatMapper() {
         </Link>
         <Network className="w-5 h-5 text-[#C9A227]" />
         <h1 className="text-lg font-bold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-          ORBAT MAPPER
+          ORBAT CREATOR
         </h1>
 
         {operation && (
@@ -555,6 +620,9 @@ export default function OrbatMapper() {
               <div className="space-y-2 pt-2 border-t border-gray-800">
                 <Button onClick={handleSave} size="sm" variant="outline" className="w-full border-gray-700 text-xs" disabled={!canEdit}>
                   <Save className="w-3 h-3 mr-1" /> Save Locally
+                </Button>
+                <Button onClick={handleExportToPlanner} size="sm" className="w-full bg-[#C9A227] text-black hover:bg-[#b8931f] text-xs" disabled={units.length === 0}>
+                  <Send className="w-3 h-3 mr-1" /> Export to Operations Planner
                 </Button>
                 <Button onClick={handleExportJSON} size="sm" variant="outline" className="w-full border-gray-700 text-xs">
                   <Download className="w-3 h-3 mr-1" /> Export JSON

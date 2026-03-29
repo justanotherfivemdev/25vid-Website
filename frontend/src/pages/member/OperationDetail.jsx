@@ -192,13 +192,13 @@ const OperationDetail = () => {
                   <Link to="/hub/campaign" className="text-tropic-gold hover:underline ml-auto">View on Campaign Map</Link>
                 </div>
               )}
-              {/* ORBAT Mapper link */}
+              {/* ORBAT Creator link */}
               <Link
                 to={`/hub/orbat-mapper/${id}`}
                 className="flex items-center gap-2 text-xs text-[#C9A227] hover:text-[#b8931f] transition bg-[#C9A227]/10 border border-[#C9A227]/30 rounded-lg px-3 py-2"
               >
                 <Network className="w-4 h-4" />
-                <span className="font-semibold tracking-wider">Open ORBAT Mapper</span>
+                <span className="font-semibold tracking-wider">Open ORBAT Creator</span>
                 <span className="text-gray-500 ml-1">— Build order of battle for this operation</span>
               </Link>
               {/* Attendance summary */}

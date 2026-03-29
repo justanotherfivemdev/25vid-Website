@@ -610,7 +610,7 @@ const OperationsManager = () => {
                             size="sm"
                             variant="outline"
                             className="border-[#C9A227]/50 text-[#C9A227] hover:bg-[#C9A227]/10"
-                            title="ORBAT Mapper"
+                            title="ORBAT Creator"
                           >
                             <Network className="w-4 h-4" />
                           </Button>
