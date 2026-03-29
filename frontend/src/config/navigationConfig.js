@@ -21,6 +21,7 @@ import {
   Shield,
   BookOpen,
   Map,
+  Network,
 } from 'lucide-react';
 
 import { isStaff } from '@/utils/permissions';
@@ -54,6 +55,7 @@ export const MEMBER_NAV_GROUPS = [
       { path: '/hub/discussions', label: 'Discussions', icon: MessageSquare },
       { path: '/hub/campaign', label: 'Campaigns', icon: MapPin },
       { path: '/hub/operations-planner', label: 'Operations Planner', icon: Map },
+      { path: '/hub/orbat-mapper', label: 'ORBAT Mapper', icon: Network },
       { path: '/hub/threat-map', label: 'Global Threat Map', icon: Globe },
     ],
   },

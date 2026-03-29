@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Calendar, Clock, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown, Globe, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown, Globe, MapPin, Network } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isStaff } from '@/utils/permissions';
 import MapMiniView from '@/components/MapMiniView';
@@ -192,6 +192,15 @@ const OperationDetail = () => {
                   <Link to="/hub/campaign" className="text-tropic-gold hover:underline ml-auto">View on Campaign Map</Link>
                 </div>
               )}
+              {/* ORBAT Mapper link */}
+              <Link
+                to={`/hub/orbat-mapper/${id}`}
+                className="flex items-center gap-2 text-xs text-[#C9A227] hover:text-[#b8931f] transition bg-[#C9A227]/10 border border-[#C9A227]/30 rounded-lg px-3 py-2"
+              >
+                <Network className="w-4 h-4" />
+                <span className="font-semibold tracking-wider">Open ORBAT Mapper</span>
+                <span className="text-gray-500 ml-1">— Build order of battle for this operation</span>
+              </Link>
               {/* Attendance summary */}
               <div className="flex items-center gap-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
                 <div className="text-center"><div className="text-2xl font-bold text-green-400">{counts.attending || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">ATTENDING</div></div>

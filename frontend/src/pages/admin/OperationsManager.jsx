@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Users, Calendar, Clock, ChevronDown, ChevronUp, CheckCircle, HelpCircle, Shield } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Calendar, Clock, ChevronDown, ChevronUp, CheckCircle, HelpCircle, Shield, Network } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import ImageUpload from '@/components/admin/ImageUpload';
 import ThreatMap from '@/components/map/ThreatMap';
 
@@ -26,6 +28,27 @@ const resolveImg = (url) => {
   if (url.startsWith('http')) return url;
   if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`;
   return `${BACKEND_URL}${url}`;
+};
+
+/** Collapsible form section used inside the create/edit dialog. */
+const FormSection = ({ title, defaultOpen = false, children }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center justify-between w-full text-left text-sm font-semibold text-gray-300 py-2 border-b border-gray-800 hover:text-white transition"
+        >
+          {title}
+          {open ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-3 space-y-3">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
 };
 
 const RosterPanel = ({ operationId }) => {
@@ -325,204 +348,213 @@ const OperationsManager = () => {
                 New Operation
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl">
-              <DialogHeader>
+            <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+              <DialogHeader className="shrink-0">
                 <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                   {editingOp ? 'Edit Operation' : 'Create New Operation'}
                 </DialogTitle>
               </DialogHeader>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label>Operation Title</Label>
-                  <Input
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    className="bg-black border-gray-700"
-                    placeholder="e.g., Operation Night Storm"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Description</Label>
-                  <Textarea
-                    required
-                    rows={3}
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    className="bg-black border-gray-700"
-                    placeholder="Brief description of the operation"
-                  />
-                </div>
-                
-                {/* Operation Logo/Badge Field */}
-                <div className="space-y-2 border border-tropic-gold/50 p-4 rounded-lg bg-tropic-gold/10">
-                  <ImageUpload
-                    value={formData.logo_url}
-                    onChange={(url) => setFormData({...formData, logo_url: url})}
-                    label="Operation Logo/Badge (Optional)"
-                    description="Appears on operation card. Identifies country, faction, or region. Recommended: 64x64px PNG with transparency."
-                    previewClass="w-12 h-12 object-contain"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ScrollArea className="flex-1 -mx-6 px-6">
+                <form onSubmit={handleSubmit} className="space-y-4 pb-2">
+                  {/* ── Basic Info (always visible) ───────────────────── */}
                   <div>
-                    <Label>Type</Label>
-                    <Select
-                      value={formData.operation_type}
-                      onValueChange={(value) => setFormData({...formData, operation_type: value})}
+                    <Label>Operation Title</Label>
+                    <Input
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      className="bg-black border-gray-700"
+                      placeholder="e.g., Operation Night Storm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Description</Label>
+                    <Textarea
+                      required
+                      rows={2}
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      className="bg-black border-gray-700"
+                      placeholder="Brief description of the operation"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label>Type</Label>
+                      <Select
+                        value={formData.operation_type}
+                        onValueChange={(value) => setFormData({...formData, operation_type: value})}
+                      >
+                        <SelectTrigger className="bg-black border-gray-700">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700">
+                          <SelectItem value="combat">Combat</SelectItem>
+                          <SelectItem value="training">Training</SelectItem>
+                          <SelectItem value="recon">Recon</SelectItem>
+                          <SelectItem value="support">Support</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Date</Label>
+                      <Input
+                        type="date"
+                        required
+                        value={formData.date}
+                        onChange={(e) => setFormData({...formData, date: e.target.value})}
+                        className="bg-black border-gray-700"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Time</Label>
+                      <Input
+                        type="time"
+                        required
+                        value={formData.time}
+                        onChange={(e) => setFormData({...formData, time: e.target.value})}
+                        className="bg-black border-gray-700"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Activity State</Label>
+                      <Select value={formData.activity_state} onValueChange={(value) => setFormData({...formData, activity_state: value})}>
+                        <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-700">
+                          <SelectItem value="planned">Planned</SelectItem>
+                          <SelectItem value="ongoing">Ongoing</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Max Participants</Label>
+                      <Input
+                        type="number"
+                        value={formData.max_participants}
+                        onChange={(e) => setFormData({...formData, max_participants: e.target.value})}
+                        className="bg-black border-gray-700"
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── Logo / Badge (collapsible) ────────────────────── */}
+                  <FormSection title="Operation Logo / Badge">
+                    <div className="space-y-2 border border-tropic-gold/50 p-4 rounded-lg bg-tropic-gold/10">
+                      <ImageUpload
+                        value={formData.logo_url}
+                        onChange={(url) => setFormData({...formData, logo_url: url})}
+                        label="Operation Logo/Badge (Optional)"
+                        description="Appears on operation card. Identifies country, faction, or region. Recommended: 64x64px PNG with transparency."
+                        previewClass="w-12 h-12 object-contain"
+                      />
+                    </div>
+                  </FormSection>
+
+                  {/* ── Location & Theater (collapsible) ──────────────── */}
+                  <FormSection title="Location &amp; Theater">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label>Theater Label</Label>
+                        <Input value={formData.theater} onChange={(e) => setFormData({...formData, theater: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Pacific AO" />
+                      </div>
+                      <div>
+                        <Label>Region Label</Label>
+                        <Input value={formData.region_label} onChange={(e) => setFormData({...formData, region_label: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Manila Corridor" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Grid Reference</Label>
+                      <Input value={formData.grid_ref} onChange={(e) => setFormData({...formData, grid_ref: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., H7-22" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label>Campaign ID (optional)</Label>
+                        <Input value={formData.campaign_id} onChange={(e) => setFormData({...formData, campaign_id: e.target.value})} className="bg-black border-gray-700" placeholder="Campaign UUID" />
+                      </div>
+                      <div>
+                        <Label>Objective ID (optional)</Label>
+                        <Input value={formData.objective_id} onChange={(e) => setFormData({...formData, objective_id: e.target.value})} className="bg-black border-gray-700" placeholder="Objective UUID" />
+                      </div>
+                    </div>
+                  </FormSection>
+
+                  {/* ── Map Placement (collapsible) ───────────────────── */}
+                  <FormSection title="Map Placement &amp; Coordinates">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <Label>Latitude</Label>
+                        <Input value={formData.lat} onChange={(e) => setFormData({...formData, lat: e.target.value})} className="bg-black border-gray-700" placeholder="14.5995" />
+                      </div>
+                      <div>
+                        <Label>Longitude</Label>
+                        <Input value={formData.lng} onChange={(e) => setFormData({...formData, lng: e.target.value})} className="bg-black border-gray-700" placeholder="120.9842" />
+                      </div>
+                      <div>
+                        <Label>Threat Severity</Label>
+                        <Select value={formData.severity} onValueChange={(value) => setFormData({...formData, severity: value})}>
+                          <SelectTrigger className="bg-black border-gray-700">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-900 border-gray-700">
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="critical">Critical</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="border border-gray-800 rounded-lg p-3 bg-black/30 space-y-2">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <Label className="text-tropic-gold">Campaign Map Placement Preview</Label>
+                        <span className="text-[11px] text-gray-500">Click map to set coordinates or enter lat/lng manually.</span>
+                      </div>
+                      <ThreatMap
+                        markers={previewMarkers}
+                        selectedMarkerId={previewMarkers[0]?.id || null}
+                        onMapClick={handleMapPlacement}
+                        height="220px"
+                      />
+                      {hasPreviewCoords ? (
+                        <p className="text-[11px] text-gray-500">Preview marker: {previewLat.toFixed(6)}, {previewLng.toFixed(6)}</p>
+                      ) : (
+                        <p className="text-[11px] text-gray-600">No valid coordinates yet. Click the map to place a marker.</p>
+                      )}
+                    </div>
+                  </FormSection>
+
+                  {/* ── Settings ──────────────────────────────────────── */}
+                  <label className="flex items-center gap-2 text-sm text-gray-300">
+                    <input type="checkbox" checked={formData.is_public_recruiting} onChange={(e) => setFormData({...formData, is_public_recruiting: e.target.checked})} />
+                    Allow recruiting/public map visibility for this operation
+                  </label>
+                  
+                  <div className="flex justify-end space-x-3 pt-4 sticky bottom-0 bg-gray-900 pb-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      className="border-gray-700"
                     >
-                      <SelectTrigger className="bg-black border-gray-700">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
-                        <SelectItem value="combat">Combat</SelectItem>
-                        <SelectItem value="training">Training</SelectItem>
-                        <SelectItem value="recon">Recon</SelectItem>
-                        <SelectItem value="support">Support</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black">
+                      {editingOp ? 'Update' : 'Create'} Operation
+                    </Button>
                   </div>
-                  
-                  <div>
-                    <Label>Max Participants</Label>
-                    <Input
-                      type="number"
-                      value={formData.max_participants}
-                      onChange={(e) => setFormData({...formData, max_participants: e.target.value})}
-                      className="bg-black border-gray-700"
-                      placeholder="Optional"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Date</Label>
-                    <Input
-                      type="date"
-                      required
-                      value={formData.date}
-                      onChange={(e) => setFormData({...formData, date: e.target.value})}
-                      className="bg-black border-gray-700"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Time</Label>
-                    <Input
-                      type="time"
-                      required
-                      value={formData.time}
-                      onChange={(e) => setFormData({...formData, time: e.target.value})}
-                      className="bg-black border-gray-700"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Campaign ID (optional)</Label>
-                    <Input value={formData.campaign_id} onChange={(e) => setFormData({...formData, campaign_id: e.target.value})} className="bg-black border-gray-700" placeholder="Campaign UUID" />
-                  </div>
-                  <div>
-                    <Label>Objective ID (optional)</Label>
-                    <Input value={formData.objective_id} onChange={(e) => setFormData({...formData, objective_id: e.target.value})} className="bg-black border-gray-700" placeholder="Objective UUID" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Theater Label</Label>
-                    <Input value={formData.theater} onChange={(e) => setFormData({...formData, theater: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Pacific AO" />
-                  </div>
-                  <div>
-                    <Label>Region Label</Label>
-                    <Input value={formData.region_label} onChange={(e) => setFormData({...formData, region_label: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Manila Corridor" />
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Grid Reference</Label>
-                  <Input value={formData.grid_ref} onChange={(e) => setFormData({...formData, grid_ref: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., H7-22" />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Latitude</Label>
-                    <Input value={formData.lat} onChange={(e) => setFormData({...formData, lat: e.target.value})} className="bg-black border-gray-700" placeholder="14.5995" />
-                  </div>
-                  <div>
-                    <Label>Longitude</Label>
-                    <Input value={formData.lng} onChange={(e) => setFormData({...formData, lng: e.target.value})} className="bg-black border-gray-700" placeholder="120.9842" />
-                  </div>
-                  <div>
-                    <Label>Threat Severity</Label>
-                    <Select value={formData.severity} onValueChange={(value) => setFormData({...formData, severity: value})}>
-                      <SelectTrigger className="bg-black border-gray-700">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="critical">Critical</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="border border-gray-800 rounded-lg p-3 bg-black/30 space-y-2">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <Label className="text-tropic-gold">Campaign Map Placement Preview</Label>
-                    <span className="text-[11px] text-gray-500">Click map to set coordinates or enter lat/lng manually.</span>
-                  </div>
-                  <ThreatMap
-                    markers={previewMarkers}
-                    selectedMarkerId={previewMarkers[0]?.id || null}
-                    onMapClick={handleMapPlacement}
-                    height="280px"
-                  />
-                  {hasPreviewCoords ? (
-                    <p className="text-[11px] text-gray-500">Preview marker: {previewLat.toFixed(6)}, {previewLng.toFixed(6)}</p>
-                  ) : (
-                    <p className="text-[11px] text-gray-600">No valid coordinates yet. Click the map to place a marker.</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label>Activity State</Label>
-                  <Select value={formData.activity_state} onValueChange={(value) => setFormData({...formData, activity_state: value})}>
-                    <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
-                      <SelectItem value="planned">Planned</SelectItem>
-                      <SelectItem value="ongoing">Ongoing</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <label className="flex items-center gap-2 text-sm text-gray-300">
-                  <input type="checkbox" checked={formData.is_public_recruiting} onChange={(e) => setFormData({...formData, is_public_recruiting: e.target.checked})} />
-                  Allow recruiting/public map visibility for this operation
-                </label>
-                
-                <div className="flex justify-end space-x-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    className="border-gray-700"
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black">
-                    {editingOp ? 'Update' : 'Create'} Operation
-                  </Button>
-                </div>
-              </form>
+                </form>
+              </ScrollArea>
             </DialogContent>
           </Dialog>
         </div>
@@ -573,6 +605,16 @@ const OperationsManager = () => {
                       </div>
                       
                       <div className="flex space-x-2">
+                        <Link to={`/hub/orbat-mapper/${op.id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-[#C9A227]/50 text-[#C9A227] hover:bg-[#C9A227]/10"
+                            title="ORBAT Mapper"
+                          >
+                            <Network className="w-4 h-4" />
+                          </Button>
+                        </Link>
                         <Button
                           size="sm"
                           variant="outline"

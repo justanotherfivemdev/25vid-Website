@@ -39,11 +39,16 @@ import ImageStatic from 'ol/source/ImageStatic';
 import { Projection } from 'ol/proj';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
-import { Icon, Style } from 'ol/style';
+import LineString from 'ol/geom/LineString';
+import Polygon from 'ol/geom/Polygon';
+import CircleGeom from 'ol/geom/Circle';
+import { Icon, Style, Stroke, Fill, Circle as CircleStyle, Text as OlText } from 'ol/style';
 
 /* ── milsymbol ─────────────────────────────────────────────────────────────── */
 import ms from 'milsymbol';
 import 'ol/ol.css';
+
+import { createDrawingStyle, createPathStyle } from '@/hooks/useOlDrawing';
 
 const AFFILIATION_LABELS = {
   friendly: 'Friendly',
@@ -230,6 +235,47 @@ export default function OperationsPlanView() {
       vectorSource.addFeature(feature);
     });
 
+    // ── Render drawings ──────────────────────────────────────────────────
+    const drawingSource = new VectorSource();
+    (plan.drawings || []).forEach((d) => {
+      const coords = (d.coordinates || []).map(([x, y]) => [x * w, y * h]);
+      if (coords.length === 0) return;
+
+      let geom;
+      if (d.drawing_type === 'circle' && d.radius != null) {
+        geom = new CircleGeom(coords[0], d.radius * Math.max(w, h));
+      } else if (
+        d.drawing_type === 'polygon' ||
+        d.drawing_type === 'engagement_area' ||
+        d.drawing_type === 'objective'
+      ) {
+        if (coords.length >= 3) geom = new Polygon([coords]);
+        else return;
+      } else {
+        if (coords.length >= 2) geom = new LineString(coords);
+        else return;
+      }
+
+      const feat = new Feature({ geometry: geom });
+      feat.set('drawingData', d);
+      feat.setStyle(createDrawingStyle(d));
+      drawingSource.addFeature(feat);
+    });
+    const drawingLayer = new VectorLayer({ source: drawingSource, zIndex: 5 });
+
+    // ── Render movement paths ─────────────────────────────────────────────
+    const pathSource = new VectorSource();
+    (plan.movement_paths || []).forEach((p) => {
+      const coords = (p.coordinates || []).map(([x, y]) => [x * w, y * h]);
+      if (coords.length < 2) return;
+
+      const feat = new Feature({ geometry: new LineString(coords) });
+      feat.set('pathData', p);
+      feat.setStyle(createPathStyle(p));
+      pathSource.addFeature(feat);
+    });
+    const pathLayer = new VectorLayer({ source: pathSource, zIndex: 4 });
+
     const vectorLayer = new VectorLayer({ source: vectorSource });
 
     const view = new View({
@@ -242,7 +288,7 @@ export default function OperationsPlanView() {
 
     const olMap = new Map({
       target: mapContainerRef.current,
-      layers: [imageLayer, vectorLayer],
+      layers: [imageLayer, pathLayer, drawingLayer, vectorLayer],
       view,
     });
 
