@@ -1,10 +1,11 @@
 """
 Pydantic models for the Operations Planner feature.
 
-Covers tactical map uploads, plan units (military symbols), and full
-operations plan documents.  Coordinates use normalised values (0 → 1)
-so that symbol placement remains valid when the underlying map image is
-resized or swapped for a higher-resolution version.
+Covers tactical map uploads, plan units (military symbols), drawings,
+movement paths, path assignments, and full operations plan documents.
+Coordinates use normalised values (0 → 1) so that symbol placement
+remains valid when the underlying map image is resized or swapped for
+a higher-resolution version.
 """
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -81,6 +82,90 @@ class PlanUnitCreate(BaseModel):
     location_name: str = ""
 
 
+# ── Drawing (vector shapes drawn on the map) ────────────────────────────────
+
+class DrawingStyle(BaseModel):
+    """Visual style for a drawing element."""
+    color: str = "#C9A227"
+    fill_color: Optional[str] = None
+    stroke_width: float = 2.0
+    opacity: float = 1.0
+    line_dash: Optional[List[float]] = None
+
+
+class PlanDrawing(BaseModel):
+    """A drawn shape / annotation on the map (line, arrow, polygon, circle, freehand)."""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    drawing_type: Literal[
+        "line", "arrow", "polyline", "polygon", "circle", "freehand",
+        "phase_line", "boundary", "engagement_area", "objective",
+    ] = "line"
+    # Normalised coordinates as list of [x, y] pairs (0→1)
+    coordinates: List[List[float]] = Field(default_factory=list)
+    # For circles: centre [x, y] and radius (normalised)
+    radius: Optional[float] = None
+    style: DrawingStyle = Field(default_factory=DrawingStyle)
+    label: str = ""
+    notes: str = ""
+    z_index: int = 0
+
+
+class PlanDrawingCreate(BaseModel):
+    drawing_type: Literal[
+        "line", "arrow", "polyline", "polygon", "circle", "freehand",
+        "phase_line", "boundary", "engagement_area", "objective",
+    ] = "line"
+    coordinates: List[List[float]] = Field(default_factory=list)
+    radius: Optional[float] = None
+    style: DrawingStyle = Field(default_factory=DrawingStyle)
+    label: str = ""
+    notes: str = ""
+    z_index: int = 0
+
+
+# ── Movement Path ───────────────────────────────────────────────────────────
+
+class MovementPath(BaseModel):
+    """A movement path that units can be assigned to for animation."""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = ""
+    # Normalised waypoint coordinates [[x, y], ...]
+    coordinates: List[List[float]] = Field(default_factory=list)
+    # Duration in seconds for full traversal
+    duration: float = 60.0
+    style: DrawingStyle = Field(default_factory=lambda: DrawingStyle(color="#3B82F6", stroke_width=3.0))
+    notes: str = ""
+
+
+class MovementPathCreate(BaseModel):
+    name: str = ""
+    coordinates: List[List[float]] = Field(default_factory=list)
+    duration: float = 60.0
+    style: DrawingStyle = Field(default_factory=lambda: DrawingStyle(color="#3B82F6", stroke_width=3.0))
+    notes: str = ""
+
+
+# ── Path Assignment (links a unit to a movement path) ───────────────────────
+
+class PathAssignment(BaseModel):
+    """Associates a unit with a movement path for animation."""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    unit_id: str
+    path_id: str
+    start_time: float = 0.0  # seconds offset from plan start
+    mode: Literal["linked", "unlinked"] = "linked"
+
+
+class PathAssignmentCreate(BaseModel):
+    unit_id: str
+    path_id: str
+    start_time: float = 0.0
+    mode: Literal["linked", "unlinked"] = "linked"
+
+
 # ── Operations Plan ─────────────────────────────────────────────────────────
 
 class OperationsPlan(BaseModel):
@@ -91,6 +176,11 @@ class OperationsPlan(BaseModel):
     description: str = ""
     map_id: str
     units: List[PlanUnit] = Field(default_factory=list)
+    # ── Drawing / tactical overlays ──────────────────────────────────────
+    drawings: List[PlanDrawing] = Field(default_factory=list)
+    movement_paths: List[MovementPath] = Field(default_factory=list)
+    path_assignments: List[PathAssignment] = Field(default_factory=list)
+    # ── Publication ──────────────────────────────────────────────────────
     is_published: bool = False
     visibility_scope: Literal["all_members", "staff_only"] = "all_members"
     # ── Collaboration fields ─────────────────────────────────────────────
@@ -115,6 +205,9 @@ class OperationsPlanCreate(BaseModel):
     description: str = ""
     map_id: str
     units: List[PlanUnitCreate] = Field(default_factory=list)
+    drawings: List[PlanDrawingCreate] = Field(default_factory=list)
+    movement_paths: List[MovementPathCreate] = Field(default_factory=list)
+    path_assignments: List[PathAssignmentCreate] = Field(default_factory=list)
     is_published: bool = False
     visibility_scope: Literal["all_members", "staff_only"] = "all_members"
     allow_live_viewing: bool = False
@@ -128,6 +221,9 @@ class OperationsPlanUpdate(BaseModel):
     description: Optional[str] = None
     map_id: Optional[str] = None
     units: Optional[List[PlanUnitCreate]] = None
+    drawings: Optional[List[PlanDrawingCreate]] = None
+    movement_paths: Optional[List[MovementPathCreate]] = None
+    path_assignments: Optional[List[PathAssignmentCreate]] = None
     is_published: Optional[bool] = None
     visibility_scope: Optional[Literal["all_members", "staff_only"]] = None
     allow_live_viewing: Optional[bool] = None

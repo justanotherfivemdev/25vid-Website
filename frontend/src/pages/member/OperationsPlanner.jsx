@@ -4,7 +4,8 @@
  * Tactical planning tool for the 25th ID website.
  * Uses OpenLayers with an ImageStatic layer and milsymbol for NATO APP-6D
  * military symbology.  Supports uploading custom map images, placing/editing
- * military symbols, and saving/loading operations plans.
+ * military symbols, drawing tactical overlays, movement paths, and animated
+ * unit movement along defined paths.
  *
  * Coordinates are normalised (0 → 1) so placement survives map resizing.
  */
@@ -17,6 +18,8 @@ import { API, BACKEND_URL } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
 import usePlanningSession from '@/hooks/usePlanningSession';
+import useOlDrawing from '@/hooks/useOlDrawing';
+import useAnimationEngine from '@/hooks/useAnimationEngine';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,11 +31,15 @@ import {
   Upload, Save, Globe2, Trash2, Plus, ChevronLeft, Eye, EyeOff,
   RotateCw, ZoomIn, ZoomOut, Crosshair, Layers, Settings, MapPin,
   FileText, X, Check, Move, Pencil, Radio, Users, Lock, LogIn, LogOut,
+  Navigation,
 } from 'lucide-react';
 
 import ExportControls from '@/components/operations/ExportControls';
 import CommsChannel from '@/components/operations/CommsChannel';
 import VersionHistory from '@/components/operations/VersionHistory';
+import DrawingToolbar, { DEFAULT_STYLE } from '@/components/operations/DrawingToolbar';
+import DrawingPropertiesPanel from '@/components/operations/DrawingPropertiesPanel';
+import MovementPathPanel from '@/components/operations/MovementPathPanel';
 
 /* ── OpenLayers ────────────────────────────────────────────────────────────── */
 import Map from 'ol/Map';
@@ -146,11 +153,22 @@ export default function OperationsPlanner() {
   /* ── UI state ───────────────────────────────────────────────────────────── */
   const [availableMaps, setAvailableMaps] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [activePanel, setActivePanel] = useState('symbols'); // symbols | properties | metadata
+  const [activePanel, setActivePanel] = useState('symbols'); // symbols | draw | properties | paths | metadata
   const [affiliationFilter, setAffiliationFilter] = useState('friendly');
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [existingPlans, setExistingPlans] = useState([]);
+
+  /* ── Drawing state ─────────────────────────────────────────────────────── */
+  const [drawings, setDrawings] = useState([]);
+  const [selectedDrawingId, setSelectedDrawingId] = useState(null);
+  const [activeTool, setActiveTool] = useState('select');
+  const [drawStyle, setDrawStyle] = useState({ ...DEFAULT_STYLE });
+
+  /* ── Movement path state ───────────────────────────────────────────────── */
+  const [movementPaths, setMovementPaths] = useState([]);
+  const [pathAssignments, setPathAssignments] = useState([]);
+  const [selectedPathId, setSelectedPathId] = useState(null);
 
   /* ── Session / collaboration state ─────────────────────────────────────── */
   const [sessionId, setSessionId] = useState(null);
@@ -307,6 +325,25 @@ export default function OperationsPlanner() {
         (plan.units || []).map((u) => ({
           ...u,
           id: u.id || crypto.randomUUID(),
+        })),
+      );
+      // Load drawings, movement paths, and path assignments
+      setDrawings(
+        (plan.drawings || []).map((d) => ({
+          ...d,
+          id: d.id || crypto.randomUUID(),
+        })),
+      );
+      setMovementPaths(
+        (plan.movement_paths || []).map((p) => ({
+          ...p,
+          id: p.id || crypto.randomUUID(),
+        })),
+      );
+      setPathAssignments(
+        (plan.path_assignments || []).map((a) => ({
+          ...a,
+          id: a.id || crypto.randomUUID(),
         })),
       );
       if (plan.map_image_url) {
@@ -520,6 +557,9 @@ export default function OperationsPlanner() {
             location_name: rest.location_name || '',
           };
         }),
+        drawings: drawings.map(({ id, ...rest }) => rest),
+        movement_paths: movementPaths.map(({ id, ...rest }) => rest),
+        path_assignments: pathAssignments.map(({ id, ...rest }) => rest),
         is_published: publish !== null ? publish : planPublished,
         visibility_scope: planVisibility,
         threat_map_link: threatMapLink || null,
@@ -589,6 +629,133 @@ export default function OperationsPlanner() {
   const selectedUnit = units.find((u) => u.id === selectedUnitId);
 
   /* ══════════════════════════════════════════════════════════════════════════
+     Drawing management
+     ══════════════════════════════════════════════════════════════════════════ */
+
+  const addDrawing = useCallback((drawingData) => {
+    const newDrawing = {
+      id: crypto.randomUUID(),
+      ...drawingData,
+    };
+    setDrawings((prev) => [...prev, newDrawing]);
+    setSelectedDrawingId(newDrawing.id);
+    setSelectedUnitId(null);
+    setSelectedPathId(null);
+  }, []);
+
+  const updateDrawing = useCallback((id, changes) => {
+    setDrawings((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, ...changes } : d)),
+    );
+  }, []);
+
+  const deleteDrawing = useCallback((id) => {
+    setDrawings((prev) => prev.filter((d) => d.id !== id));
+    if (selectedDrawingId === id) setSelectedDrawingId(null);
+  }, [selectedDrawingId]);
+
+  const selectedDrawing = drawings.find((d) => d.id === selectedDrawingId);
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     Movement path management
+     ══════════════════════════════════════════════════════════════════════════ */
+
+  const addMovementPath = useCallback((pathData) => {
+    const newPath = {
+      id: crypto.randomUUID(),
+      ...pathData,
+    };
+    setMovementPaths((prev) => [...prev, newPath]);
+    setSelectedPathId(newPath.id);
+    setSelectedDrawingId(null);
+    setSelectedUnitId(null);
+    setActivePanel('paths');
+  }, []);
+
+  const updateMovementPath = useCallback((id, changes) => {
+    setMovementPaths((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...changes } : p)),
+    );
+  }, []);
+
+  const deleteMovementPath = useCallback((id) => {
+    setMovementPaths((prev) => prev.filter((p) => p.id !== id));
+    setPathAssignments((prev) => prev.filter((a) => a.path_id !== id));
+    if (selectedPathId === id) setSelectedPathId(null);
+  }, [selectedPathId]);
+
+  const linkUnitToPath = useCallback((unitId, pathId) => {
+    const existing = pathAssignments.find(
+      (a) => a.unit_id === unitId && a.path_id === pathId,
+    );
+    if (existing) return;
+    setPathAssignments((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        unit_id: unitId,
+        path_id: pathId,
+        start_time: 0,
+        mode: 'linked',
+      },
+    ]);
+  }, [pathAssignments]);
+
+  const unlinkUnitFromPath = useCallback((unitId, pathId) => {
+    setPathAssignments((prev) =>
+      prev.filter((a) => !(a.unit_id === unitId && a.path_id === pathId)),
+    );
+  }, []);
+
+  /* ── Animation engine ──────────────────────────────────────────────────── */
+
+  const handleAnimationPositionUpdate = useCallback((unitId, pos) => {
+    setUnits((prev) =>
+      prev.map((u) =>
+        u.id === unitId ? { ...u, x: pos.x, y: pos.y } : u,
+      ),
+    );
+  }, []);
+
+  const animation = useAnimationEngine({
+    movementPaths,
+    pathAssignments,
+    units,
+    onUnitPositionUpdate: handleAnimationPositionUpdate,
+  });
+
+  /* ── OL Drawing integration ────────────────────────────────────────────── */
+
+  useOlDrawing({
+    olMap: mapRef.current,
+    mapDimensions,
+    activeTool,
+    drawStyle,
+    drawings,
+    movementPaths,
+    onDrawingComplete: addDrawing,
+    onMovementPathComplete: addMovementPath,
+    selectedDrawingId,
+    onSelectDrawing: (id) => {
+      setSelectedDrawingId(id);
+      if (id) {
+        setSelectedUnitId(null);
+        setSelectedPathId(null);
+      }
+    },
+    selectedPathId,
+    onSelectPath: (id) => {
+      setSelectedPathId(id);
+      if (id) {
+        setSelectedUnitId(null);
+        setSelectedDrawingId(null);
+        setActivePanel('paths');
+      }
+    },
+    isViewOnly,
+  });
+
+  /* ══════════════════════════════════════════════════════════════════════════
      Load plan / map lists
      ══════════════════════════════════════════════════════════════════════════ */
 
@@ -614,9 +781,14 @@ export default function OperationsPlanner() {
   };
 
   const clearMap = () => {
-    if (!window.confirm('Clear all units from the map?')) return;
+    if (!window.confirm('Clear all units, drawings, and paths from the map?')) return;
     setUnits([]);
+    setDrawings([]);
+    setMovementPaths([]);
+    setPathAssignments([]);
     setSelectedUnitId(null);
+    setSelectedDrawingId(null);
+    setSelectedPathId(null);
   };
 
   /* ══════════════════════════════════════════════════════════════════════════
@@ -838,24 +1010,34 @@ export default function OperationsPlanner() {
             {/* Panel tabs */}
             <div className="flex border-b border-gray-800">
               <button
-                className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold transition ${
+                className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
                   activePanel === 'symbols'
                     ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
                     : 'text-gray-500 hover:text-gray-300'
                 }`}
                 onClick={() => setActivePanel('symbols')}
               >
-                Symbols
+                Units
               </button>
               <button
-                className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold transition ${
+                className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
+                  activePanel === 'draw'
+                    ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+                onClick={() => setActivePanel('draw')}
+              >
+                Draw
+              </button>
+              <button
+                className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
                   activePanel === 'metadata'
                     ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
                     : 'text-gray-500 hover:text-gray-300'
                 }`}
                 onClick={() => setActivePanel('metadata')}
               >
-                Plan Info
+                Info
               </button>
             </div>
 
@@ -930,6 +1112,86 @@ export default function OperationsPlanner() {
                           </button>
                         );
                       })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activePanel === 'draw' && (
+              <div className="p-3">
+                <DrawingToolbar
+                  activeTool={activeTool}
+                  onToolChange={(tool) => {
+                    setActiveTool(tool);
+                    // When switching to a draw tool, deselect units
+                    if (tool !== 'select') {
+                      setSelectedUnitId(null);
+                    }
+                  }}
+                  drawStyle={drawStyle}
+                  onStyleChange={setDrawStyle}
+                />
+
+                {/* Drawings list */}
+                {drawings.length > 0 && (
+                  <div className="pt-3 mt-3 border-t border-gray-800">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                      Drawings ({drawings.length})
+                    </p>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {drawings.map((d) => (
+                        <button
+                          key={d.id}
+                          className={`flex items-center gap-2 w-full px-2 py-1 rounded text-left text-xs transition ${
+                            selectedDrawingId === d.id
+                              ? 'bg-[#C9A227]/15 text-[#C9A227]'
+                              : 'text-gray-400 hover:bg-gray-800/40'
+                          }`}
+                          onClick={() => {
+                            setSelectedDrawingId(d.id);
+                            setSelectedUnitId(null);
+                            setSelectedPathId(null);
+                          }}
+                        >
+                          <Pencil className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">
+                            {d.label || d.drawing_type || 'Drawing'}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Movement paths list */}
+                {movementPaths.length > 0 && (
+                  <div className="pt-3 mt-3 border-t border-gray-800">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                      Paths ({movementPaths.length})
+                    </p>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {movementPaths.map((p) => (
+                        <button
+                          key={p.id}
+                          className={`flex items-center gap-2 w-full px-2 py-1 rounded text-left text-xs transition ${
+                            selectedPathId === p.id
+                              ? 'bg-[#3B82F6]/15 text-[#3B82F6]'
+                              : 'text-gray-400 hover:bg-gray-800/40'
+                          }`}
+                          onClick={() => {
+                            setSelectedPathId(p.id);
+                            setSelectedDrawingId(null);
+                            setSelectedUnitId(null);
+                            setActivePanel('paths');
+                          }}
+                        >
+                          <Navigation className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">
+                            {p.name || 'Unnamed Path'}
+                          </span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -1091,16 +1353,78 @@ export default function OperationsPlanner() {
           )}
         </div>
 
-        {/* ── Right Sidebar (Unit Properties) ──────────────────────────── */}
+        {/* ── Right Sidebar (Properties) ───────────────────────────────── */}
         <div className="w-72 border-l border-gray-800 bg-[#0c1322] overflow-y-auto shrink-0 hidden xl:block">
-          <div className="border-b border-gray-800 px-3 py-2">
-            <h3
-              className="text-xs uppercase tracking-wider font-bold text-gray-400"
-              style={{ fontFamily: 'Rajdhani, sans-serif' }}
+          {/* Tab switcher for right panel */}
+          <div className="flex border-b border-gray-800">
+            <button
+              className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
+                activePanel === 'properties' || activePanel === 'symbols'
+                  ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+              onClick={() => setActivePanel('properties')}
             >
-              {selectedUnit ? 'Unit Properties' : 'Select a Unit'}
-            </h3>
+              Properties
+            </button>
+            <button
+              className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
+                activePanel === 'paths'
+                  ? 'text-[#3B82F6] border-b-2 border-[#3B82F6]'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+              onClick={() => setActivePanel('paths')}
+            >
+              Paths
+            </button>
           </div>
+
+          {activePanel === 'paths' ? (
+            <div className="p-3">
+              <MovementPathPanel
+                movementPaths={movementPaths}
+                pathAssignments={pathAssignments}
+                units={units}
+                selectedPathId={selectedPathId}
+                onSelectPath={(id) => {
+                  setSelectedPathId(id);
+                  if (id) {
+                    setSelectedUnitId(null);
+                    setSelectedDrawingId(null);
+                  }
+                }}
+                onUpdatePath={updateMovementPath}
+                onDeletePath={deleteMovementPath}
+                onLinkUnit={linkUnitToPath}
+                onUnlinkUnit={unlinkUnitFromPath}
+                animPlaying={animation.playing}
+                animProgress={animation.progress}
+                animSpeed={animation.speed}
+                onAnimPlay={animation.play}
+                onAnimPause={animation.pause}
+                onAnimReset={animation.reset}
+                onAnimSeek={animation.seekTo}
+                onAnimSetSpeed={animation.setSpeed}
+                isViewOnly={isViewOnly}
+              />
+            </div>
+          ) : selectedDrawing ? (
+            <DrawingPropertiesPanel
+              drawing={selectedDrawing}
+              onUpdate={updateDrawing}
+              onDelete={deleteDrawing}
+              isViewOnly={isViewOnly}
+            />
+          ) : (
+            <>
+              <div className="border-b border-gray-800 px-3 py-2">
+                <h3
+                  className="text-xs uppercase tracking-wider font-bold text-gray-400"
+                  style={{ fontFamily: 'Rajdhani, sans-serif' }}
+                >
+                  {selectedUnit ? 'Unit Properties' : 'Select an Element'}
+                </h3>
+              </div>
 
           {selectedUnit ? (
             <div className="p-3 space-y-3">
@@ -1297,8 +1621,10 @@ export default function OperationsPlanner() {
           ) : (
             <div className="p-4 text-center text-gray-600 text-sm">
               <Crosshair className="w-8 h-8 mx-auto mb-2 text-gray-700" />
-              Click a unit on the map or in the unit list to view/edit its properties.
+              Click a unit or drawing on the map to view/edit its properties.
             </div>
+          )}
+            </>
           )}
         </div>
       </div>
