@@ -103,7 +103,7 @@ class PlanDrawing(BaseModel):
     ] = "line"
     # Normalised coordinates as list of [x, y] pairs (0→1)
     coordinates: List[List[float]] = Field(default_factory=list)
-    # For circles: centre [x, y] and radius (normalised)
+    # For circles: center [x, y] and radius (normalised)
     radius: Optional[float] = None
     style: DrawingStyle = Field(default_factory=DrawingStyle)
     label: str = ""

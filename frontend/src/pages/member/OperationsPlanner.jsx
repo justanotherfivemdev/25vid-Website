@@ -1422,7 +1422,7 @@ export default function OperationsPlanner() {
                   className="text-xs uppercase tracking-wider font-bold text-gray-400"
                   style={{ fontFamily: 'Rajdhani, sans-serif' }}
                 >
-                  {selectedUnit ? 'Unit Properties' : 'Select an Element'}
+                  {selectedUnit ? 'Unit Properties' : 'Select a Unit or Drawing'}
                 </h3>
               </div>
 

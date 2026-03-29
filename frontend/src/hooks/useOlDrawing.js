@@ -253,8 +253,8 @@ export default function useOlDrawing({
 
       let geom;
       if (d.drawing_type === 'circle' && d.radius != null) {
-        const centre = coords[0];
-        geom = new CircleGeom(centre, d.radius * Math.max(mapDimensions.w, mapDimensions.h));
+        const center = coords[0];
+        geom = new CircleGeom(center, d.radius * Math.max(mapDimensions.w, mapDimensions.h));
       } else if (
         d.drawing_type === 'polygon' ||
         d.drawing_type === 'engagement_area' ||
@@ -373,8 +373,8 @@ export default function useOlDrawing({
       let radius = null;
 
       if (geom.getType() === 'Circle') {
-        const centre = geom.getCenter();
-        coords = [[centre[0] / mapDimensions.w, centre[1] / mapDimensions.h]];
+        const center = geom.getCenter();
+        coords = [[center[0] / mapDimensions.w, center[1] / mapDimensions.h]];
         radius = geom.getRadius() / Math.max(mapDimensions.w, mapDimensions.h);
       } else if (geom.getType() === 'Polygon') {
         coords = geom.getCoordinates()[0].map(([x, y]) => [
