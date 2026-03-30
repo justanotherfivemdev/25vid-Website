@@ -31,7 +31,7 @@ import {
   Upload, Save, Globe2, Trash2, Plus, ChevronLeft, Eye, EyeOff,
   RotateCw, ZoomIn, ZoomOut, Crosshair, Layers, Settings, MapPin,
   FileText, X, Check, Move, Pencil, Radio, Users, Lock, LogIn, LogOut,
-  Navigation,
+  Navigation, Target, Network, Grid3X3,
 } from 'lucide-react';
 
 import ExportControls from '@/components/operations/ExportControls';
@@ -40,7 +40,11 @@ import VersionHistory from '@/components/operations/VersionHistory';
 import DrawingToolbar, { DEFAULT_STYLE } from '@/components/operations/DrawingToolbar';
 import DrawingPropertiesPanel from '@/components/operations/DrawingPropertiesPanel';
 import MovementPathPanel from '@/components/operations/MovementPathPanel';
-import { REFORGER_MAPS } from '@/config/reforgerMaps';
+import CoordinateDisplay from '@/components/operations/CoordinateDisplay';
+import LayerControl from '@/components/operations/LayerControl';
+import MortarPanel from '@/components/operations/MortarPanel';
+import OrbatPanel from '@/components/operations/OrbatPanel';
+import { REFORGER_MAPS, getReforgerMap } from '@/config/reforgerMaps';
 
 /* ── OpenLayers ────────────────────────────────────────────────────────────── */
 import Map from 'ol/Map';
@@ -52,7 +56,8 @@ import ImageStatic from 'ol/source/ImageStatic';
 import { Projection, get as getProjection } from 'ol/proj';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
-import { Icon, Style } from 'ol/style';
+import LineString from 'ol/geom/LineString';
+import { Icon, Style, Stroke, Text as OlText, Fill } from 'ol/style';
 import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 import { Translate } from 'ol/interaction';
 
@@ -154,11 +159,38 @@ export default function OperationsPlanner() {
   /* ── UI state ───────────────────────────────────────────────────────────── */
   const [availableMaps, setAvailableMaps] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [activePanel, setActivePanel] = useState('symbols'); // symbols | draw | properties | paths | metadata
+  const [activePanel, setActivePanel] = useState('symbols'); // symbols | draw | orbat | mortar | layers | properties | paths | metadata
   const [affiliationFilter, setAffiliationFilter] = useState('friendly');
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [existingPlans, setExistingPlans] = useState([]);
+
+  /* ── Coordinate display / grid / layer state ───────────────────────────── */
+  const [cursorCoords, setCursorCoords] = useState(null);
+  const gridLayerRef = useRef(null);
+  const [layerVisibility, setLayerVisibility] = useState({
+    terrain: true,
+    grid: true,
+    units: true,
+    drawings: true,
+    paths: true,
+  });
+
+  /* ── Reforger map helpers ──────────────────────────────────────────────── */
+  const isReforgerMap = planMapId?.startsWith('reforger_');
+  const reforgerMapConfig = isReforgerMap
+    ? getReforgerMap(planMapId.replace('reforger_', ''))
+    : null;
+
+  /* ── Layer visibility toggle ───────────────────────────────────────────── */
+  const handleToggleLayer = useCallback((layerId) => {
+    setLayerVisibility((prev) => ({ ...prev, [layerId]: !prev[layerId] }));
+  }, []);
+
+  /* ── ORBAT → place units on map ────────────────────────────────────────── */
+  const handleOrbatPlaceUnits = useCallback((newUnits) => {
+    setUnits((prev) => [...prev, ...newUnits]);
+  }, []);
 
   /* ── Drawing state ─────────────────────────────────────────────────────── */
   const [drawings, setDrawings] = useState([]);
@@ -361,7 +393,11 @@ export default function OperationsPlanner() {
         })),
       );
       if (plan.map_image_url) {
-        setMapImageUrl(`${BACKEND_URL}${plan.map_image_url}`);
+        // External URLs (Reforger CDN) don't need backend prefix
+        const imgUrl = plan.map_image_url.startsWith('http')
+          ? plan.map_image_url
+          : `${BACKEND_URL}${plan.map_image_url}`;
+        setMapImageUrl(imgUrl);
         setMapDimensions({ w: plan.map_width || 0, h: plan.map_height || 0 });
       }
     } catch (err) {
@@ -406,17 +442,76 @@ export default function OperationsPlanner() {
 
     const vectorLayer = new VectorLayer({ source: vectorSource });
 
+    // ── Grid overlay layer ──────────────────────────────────────────────
+    const gridSource = new VectorSource();
+    const gridLayer = new VectorLayer({
+      source: gridSource,
+      style: new Style({
+        stroke: new Stroke({ color: 'rgba(201,162,39,0.25)', width: 1 }),
+      }),
+      zIndex: 1,
+    });
+    gridLayerRef.current = gridLayer;
+
+    // Populate grid lines for Reforger maps or generic grids
+    const gridSize = isReforgerMap && reforgerMapConfig
+      ? reforgerMapConfig.gridSize
+      : Math.max(mapDimensions.w, mapDimensions.h) / 10;
+    if (gridSize > 0) {
+      // Vertical lines
+      for (let x = 0; x <= mapDimensions.w; x += gridSize) {
+        const line = new Feature({
+          geometry: new LineString([[x, 0], [x, mapDimensions.h]]),
+        });
+        gridSource.addFeature(line);
+      }
+      // Horizontal lines
+      for (let y = 0; y <= mapDimensions.h; y += gridSize) {
+        const line = new Feature({
+          geometry: new LineString([[0, y], [mapDimensions.w, y]]),
+        });
+        gridSource.addFeature(line);
+      }
+      // Add grid labels for Reforger maps
+      if (isReforgerMap && reforgerMapConfig) {
+        for (let x = gridSize; x < mapDimensions.w; x += gridSize) {
+          const label = new Feature({ geometry: new Point([x, mapDimensions.h - 8]) });
+          label.setStyle(new Style({
+            text: new OlText({
+              text: `${(x / 1000).toFixed(0)}`,
+              fill: new Fill({ color: 'rgba(201,162,39,0.5)' }),
+              font: '10px monospace',
+              offsetY: -6,
+            }),
+          }));
+          gridSource.addFeature(label);
+        }
+        for (let y = gridSize; y < mapDimensions.h; y += gridSize) {
+          const label = new Feature({ geometry: new Point([8, y]) });
+          label.setStyle(new Style({
+            text: new OlText({
+              text: `${((reforgerMapConfig.yMax - y) / 1000).toFixed(0)}`,
+              fill: new Fill({ color: 'rgba(201,162,39,0.5)' }),
+              font: '10px monospace',
+              offsetX: 6,
+            }),
+          }));
+          gridSource.addFeature(label);
+        }
+      }
+    }
+
     const view = new View({
       projection,
       center: [mapDimensions.w / 2, mapDimensions.h / 2],
       zoom: 1,
       minZoom: 0,
-      maxZoom: 6,
+      maxZoom: 8,
     });
 
     const olMap = new Map({
       target: mapContainerRef.current,
-      layers: [imageLayer, vectorLayer],
+      layers: [imageLayer, gridLayer, vectorLayer],
       view,
       interactions: defaultInteractions({ doubleClickZoom: false }),
     });
@@ -474,6 +569,17 @@ export default function OperationsPlanner() {
       });
     }
 
+    // ── Cursor position tracking ────────────────────────────────────────
+    olMap.on('pointermove', (e) => {
+      const coord = olMap.getCoordinateFromPixel(e.pixel);
+      if (coord) {
+        setCursorCoords({ x: coord[0], y: coord[1] });
+      }
+    });
+    olMap.getViewport().addEventListener('mouseout', () => {
+      setCursorCoords(null);
+    });
+
     mapRef.current = olMap;
     setMapReady(true);
 
@@ -484,6 +590,17 @@ export default function OperationsPlanner() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapImageUrl, mapDimensions.w, mapDimensions.h, isViewOnly]);
+
+  /* ── Layer visibility sync ─────────────────────────────────────────────── */
+  useEffect(() => {
+    const olMap = mapRef.current;
+    if (!olMap) return;
+    const layers = olMap.getLayers().getArray();
+    // layers order: [imageLayer(terrain), gridLayer, vectorLayer(units), ...drawing/path layers]
+    if (layers[0]) layers[0].setVisible(layerVisibility.terrain !== false);
+    if (gridLayerRef.current) gridLayerRef.current.setVisible(layerVisibility.grid !== false);
+    if (layers[2]) layers[2].setVisible(layerVisibility.units !== false);
+  }, [layerVisibility]);
 
   /* ── Sync units → OL features ──────────────────────────────────────────── */
   useEffect(() => {
@@ -1027,39 +1144,71 @@ export default function OperationsPlanner() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* ── Left Sidebar ─────────────────────────────────────────────── */}
         {!isViewOnly && (
-          <div className="w-64 border-r border-gray-800 bg-[#0c1322] overflow-y-auto shrink-0 hidden lg:block">
-            {/* Panel tabs */}
-            <div className="flex border-b border-gray-800">
-              <button
-                className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
-                  activePanel === 'symbols'
-                    ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
-                    : 'text-gray-500 hover:text-gray-300'
-                }`}
-                onClick={() => setActivePanel('symbols')}
-              >
-                Units
-              </button>
-              <button
-                className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
-                  activePanel === 'draw'
-                    ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
-                    : 'text-gray-500 hover:text-gray-300'
-                }`}
-                onClick={() => setActivePanel('draw')}
-              >
-                Draw
-              </button>
-              <button
-                className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
-                  activePanel === 'metadata'
-                    ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
-                    : 'text-gray-500 hover:text-gray-300'
-                }`}
-                onClick={() => setActivePanel('metadata')}
-              >
-                Info
-              </button>
+          <div className="w-72 border-r border-gray-800 bg-[#0c1322] overflow-y-auto shrink-0 hidden lg:flex lg:flex-col">
+            {/* Panel tabs — two rows for expanded tool set */}
+            <div className="shrink-0">
+              <div className="flex border-b border-gray-800">
+                <button
+                  className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
+                    activePanel === 'symbols'
+                      ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  onClick={() => setActivePanel('symbols')}
+                  title="Unit Symbols"
+                >
+                  <Crosshair className="w-3.5 h-3.5 mx-auto mb-0.5" />
+                  Units
+                </button>
+                <button
+                  className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
+                    activePanel === 'draw'
+                      ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  onClick={() => setActivePanel('draw')}
+                  title="Drawing Tools"
+                >
+                  <Pencil className="w-3.5 h-3.5 mx-auto mb-0.5" />
+                  Draw
+                </button>
+                <button
+                  className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
+                    activePanel === 'orbat'
+                      ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  onClick={() => setActivePanel('orbat')}
+                  title="ORBAT Builder"
+                >
+                  <Network className="w-3.5 h-3.5 mx-auto mb-0.5" />
+                  ORBAT
+                </button>
+                <button
+                  className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
+                    activePanel === 'mortar'
+                      ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  onClick={() => setActivePanel('mortar')}
+                  title="Mortar Calculator"
+                >
+                  <Target className="w-3.5 h-3.5 mx-auto mb-0.5" />
+                  Mortar
+                </button>
+                <button
+                  className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
+                    activePanel === 'layers'
+                      ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  onClick={() => setActivePanel('layers')}
+                  title="Layers & Info"
+                >
+                  <Layers className="w-3.5 h-3.5 mx-auto mb-0.5" />
+                  Layers
+                </button>
+              </div>
             </div>
 
             {activePanel === 'symbols' && (
@@ -1321,6 +1470,60 @@ export default function OperationsPlanner() {
               </div>
             )}
 
+            {/* ── ORBAT Panel ────────────────────────────────────────── */}
+            {activePanel === 'orbat' && (
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <OrbatPanel onPlaceUnitsOnMap={handleOrbatPlaceUnits} />
+              </div>
+            )}
+
+            {/* ── Mortar Calculator Panel ────────────────────────────── */}
+            {activePanel === 'mortar' && (
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <MortarPanel isReforgerMap={isReforgerMap} />
+              </div>
+            )}
+
+            {/* ── Layers & Settings Panel ────────────────────────────── */}
+            {activePanel === 'layers' && (
+              <div className="p-3 space-y-4">
+                <LayerControl
+                  layerVisibility={layerVisibility}
+                  onToggleLayer={handleToggleLayer}
+                />
+
+                {/* Map info */}
+                <div className="pt-3 border-t border-gray-800">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                    <Grid3X3 className="w-3 h-3 inline mr-1" />Map Info
+                  </p>
+                  {isReforgerMap && reforgerMapConfig ? (
+                    <div className="space-y-1 text-[10px] text-gray-400">
+                      <p><span className="text-gray-600">Map:</span> {reforgerMapConfig.name}</p>
+                      <p><span className="text-gray-600">Size:</span> {(reforgerMapConfig.xMax / 1000).toFixed(1)} × {(reforgerMapConfig.yMax / 1000).toFixed(1)} km</p>
+                      <p><span className="text-gray-600">Grid:</span> {reforgerMapConfig.gridSize}m squares</p>
+                      <p><span className="text-gray-600">Coords:</span> Game coordinates (metres)</p>
+                    </div>
+                  ) : mapDimensions.w > 0 ? (
+                    <div className="space-y-1 text-[10px] text-gray-400">
+                      <p><span className="text-gray-600">Size:</span> {mapDimensions.w} × {mapDimensions.h} px</p>
+                      <p><span className="text-gray-600">Coords:</span> Normalised (0→1)</p>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-gray-600">No map loaded</p>
+                  )}
+                </div>
+
+                {/* Plan metadata link */}
+                <button
+                  className="text-[10px] text-gray-500 hover:text-[#C9A227] transition flex items-center gap-1"
+                  onClick={() => setActivePanel('metadata')}
+                >
+                  <Settings className="w-3 h-3" /> Plan Settings & Metadata
+                </button>
+              </div>
+            )}
+
             {/* ── Comms Channel (below panels) ───────────────────────── */}
             {planId && (
               <div className="border-t border-gray-800">
@@ -1370,7 +1573,15 @@ export default function OperationsPlanner() {
               )}
             </div>
           ) : (
-            <div ref={mapContainerRef} className="absolute inset-0" />
+            <>
+              <div ref={mapContainerRef} className="absolute inset-0" />
+              <CoordinateDisplay
+                cursorCoords={cursorCoords}
+                mapDimensions={mapDimensions}
+                isReforgerMap={isReforgerMap}
+                reforgerMapConfig={reforgerMapConfig}
+              />
+            </>
           )}
         </div>
 

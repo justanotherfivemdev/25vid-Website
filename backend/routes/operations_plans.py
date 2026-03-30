@@ -146,6 +146,59 @@ async def list_maps(current_user: dict = Depends(get_current_user)):
     return docs
 
 
+# ── Built-in Reforger Maps metadata ─────────────────────────────────────────
+
+GITHUB_RAW_BASE = (
+    "https://raw.githubusercontent.com/arcticfr33d0m/"
+    "ArmaReforgerMortarCalculator/main/maps"
+)
+
+REFORGER_MAPS = [
+    {
+        "id": "everon",
+        "name": "Everon",
+        "description": "Main island \u2014 12.7 km \u00d7 12.7 km terrain",
+        "xMax": 12700,
+        "yMax": 12700,
+        "imageUrl": f"{GITHUB_RAW_BASE}/Everon.png",
+        "gridSize": 1000,
+    },
+    {
+        "id": "serhiivka",
+        "name": "Serhiivka",
+        "description": "Eastern front urban area \u2014 10.2 km \u00d7 10.2 km",
+        "xMax": 10240,
+        "yMax": 10240,
+        "imageUrl": f"{GITHUB_RAW_BASE}/Serhiivka.png",
+        "gridSize": 1000,
+    },
+    {
+        "id": "zarichne",
+        "name": "Zarichne",
+        "description": "Compact rural terrain \u2014 4.6 km \u00d7 4.6 km",
+        "xMax": 4607,
+        "yMax": 4607,
+        "imageUrl": f"{GITHUB_RAW_BASE}/Zarichne.png",
+        "gridSize": 500,
+    },
+    {
+        "id": "belleau-wood",
+        "name": "Belleau Wood",
+        "description": "Dense woodland theatre \u2014 12 km \u00d7 12 km",
+        "xMax": 12030,
+        "yMax": 12030,
+        "imageUrl": f"{GITHUB_RAW_BASE}/BelleauWood.png",
+        "gridSize": 1000,
+    },
+]
+
+
+@router.get("/reforger-maps")
+async def list_reforger_maps(current_user: dict = Depends(get_current_user)):
+    """List built-in Arma Reforger map metadata (game maps with grid coords)."""
+    return REFORGER_MAPS
+
+
 # ── Operations Plan endpoints ────────────────────────────────────────────────
 
 @router.post("/operations-plans")
@@ -154,10 +207,11 @@ async def create_plan(
     current_user: dict = Depends(require_permission(Permission.MANAGE_PLANS)),
 ):
     """Create a new operations plan."""
-    # Validate map exists
-    tmap = await db.tactical_maps.find_one({"id": plan_data.map_id}, {"_id": 0})
-    if not tmap:
-        raise HTTPException(status_code=400, detail="Referenced map does not exist")
+    # Validate map exists (skip validation for built-in Reforger maps)
+    if not plan_data.map_id.startswith("reforger_"):
+        tmap = await db.tactical_maps.find_one({"id": plan_data.map_id}, {"_id": 0})
+        if not tmap:
+            raise HTTPException(status_code=400, detail="Referenced map does not exist")
 
     plan_dict = plan_data.model_dump()
     plan_dict["created_by"] = current_user["id"]
@@ -220,9 +274,17 @@ async def list_plans(
     users_by_id = {u["id"]: u for u in users_list}
 
     for d in docs:
-        m = maps_by_id.get(d["map_id"])
-        d["map_image_url"] = f"/api/uploads/maps/{m['filename']}" if m else None
-        d["map_name"] = m.get("original_filename", "") if m else ""
+        mid = d["map_id"]
+        # Handle built-in Reforger maps
+        if mid.startswith("reforger_"):
+            rmap_id = mid.replace("reforger_", "")
+            rmap = next((rm for rm in REFORGER_MAPS if rm["id"] == rmap_id), None)
+            d["map_image_url"] = rmap["imageUrl"] if rmap else None
+            d["map_name"] = rmap["name"] if rmap else mid
+        else:
+            m = maps_by_id.get(mid)
+            d["map_image_url"] = f"/api/uploads/maps/{m['filename']}" if m else None
+            d["map_name"] = m.get("original_filename", "") if m else ""
         creator = users_by_id.get(d["created_by"])
         d["created_by_username"] = creator.get("username", "Unknown") if creator else "Unknown"
 
@@ -249,12 +311,22 @@ async def get_plan(plan_id: str, current_user: dict = Depends(get_current_user))
             raise HTTPException(status_code=403, detail="Plan is restricted to staff")
 
     # Enrich with map info
-    m = await db.tactical_maps.find_one({"id": doc["map_id"]}, {"_id": 0})
-    if m:
-        doc["map_image_url"] = f"/api/uploads/maps/{m['filename']}"
-        doc["map_width"] = m["width"]
-        doc["map_height"] = m["height"]
-        doc["map_name"] = m.get("original_filename", "")
+    mid = doc["map_id"]
+    if mid.startswith("reforger_"):
+        rmap_id = mid.replace("reforger_", "")
+        rmap = next((rm for rm in REFORGER_MAPS if rm["id"] == rmap_id), None)
+        if rmap:
+            doc["map_image_url"] = rmap["imageUrl"]
+            doc["map_width"] = rmap["xMax"]
+            doc["map_height"] = rmap["yMax"]
+            doc["map_name"] = rmap["name"]
+    else:
+        m = await db.tactical_maps.find_one({"id": mid}, {"_id": 0})
+        if m:
+            doc["map_image_url"] = f"/api/uploads/maps/{m['filename']}"
+            doc["map_width"] = m["width"]
+            doc["map_height"] = m["height"]
+            doc["map_name"] = m.get("original_filename", "")
 
     creator = await db.users.find_one(
         {"id": doc["created_by"]}, {"_id": 0, "username": 1}
@@ -279,11 +351,13 @@ async def update_plan(
     if not update_fields:
         raise HTTPException(status_code=400, detail="No fields to update")
 
-    # If map_id changed, validate it exists
+    # If map_id changed, validate it exists (skip for built-in Reforger maps)
     if "map_id" in update_fields:
-        tmap = await db.tactical_maps.find_one({"id": update_fields["map_id"]}, {"_id": 0})
-        if not tmap:
-            raise HTTPException(status_code=400, detail="Referenced map does not exist")
+        mid = update_fields["map_id"]
+        if not mid.startswith("reforger_"):
+            tmap = await db.tactical_maps.find_one({"id": mid}, {"_id": 0})
+            if not tmap:
+                raise HTTPException(status_code=400, detail="Referenced map does not exist")
 
     update_fields["updated_by"] = current_user["id"]
     update_fields["updated_at"] = datetime.now(timezone.utc).isoformat()

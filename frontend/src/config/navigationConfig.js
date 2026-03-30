@@ -21,9 +21,6 @@ import {
   Shield,
   BookOpen,
   Map,
-  Network,
-  Compass,
-  Target,
 } from 'lucide-react';
 
 import { isStaff } from '@/utils/permissions';
@@ -37,6 +34,10 @@ import { isStaff } from '@/utils/permissions';
  *   icon   – Lucide icon component
  *   show   – (user) => boolean  (default: always visible)
  *   exact  – only highlight when path matches exactly (default: false)
+ *
+ * NOTE: ORBAT Creator, Reforger Maps, and Mortar Calculator have been
+ * consolidated into the Operations Planner as integrated panels.
+ * The old standalone routes redirect into the planner.
  */
 export const MEMBER_NAV_GROUPS = [
   {
@@ -57,9 +58,6 @@ export const MEMBER_NAV_GROUPS = [
       { path: '/hub/discussions', label: 'Discussions', icon: MessageSquare },
       { path: '/hub/campaign', label: 'Campaigns', icon: MapPin },
       { path: '/hub/operations-planner', label: 'Operations Planner', icon: Map },
-      { path: '/hub/orbat-mapper', label: 'ORBAT Creator', icon: Network },
-      { path: '/hub/reforger-maps', label: 'Reforger Maps', icon: Compass },
-      { path: '/hub/mortar-calc', label: 'Mortar Calculator', icon: Target },
       { path: '/hub/threat-map', label: 'Global Threat Map', icon: Globe },
     ],
   },
