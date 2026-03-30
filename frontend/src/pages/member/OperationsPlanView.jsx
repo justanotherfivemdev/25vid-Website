@@ -204,9 +204,13 @@ export default function OperationsPlanView() {
       extent,
     });
 
+    const mapUrl = plan.map_image_url.startsWith('http')
+      ? plan.map_image_url
+      : `${BACKEND_URL}${plan.map_image_url}`;
+
     const imageLayer = new ImageLayer({
       source: new ImageStatic({
-        url: `${BACKEND_URL}${plan.map_image_url}`,
+        url: mapUrl,
         projection,
         imageExtent: extent,
       }),

@@ -157,7 +157,7 @@ REFORGER_MAPS = [
     {
         "id": "everon",
         "name": "Everon",
-        "description": "Main island \u2014 12.7 km \u00d7 12.7 km terrain",
+        "description": "Main island — 12.7 km × 12.7 km terrain",
         "xMax": 12700,
         "yMax": 12700,
         "imageUrl": f"{GITHUB_RAW_BASE}/Everon.png",
@@ -166,7 +166,7 @@ REFORGER_MAPS = [
     {
         "id": "serhiivka",
         "name": "Serhiivka",
-        "description": "Eastern front urban area \u2014 10.2 km \u00d7 10.2 km",
+        "description": "Eastern front urban area — 10.2 km × 10.2 km",
         "xMax": 10240,
         "yMax": 10240,
         "imageUrl": f"{GITHUB_RAW_BASE}/Serhiivka.png",
@@ -175,7 +175,7 @@ REFORGER_MAPS = [
     {
         "id": "zarichne",
         "name": "Zarichne",
-        "description": "Compact rural terrain \u2014 4.6 km \u00d7 4.6 km",
+        "description": "Compact rural terrain — 4.6 km × 4.6 km",
         "xMax": 4607,
         "yMax": 4607,
         "imageUrl": f"{GITHUB_RAW_BASE}/Zarichne.png",
@@ -184,7 +184,7 @@ REFORGER_MAPS = [
     {
         "id": "belleau-wood",
         "name": "Belleau Wood",
-        "description": "Dense woodland theatre \u2014 12 km \u00d7 12 km",
+        "description": "Dense woodland theatre — 12 km × 12 km",
         "xMax": 12030,
         "yMax": 12030,
         "imageUrl": f"{GITHUB_RAW_BASE}/BelleauWood.png",

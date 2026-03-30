@@ -436,11 +436,13 @@ export default function OperationsPlanner() {
         imageExtent: extent,
       }),
     });
+    imageLayer.set('layerId', 'terrain');
 
     const vectorSource = new VectorSource();
     vectorSourceRef.current = vectorSource;
 
     const vectorLayer = new VectorLayer({ source: vectorSource });
+    vectorLayer.set('layerId', 'units');
 
     // ── Grid overlay layer ──────────────────────────────────────────────
     const gridSource = new VectorSource();
@@ -595,11 +597,12 @@ export default function OperationsPlanner() {
   useEffect(() => {
     const olMap = mapRef.current;
     if (!olMap) return;
-    const layers = olMap.getLayers().getArray();
-    // layers order: [imageLayer(terrain), gridLayer, vectorLayer(units), ...drawing/path layers]
-    if (layers[0]) layers[0].setVisible(layerVisibility.terrain !== false);
+    olMap.getLayers().forEach((layer) => {
+      const id = layer.get('layerId');
+      if (id === 'terrain') layer.setVisible(layerVisibility.terrain !== false);
+      if (id === 'units') layer.setVisible(layerVisibility.units !== false);
+    });
     if (gridLayerRef.current) gridLayerRef.current.setVisible(layerVisibility.grid !== false);
-    if (layers[2]) layers[2].setVisible(layerVisibility.units !== false);
   }, [layerVisibility]);
 
   /* ── Sync units → OL features ──────────────────────────────────────────── */
