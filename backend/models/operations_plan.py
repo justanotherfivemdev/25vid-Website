@@ -2,10 +2,16 @@
 Pydantic models for the Operations Planner feature.
 
 Covers tactical map uploads, plan units (military symbols), drawings,
-movement paths, path assignments, and full operations plan documents.
+movement paths, path assignments, ORBAT hierarchy, and full operations
+plan documents.
+
 Coordinates use normalised values (0 → 1) so that symbol placement
 remains valid when the underlying map image is resized or swapped for
 a higher-resolution version.
+
+The Operations Planner serves as the unified tactical planning system,
+consolidating ORBAT creation, mortar calculations, and Reforger map
+support into a single workflow.
 """
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -166,6 +172,42 @@ class PathAssignmentCreate(BaseModel):
     mode: Literal["linked", "unlinked"] = "linked"
 
 
+# ── ORBAT (Order of Battle) hierarchy ───────────────────────────────────────
+
+class OrbatUnit(BaseModel):
+    """A unit in the ORBAT hierarchy tree.  Children form the org chart."""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    designation: str = ""
+    echelon: str = "company"  # team|squad|platoon|company|battalion|regiment|brigade|division
+    branch: str = "infantry"  # infantry|armor|artillery|aviation|engineer|signal|medical|logistics|recon|hq|other
+    callsign: str = ""
+    commander: str = ""
+    personnel: str = ""
+    notes: str = ""
+    children: List["OrbatUnit"] = Field(default_factory=list)
+
+
+# Forward-reference resolution for recursive model
+OrbatUnit.model_rebuild()
+
+
+# ── Mortar Firing Solution (saved context) ──────────────────────────────────
+
+class MortarSolution(BaseModel):
+    """A saved mortar calculation snapshot attached to a plan."""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    faction: str = "NATO"
+    ammo: str = ""
+    mortar_grid: str = ""
+    mortar_elevation: float = 0.0
+    target_grid: str = ""
+    distance: Optional[float] = None
+    azimuth_mils: Optional[int] = None
+    notes: str = ""
+
+
 # ── Operations Plan ─────────────────────────────────────────────────────────
 
 class OperationsPlan(BaseModel):
@@ -180,6 +222,10 @@ class OperationsPlan(BaseModel):
     drawings: List[PlanDrawing] = Field(default_factory=list)
     movement_paths: List[MovementPath] = Field(default_factory=list)
     path_assignments: List[PathAssignment] = Field(default_factory=list)
+    # ── ORBAT hierarchy (integrated unit org chart) ──────────────────────
+    orbat: List[OrbatUnit] = Field(default_factory=list)
+    # ── Mortar solutions (saved calculations) ────────────────────────────
+    mortar_solutions: List[MortarSolution] = Field(default_factory=list)
     # ── Publication ──────────────────────────────────────────────────────
     is_published: bool = False
     visibility_scope: Literal["all_members", "staff_only"] = "all_members"
