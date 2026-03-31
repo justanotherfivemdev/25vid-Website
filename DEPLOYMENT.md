@@ -128,6 +128,9 @@ REACT_APP_MAPBOX_TOKEN=pk.your_mapbox_public_token_here
 # REACT_APP_MAP_STYLE=mapbox://styles/mapbox/dark-v11
 ```
 
+For local/staging work, you can start from `frontend/.env.example` and then
+replace the values with your production domain and Mapbox token.
+
 Build frontend:
 
 ```bash
@@ -223,13 +226,15 @@ sudo systemctl reload nginx
 sudo certbot --nginx -d yourdomain.com
 ```
 
+Certbot will update the site to add TLS and redirect HTTP traffic to HTTPS.
+
 Validate auto-renew:
 
 ```bash
 sudo certbot renew --dry-run
 ```
 
-5) Validate and reload Nginx:
+Then validate and reload Nginx:
 
 ```bash
 sudo nginx -t
