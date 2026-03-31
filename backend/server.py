@@ -401,7 +401,7 @@ async def _restore_uploads_from_mongodb():
 
 async def _valyu_background_ingestion():
     """Periodically fetch threat events from Valyu, OpenAI, and WorldMonitor sources."""
-    vlog = logging.getLogger("valyu")
+    vlog = logging.getLogger("ingestion")
     vlog.info("Background ingestion service started")
     while True:
         try:

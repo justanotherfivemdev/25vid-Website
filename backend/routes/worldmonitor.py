@@ -42,7 +42,11 @@ async def get_gdelt_intel(
     if topic:
         topics = [t for t in GDELT_INTEL_TOPICS if t["label"].lower() == topic.lower()]
         if not topics:
-            return {"error": f"Unknown topic: {topic}", "available": [t["label"] for t in GDELT_INTEL_TOPICS]}
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown topic: {topic}. Available: {[t['label'] for t in GDELT_INTEL_TOPICS]}",
+            )
 
     for t in topics:
         articles = await fetch_gdelt_articles(t["query"], max_records=max_records)

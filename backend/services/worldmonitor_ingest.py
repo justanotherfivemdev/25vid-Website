@@ -236,7 +236,9 @@ async def ingest_earthquakes() -> int:
                 "placeName": q.get("place", ""),
                 "country": "",
             },
-            "timestamp": datetime.fromtimestamp(q["time"] / 1000, tz=timezone.utc).isoformat() if q.get("time") else datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(
+                q["time"] / 1000, tz=timezone.utc
+            ).isoformat() if q.get("time") else datetime.now(timezone.utc).isoformat(),
             "source": "usgs",
             "sourceUrl": q.get("url", ""),
             "keywords": ["earthquake", "seismic"],
@@ -477,6 +479,11 @@ async def ingest_acled_protests(api_key: str, email: str) -> int:
         content_hash = _content_hash(f"acled_{p.get('event_id', '')}")
         fatalities = int(p.get("fatalities", 0) or 0)
         threat = "high" if fatalities > 10 else "medium" if fatalities > 0 else "low"
+        try:
+            lat = float(p["latitude"]) if p.get("latitude") else None
+            lng = float(p["longitude"]) if p.get("longitude") else None
+        except (TypeError, ValueError):
+            lat, lng = None, None
         evt = {
             "id": f"acled_{content_hash}",
             "title": f"{p.get('sub_event_type', 'Protest')} — {p.get('location', '')}, {p.get('country', '')}",
@@ -484,8 +491,8 @@ async def ingest_acled_protests(api_key: str, email: str) -> int:
             "category": "protest",
             "threatLevel": threat,
             "location": {
-                "latitude": float(p["latitude"]) if p.get("latitude") else None,
-                "longitude": float(p["longitude"]) if p.get("longitude") else None,
+                "latitude": lat,
+                "longitude": lng,
                 "placeName": p.get("location", ""),
                 "country": p.get("country", ""),
             },
