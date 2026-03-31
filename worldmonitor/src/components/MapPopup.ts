@@ -1,0 +1,1327 @@
+import type { ConflictZone, Hotspot, Earthquake, NewsItem, MilitaryBase, StrategicWaterway, APTGroup, NuclearFacility, EconomicCenter, GammaIrradiator, Pipeline, UnderseaCable, CableAdvisory, RepairShip, InternetOutage, AIDataCenter, AisDisruptionEvent, SocialUnrestEvent, AirportDelayAlert, MilitaryFlight, MilitaryVessel, MilitaryFlightCluster, MilitaryVesselCluster } from '@/types';
+import type { WeatherAlert } from '@/services/weather';
+import { UNDERSEA_CABLES } from '@/config';
+import { escapeHtml, sanitizeUrl } from '@/utils/sanitize';
+import { isMobileDevice } from '@/utils';
+import { fetchHotspotContext, formatArticleDate, extractDomain, type GdeltArticle } from '@/services/gdelt-intel';
+
+export type PopupType = 'conflict' | 'hotspot' | 'earthquake' | 'weather' | 'base' | 'waterway' | 'apt' | 'nuclear' | 'economic' | 'irradiator' | 'pipeline' | 'cable' | 'cable-advisory' | 'repair-ship' | 'outage' | 'datacenter' | 'ais' | 'protest' | 'flight' | 'militaryFlight' | 'militaryVessel' | 'militaryFlightCluster' | 'militaryVesselCluster';
+
+interface PopupData {
+  type: PopupType;
+  data: ConflictZone | Hotspot | Earthquake | WeatherAlert | MilitaryBase | StrategicWaterway | APTGroup | NuclearFacility | EconomicCenter | GammaIrradiator | Pipeline | UnderseaCable | CableAdvisory | RepairShip | InternetOutage | AIDataCenter | AisDisruptionEvent | SocialUnrestEvent | AirportDelayAlert | MilitaryFlight | MilitaryVessel | MilitaryFlightCluster | MilitaryVesselCluster;
+  relatedNews?: NewsItem[];
+  x: number;
+  y: number;
+}
+
+export class MapPopup {
+  private container: HTMLElement;
+  private popup: HTMLElement | null = null;
+  private onClose?: () => void;
+  private cableAdvisories: CableAdvisory[] = [];
+  private repairShips: RepairShip[] = [];
+
+  constructor(container: HTMLElement) {
+    this.container = container;
+  }
+
+  public show(data: PopupData): void {
+    this.hide();
+
+    this.popup = document.createElement('div');
+    this.popup.className = 'map-popup';
+
+    const content = this.renderContent(data);
+    this.popup.innerHTML = content;
+
+    if (isMobileDevice()) {
+      // On mobile, center the popup horizontally and position in lower half
+      this.popup.style.left = '50%';
+      this.popup.style.transform = 'translateX(-50%)';
+      this.popup.style.top = `${Math.max(60, Math.min(data.y, this.container.clientHeight * 0.4))}px`;
+    } else {
+      // Desktop: position near click with bounds checking
+      this.popup.style.transform = '';
+      const maxX = this.container.clientWidth - 400;
+      const maxY = this.container.clientHeight - 300;
+      this.popup.style.left = `${Math.min(data.x + 20, maxX)}px`;
+      this.popup.style.top = `${Math.min(data.y - 20, maxY)}px`;
+    }
+
+    this.container.appendChild(this.popup);
+
+    // Close button handler
+    this.popup.querySelector('.popup-close')?.addEventListener('click', () => this.hide());
+
+    // Click outside to close
+    setTimeout(() => {
+      document.addEventListener('click', this.handleOutsideClick);
+    }, 100);
+  }
+
+  private handleOutsideClick = (e: MouseEvent) => {
+    if (this.popup && !this.popup.contains(e.target as Node)) {
+      this.hide();
+    }
+  };
+
+  public hide(): void {
+    if (this.popup) {
+      this.popup.remove();
+      this.popup = null;
+      document.removeEventListener('click', this.handleOutsideClick);
+      this.onClose?.();
+    }
+  }
+
+  public setOnClose(callback: () => void): void {
+    this.onClose = callback;
+  }
+
+  public setCableActivity(advisories: CableAdvisory[], repairShips: RepairShip[]): void {
+    this.cableAdvisories = advisories;
+    this.repairShips = repairShips;
+  }
+
+  private renderContent(data: PopupData): string {
+    switch (data.type) {
+      case 'conflict':
+        return this.renderConflictPopup(data.data as ConflictZone);
+      case 'hotspot':
+        return this.renderHotspotPopup(data.data as Hotspot, data.relatedNews);
+      case 'earthquake':
+        return this.renderEarthquakePopup(data.data as Earthquake);
+      case 'weather':
+        return this.renderWeatherPopup(data.data as WeatherAlert);
+      case 'base':
+        return this.renderBasePopup(data.data as MilitaryBase);
+      case 'waterway':
+        return this.renderWaterwayPopup(data.data as StrategicWaterway);
+      case 'apt':
+        return this.renderAPTPopup(data.data as APTGroup);
+      case 'nuclear':
+        return this.renderNuclearPopup(data.data as NuclearFacility);
+      case 'economic':
+        return this.renderEconomicPopup(data.data as EconomicCenter);
+      case 'irradiator':
+        return this.renderIrradiatorPopup(data.data as GammaIrradiator);
+      case 'pipeline':
+        return this.renderPipelinePopup(data.data as Pipeline);
+      case 'cable':
+        return this.renderCablePopup(data.data as UnderseaCable);
+      case 'cable-advisory':
+        return this.renderCableAdvisoryPopup(data.data as CableAdvisory);
+      case 'repair-ship':
+        return this.renderRepairShipPopup(data.data as RepairShip);
+      case 'outage':
+        return this.renderOutagePopup(data.data as InternetOutage);
+      case 'datacenter':
+        return this.renderDatacenterPopup(data.data as AIDataCenter);
+      case 'ais':
+        return this.renderAisPopup(data.data as AisDisruptionEvent);
+      case 'protest':
+        return this.renderProtestPopup(data.data as SocialUnrestEvent);
+      case 'flight':
+        return this.renderFlightPopup(data.data as AirportDelayAlert);
+      case 'militaryFlight':
+        return this.renderMilitaryFlightPopup(data.data as MilitaryFlight);
+      case 'militaryVessel':
+        return this.renderMilitaryVesselPopup(data.data as MilitaryVessel);
+      case 'militaryFlightCluster':
+        return this.renderMilitaryFlightClusterPopup(data.data as MilitaryFlightCluster);
+      case 'militaryVesselCluster':
+        return this.renderMilitaryVesselClusterPopup(data.data as MilitaryVesselCluster);
+      default:
+        return '';
+    }
+  }
+
+  private renderConflictPopup(conflict: ConflictZone): string {
+    const severityClass = conflict.intensity === 'high' ? 'high' : conflict.intensity === 'medium' ? 'medium' : 'low';
+    const severityLabel = escapeHtml(conflict.intensity?.toUpperCase() || 'UNKNOWN');
+
+    return `
+      <div class="popup-header conflict">
+        <span class="popup-title">${escapeHtml(conflict.name.toUpperCase())}</span>
+        <span class="popup-badge ${severityClass}">${severityLabel}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">START DATE</span>
+            <span class="stat-value">${escapeHtml(conflict.startDate || 'Unknown')}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">CASUALTIES</span>
+            <span class="stat-value">${escapeHtml(conflict.casualties || 'Unknown')}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">DISPLACED</span>
+            <span class="stat-value">${escapeHtml(conflict.displaced || 'Unknown')}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">LOCATION</span>
+            <span class="stat-value">${escapeHtml(conflict.location || `${conflict.center[1]}°N, ${conflict.center[0]}°E`)}</span>
+          </div>
+        </div>
+        ${conflict.description ? `<p class="popup-description">${escapeHtml(conflict.description)}</p>` : ''}
+        ${conflict.parties && conflict.parties.length > 0 ? `
+          <div class="popup-section">
+            <span class="section-label">BELLIGERENTS</span>
+            <div class="popup-tags">
+              ${conflict.parties.map(p => `<span class="popup-tag">${escapeHtml(p)}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+        ${conflict.keyDevelopments && conflict.keyDevelopments.length > 0 ? `
+          <div class="popup-section">
+            <span class="section-label">KEY DEVELOPMENTS</span>
+            <ul class="popup-list">
+              ${conflict.keyDevelopments.map(d => `<li>${escapeHtml(d)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  private renderHotspotPopup(hotspot: Hotspot, relatedNews?: NewsItem[]): string {
+    const severityClass = hotspot.level || 'low';
+    const severityLabel = escapeHtml((hotspot.level || 'low').toUpperCase());
+
+    return `
+      <div class="popup-header hotspot">
+        <span class="popup-title">${escapeHtml(hotspot.name.toUpperCase())}</span>
+        <span class="popup-badge ${severityClass}">${severityLabel}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        ${hotspot.subtext ? `<div class="popup-subtitle">${escapeHtml(hotspot.subtext)}</div>` : ''}
+        ${hotspot.description ? `<p class="popup-description">${escapeHtml(hotspot.description)}</p>` : ''}
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">COORDINATES</span>
+            <span class="stat-value">${escapeHtml(`${hotspot.lat.toFixed(2)}°N, ${hotspot.lon.toFixed(2)}°E`)}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">STATUS</span>
+            <span class="stat-value">${escapeHtml(hotspot.status || 'Monitoring')}</span>
+          </div>
+        </div>
+        ${hotspot.agencies && hotspot.agencies.length > 0 ? `
+          <div class="popup-section">
+            <span class="section-label">KEY ENTITIES</span>
+            <div class="popup-tags">
+              ${hotspot.agencies.map(a => `<span class="popup-tag">${escapeHtml(a)}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+        ${relatedNews && relatedNews.length > 0 ? `
+          <div class="popup-section">
+            <span class="section-label">RELATED HEADLINES</span>
+            <div class="popup-news">
+              ${relatedNews.slice(0, 5).map(n => `
+                <div class="popup-news-item">
+                  <span class="news-source">${escapeHtml(n.source)}</span>
+                  <a href="${sanitizeUrl(n.link)}" target="_blank" class="news-title">${escapeHtml(n.title)}</a>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        <div class="hotspot-gdelt-context" data-hotspot-id="${escapeHtml(hotspot.id)}">
+          <div class="hotspot-gdelt-header">Live Intelligence</div>
+          <div class="hotspot-gdelt-loading">Loading global news...</div>
+        </div>
+      </div>
+    `;
+  }
+
+  public async loadHotspotGdeltContext(hotspot: Hotspot): Promise<void> {
+    if (!this.popup) return;
+
+    const container = this.popup.querySelector('.hotspot-gdelt-context');
+    if (!container) return;
+
+    try {
+      const articles = await fetchHotspotContext(hotspot);
+
+      if (!this.popup || !container.isConnected) return;
+
+      if (articles.length === 0) {
+        container.innerHTML = `
+          <div class="hotspot-gdelt-header">Live Intelligence</div>
+          <div class="hotspot-gdelt-loading">No recent global coverage</div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="hotspot-gdelt-header">Live Intelligence</div>
+        <div class="hotspot-gdelt-articles">
+          ${articles.slice(0, 5).map(article => this.renderGdeltArticle(article)).join('')}
+        </div>
+      `;
+    } catch (error) {
+      if (container.isConnected) {
+        container.innerHTML = `
+          <div class="hotspot-gdelt-header">Live Intelligence</div>
+          <div class="hotspot-gdelt-loading">Failed to load</div>
+        `;
+      }
+    }
+  }
+
+  private renderGdeltArticle(article: GdeltArticle): string {
+    const domain = article.source || extractDomain(article.url);
+    const timeAgo = formatArticleDate(article.date);
+
+    return `
+      <a href="${sanitizeUrl(article.url)}" target="_blank" rel="noopener" class="hotspot-gdelt-article">
+        <div class="article-meta">
+          <span>${escapeHtml(domain)}</span>
+          <span>${escapeHtml(timeAgo)}</span>
+        </div>
+        <div class="article-title">${escapeHtml(article.title)}</div>
+      </a>
+    `;
+  }
+
+  private renderEarthquakePopup(earthquake: Earthquake): string {
+    const severity = earthquake.magnitude >= 6 ? 'high' : earthquake.magnitude >= 5 ? 'medium' : 'low';
+    const severityLabel = earthquake.magnitude >= 6 ? 'MAJOR' : earthquake.magnitude >= 5 ? 'MODERATE' : 'MINOR';
+
+    const timeAgo = this.getTimeAgo(earthquake.time);
+
+    return `
+      <div class="popup-header earthquake">
+        <span class="popup-title magnitude">M${earthquake.magnitude.toFixed(1)}</span>
+        <span class="popup-badge ${severity}">${severityLabel}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <p class="popup-location">${escapeHtml(earthquake.place)}</p>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">Depth</span>
+            <span class="stat-value">${earthquake.depth.toFixed(1)} km</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">Coordinates</span>
+            <span class="stat-value">${earthquake.lat.toFixed(2)}°, ${earthquake.lon.toFixed(2)}°</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">Time</span>
+            <span class="stat-value">${timeAgo}</span>
+          </div>
+        </div>
+        <a href="${sanitizeUrl(earthquake.url)}" target="_blank" class="popup-link">View on USGS →</a>
+      </div>
+    `;
+  }
+
+  private getTimeAgo(date: Date): string {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
+
+  private renderWeatherPopup(alert: WeatherAlert): string {
+    const severityClass = escapeHtml(alert.severity.toLowerCase());
+    const expiresIn = this.getTimeUntil(alert.expires);
+
+    return `
+      <div class="popup-header weather ${severityClass}">
+        <span class="popup-title">${escapeHtml(alert.event.toUpperCase())}</span>
+        <span class="popup-badge ${severityClass}">${escapeHtml(alert.severity.toUpperCase())}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <p class="popup-headline">${escapeHtml(alert.headline)}</p>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">Area</span>
+            <span class="stat-value">${escapeHtml(alert.areaDesc)}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">Expires</span>
+            <span class="stat-value">${expiresIn}</span>
+          </div>
+        </div>
+        <p class="popup-description">${escapeHtml(alert.description.slice(0, 300))}${alert.description.length > 300 ? '...' : ''}</p>
+      </div>
+    `;
+  }
+
+  private getTimeUntil(date: Date): string {
+    const ms = date.getTime() - Date.now();
+    if (ms <= 0) return 'Expired';
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    if (hours < 1) return `${Math.floor(ms / (1000 * 60))}m`;
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
+  }
+
+  private renderBasePopup(base: MilitaryBase): string {
+    const typeLabels: Record<string, string> = {
+      'us-nato': 'US/NATO',
+      'china': 'CHINA',
+      'russia': 'RUSSIA',
+    };
+    const typeColors: Record<string, string> = {
+      'us-nato': 'elevated',
+      'china': 'high',
+      'russia': 'high',
+    };
+
+    return `
+      <div class="popup-header base">
+        <span class="popup-title">${base.name.toUpperCase()}</span>
+        <span class="popup-badge ${typeColors[base.type] || 'low'}">${typeLabels[base.type] || base.type.toUpperCase()}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        ${base.description ? `<p class="popup-description">${base.description}</p>` : ''}
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">TYPE</span>
+            <span class="stat-value">${typeLabels[base.type] || base.type}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">COORDINATES</span>
+            <span class="stat-value">${base.lat.toFixed(2)}°, ${base.lon.toFixed(2)}°</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderWaterwayPopup(waterway: StrategicWaterway): string {
+    return `
+      <div class="popup-header waterway">
+        <span class="popup-title">${waterway.name}</span>
+        <span class="popup-badge elevated">STRATEGIC</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        ${waterway.description ? `<p class="popup-description">${waterway.description}</p>` : ''}
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">COORDINATES</span>
+            <span class="stat-value">${waterway.lat.toFixed(2)}°, ${waterway.lon.toFixed(2)}°</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderAisPopup(event: AisDisruptionEvent): string {
+    const severityClass = escapeHtml(event.severity);
+    const severityLabel = escapeHtml(event.severity.toUpperCase());
+    const typeLabel = event.type === 'gap_spike' ? 'AIS GAP SPIKE' : 'CHOKEPOINT CONGESTION';
+    const changeLabel = event.type === 'gap_spike' ? 'DARKENING' : 'DENSITY';
+    const countLabel = event.type === 'gap_spike' ? 'DARK SHIPS' : 'VESSEL COUNT';
+    const countValue = event.type === 'gap_spike'
+      ? event.darkShips?.toString() || '—'
+      : event.vesselCount?.toString() || '—';
+
+    return `
+      <div class="popup-header ais">
+        <span class="popup-title">${escapeHtml(event.name.toUpperCase())}</span>
+        <span class="popup-badge ${severityClass}">${severityLabel}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${typeLabel}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">${changeLabel}</span>
+            <span class="stat-value">${event.changePct}% ↑</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">${countLabel}</span>
+            <span class="stat-value">${countValue}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">WINDOW</span>
+            <span class="stat-value">${event.windowHours}H</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">REGION</span>
+            <span class="stat-value">${escapeHtml(event.region || `${event.lat.toFixed(2)}°, ${event.lon.toFixed(2)}°`)}</span>
+          </div>
+        </div>
+        <p class="popup-description">${escapeHtml(event.description)}</p>
+      </div>
+    `;
+  }
+
+  private renderProtestPopup(event: SocialUnrestEvent): string {
+    const severityClass = escapeHtml(event.severity);
+    const severityLabel = escapeHtml(event.severity.toUpperCase());
+    const eventTypeLabel = escapeHtml(event.eventType.replace('_', ' ').toUpperCase());
+    const icon = event.eventType === 'riot' ? '🔥' : event.eventType === 'strike' ? '✊' : '📢';
+    const sourceLabel = event.sourceType === 'acled' ? 'ACLED (verified)' : 'GDELT';
+    const validatedBadge = event.validated ? '<span class="popup-badge verified">VERIFIED</span>' : '';
+    const fatalitiesSection = event.fatalities
+      ? `<div class="popup-stat"><span class="stat-label">FATALITIES</span><span class="stat-value alert">${event.fatalities}</span></div>`
+      : '';
+    const actorsSection = event.actors?.length
+      ? `<div class="popup-stat"><span class="stat-label">ACTORS</span><span class="stat-value">${event.actors.map(a => escapeHtml(a)).join(', ')}</span></div>`
+      : '';
+    const tagsSection = event.tags?.length
+      ? `<div class="popup-tags">${event.tags.map(t => `<span class="popup-tag">${escapeHtml(t)}</span>`).join('')}</div>`
+      : '';
+    const relatedHotspots = event.relatedHotspots?.length
+      ? `<div class="popup-related">Near: ${event.relatedHotspots.map(h => escapeHtml(h)).join(', ')}</div>`
+      : '';
+
+    return `
+      <div class="popup-header protest ${severityClass}">
+        <span class="popup-icon">${icon}</span>
+        <span class="popup-title">${eventTypeLabel}</span>
+        <span class="popup-badge ${severityClass}">${severityLabel}</span>
+        ${validatedBadge}
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${event.city ? `${escapeHtml(event.city)}, ` : ''}${escapeHtml(event.country)}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">TIME</span>
+            <span class="stat-value">${event.time.toLocaleDateString()}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">SOURCE</span>
+            <span class="stat-value">${sourceLabel}</span>
+          </div>
+          ${fatalitiesSection}
+          ${actorsSection}
+        </div>
+        ${event.title ? `<p class="popup-description">${escapeHtml(event.title)}</p>` : ''}
+        ${tagsSection}
+        ${relatedHotspots}
+      </div>
+    `;
+  }
+
+  private renderFlightPopup(delay: AirportDelayAlert): string {
+    const severityClass = escapeHtml(delay.severity);
+    const severityLabel = escapeHtml(delay.severity.toUpperCase());
+    const delayTypeLabels: Record<string, string> = {
+      'ground_stop': 'GROUND STOP',
+      'ground_delay': 'GROUND DELAY PROGRAM',
+      'departure_delay': 'DEPARTURE DELAYS',
+      'arrival_delay': 'ARRIVAL DELAYS',
+      'general': 'DELAYS REPORTED',
+    };
+    const delayTypeLabel = delayTypeLabels[delay.delayType] || 'DELAYS';
+    const icon = delay.delayType === 'ground_stop' ? '🛑' : delay.severity === 'severe' ? '✈️' : '🛫';
+    const sourceLabels: Record<string, string> = {
+      'faa': 'FAA ASWS',
+      'eurocontrol': 'Eurocontrol',
+      'computed': 'Computed',
+    };
+    const sourceLabel = sourceLabels[delay.source] || escapeHtml(delay.source);
+    const regionLabels: Record<string, string> = {
+      'americas': 'Americas',
+      'europe': 'Europe',
+      'apac': 'Asia-Pacific',
+      'mena': 'Middle East',
+      'africa': 'Africa',
+    };
+    const regionLabel = regionLabels[delay.region] || escapeHtml(delay.region);
+
+    const avgDelaySection = delay.avgDelayMinutes > 0
+      ? `<div class="popup-stat"><span class="stat-label">AVG DELAY</span><span class="stat-value alert">+${delay.avgDelayMinutes} min</span></div>`
+      : '';
+    const reasonSection = delay.reason
+      ? `<div class="popup-stat"><span class="stat-label">REASON</span><span class="stat-value">${escapeHtml(delay.reason)}</span></div>`
+      : '';
+    const cancelledSection = delay.cancelledFlights
+      ? `<div class="popup-stat"><span class="stat-label">CANCELLED</span><span class="stat-value alert">${delay.cancelledFlights} flights</span></div>`
+      : '';
+
+    return `
+      <div class="popup-header flight ${severityClass}">
+        <span class="popup-icon">${icon}</span>
+        <span class="popup-title">${escapeHtml(delay.iata)} - ${delayTypeLabel}</span>
+        <span class="popup-badge ${severityClass}">${severityLabel}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${escapeHtml(delay.name)}</div>
+        <div class="popup-location">${escapeHtml(delay.city)}, ${escapeHtml(delay.country)}</div>
+        <div class="popup-stats">
+          ${avgDelaySection}
+          ${reasonSection}
+          ${cancelledSection}
+          <div class="popup-stat">
+            <span class="stat-label">REGION</span>
+            <span class="stat-value">${regionLabel}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">SOURCE</span>
+            <span class="stat-value">${sourceLabel}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">UPDATED</span>
+            <span class="stat-value">${delay.updatedAt.toLocaleTimeString()}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderAPTPopup(apt: APTGroup): string {
+    return `
+      <div class="popup-header apt">
+        <span class="popup-title">${apt.name}</span>
+        <span class="popup-badge high">THREAT</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">Also known as: ${apt.aka}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">SPONSOR</span>
+            <span class="stat-value">${apt.sponsor}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">ORIGIN</span>
+            <span class="stat-value">${apt.lat.toFixed(1)}°, ${apt.lon.toFixed(1)}°</span>
+          </div>
+        </div>
+        <p class="popup-description">Advanced Persistent Threat group with state-level capabilities. Known for sophisticated cyber operations targeting critical infrastructure, government, and defense sectors.</p>
+      </div>
+    `;
+  }
+
+  private renderNuclearPopup(facility: NuclearFacility): string {
+    const typeLabels: Record<string, string> = {
+      'plant': 'POWER PLANT',
+      'enrichment': 'ENRICHMENT',
+      'weapons': 'WEAPONS COMPLEX',
+      'research': 'RESEARCH',
+    };
+    const statusColors: Record<string, string> = {
+      'active': 'elevated',
+      'contested': 'high',
+      'decommissioned': 'low',
+    };
+
+    return `
+      <div class="popup-header nuclear">
+        <span class="popup-title">${facility.name.toUpperCase()}</span>
+        <span class="popup-badge ${statusColors[facility.status] || 'low'}">${facility.status.toUpperCase()}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">TYPE</span>
+            <span class="stat-value">${typeLabels[facility.type] || facility.type.toUpperCase()}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">STATUS</span>
+            <span class="stat-value">${facility.status.toUpperCase()}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">COORDINATES</span>
+            <span class="stat-value">${facility.lat.toFixed(2)}°, ${facility.lon.toFixed(2)}°</span>
+          </div>
+        </div>
+        <p class="popup-description">Nuclear facility under monitoring. Strategic importance for regional security and non-proliferation concerns.</p>
+      </div>
+    `;
+  }
+
+  private renderEconomicPopup(center: EconomicCenter): string {
+    const typeLabels: Record<string, string> = {
+      'exchange': 'STOCK EXCHANGE',
+      'central-bank': 'CENTRAL BANK',
+      'financial-hub': 'FINANCIAL HUB',
+    };
+    const typeIcons: Record<string, string> = {
+      'exchange': '📈',
+      'central-bank': '🏛',
+      'financial-hub': '💰',
+    };
+
+    const marketStatus = center.marketHours ? this.getMarketStatus(center.marketHours) : null;
+
+    return `
+      <div class="popup-header economic ${center.type}">
+        <span class="popup-title">${typeIcons[center.type] || ''} ${center.name.toUpperCase()}</span>
+        <span class="popup-badge ${marketStatus === 'OPEN' ? 'elevated' : 'low'}">${marketStatus || typeLabels[center.type]}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        ${center.description ? `<p class="popup-description">${center.description}</p>` : ''}
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">TYPE</span>
+            <span class="stat-value">${typeLabels[center.type] || center.type.toUpperCase()}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">COUNTRY</span>
+            <span class="stat-value">${center.country}</span>
+          </div>
+          ${center.marketHours ? `
+          <div class="popup-stat">
+            <span class="stat-label">TRADING HOURS</span>
+            <span class="stat-value">${center.marketHours.open} - ${center.marketHours.close}</span>
+          </div>
+          ` : ''}
+          <div class="popup-stat">
+            <span class="stat-label">COORDINATES</span>
+            <span class="stat-value">${center.lat.toFixed(2)}°, ${center.lon.toFixed(2)}°</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderIrradiatorPopup(irradiator: GammaIrradiator): string {
+    return `
+      <div class="popup-header irradiator">
+        <span class="popup-title">☢ ${irradiator.city.toUpperCase()}</span>
+        <span class="popup-badge elevated">GAMMA</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">Industrial Gamma Irradiator Facility</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">COUNTRY</span>
+            <span class="stat-value">${irradiator.country}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">CITY</span>
+            <span class="stat-value">${irradiator.city}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">COORDINATES</span>
+            <span class="stat-value">${irradiator.lat.toFixed(2)}°, ${irradiator.lon.toFixed(2)}°</span>
+          </div>
+        </div>
+        <p class="popup-description">Industrial irradiation facility using Cobalt-60 or Cesium-137 sources for medical device sterilization, food preservation, or material processing. Source: IAEA DIIF Database.</p>
+      </div>
+    `;
+  }
+
+  private renderPipelinePopup(pipeline: Pipeline): string {
+    const typeLabels: Record<string, string> = {
+      'oil': 'OIL PIPELINE',
+      'gas': 'GAS PIPELINE',
+      'products': 'PRODUCTS PIPELINE',
+    };
+    const typeColors: Record<string, string> = {
+      'oil': 'high',
+      'gas': 'elevated',
+      'products': 'low',
+    };
+    const statusLabels: Record<string, string> = {
+      'operating': 'OPERATING',
+      'construction': 'UNDER CONSTRUCTION',
+    };
+    const typeIcon = pipeline.type === 'oil' ? '🛢' : pipeline.type === 'gas' ? '🔥' : '⛽';
+
+    return `
+      <div class="popup-header pipeline ${pipeline.type}">
+        <span class="popup-title">${typeIcon} ${pipeline.name.toUpperCase()}</span>
+        <span class="popup-badge ${typeColors[pipeline.type] || 'low'}">${pipeline.type.toUpperCase()}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${typeLabels[pipeline.type] || 'PIPELINE'}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">STATUS</span>
+            <span class="stat-value">${statusLabels[pipeline.status] || pipeline.status.toUpperCase()}</span>
+          </div>
+          ${pipeline.capacity ? `
+          <div class="popup-stat">
+            <span class="stat-label">CAPACITY</span>
+            <span class="stat-value">${pipeline.capacity}</span>
+          </div>
+          ` : ''}
+          ${pipeline.length ? `
+          <div class="popup-stat">
+            <span class="stat-label">LENGTH</span>
+            <span class="stat-value">${pipeline.length}</span>
+          </div>
+          ` : ''}
+          ${pipeline.operator ? `
+          <div class="popup-stat">
+            <span class="stat-label">OPERATOR</span>
+            <span class="stat-value">${pipeline.operator}</span>
+          </div>
+          ` : ''}
+        </div>
+        ${pipeline.countries && pipeline.countries.length > 0 ? `
+          <div class="popup-section">
+            <span class="section-label">COUNTRIES</span>
+            <div class="popup-tags">
+              ${pipeline.countries.map(c => `<span class="popup-tag">${c}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+        <p class="popup-description">Major ${pipeline.type} pipeline infrastructure. ${pipeline.status === 'operating' ? 'Currently operational and transporting resources.' : 'Currently under construction.'}</p>
+      </div>
+    `;
+  }
+
+  private renderCablePopup(cable: UnderseaCable): string {
+    const advisory = this.getLatestCableAdvisory(cable.id);
+    const repairShip = this.getPriorityRepairShip(cable.id);
+    const statusLabel = advisory ? (advisory.severity === 'fault' ? 'FAULT' : 'DEGRADED') : 'ACTIVE';
+    const statusBadge = advisory ? (advisory.severity === 'fault' ? 'high' : 'elevated') : 'low';
+    const repairEta = repairShip?.eta || advisory?.repairEta;
+
+    return `
+      <div class="popup-header cable">
+        <span class="popup-title">🌐 ${cable.name.toUpperCase()}</span>
+        <span class="popup-badge ${statusBadge}">${cable.major ? 'MAJOR' : 'CABLE'}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">Undersea Fiber Optic Cable</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">TYPE</span>
+            <span class="stat-value">SUBMARINE CABLE</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">WAYPOINTS</span>
+            <span class="stat-value">${cable.points.length}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">STATUS</span>
+            <span class="stat-value">${statusLabel}</span>
+          </div>
+          ${repairEta ? `
+          <div class="popup-stat">
+            <span class="stat-label">REPAIR ETA</span>
+            <span class="stat-value">${repairEta}</span>
+          </div>
+          ` : ''}
+        </div>
+        ${advisory ? `
+          <div class="popup-section">
+            <span class="section-label">FAULT ADVISORY</span>
+            <div class="popup-tags">
+              <span class="popup-tag">${advisory.title}</span>
+              <span class="popup-tag">${advisory.impact}</span>
+            </div>
+            <p class="popup-description">${advisory.description}</p>
+          </div>
+        ` : ''}
+        ${repairShip ? `
+          <div class="popup-section">
+            <span class="section-label">REPAIR DEPLOYMENT</span>
+            <div class="popup-tags">
+              <span class="popup-tag">${repairShip.name}</span>
+              <span class="popup-tag">${repairShip.status === 'on-station' ? 'On Station' : 'En Route'}</span>
+            </div>
+            <p class="popup-description">${repairShip.note || 'Repair vessel tracking indicates active deployment toward fault site.'}</p>
+          </div>
+        ` : ''}
+        <p class="popup-description">Undersea telecommunications cable carrying international internet traffic. These fiber optic cables form the backbone of global internet connectivity, transmitting over 95% of intercontinental data.</p>
+      </div>
+    `;
+  }
+
+  private renderCableAdvisoryPopup(advisory: CableAdvisory): string {
+    const cable = UNDERSEA_CABLES.find((item) => item.id === advisory.cableId);
+    const timeAgo = this.getTimeAgo(advisory.reported);
+    const statusLabel = advisory.severity === 'fault' ? 'FAULT' : 'DEGRADED';
+
+    return `
+      <div class="popup-header cable">
+        <span class="popup-title">🚨 ${cable?.name.toUpperCase() || advisory.cableId.toUpperCase()}</span>
+        <span class="popup-badge ${advisory.severity === 'fault' ? 'high' : 'elevated'}">${statusLabel}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${advisory.title}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">REPORTED</span>
+            <span class="stat-value">${timeAgo}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">IMPACT</span>
+            <span class="stat-value">${advisory.impact}</span>
+          </div>
+          ${advisory.repairEta ? `
+          <div class="popup-stat">
+            <span class="stat-label">ETA</span>
+            <span class="stat-value">${advisory.repairEta}</span>
+          </div>
+          ` : ''}
+        </div>
+        <p class="popup-description">${advisory.description}</p>
+      </div>
+    `;
+  }
+
+  private renderRepairShipPopup(ship: RepairShip): string {
+    const cable = UNDERSEA_CABLES.find((item) => item.id === ship.cableId);
+
+    return `
+      <div class="popup-header cable">
+        <span class="popup-title">🚢 ${ship.name.toUpperCase()}</span>
+        <span class="popup-badge elevated">REPAIR SHIP</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${cable?.name || ship.cableId}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">STATUS</span>
+            <span class="stat-value">${ship.status === 'on-station' ? 'ON STATION' : 'EN ROUTE'}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">ETA</span>
+            <span class="stat-value">${ship.eta}</span>
+          </div>
+          ${ship.operator ? `
+          <div class="popup-stat">
+            <span class="stat-label">OPERATOR</span>
+            <span class="stat-value">${ship.operator}</span>
+          </div>
+          ` : ''}
+        </div>
+        <p class="popup-description">${ship.note || 'Repair ship tracking indicates active deployment in support of undersea cable restoration.'}</p>
+      </div>
+    `;
+  }
+
+  private getLatestCableAdvisory(cableId: string): CableAdvisory | undefined {
+    const advisories = this.cableAdvisories.filter((item) => item.cableId === cableId);
+    return advisories.reduce<CableAdvisory | undefined>((latest, advisory) => {
+      if (!latest) return advisory;
+      return advisory.reported.getTime() > latest.reported.getTime() ? advisory : latest;
+    }, undefined);
+  }
+
+  private getPriorityRepairShip(cableId: string): RepairShip | undefined {
+    const ships = this.repairShips.filter((item) => item.cableId === cableId);
+    if (ships.length === 0) return undefined;
+    const onStation = ships.find((ship) => ship.status === 'on-station');
+    return onStation || ships[0];
+  }
+
+  private renderOutagePopup(outage: InternetOutage): string {
+    const severityColors: Record<string, string> = {
+      'total': 'high',
+      'major': 'elevated',
+      'partial': 'low',
+    };
+    const severityLabels: Record<string, string> = {
+      'total': 'TOTAL BLACKOUT',
+      'major': 'MAJOR OUTAGE',
+      'partial': 'PARTIAL DISRUPTION',
+    };
+    const timeAgo = this.getTimeAgo(outage.pubDate);
+    const severityClass = escapeHtml(outage.severity);
+
+    return `
+      <div class="popup-header outage ${severityClass}">
+        <span class="popup-title">📡 ${escapeHtml(outage.country.toUpperCase())}</span>
+        <span class="popup-badge ${severityColors[outage.severity] || 'low'}">${severityLabels[outage.severity] || 'DISRUPTION'}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${escapeHtml(outage.title)}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">SEVERITY</span>
+            <span class="stat-value">${escapeHtml(outage.severity.toUpperCase())}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">REPORTED</span>
+            <span class="stat-value">${timeAgo}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">COORDINATES</span>
+            <span class="stat-value">${outage.lat.toFixed(2)}°, ${outage.lon.toFixed(2)}°</span>
+          </div>
+        </div>
+        ${outage.categories && outage.categories.length > 0 ? `
+          <div class="popup-section">
+            <span class="section-label">CATEGORIES</span>
+            <div class="popup-tags">
+              ${outage.categories.slice(0, 5).map(c => `<span class="popup-tag">${escapeHtml(c)}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+        <p class="popup-description">${escapeHtml(outage.description.slice(0, 250))}${outage.description.length > 250 ? '...' : ''}</p>
+        <a href="${sanitizeUrl(outage.link)}" target="_blank" class="popup-link">Read full report →</a>
+      </div>
+    `;
+  }
+
+  private renderDatacenterPopup(dc: AIDataCenter): string {
+    const statusColors: Record<string, string> = {
+      'existing': 'normal',
+      'planned': 'elevated',
+      'decommissioned': 'low',
+    };
+    const statusLabels: Record<string, string> = {
+      'existing': 'OPERATIONAL',
+      'planned': 'PLANNED',
+      'decommissioned': 'DECOMMISSIONED',
+    };
+
+    const formatNumber = (n: number) => {
+      if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+      if (n >= 1000) return `${(n / 1000).toFixed(0)}K`;
+      return n.toString();
+    };
+
+    return `
+      <div class="popup-header datacenter ${dc.status}">
+        <span class="popup-title">🖥️ ${dc.name}</span>
+        <span class="popup-badge ${statusColors[dc.status] || 'normal'}">${statusLabels[dc.status] || 'UNKNOWN'}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${dc.owner} • ${dc.country}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">GPU/CHIP COUNT</span>
+            <span class="stat-value">${formatNumber(dc.chipCount)}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">CHIP TYPE</span>
+            <span class="stat-value">${dc.chipType || 'Unknown'}</span>
+          </div>
+          ${dc.powerMW ? `
+          <div class="popup-stat">
+            <span class="stat-label">POWER</span>
+            <span class="stat-value">${dc.powerMW.toFixed(0)} MW</span>
+          </div>
+          ` : ''}
+          ${dc.sector ? `
+          <div class="popup-stat">
+            <span class="stat-label">SECTOR</span>
+            <span class="stat-value">${dc.sector}</span>
+          </div>
+          ` : ''}
+        </div>
+        ${dc.note ? `<p class="popup-description">${dc.note}</p>` : ''}
+        <div class="popup-attribution">Data: Epoch AI GPU Clusters</div>
+      </div>
+    `;
+  }
+
+  private getMarketStatus(hours: { open: string; close: string; timezone: string }): string {
+    try {
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: hours.timezone,
+      });
+      const currentTime = formatter.format(now);
+      const [openH = 0, openM = 0] = hours.open.split(':').map(Number);
+      const [closeH = 0, closeM = 0] = hours.close.split(':').map(Number);
+      const [currH = 0, currM = 0] = currentTime.split(':').map(Number);
+
+      const openMins = openH * 60 + openM;
+      const closeMins = closeH * 60 + closeM;
+      const currMins = currH * 60 + currM;
+
+      if (currMins >= openMins && currMins < closeMins) {
+        return 'OPEN';
+      }
+      return 'CLOSED';
+    } catch {
+      return 'UNKNOWN';
+    }
+  }
+
+  private renderMilitaryFlightPopup(flight: MilitaryFlight): string {
+    const operatorLabels: Record<string, string> = {
+      usaf: 'US Air Force',
+      usn: 'US Navy',
+      usmc: 'US Marines',
+      usa: 'US Army',
+      raf: 'Royal Air Force',
+      rn: 'Royal Navy',
+      faf: 'French Air Force',
+      gaf: 'German Air Force',
+      plaaf: 'PLA Air Force',
+      plan: 'PLA Navy',
+      vks: 'Russian Aerospace',
+      iaf: 'Israeli Air Force',
+      nato: 'NATO',
+      other: 'Unknown',
+    };
+    const typeLabels: Record<string, string> = {
+      fighter: 'Fighter',
+      bomber: 'Bomber',
+      transport: 'Transport',
+      tanker: 'Tanker',
+      awacs: 'AWACS/AEW',
+      reconnaissance: 'Reconnaissance',
+      helicopter: 'Helicopter',
+      drone: 'UAV/Drone',
+      patrol: 'Patrol',
+      special_ops: 'Special Operations',
+      vip: 'VIP Transport',
+      unknown: 'Unknown',
+    };
+    const confidenceColors: Record<string, string> = {
+      high: 'elevated',
+      medium: 'low',
+      low: 'low',
+    };
+
+    return `
+      <div class="popup-header military-flight ${flight.operator}">
+        <span class="popup-title">${flight.callsign}</span>
+        <span class="popup-badge ${confidenceColors[flight.confidence] || 'low'}">${flight.aircraftType.toUpperCase()}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${operatorLabels[flight.operator] || flight.operatorCountry}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">ALTITUDE</span>
+            <span class="stat-value">${flight.altitude > 0 ? `FL${Math.round(flight.altitude / 100)}` : 'Ground'}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">SPEED</span>
+            <span class="stat-value">${flight.speed} kts</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">HEADING</span>
+            <span class="stat-value">${Math.round(flight.heading)}°</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">HEX CODE</span>
+            <span class="stat-value">${flight.hexCode}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">TYPE</span>
+            <span class="stat-value">${typeLabels[flight.aircraftType] || flight.aircraftType}</span>
+          </div>
+          ${flight.squawk ? `
+          <div class="popup-stat">
+            <span class="stat-label">SQUAWK</span>
+            <span class="stat-value">${flight.squawk}</span>
+          </div>
+          ` : ''}
+        </div>
+        ${flight.note ? `<p class="popup-description">${flight.note}</p>` : ''}
+        <div class="popup-attribution">Source: OpenSky Network</div>
+      </div>
+    `;
+  }
+
+  private renderMilitaryVesselPopup(vessel: MilitaryVessel): string {
+    const operatorLabels: Record<string, string> = {
+      usn: 'US Navy',
+      uscg: 'US Coast Guard',
+      rn: 'Royal Navy',
+      fn: 'French Navy',
+      plan: 'PLA Navy',
+      ruf: 'Russian Navy',
+      jmsdf: 'Japan Maritime SDF',
+      rokn: 'ROK Navy',
+      other: 'Unknown',
+    };
+    const typeLabels: Record<string, string> = {
+      carrier: 'Aircraft Carrier',
+      destroyer: 'Destroyer',
+      frigate: 'Frigate',
+      submarine: 'Submarine',
+      amphibious: 'Amphibious',
+      patrol: 'Patrol',
+      auxiliary: 'Auxiliary',
+      research: 'Research',
+      icebreaker: 'Icebreaker',
+      special: 'Special',
+      unknown: 'Unknown',
+    };
+
+    const darkWarning = vessel.isDark
+      ? '<span class="popup-badge high">AIS DARK</span>'
+      : '';
+
+    // Show AIS ship type when military type is unknown
+    const displayType = vessel.vesselType === 'unknown' && vessel.aisShipType
+      ? vessel.aisShipType
+      : (typeLabels[vessel.vesselType] || vessel.vesselType);
+    const badgeType = vessel.vesselType === 'unknown' && vessel.aisShipType
+      ? vessel.aisShipType.toUpperCase()
+      : vessel.vesselType.toUpperCase();
+
+    return `
+      <div class="popup-header military-vessel ${vessel.operator}">
+        <span class="popup-title">${vessel.name}</span>
+        ${darkWarning}
+        <span class="popup-badge elevated">${badgeType}</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${operatorLabels[vessel.operator] || vessel.operatorCountry}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">TYPE</span>
+            <span class="stat-value">${displayType}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">SPEED</span>
+            <span class="stat-value">${vessel.speed} kts</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">HEADING</span>
+            <span class="stat-value">${Math.round(vessel.heading)}°</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">MMSI</span>
+            <span class="stat-value">${vessel.mmsi}</span>
+          </div>
+          ${vessel.hullNumber ? `
+          <div class="popup-stat">
+            <span class="stat-label">HULL #</span>
+            <span class="stat-value">${vessel.hullNumber}</span>
+          </div>
+          ` : ''}
+        </div>
+        ${vessel.note ? `<p class="popup-description">${vessel.note}</p>` : ''}
+        ${vessel.isDark ? '<p class="popup-description alert">⚠ Vessel has gone dark - AIS signal lost. May indicate sensitive operations.</p>' : ''}
+      </div>
+    `;
+  }
+
+  private renderMilitaryFlightClusterPopup(cluster: MilitaryFlightCluster): string {
+    const activityLabels: Record<string, string> = {
+      exercise: 'Military Exercise',
+      patrol: 'Patrol Activity',
+      transport: 'Transport Operations',
+      unknown: 'Military Activity',
+    };
+    const activityColors: Record<string, string> = {
+      exercise: 'high',
+      patrol: 'elevated',
+      transport: 'low',
+      unknown: 'low',
+    };
+
+    const activityType = cluster.activityType || 'unknown';
+    const flightSummary = cluster.flights
+      .slice(0, 5)
+      .map(f => `<div class="cluster-flight-item">${f.callsign} - ${f.aircraftType}</div>`)
+      .join('');
+    const moreFlights = cluster.flightCount > 5
+      ? `<div class="cluster-more">+${cluster.flightCount - 5} more aircraft</div>`
+      : '';
+
+    return `
+      <div class="popup-header military-cluster">
+        <span class="popup-title">${cluster.name}</span>
+        <span class="popup-badge ${activityColors[activityType] || 'low'}">${cluster.flightCount} AIRCRAFT</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${activityLabels[activityType] || 'Military Activity'}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">AIRCRAFT</span>
+            <span class="stat-value">${cluster.flightCount}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">ACTIVITY</span>
+            <span class="stat-value">${activityType.toUpperCase()}</span>
+          </div>
+          ${cluster.dominantOperator ? `
+          <div class="popup-stat">
+            <span class="stat-label">PRIMARY</span>
+            <span class="stat-value">${cluster.dominantOperator.toUpperCase()}</span>
+          </div>
+          ` : ''}
+        </div>
+        <div class="popup-section">
+          <span class="section-label">TRACKED AIRCRAFT</span>
+          <div class="cluster-flights">
+            ${flightSummary}
+            ${moreFlights}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderMilitaryVesselClusterPopup(cluster: MilitaryVesselCluster): string {
+    const activityLabels: Record<string, string> = {
+      exercise: 'Naval Exercise',
+      deployment: 'Naval Deployment',
+      patrol: 'Patrol Activity',
+      transit: 'Fleet Transit',
+      unknown: 'Naval Activity',
+    };
+    const activityColors: Record<string, string> = {
+      exercise: 'high',
+      deployment: 'high',
+      patrol: 'elevated',
+      transit: 'low',
+      unknown: 'low',
+    };
+
+    const activityType = cluster.activityType || 'unknown';
+    const vesselSummary = cluster.vessels
+      .slice(0, 5)
+      .map(v => `<div class="cluster-vessel-item">${v.name} - ${v.vesselType}</div>`)
+      .join('');
+    const moreVessels = cluster.vesselCount > 5
+      ? `<div class="cluster-more">+${cluster.vesselCount - 5} more vessels</div>`
+      : '';
+
+    return `
+      <div class="popup-header military-cluster">
+        <span class="popup-title">${cluster.name}</span>
+        <span class="popup-badge ${activityColors[activityType] || 'low'}">${cluster.vesselCount} VESSELS</span>
+        <button class="popup-close">×</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-subtitle">${activityLabels[activityType] || 'Naval Activity'}</div>
+        <div class="popup-stats">
+          <div class="popup-stat">
+            <span class="stat-label">VESSELS</span>
+            <span class="stat-value">${cluster.vesselCount}</span>
+          </div>
+          <div class="popup-stat">
+            <span class="stat-label">ACTIVITY</span>
+            <span class="stat-value">${activityType.toUpperCase()}</span>
+          </div>
+          ${cluster.region ? `
+          <div class="popup-stat">
+            <span class="stat-label">REGION</span>
+            <span class="stat-value">${cluster.region}</span>
+          </div>
+          ` : ''}
+        </div>
+        <div class="popup-section">
+          <span class="section-label">TRACKED VESSELS</span>
+          <div class="cluster-vessels">
+            ${vesselSummary}
+            ${moreVessels}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
