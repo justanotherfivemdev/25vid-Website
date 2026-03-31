@@ -27,6 +27,9 @@ class Operation(BaseModel):
     rsvps: List[dict] = Field(default_factory=list)
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Discord sync fields
+    external_id: Optional[str] = None
+    attendees: List[dict] = Field(default_factory=list)
 
 
 class OperationCreate(BaseModel):
@@ -52,3 +55,30 @@ class OperationCreate(BaseModel):
 class RSVPSubmit(BaseModel):
     status: Literal["attending", "tentative", "not_attending"] = "attending"
     role_notes: Optional[str] = None
+
+
+# --- Discord Attendance Sync models ---
+
+class SyncOperationCreator(BaseModel):
+    discord_id: str
+    name: str
+
+
+class SyncOperationInfo(BaseModel):
+    external_id: str
+    title: str
+    description: Optional[str] = ""
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    created_by: Optional[SyncOperationCreator] = None
+
+
+class SyncAttendee(BaseModel):
+    discord_id: str
+    display_name: str
+    status: Literal["accepted", "declined", "tentative"]
+
+
+class SyncAttendancePayload(BaseModel):
+    operation: SyncOperationInfo
+    attendance: List[SyncAttendee] = Field(default_factory=list)

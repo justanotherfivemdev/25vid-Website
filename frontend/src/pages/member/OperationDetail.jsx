@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Calendar, Clock, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown, Globe, MapPin, Network } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Shield, Home, LogOut, CheckCircle, HelpCircle, XCircle, ChevronUp, ChevronDown, Globe, MapPin, Network, UserCheck, UserX } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isStaff } from '@/utils/permissions';
 import MapMiniView from '@/components/MapMiniView';
@@ -202,12 +202,26 @@ const OperationDetail = () => {
                 <span className="text-gray-500 ml-1">— Build order of battle for this operation</span>
               </Link>
               {/* Attendance summary */}
-              <div className="flex items-center gap-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
-                <div className="text-center"><div className="text-2xl font-bold text-green-400">{counts.attending || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">ATTENDING</div></div>
-                <div className="text-center"><div className="text-2xl font-bold text-yellow-400">{counts.tentative || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">TENTATIVE</div></div>
-                {maxP && <div className="text-center"><div className="text-2xl font-bold text-orange-400">{counts.waitlisted || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">WAITLISTED</div></div>}
-                {maxP && <div className="text-center ml-auto"><div className="text-2xl font-bold text-gray-300">{maxP}</div><div className="text-[10px] text-gray-500 tracking-wider">CAPACITY</div></div>}
-              </div>
+              {operation.external_id ? (() => {
+                const accepted = (operation.attendees || []).filter(a => a.status === 'accepted');
+                const declined = (operation.attendees || []).filter(a => a.status === 'declined');
+                const tentativeAtt = (operation.attendees || []).filter(a => a.status === 'tentative');
+                return (
+                  <div className="flex items-center gap-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
+                    <div className="text-center"><div className="text-2xl font-bold text-green-400">{accepted.length}</div><div className="text-[10px] text-gray-500 tracking-wider">ACCEPTED</div></div>
+                    <div className="text-center"><div className="text-2xl font-bold text-red-400">{declined.length}</div><div className="text-[10px] text-gray-500 tracking-wider">DECLINED</div></div>
+                    {tentativeAtt.length > 0 && <div className="text-center"><div className="text-2xl font-bold text-yellow-400">{tentativeAtt.length}</div><div className="text-[10px] text-gray-500 tracking-wider">TENTATIVE</div></div>}
+                    <div className="ml-auto text-[10px] text-gray-600 tracking-wider">SYNCED VIA DISCORD</div>
+                  </div>
+                );
+              })() : (
+                <div className="flex items-center gap-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
+                  <div className="text-center"><div className="text-2xl font-bold text-green-400">{counts.attending || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">ATTENDING</div></div>
+                  <div className="text-center"><div className="text-2xl font-bold text-yellow-400">{counts.tentative || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">TENTATIVE</div></div>
+                  {maxP && <div className="text-center"><div className="text-2xl font-bold text-orange-400">{counts.waitlisted || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">WAITLISTED</div></div>}
+                  {maxP && <div className="text-center ml-auto"><div className="text-2xl font-bold text-gray-300">{maxP}</div><div className="text-[10px] text-gray-500 tracking-wider">CAPACITY</div></div>}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -247,7 +261,77 @@ const OperationDetail = () => {
             </Card>
           )}
 
-          {/* RSVP Actions */}
+          {/* Discord Attendance Display (when synced via Discord) */}
+          {operation.external_id && operation.attendees?.length > 0 && (() => {
+            const accepted = operation.attendees.filter(a => a.status === 'accepted');
+            const declined = operation.attendees.filter(a => a.status === 'declined');
+            const tentativeAtt = operation.attendees.filter(a => a.status === 'tentative');
+            return (
+              <div className="space-y-4" data-testid="discord-attendance">
+                {accepted.length > 0 && (
+                  <Card className="bg-gray-900/80 border-gray-800">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm tracking-wider flex items-center gap-2 text-green-400">
+                        <UserCheck className="w-4 h-4" /> ACCEPTED ({accepted.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {accepted.map((a, i) => (
+                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-black/30 rounded border border-gray-800/50">
+                            <div className="w-8 h-8 rounded bg-green-900/40 flex items-center justify-center text-xs font-bold text-green-400">{a.display_name?.[0]?.toUpperCase()}</div>
+                            <span className="text-sm font-medium">{a.display_name}</span>
+                            {a.user_id && <Badge variant="outline" className="text-[10px] border-tropic-gold/40 text-tropic-gold">LINKED</Badge>}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {declined.length > 0 && (
+                  <Card className="bg-gray-900/80 border-gray-800">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm tracking-wider flex items-center gap-2 text-red-400">
+                        <UserX className="w-4 h-4" /> DECLINED ({declined.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {declined.map((a, i) => (
+                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-black/30 rounded border border-gray-800/50">
+                            <div className="w-8 h-8 rounded bg-red-900/40 flex items-center justify-center text-xs font-bold text-red-400">{a.display_name?.[0]?.toUpperCase()}</div>
+                            <span className="text-sm font-medium text-gray-400">{a.display_name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {tentativeAtt.length > 0 && (
+                  <Card className="bg-gray-900/80 border-gray-800">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm tracking-wider flex items-center gap-2 text-yellow-400">
+                        <HelpCircle className="w-4 h-4" /> TENTATIVE ({tentativeAtt.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {tentativeAtt.map((a, i) => (
+                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-black/30 rounded border border-gray-800/50">
+                            <div className="w-8 h-8 rounded bg-yellow-900/40 flex items-center justify-center text-xs font-bold text-yellow-400">{a.display_name?.[0]?.toUpperCase()}</div>
+                            <span className="text-sm font-medium">{a.display_name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* RSVP Actions — hidden for Discord-synced operations */}
+          {!operation.external_id && (
           <Card className="bg-gray-900/80 border-gray-800" data-testid="rsvp-actions">
             <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider">YOUR RSVP</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -268,9 +352,10 @@ const OperationDetail = () => {
               </div>
             </CardContent>
           </Card>
+          )}
 
-          {/* Attending Roster with Full Details */}
-          {rosterData && (
+          {/* Attending Roster with Full Details — for non-Discord operations */}
+          {rosterData && !operation.external_id && (
             <div className="space-y-4">
               {[
                 { label: 'ATTENDING', list: rsvps.attending, color: 'text-green-400', icon: CheckCircle },
