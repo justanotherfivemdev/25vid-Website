@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Users, Calendar, Clock, ChevronDown, ChevronUp, CheckCircle, HelpCircle, Shield, Network } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Calendar, Clock, ChevronDown, ChevronUp, CheckCircle, HelpCircle, Shield, Network, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -295,6 +295,16 @@ const OperationsManager = () => {
     setEditingOp(null);
   };
 
+  const handleForceSync = async (operationId) => {
+    try {
+      const res = await axios.post(`${API}/operations/${operationId}/force-sync`);
+      alert(`Sync complete: ${res.data.attendees_count} attendee(s) on record.`);
+      await fetchOperations();
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Force sync failed');
+    }
+  };
+
   const getTypeColor = (type) => {
     const colors = {
       combat: 'bg-tropic-gold text-black',
@@ -570,8 +580,11 @@ const OperationsManager = () => {
         ) : (
           <div className="grid gap-4">
             {operations.map((op) => {
+              const isDiscordSynced = !!op.external_id;
               const rsvpCount = op.rsvps?.length || 0;
-              const attendingCount = op.rsvps?.filter(r => r.status === 'attending').length || 0;
+              const attendingCount = isDiscordSynced
+                ? (op.attendees || []).filter(a => a.status === 'accepted').length
+                : (op.rsvps?.filter(r => r.status === 'attending').length || 0);
               const isExpanded = expandedOp === op.id;
               return (
                 <Card key={op.id} className="bg-gray-900 border-gray-800" data-testid={`op-card-${op.id}`}>
@@ -585,11 +598,22 @@ const OperationsManager = () => {
                           <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${op.activity_state === 'ongoing' ? 'bg-tropic-red/20 text-tropic-red border border-tropic-red/40' : op.activity_state === 'completed' ? 'bg-green-700/20 text-green-400 border border-green-700/40' : 'bg-gray-700/40 text-gray-300 border border-gray-700/40'}`}>
                             {op.activity_state || 'planned'}
                           </span>
-                          <span className="text-sm text-gray-400">
-                            <Users className="inline w-4 h-4 mr-1" />
-                            {attendingCount}{op.max_participants ? `/${op.max_participants}` : ''} attending
-                            {rsvpCount > attendingCount && <span className="text-gray-600"> ({rsvpCount} total RSVPs)</span>}
-                          </span>
+                          {isDiscordSynced ? (
+                            <span className="text-sm text-gray-400">
+                              <Users className="inline w-4 h-4 mr-1" />
+                              {attendingCount} accepted
+                              <span className="text-gray-600 ml-1">({(op.attendees || []).length} total)</span>
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400">
+                              <Users className="inline w-4 h-4 mr-1" />
+                              {attendingCount}{op.max_participants ? `/${op.max_participants}` : ''} attending
+                              {rsvpCount > attendingCount && <span className="text-gray-600"> ({rsvpCount} total RSVPs)</span>}
+                            </span>
+                          )}
+                          {isDiscordSynced && (
+                            <span className="text-[10px] text-blue-400 bg-blue-900/30 border border-blue-700/40 px-2 py-0.5 rounded">DISCORD</span>
+                          )}
                         </div>
                         <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                           {op.title}
@@ -605,6 +629,18 @@ const OperationsManager = () => {
                       </div>
                       
                       <div className="flex space-x-2">
+                        {isDiscordSynced && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleForceSync(op.id)}
+                            className="border-blue-700/50 text-blue-400 hover:bg-blue-900/20"
+                            title="Force Sync Attendance"
+                            data-testid={`force-sync-${op.id}`}
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Link to={`/hub/orbat-mapper/${op.id}`}>
                           <Button
                             size="sm"

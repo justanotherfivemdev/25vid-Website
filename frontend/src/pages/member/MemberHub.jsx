@@ -357,15 +357,23 @@ const MemberHub = () => {
             {operations.length === 0 ? <p className="text-gray-500">No upcoming operations.</p> : (
               <div className="grid md:grid-cols-2 gap-4">
                 {operations.map((op) => {
-                  const attending = op.rsvps?.filter(r => r.status === 'attending').length || 0;
-                  const tentative = op.rsvps?.filter(r => r.status === 'tentative').length || 0;
-                  const waitlisted = op.rsvps?.filter(r => r.status === 'waitlisted').length || 0;
+                  const isDiscordSynced = !!op.external_id;
+                  const attending = isDiscordSynced
+                    ? (op.attendees || []).filter(a => a.status === 'accepted').length
+                    : (op.rsvps?.filter(r => r.status === 'attending').length || 0);
+                  const declined = isDiscordSynced
+                    ? (op.attendees || []).filter(a => a.status === 'declined').length
+                    : 0;
+                  const tentative = isDiscordSynced
+                    ? (op.attendees || []).filter(a => a.status === 'tentative').length
+                    : (op.rsvps?.filter(r => r.status === 'tentative').length || 0);
+                  const waitlisted = isDiscordSynced ? 0 : (op.rsvps?.filter(r => r.status === 'waitlisted').length || 0);
                   return (
                     <Card key={op.id} className="bg-gray-900 border-gray-800 hover:border-tropic-red/30 transition-colors" data-testid={`hub-operation-${op.id}`}>
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <Badge className={`${getTypeColor(op.operation_type)} text-white`}>{op.operation_type.toUpperCase()}</Badge>
-                          {op.max_participants && <span className="text-xs text-gray-400"><Users className="inline w-3 h-3 mr-1" />{attending}/{op.max_participants}</span>}
+                          {op.max_participants && !isDiscordSynced && <span className="text-xs text-gray-400"><Users className="inline w-3 h-3 mr-1" />{attending}/{op.max_participants}</span>}
                         </div>
                         <CardTitle className="text-lg" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{op.title}</CardTitle>
                         <CardDescription className="text-gray-500 line-clamp-2">{op.description}</CardDescription>
@@ -376,12 +384,22 @@ const MemberHub = () => {
                           <span className="flex items-center"><Clock className="w-3 h-3 mr-1" />{op.time}</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
-                          <span className="text-green-400">{attending} attending</span>
-                          {tentative > 0 && <span className="text-yellow-400">{tentative} tentative</span>}
-                          {waitlisted > 0 && <span className="text-orange-400">{waitlisted} waitlisted</span>}
+                          {isDiscordSynced ? (
+                            <>
+                              <span className="text-green-400">{attending} accepted</span>
+                              {declined > 0 && <span className="text-red-400">{declined} declined</span>}
+                              {tentative > 0 && <span className="text-yellow-400">{tentative} tentative</span>}
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-green-400">{attending} attending</span>
+                              {tentative > 0 && <span className="text-yellow-400">{tentative} tentative</span>}
+                              {waitlisted > 0 && <span className="text-orange-400">{waitlisted} waitlisted</span>}
+                            </>
+                          )}
                         </div>
                         <Link to={`/hub/operations/${op.id}`}>
-                          <Button size="sm" className="bg-tropic-red hover:bg-tropic-red-dark w-full" data-testid={`hub-rsvp-${op.id}`}>VIEW & RSVP <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                          <Button size="sm" className="bg-tropic-red hover:bg-tropic-red-dark w-full" data-testid={`hub-rsvp-${op.id}`}>{isDiscordSynced ? 'VIEW DETAILS' : 'VIEW & RSVP'} <ChevronRight className="w-4 h-4 ml-1" /></Button>
                         </Link>
                       </CardContent>
                     </Card>

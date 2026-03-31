@@ -52,6 +52,9 @@ DISCORD_REDIRECT_URI = os.environ.get('DISCORD_REDIRECT_URI')
 DISCORD_API_URL = "https://discord.com/api/v10"
 DISCORD_SCOPES = "identify email"
 
+# Discord bot sync API key (for attendance sync endpoint)
+DISCORD_SYNC_API_KEY = os.environ.get('DISCORD_SYNC_API_KEY', '')
+
 # Valyu / Threat Intel configuration
 VALYU_API_KEY = os.environ.get("VALYU_API_KEY", "")
 VALYU_BASE_URL = "https://api.valyu.ai/v1"

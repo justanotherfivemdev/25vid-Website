@@ -2,15 +2,16 @@ import uuid
 from datetime import datetime, timezone
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 
 from database import db
-from models.operations import Operation, OperationCreate, RSVPSubmit
+from models.operations import Operation, OperationCreate, RSVPSubmit, SyncAttendancePayload
 from middleware.auth import get_current_user, get_current_admin
 from middleware.rbac import require_permission, Permission
 from services.map_service import upsert_map_event
 from utils.mos_mapping import get_mos_display
 from utils.billet_mapping import get_billet_display
+from config import DISCORD_SYNC_API_KEY
 
 router = APIRouter()
 
@@ -242,4 +243,122 @@ async def get_operation_roster(operation_id: str, current_user: dict = Depends(g
             "waitlisted": len(enriched_rsvps["waitlisted"]),
             "total": len(rsvps)
         }
+    }
+
+
+# ── Discord Attendance Sync ─────────────────────────────────────────────────
+
+def _validate_sync_api_key(request: Request):
+    """Validate the X-API-KEY header against the configured sync key."""
+    if not DISCORD_SYNC_API_KEY:
+        raise HTTPException(status_code=503, detail="Sync API key not configured")
+    api_key = request.headers.get("X-API-KEY", "")
+    if not api_key or api_key != DISCORD_SYNC_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+
+
+def _parse_iso_datetime(iso_str: str):
+    """Parse an ISO 8601 string into (date_str, time_str) for storage."""
+    if not iso_str:
+        return "", ""
+    try:
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        return dt.strftime("%Y-%m-%d"), dt.strftime("%H:%M")
+    except (ValueError, TypeError):
+        # Fallback: best-effort slice
+        return iso_str[:10], iso_str[11:16] if len(iso_str) > 10 else ""
+
+
+@router.post("/operations/sync-attendance")
+async def sync_attendance(payload: SyncAttendancePayload, request: Request):
+    """
+    Receive structured attendance data from the Discord bot.
+    Upserts operation by external_id and overwrites attendees list.
+    """
+    _validate_sync_api_key(request)
+
+    external_id = payload.operation.external_id
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Build attendees list with optional user linking
+    attendees = []
+    for a in payload.attendance:
+        entry = {
+            "discord_id": a.discord_id,
+            "display_name": a.display_name,
+            "status": a.status,
+            "updated_at": now,
+        }
+        # Attempt to link to an internal user by discord_id
+        linked_user = await db.users.find_one(
+            {"discord_id": a.discord_id}, {"_id": 0, "id": 1}
+        )
+        if linked_user:
+            entry["user_id"] = linked_user["id"]
+        attendees.append(entry)
+
+    existing = await db.operations.find_one({"external_id": external_id}, {"_id": 0})
+
+    if existing:
+        # Update attendance + metadata on existing operation
+        update_fields = {
+            "attendees": attendees,
+        }
+        if payload.operation.title:
+            update_fields["title"] = payload.operation.title
+        if payload.operation.description:
+            update_fields["description"] = payload.operation.description
+        if payload.operation.start_time:
+            date_str, time_str = _parse_iso_datetime(payload.operation.start_time)
+            update_fields["date"] = date_str
+            update_fields["time"] = time_str
+
+        await db.operations.update_one(
+            {"external_id": external_id},
+            {"$set": update_fields}
+        )
+        updated = await db.operations.find_one({"external_id": external_id}, {"_id": 0})
+        return {"status": "updated", "operation_id": updated["id"], "attendees_count": len(attendees)}
+    else:
+        # Create new operation from Discord data
+        op_id = str(uuid.uuid4())
+        date_str, time_str = _parse_iso_datetime(payload.operation.start_time or "")
+        new_op = {
+            "id": op_id,
+            "title": payload.operation.title,
+            "description": payload.operation.description or "",
+            "operation_type": "combat",
+            "date": date_str,
+            "time": time_str,
+            "external_id": external_id,
+            "attendees": attendees,
+            "rsvps": [],
+            "created_by": payload.operation.created_by.name if payload.operation.created_by else "Discord Bot",
+            "created_at": now,
+            "is_public_recruiting": False,
+            "activity_state": "planned",
+        }
+        await db.operations.insert_one(new_op)
+        return {"status": "created", "operation_id": op_id, "attendees_count": len(attendees)}
+
+
+@router.post("/operations/{operation_id}/force-sync")
+async def force_sync_operation(
+    operation_id: str,
+    current_user: dict = Depends(require_permission(Permission.MANAGE_OPERATIONS)),
+):
+    """
+    Admin endpoint to trigger a manual re-read of attendance for an operation.
+    Returns current attendance data for the operation.
+    """
+    operation = await db.operations.find_one({"id": operation_id}, {"_id": 0})
+    if not operation:
+        raise HTTPException(status_code=404, detail="Operation not found")
+
+    return {
+        "status": "ok",
+        "operation_id": operation_id,
+        "external_id": operation.get("external_id"),
+        "attendees": operation.get("attendees", []),
+        "attendees_count": len(operation.get("attendees", [])),
     }

@@ -493,6 +493,8 @@ async def startup_event():
         await db.voice_logs.create_index("id", unique=True)
         await db.voice_logs.create_index("plan_id")
         await db.voice_logs.create_index([("plan_id", 1), ("timestamp", 1)])
+        # Operations external_id (Discord sync)
+        await db.operations.create_index("external_id", sparse=True)
     except Exception as e:
         vlog.warning(f"Index creation note: {e}")
 
