@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useEventsStore } from '@/stores/threatMapStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,14 @@ export default function FeedFilters({ isAdmin = false }) {
   };
 
   // Non-admin users see a simplified curated view with search only
+  // Clear any leftover category/threat filters so the feed isn't unexpectedly empty
+  useEffect(() => {
+    if (!isAdmin && (categoryFilters.length > 0 || threatLevelFilters.length > 0)) {
+      setCategoryFilters([]);
+      setThreatLevelFilters([]);
+    }
+  }, [isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!isAdmin) {
     return (
       <div className="border-b border-tropic-gold-dark/20 p-4 space-y-2">

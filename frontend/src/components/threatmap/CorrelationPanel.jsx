@@ -208,7 +208,7 @@ export default function CorrelationPanel() {
 
       <div className="px-3 py-1.5 border-t text-center" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
         <span className="text-[8px] text-gray-600 uppercase tracking-wider">
-          Bayesian correlation analysis
+          Heuristic signal detection
         </span>
       </div>
     </div>

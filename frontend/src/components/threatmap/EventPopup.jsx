@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, MapPin, ChevronDown, ChevronUp, Edit3, Save, X } from 'lucide-react';
 import { formatRelativeTime, stripUrls, parseUrlSegments } from '@/utils/threatMapUtils';
@@ -48,6 +48,21 @@ export default function EventPopup({ event, isAdmin = false }) {
     source: event.admin_source || event.source,
     credibility: event.credibility,
   });
+
+  // Reset state when the event changes (popup reused without unmounting)
+  useEffect(() => {
+    setIsExpanded(false);
+    setIsEditing(false);
+    setEditDescription(event.admin_description || event.summary || '');
+    setEditSource(event.admin_source || 'Internal Intelligence');
+    setEditCredibility(event.credibility || 'probable');
+    setSaving(false);
+    setSavedOverrides({
+      summary: event.admin_description || event.summary,
+      source: event.admin_source || event.source,
+      credibility: event.credibility,
+    });
+  }, [event.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSaveOverride = async () => {
     setSaving(true);
@@ -234,7 +249,7 @@ export default function EventPopup({ event, isAdmin = false }) {
         <Badge variant="outline" className="text-[10px] capitalize text-gray-300 border-gray-700/60">
           {event.category}
         </Badge>
-        {displaySource !== 'unknown' && (
+        {isAdmin && displaySource !== 'unknown' && (
           <Badge variant="outline" className="text-[10px] text-tropic-gold-dark border-tropic-gold-dark/30">
             {displaySource}
           </Badge>

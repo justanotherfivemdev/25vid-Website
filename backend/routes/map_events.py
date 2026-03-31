@@ -263,11 +263,9 @@ async def _get_community_events() -> list:
         # Ensure timestamp exists for filtering
         if "timestamp" not in d and "created_at" in d:
             d["timestamp"] = d["created_at"] if isinstance(d["created_at"], str) else d["created_at"].isoformat()
-        # Apply admin overrides for display (hide original source)
+        # Apply admin description override for display
         if d.get("admin_description"):
             d["summary"] = d["admin_description"]
-        if d.get("admin_source"):
-            d["source"] = d["admin_source"]
     return docs
 
 
@@ -290,6 +288,9 @@ async def get_threat_events():
     stored_events = await db.external_events.find(
         {}, {"_id": 0}
     ).sort("ingested_at", -1).to_list(200)
+    for ext in stored_events:
+        if ext.get("admin_description"):
+            ext["summary"] = ext["admin_description"]
     if stored_events:
         merged = community + stored_events[:200]
         result = {
@@ -553,12 +554,20 @@ async def admin_override_event(
         doc = await db.community_events.find_one({"id": event_id}, {"_id": 0})
         return doc
 
-    # Try external events
+    # Try external events — use content_hash as stable identifier
+    # (external event `id` can be overwritten on re-ingest)
     result = await db.external_events.update_one(
-        {"id": event_id}, {"$set": updates}
+        {"content_hash": event_id}, {"$set": updates}
     )
+    if result.matched_count == 0:
+        # Fallback: try by id for events that were never re-ingested
+        result = await db.external_events.update_one(
+            {"id": event_id}, {"$set": updates}
+        )
     if result.matched_count > 0:
-        doc = await db.external_events.find_one({"id": event_id}, {"_id": 0})
+        doc = await db.external_events.find_one(
+            {"$or": [{"content_hash": event_id}, {"id": event_id}]}, {"_id": 0}
+        )
         return doc
 
     raise HTTPException(status_code=404, detail="Event not found")
