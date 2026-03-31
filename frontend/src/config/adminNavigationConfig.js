@@ -24,9 +24,7 @@ import {
   ClipboardList,
   ScrollText,
   AlertTriangle,
-  Network,
-  Compass,
-  Target,
+  Map,
 } from 'lucide-react';
 
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
@@ -45,7 +43,7 @@ export const ADMIN_NAV_GROUPS = [
   {
     id: 'overview',
     label: 'OVERVIEW',
-    defaultOpen: true,
+    defaultOpen: false,
     items: [
       { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
       {
@@ -59,7 +57,7 @@ export const ADMIN_NAV_GROUPS = [
   {
     id: 'personnel',
     label: 'PERSONNEL',
-    defaultOpen: true,
+    defaultOpen: false,
     items: [
       {
         path: '/admin/recruitment',
@@ -98,7 +96,7 @@ export const ADMIN_NAV_GROUPS = [
   {
     id: 'operations',
     label: 'OPERATIONS',
-    defaultOpen: true,
+    defaultOpen: false,
     items: [
       {
         path: '/admin/deployments',
@@ -119,25 +117,9 @@ export const ADMIN_NAV_GROUPS = [
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_CAMPAIGNS),
       },
       {
-        path: '/hub/orbat-mapper',
-        label: 'ORBAT Creator',
-        icon: Network,
-        show: (role) =>
-          hasPermission(role, PERMISSIONS.MANAGE_PLANS) ||
-          hasPermission(role, PERMISSIONS.MANAGE_OPERATIONS),
-      },
-      {
-        path: '/hub/reforger-maps',
-        label: 'Reforger Maps',
-        icon: Compass,
-        show: (role) =>
-          hasPermission(role, PERMISSIONS.MANAGE_PLANS) ||
-          hasPermission(role, PERMISSIONS.MANAGE_OPERATIONS),
-      },
-      {
-        path: '/hub/mortar-calc',
-        label: 'Mortar Calculator',
-        icon: Target,
+        path: '/hub/operations-planner',
+        label: 'Operations Planner',
+        icon: Map,
         show: (role) =>
           hasPermission(role, PERMISSIONS.MANAGE_PLANS) ||
           hasPermission(role, PERMISSIONS.MANAGE_OPERATIONS),
