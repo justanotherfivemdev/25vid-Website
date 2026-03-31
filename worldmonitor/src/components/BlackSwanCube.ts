@@ -29,6 +29,8 @@ export class BlackSwanCube {
   private animationId: number | null = null;
   private mouseX = 0;
   private mouseY = 0;
+  private onMouseMoveBound: (event: MouseEvent) => void;
+  private onResizeBound: () => void;
   
   constructor(container: HTMLElement) {
     this.container = container;
@@ -85,9 +87,11 @@ export class BlackSwanCube {
 
     this.addStarfield();
     
-    // Mouse interaction
-    this.container.addEventListener('mousemove', this.onMouseMove.bind(this));
-    window.addEventListener('resize', this.onResize.bind(this));
+    // Mouse interaction — store bound references for proper removal
+    this.onMouseMoveBound = this.onMouseMove.bind(this);
+    this.onResizeBound = this.onResize.bind(this);
+    this.container.addEventListener('mousemove', this.onMouseMoveBound);
+    window.addEventListener('resize', this.onResizeBound);
     
     this.animate();
   }
@@ -367,8 +371,8 @@ export class BlackSwanCube {
       cancelAnimationFrame(this.animationId);
     }
     
-    this.container.removeEventListener('mousemove', this.onMouseMove.bind(this));
-    window.removeEventListener('resize', this.onResize.bind(this));
+    this.container.removeEventListener('mousemove', this.onMouseMoveBound);
+    window.removeEventListener('resize', this.onResizeBound);
     
     this.renderer.dispose();
     this.container.removeChild(this.renderer.domElement);

@@ -157,7 +157,20 @@ class AnalysisWorkerManager {
    */
   private async waitForReady(): Promise<void> {
     this.initWorker();
-    if (this.isReady) return;
+
+    // If the worker reports ready, ensure the worker instance exists.
+    if (this.isReady) {
+      if (!this.worker) {
+        throw new Error('Analysis worker is not available after initialization');
+      }
+      return;
+    }
+
+    // If not yet ready, we must have a readyPromise to await.
+    if (!this.readyPromise) {
+      throw new Error('Analysis worker failed to initialize');
+    }
+
     await this.readyPromise;
   }
 

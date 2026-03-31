@@ -79,14 +79,20 @@ export async function fetchFredData(): Promise<FredSeries[]> {
         const changePercent = (change / previous.value) * 100;
 
         let displayValue = latest.value;
-        if (config.id === 'WALCL') displayValue = latest.value / 1000;
+        let displayPreviousValue = previous.value;
+        let displayChange = change;
+        if (config.id === 'WALCL') {
+          displayValue = latest.value / 1000;
+          displayPreviousValue = previous.value / 1000;
+          displayChange = change / 1000;
+        }
 
         return {
           id: config.id,
           name: config.name,
           value: Number(displayValue.toFixed(config.precision)),
-          previousValue: Number(previous.value.toFixed(config.precision)),
-          change: Number(change.toFixed(config.precision)),
+          previousValue: Number(displayPreviousValue.toFixed(config.precision)),
+          change: Number(displayChange.toFixed(config.precision)),
           changePercent: Number(changePercent.toFixed(2)),
           date: latest.date,
           unit: config.unit,

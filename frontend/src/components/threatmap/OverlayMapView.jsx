@@ -63,6 +63,9 @@ export default function OverlayMapView() {
         title="World Monitor — Intelligence Overlay"
         className="h-full w-full border-0"
         allow="fullscreen"
+        allowFullScreen
+        referrerPolicy="no-referrer"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
         loading="eager"
         style={{
           background: '#0a0f0a',

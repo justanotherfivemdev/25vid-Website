@@ -71,8 +71,10 @@ const server = http.createServer(async (req, res) => {
 
       console.log('[Relay] RSS request:', feedUrl);
 
-      const https = require('https');
-      const request = https.get(feedUrl, {
+      // Select http or https client based on feed URL protocol
+      const feedProtocol = parsed.protocol;
+      const httpModule = feedProtocol === 'https:' ? require('https') : require('http');
+      const request = httpModule.get(feedUrl, {
         headers: {
           'Accept': 'application/rss+xml, application/xml, text/xml, */*',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -208,12 +210,27 @@ server.listen(PORT, () => {
 });
 
 wss.on('connection', (ws, req) => {
+  // Restrict connections by Origin header allowlist
+  const origin = req.headers.origin || '';
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:5173').split(',');
+  if (origin && !allowedOrigins.some(o => origin.startsWith(o.trim()))) {
+    console.log(`[Relay] Rejected connection from origin: ${origin}`);
+    ws.close(4003, 'Origin not allowed');
+    return;
+  }
+
   console.log('[Relay] Client connected');
   clients.add(ws);
   connectUpstream();
 
   ws.on('close', () => {
     clients.delete(ws);
+    // Disconnect from upstream when no clients remain to avoid needless data ingestion
+    if (clients.size === 0 && upstreamSocket && upstreamSocket.readyState === WebSocket.OPEN) {
+      console.log('[Relay] No clients remaining, disconnecting upstream');
+      upstreamSocket.close();
+      upstreamSocket = null;
+    }
   });
 
   ws.on('error', (err) => {
