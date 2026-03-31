@@ -3,10 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
 import GlobalThreatMap from '@/components/threatmap/GlobalThreatMap';
+import OverlayMapView from '@/components/threatmap/OverlayMapView';
 import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
 import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
+import IntelLayerPanel from '@/components/threatmap/IntelLayerPanel';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
+import MapViewToggle from '@/components/threatmap/MapViewToggle';
 import '@/components/threatmap/threatmap.css';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +20,7 @@ const REFRESH_INTERVAL = 300000; // 5 minutes
 
 export default function PartnerThreatMap() {
   const { setEvents, setLoading, setError, isLoading } = useEventsStore();
-  const { setMilitaryBases, setMilitaryBasesLoading } = useMapStore();
+  const { setMilitaryBases, setMilitaryBasesLoading, mapViewMode } = useMapStore();
   const [operations, setOperations] = useState([]);
   const [intelEvents, setIntelEvents] = useState([]);
   const [campaignEvents, setCampaignEvents] = useState([]);
@@ -120,6 +123,7 @@ export default function PartnerThreatMap() {
             <Badge className="bg-tropic-olive/20 text-tropic-olive border border-tropic-olive/40 text-[9px]">
               PARTNER VIEW
             </Badge>
+            <MapViewToggle />
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -138,9 +142,14 @@ export default function PartnerThreatMap() {
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+          {mapViewMode === 'globe' ? (
+            <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+          ) : (
+            <OverlayMapView operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+          )}
           <TimelineScrubber />
           <ThreatMapControls />
+          <IntelLayerPanel />
         </div>
         <ThreatMapSidebar />
       </div>

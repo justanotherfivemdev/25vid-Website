@@ -80,6 +80,16 @@ const EventCard = memo(function EventCard({ event, isSelected, onClick, style })
                 <Clock className="h-3 w-3" />
                 {formatRelativeTime(event.timestamp)}
               </span>
+              {event.source === 'community' && (
+                <span className="text-[9px] font-medium text-cyan-400 bg-cyan-500/10 px-1 py-0.5 rounded">
+                  Community
+                </span>
+              )}
+              {event.event_nature === 'fictional' && (
+                <span className="text-[9px] font-medium text-purple-400 bg-purple-500/10 px-1 py-0.5 rounded">
+                  Fictional
+                </span>
+              )}
             </div>
           </div>
         </div>

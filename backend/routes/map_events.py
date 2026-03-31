@@ -249,30 +249,71 @@ async def get_public_threat_map():
     return {"markers": markers}
 
 
+async def _get_community_events() -> list:
+    """Fetch approved & visible community events, normalised to match
+    the external-event shape so the frontend can render them uniformly."""
+    docs = await db.community_events.find(
+        {"visible": True, "approved": True}, {"_id": 0}
+    ).sort("created_at", -1).to_list(300)
+    for d in docs:
+        d.setdefault("source", "community")
+        d.setdefault("provider", "community")
+    return docs
+
+
 @router.post("/threat-events")
 async def get_threat_events():
+    # Always load community events (local, zero API cost)
+    community = await _get_community_events()
+
     cached = await _get_cached_response("threat_events_global", VALYU_CACHE_TTL_MINUTES)
     if cached:
-        return cached
+        merged = community + (cached.get("events") or [])
+        return {
+            "events": merged[:500],
+            "count": len(merged[:500]),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "hybrid",
+            "sources": {"community": len(community), "external": len(cached.get("events") or [])},
+        }
 
     stored_events = await db.external_events.find(
         {}, {"_id": 0}
     ).sort("ingested_at", -1).to_list(200)
     if stored_events:
+        merged = community + stored_events[:200]
         result = {
+            "events": merged[:500],
+            "count": len(merged[:500]),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "hybrid",
+            "sources": {"community": len(community), "external": len(stored_events[:200])},
+        }
+        # Cache only external events; community events are always loaded fresh
+        await _set_cached_response("threat_events_global", {
             "events": stored_events[:200],
             "count": len(stored_events[:200]),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "stored",
-        }
-        await _set_cached_response("threat_events_global", result)
+        })
         return result
 
     if not VALYU_API_KEY:
-        return {"events": [], "count": 0, "error": "VALYU_API_KEY not configured"}
+        return {
+            "events": community,
+            "count": len(community),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "community_only",
+            "sources": {"community": len(community), "external": 0},
+        }
 
     if not _rate_limit_ok():
-        return {"events": [], "count": 0, "source": "rate_limited"}
+        return {
+            "events": community,
+            "count": len(community),
+            "source": "rate_limited",
+            "sources": {"community": len(community), "external": 0},
+        }
 
     async def _fetch_live():
         valyu_logger.info("Valyu request STARTED: threat-events")
@@ -309,10 +350,25 @@ async def get_threat_events():
         return result
 
     try:
-        return await _deduplicated_request("threat_events_global", _fetch_live)
+        live_result = await _deduplicated_request("threat_events_global", _fetch_live)
+        merged = community + (live_result.get("events") or [])
+        return {
+            "events": merged[:500],
+            "count": len(merged[:500]),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "hybrid",
+            "sources": {"community": len(community), "external": len(live_result.get("events") or [])},
+        }
     except Exception as e:
         valyu_logger.error(f"Valyu request FAILED: threat-events: {e}")
-        return {"events": [], "count": 0, "error": str(e)}
+        return {
+            "events": community,
+            "count": len(community),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "valyu_failed",
+            "error": str(e),
+            "sources": {"community": len(community), "external": 0},
+        }
 
 
 @router.post("/entity-search")

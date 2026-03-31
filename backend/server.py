@@ -57,6 +57,7 @@ from routes.planning_sessions import router as planning_sessions_router
 from routes.operations_events import router as operations_events_router
 from routes.voice import router as voice_router
 from routes.user_settings import router as user_settings_router
+from routes.community_events import router as community_events_router
 
 
 # Create the main app
@@ -88,6 +89,7 @@ api_router.include_router(planning_sessions_router)
 api_router.include_router(operations_events_router)
 api_router.include_router(voice_router)
 api_router.include_router(user_settings_router)
+api_router.include_router(community_events_router)
 
 
 @api_router.get("/")
@@ -495,6 +497,11 @@ async def startup_event():
         await db.voice_logs.create_index([("plan_id", 1), ("timestamp", 1)])
         # Operations external_id (Discord sync)
         await db.operations.create_index("external_id", sparse=True)
+        # Community events (community intelligence platform)
+        await db.community_events.create_index("id", unique=True)
+        await db.community_events.create_index("event_nature")
+        await db.community_events.create_index("category")
+        await db.community_events.create_index("created_at")
     except Exception as e:
         vlog.warning(f"Index creation note: {e}")
 

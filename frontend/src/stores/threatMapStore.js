@@ -61,6 +61,43 @@ export const useMapStore = create((set) => ({
   militaryBases: [],
   militaryBasesLoading: false,
 
+  // Dual map system
+  mapViewMode: localStorage.getItem('mapViewMode') || 'globe', // 'globe' | 'overlay'
+
+  // Data source filter
+  dataSourceFilter: 'all', // 'all' | 'real' | 'fictional'
+
+  // Layer visibility (worldmonitor-inspired)
+  overlayLayers: JSON.parse(localStorage.getItem('overlayLayers') || JSON.stringify({
+    conflicts: true,
+    infrastructure: false,
+    economic: false,
+    military: true,
+    diplomatic: false,
+    environmental: false,
+  })),
+
+  setMapViewMode: (mode) => {
+    localStorage.setItem('mapViewMode', mode);
+    set({ mapViewMode: mode });
+  },
+
+  setDataSourceFilter: (filter) => set({ dataSourceFilter: filter }),
+
+  setOverlayLayer: (layer, visible) =>
+    set((state) => {
+      const next = { ...state.overlayLayers, [layer]: visible };
+      localStorage.setItem('overlayLayers', JSON.stringify(next));
+      return { overlayLayers: next };
+    }),
+
+  toggleOverlayLayer: (layer) =>
+    set((state) => {
+      const next = { ...state.overlayLayers, [layer]: !state.overlayLayers[layer] };
+      localStorage.setItem('overlayLayers', JSON.stringify(next));
+      return { overlayLayers: next };
+    }),
+
   setViewport: (viewport) =>
     set((state) => ({ viewport: { ...state.viewport, ...viewport } })),
 
