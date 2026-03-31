@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { useMapStore } from '@/stores/threatMapStore';
+import React, { useState, useMemo } from 'react';
+import { useMapStore, useEventsStore } from '@/stores/threatMapStore';
 import { Button } from '@/components/ui/button';
 import {
   Layers, ChevronLeft,
   Swords, Shield, Building2, TrendingDown,
   Landmark, Leaf, Database, Eye, EyeOff,
+  AlertTriangle, Activity,
 } from 'lucide-react';
 
 const LAYER_GROUPS = [
@@ -20,7 +21,7 @@ const LAYER_GROUPS = [
     label: 'Military Activity',
     icon: Shield,
     description: 'Deployments, exercises, bases',
-    color: '#3b82f6',
+    color: '#FFD700',
   },
   {
     id: 'infrastructure',
@@ -64,7 +65,19 @@ export default function IntelLayerPanel() {
     dataSourceFilter, setDataSourceFilter,
     mapViewMode,
   } = useMapStore();
+  const { filteredEvents } = useEventsStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Compute risk score from events (worldmonitor-inspired)
+  const riskScore = useMemo(() => {
+    if (!filteredEvents.length) return 0;
+    const weights = { critical: 10, high: 6, medium: 3, low: 1, info: 0.5 };
+    const total = filteredEvents.reduce((sum, e) => sum + (weights[e.threatLevel] || 0), 0);
+    return Math.min(100, Math.round(total / Math.max(filteredEvents.length, 1) * 15));
+  }, [filteredEvents]);
+
+  const riskLevel = riskScore >= 70 ? 'CRITICAL' : riskScore >= 40 ? 'HIGH' : riskScore >= 20 ? 'MEDIUM' : 'LOW';
+  const riskColor = riskScore >= 70 ? '#ef4444' : riskScore >= 40 ? '#f97316' : riskScore >= 20 ? '#eab308' : '#22c55e';
 
   if (isCollapsed) {
     return (
@@ -110,6 +123,31 @@ export default function IntelLayerPanel() {
         >
           <ChevronLeft className="h-3 w-3" />
         </Button>
+      </div>
+
+      {/* Risk Assessment (worldmonitor-inspired) */}
+      <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="h-3 w-3" style={{ color: riskColor }} />
+            <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+              Threat Level
+            </span>
+          </div>
+          <span className="text-[10px] font-bold" style={{ color: riskColor }}>
+            {riskLevel}
+          </span>
+        </div>
+        <div className="h-1.5 rounded-full bg-gray-800 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${riskScore}%`, backgroundColor: riskColor }}
+          />
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-[8px] text-gray-600">{filteredEvents.length} events tracked</span>
+          <span className="text-[8px] font-mono" style={{ color: riskColor }}>{riskScore}/100</span>
+        </div>
       </div>
 
       {/* Data source filter */}
@@ -181,9 +219,12 @@ export default function IntelLayerPanel() {
 
       {/* View mode indicator */}
       <div className="px-3 py-1.5 border-t text-center" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
-        <span className="text-[8px] text-gray-600 uppercase tracking-wider">
-          {mapViewMode === 'globe' ? '🌍 Globe View' : '🗺️ Overlay View'}
-        </span>
+        <div className="flex items-center justify-center gap-1.5">
+          <Activity className="h-3 w-3 text-green-500" />
+          <span className="text-[8px] text-gray-600 uppercase tracking-wider">
+            {mapViewMode === 'globe' ? '🌍 Globe View' : '🗺️ Overlay View'} • Live
+          </span>
+        </div>
       </div>
     </div>
   );

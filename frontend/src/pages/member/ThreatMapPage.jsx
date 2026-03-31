@@ -8,6 +8,7 @@ import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
 import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
 import IntelLayerPanel from '@/components/threatmap/IntelLayerPanel';
+import CorrelationPanel from '@/components/threatmap/CorrelationPanel';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
 import '@/components/threatmap/threatmap.css';
 
@@ -110,6 +111,7 @@ export default function ThreatMapPage() {
           <TimelineScrubber />
           <ThreatMapControls />
           {mapViewMode === 'overlay' && <IntelLayerPanel />}
+          {mapViewMode === 'overlay' && <CorrelationPanel />}
         </div>
         <ThreatMapSidebar isAdmin={isAdmin} />
       </div>

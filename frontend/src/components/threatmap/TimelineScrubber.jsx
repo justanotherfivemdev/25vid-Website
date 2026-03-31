@@ -43,7 +43,7 @@ export default function TimelineScrubber() {
     <div className="absolute bottom-6 left-3 md:left-6 z-10">
       <button
         onClick={handlePlayToggle}
-        className={`flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
+        className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
           isAutoPlaying
             ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light shadow-tropic-gold/30'
             : 'bg-black/95 text-tropic-gold hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
@@ -51,9 +51,9 @@ export default function TimelineScrubber() {
         title={isAutoPlaying ? 'Pause auto-pan' : 'Start auto-pan'}
       >
         {isAutoPlaying ? (
-          <Pause className="h-5 w-5" />
+          <Pause className="h-4 w-4" />
         ) : (
-          <Play className="h-5 w-5 ml-0.5" />
+          <Play className="h-4 w-4 ml-0.5" />
         )}
       </button>
     </div>
