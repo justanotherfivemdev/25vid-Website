@@ -257,6 +257,18 @@ def _validate_sync_api_key(request: Request):
         raise HTTPException(status_code=403, detail="Invalid API key")
 
 
+def _parse_iso_datetime(iso_str: str):
+    """Parse an ISO 8601 string into (date_str, time_str) for storage."""
+    if not iso_str:
+        return "", ""
+    try:
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        return dt.strftime("%Y-%m-%d"), dt.strftime("%H:%M")
+    except (ValueError, TypeError):
+        # Fallback: best-effort slice
+        return iso_str[:10], iso_str[11:16] if len(iso_str) > 10 else ""
+
+
 @router.post("/operations/sync-attendance")
 async def sync_attendance(payload: SyncAttendancePayload, request: Request):
     """
@@ -297,8 +309,9 @@ async def sync_attendance(payload: SyncAttendancePayload, request: Request):
         if payload.operation.description:
             update_fields["description"] = payload.operation.description
         if payload.operation.start_time:
-            update_fields["date"] = payload.operation.start_time[:10]
-            update_fields["time"] = payload.operation.start_time[11:16] if len(payload.operation.start_time) > 10 else ""
+            date_str, time_str = _parse_iso_datetime(payload.operation.start_time)
+            update_fields["date"] = date_str
+            update_fields["time"] = time_str
 
         await db.operations.update_one(
             {"external_id": external_id},
@@ -309,14 +322,14 @@ async def sync_attendance(payload: SyncAttendancePayload, request: Request):
     else:
         # Create new operation from Discord data
         op_id = str(uuid.uuid4())
-        start = payload.operation.start_time or ""
+        date_str, time_str = _parse_iso_datetime(payload.operation.start_time or "")
         new_op = {
             "id": op_id,
             "title": payload.operation.title,
             "description": payload.operation.description or "",
             "operation_type": "combat",
-            "date": start[:10] if start else "",
-            "time": start[11:16] if len(start) > 10 else "",
+            "date": date_str,
+            "time": time_str,
             "external_id": external_id,
             "attendees": attendees,
             "rsvps": [],

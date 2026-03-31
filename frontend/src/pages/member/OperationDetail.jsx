@@ -279,7 +279,7 @@ const OperationDetail = () => {
                       <div className="space-y-1">
                         {accepted.map((a, i) => (
                           <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-black/30 rounded border border-gray-800/50">
-                            <div className="w-8 h-8 rounded bg-green-900/40 flex items-center justify-center text-xs font-bold text-green-400">{a.display_name?.[0]?.toUpperCase()}</div>
+                            <div className="w-8 h-8 rounded bg-green-900/40 flex items-center justify-center text-xs font-bold text-green-400">{(a.display_name || '?')[0].toUpperCase()}</div>
                             <span className="text-sm font-medium">{a.display_name}</span>
                             {a.user_id && <Badge variant="outline" className="text-[10px] border-tropic-gold/40 text-tropic-gold">LINKED</Badge>}
                           </div>
@@ -299,7 +299,7 @@ const OperationDetail = () => {
                       <div className="space-y-1">
                         {declined.map((a, i) => (
                           <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-black/30 rounded border border-gray-800/50">
-                            <div className="w-8 h-8 rounded bg-red-900/40 flex items-center justify-center text-xs font-bold text-red-400">{a.display_name?.[0]?.toUpperCase()}</div>
+                            <div className="w-8 h-8 rounded bg-red-900/40 flex items-center justify-center text-xs font-bold text-red-400">{(a.display_name || '?')[0].toUpperCase()}</div>
                             <span className="text-sm font-medium text-gray-400">{a.display_name}</span>
                           </div>
                         ))}
@@ -318,7 +318,7 @@ const OperationDetail = () => {
                       <div className="space-y-1">
                         {tentativeAtt.map((a, i) => (
                           <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-black/30 rounded border border-gray-800/50">
-                            <div className="w-8 h-8 rounded bg-yellow-900/40 flex items-center justify-center text-xs font-bold text-yellow-400">{a.display_name?.[0]?.toUpperCase()}</div>
+                            <div className="w-8 h-8 rounded bg-yellow-900/40 flex items-center justify-center text-xs font-bold text-yellow-400">{(a.display_name || '?')[0].toUpperCase()}</div>
                             <span className="text-sm font-medium">{a.display_name}</span>
                           </div>
                         ))}
