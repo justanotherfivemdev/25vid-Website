@@ -11,6 +11,7 @@ from starlette.responses import StreamingResponse
 from config import VALYU_COUNTRY_CACHE_HOURS
 from database import db
 from middleware.auth import get_current_user
+from models.community_event import CREDIBILITY_VALUES
 from services.threat_intel import (
     VALYU_API_KEY, VALYU_CACHE_TTL_MINUTES,
     THREAT_QUERIES, MILITARY_BASES_DATA,
@@ -529,7 +530,7 @@ async def admin_override_event(
     admin_source = body.get("admin_source")
     credibility = body.get("credibility")
 
-    if credibility and credibility not in ("confirmed", "probable", "possible", "doubtful"):
+    if credibility and credibility not in CREDIBILITY_VALUES:
         raise HTTPException(status_code=400, detail="Invalid credibility value")
 
     updates = {

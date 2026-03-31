@@ -6,6 +6,9 @@ from typing import Optional, Literal, List
 from datetime import datetime, timezone
 import uuid
 
+CREDIBILITY_VALUES = ("confirmed", "probable", "possible", "doubtful")
+CredibilityType = Literal["confirmed", "probable", "possible", "doubtful"]
+
 
 class CommunityEventLocation(BaseModel):
     latitude: float
@@ -43,7 +46,7 @@ class CommunityEvent(BaseModel):
     # Admin intelligence override fields
     admin_description: Optional[str] = None
     admin_source: Optional[str] = None  # e.g. "Internal Intelligence"
-    credibility: Optional[Literal["confirmed", "probable", "possible", "doubtful"]] = None
+    credibility: Optional[CredibilityType] = None
     admin_modified_by: Optional[str] = None
     admin_modified_at: Optional[str] = None
 
@@ -82,4 +85,4 @@ class CommunityEventUpdate(BaseModel):
     # Admin override fields
     admin_description: Optional[str] = None
     admin_source: Optional[str] = None
-    credibility: Optional[Literal["confirmed", "probable", "possible", "doubtful"]] = None
+    credibility: Optional[CredibilityType] = None

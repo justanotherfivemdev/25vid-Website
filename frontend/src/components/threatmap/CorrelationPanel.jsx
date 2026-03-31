@@ -13,6 +13,9 @@ import {
  * and region-level correlations.
  */
 
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+
 function detectSignals(events) {
   if (!events.length) return [];
   const signals = [];
@@ -22,7 +25,7 @@ function detectSignals(events) {
   const regionCounts = {};
   const recentEvents = events.filter(e => {
     const t = new Date(e.timestamp).getTime();
-    return now - t < 24 * 60 * 60 * 1000; // 24h
+    return now - t < TWENTY_FOUR_HOURS_MS;
   });
 
   recentEvents.forEach(e => {
@@ -57,7 +60,7 @@ function detectSignals(events) {
   const catCounts = {};
   const recentSixH = events.filter(e => {
     const t = new Date(e.timestamp).getTime();
-    return now - t < 6 * 60 * 60 * 1000;
+    return now - t < SIX_HOURS_MS;
   });
   recentSixH.forEach(e => {
     const cat = e.category || 'unknown';

@@ -42,6 +42,12 @@ export default function EventPopup({ event, isAdmin = false }) {
   const [editSource, setEditSource] = useState(event.admin_source || 'Internal Intelligence');
   const [editCredibility, setEditCredibility] = useState(event.credibility || 'probable');
   const [saving, setSaving] = useState(false);
+  // Local state for saved overrides (avoids mutating props)
+  const [savedOverrides, setSavedOverrides] = useState({
+    summary: event.admin_description || event.summary,
+    source: event.admin_source || event.source,
+    credibility: event.credibility,
+  });
 
   const handleSaveOverride = async () => {
     setSaving(true);
@@ -51,12 +57,11 @@ export default function EventPopup({ event, isAdmin = false }) {
         admin_source: editSource,
         credibility: editCredibility,
       }, { withCredentials: true });
-      // Update the local event data
-      event.admin_description = editDescription;
-      event.admin_source = editSource;
-      event.credibility = editCredibility;
-      event.summary = editDescription;
-      event.source = editSource;
+      setSavedOverrides({
+        summary: editDescription,
+        source: editSource,
+        credibility: editCredibility,
+      });
       setIsEditing(false);
     } catch (err) {
       console.error('Failed to save admin override:', err);
@@ -65,7 +70,9 @@ export default function EventPopup({ event, isAdmin = false }) {
     }
   };
 
-  const displaySource = event.admin_source || event.source || 'unknown';
+  const displaySummary = savedOverrides.summary || event.summary;
+  const displaySource = savedOverrides.source || event.source || 'unknown';
+  const displayCredibility = savedOverrides.credibility || event.credibility;
 
   return (
     <div className={`p-3 ${isExpanded || isEditing ? 'sm:max-w-[500px]' : 'sm:max-w-[300px]'}`}>
@@ -157,26 +164,26 @@ export default function EventPopup({ event, isAdmin = false }) {
         </div>
       ) : !isExpanded ? (
         <div className="mb-2 text-xs text-gray-300 line-clamp-3 break-words">
-          {stripUrls(event.summary)}
+          {stripUrls(displaySummary)}
         </div>
       ) : (
         <div className="mb-2 max-h-[400px] overflow-y-auto rounded-md p-3" style={{ background: 'rgba(14,20,32,0.6)' }}>
           <div className="text-xs text-gray-200 whitespace-pre-wrap break-words">
-            <LinkifiedText text={event.rawContent || event.summary} />
+            <LinkifiedText text={event.rawContent || displaySummary} />
           </div>
         </div>
       )}
 
       {/* Credibility badge */}
-      {event.credibility && !isEditing && (
+      {displayCredibility && !isEditing && (
         <div className="mb-1.5">
           <Badge variant="outline" className={`text-[9px] border-none ${
-            event.credibility === 'confirmed' ? 'bg-green-500/15 text-green-400' :
-            event.credibility === 'probable' ? 'bg-yellow-500/15 text-yellow-400' :
-            event.credibility === 'possible' ? 'bg-orange-500/15 text-orange-400' :
+            displayCredibility === 'confirmed' ? 'bg-green-500/15 text-green-400' :
+            displayCredibility === 'probable' ? 'bg-yellow-500/15 text-yellow-400' :
+            displayCredibility === 'possible' ? 'bg-orange-500/15 text-orange-400' :
             'bg-red-500/15 text-red-400'
           }`}>
-            {event.credibility.charAt(0).toUpperCase() + event.credibility.slice(1)}
+            {displayCredibility.charAt(0).toUpperCase() + displayCredibility.slice(1)}
           </Badge>
         </div>
       )}
