@@ -7,7 +7,6 @@ import OverlayMapView from '@/components/threatmap/OverlayMapView';
 import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
 import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
-import IntelLayerPanel from '@/components/threatmap/IntelLayerPanel';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
 import MapViewToggle from '@/components/threatmap/MapViewToggle';
 import '@/components/threatmap/threatmap.css';
@@ -145,13 +144,14 @@ export default function PartnerThreatMap() {
           {mapViewMode === 'globe' ? (
             <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
           ) : (
-            <OverlayMapView operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+            <OverlayMapView />
           )}
-          <TimelineScrubber />
-          <ThreatMapControls />
-          <IntelLayerPanel />
+          {/* Globe-only controls (World Monitor overlay has its own) */}
+          {mapViewMode === 'globe' && <TimelineScrubber />}
+          {mapViewMode === 'globe' && <ThreatMapControls />}
         </div>
-        <ThreatMapSidebar />
+        {/* Sidebar — only shown in Globe mode; World Monitor has its own panels */}
+        {mapViewMode === 'globe' && <ThreatMapSidebar />}
       </div>
     </div>
   );

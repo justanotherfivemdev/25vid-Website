@@ -20,7 +20,7 @@ export default function MapViewToggle() {
             ? 'bg-tropic-gold text-black'
             : 'text-tropic-gold-light hover:bg-tropic-gold/10'
         }`}
-        title="Globe View — 3D projection"
+        title="Globe View — 3D Mapbox projection"
       >
         <Globe className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Globe</span>
@@ -33,7 +33,7 @@ export default function MapViewToggle() {
             ? 'bg-tropic-gold text-black'
             : 'text-tropic-gold-light hover:bg-tropic-gold/10'
         }`}
-        title="Overlay View — 2D intelligence layers"
+        title="World Monitor — Real-time intelligence overlay"
       >
         <MapIcon className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Overlay</span>

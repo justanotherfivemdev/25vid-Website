@@ -17,6 +17,7 @@ build/
 dist/
 *.egg-info/
 frontend/build
+worldmonitor/dist/
 
 # Logs
 *.log
