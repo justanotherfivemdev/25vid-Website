@@ -6,6 +6,9 @@ from typing import Optional, Literal, List
 from datetime import datetime, timezone
 import uuid
 
+CREDIBILITY_VALUES = ("confirmed", "probable", "possible", "doubtful")
+CredibilityType = Literal["confirmed", "probable", "possible", "doubtful"]
+
 
 class CommunityEventLocation(BaseModel):
     latitude: float
@@ -40,6 +43,13 @@ class CommunityEvent(BaseModel):
     # Layer/overlay grouping
     layer: Optional[str] = None  # e.g. "infrastructure", "economic", "military"
 
+    # Admin intelligence override fields
+    admin_description: Optional[str] = None
+    admin_source: Optional[str] = None  # e.g. "Internal Intelligence"
+    credibility: Optional[CredibilityType] = None
+    admin_modified_by: Optional[str] = None
+    admin_modified_at: Optional[str] = None
+
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
@@ -72,3 +82,7 @@ class CommunityEventUpdate(BaseModel):
     layer: Optional[str] = None
     visible: Optional[bool] = None
     approved: Optional[bool] = None
+    # Admin override fields
+    admin_description: Optional[str] = None
+    admin_source: Optional[str] = None
+    credibility: Optional[CredibilityType] = None

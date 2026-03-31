@@ -32,7 +32,7 @@ const clusterLayer = {
   paint: {
     'circle-color': [
       'step', ['get', 'maxSeverity'],
-      '#3b82f6', 2, '#22c55e', 3, '#eab308', 4, '#f97316', 5, '#ef4444',
+      '#94a3b8', 2, '#22c55e', 3, '#eab308', 4, '#f97316', 5, '#ef4444',
     ],
     'circle-radius': ['step', ['get', 'point_count'], 12, 10, 16, 30, 20, 100, 24],
     'circle-stroke-width': 2,
@@ -65,7 +65,7 @@ const unclusteredPointLayer = {
       'medium', threatLevelColors.medium,
       'low', threatLevelColors.low,
       'info', threatLevelColors.info,
-      '#3b82f6',
+      '#94a3b8',
     ],
     'circle-radius': 8,
     'circle-stroke-width': 2,
@@ -154,7 +154,7 @@ const militaryBaseLayer = {
   id: 'military-bases',
   type: 'circle',
   paint: {
-    'circle-color': '#60a5fa',
+    'circle-color': '#FFD700',
     'circle-radius': 5,
     'circle-stroke-width': 1,
     'circle-stroke-color': '#1e293b',
@@ -174,7 +174,7 @@ const militaryBaseLabelLayer = {
     'text-anchor': 'top',
   },
   paint: {
-    'text-color': '#60a5fa',
+    'text-color': '#FFE44D',
     'text-halo-color': '#1e293b',
     'text-halo-width': 1,
   },
@@ -185,10 +185,10 @@ const operationsLayer = {
   id: 'operations-markers',
   type: 'circle',
   paint: {
-    'circle-color': '#C9A227',
+    'circle-color': '#FFD700',
     'circle-radius': 10,
     'circle-stroke-width': 3,
-    'circle-stroke-color': '#8F701A',
+    'circle-stroke-color': '#B8960F',
   },
 };
 
@@ -204,7 +204,7 @@ const operationsLabelLayer = {
     'text-max-width': 12,
   },
   paint: {
-    'text-color': '#C9A227',
+    'text-color': '#FFD700',
     'text-halo-color': '#1e293b',
     'text-halo-width': 1,
   },
@@ -223,10 +223,10 @@ const intelLayer = {
   id: 'intel-markers',
   type: 'circle',
   paint: {
-    'circle-color': '#B01C2E',
+    'circle-color': '#C8102E',
     'circle-radius': 9,
     'circle-stroke-width': 2,
-    'circle-stroke-color': '#7E1420',
+    'circle-stroke-color': '#8B0A1E',
   },
 };
 
@@ -242,7 +242,7 @@ const intelLabelLayer = {
     'text-max-width': 12,
   },
   paint: {
-    'text-color': '#D33A4C',
+    'text-color': '#E0334A',
     'text-halo-color': '#1e293b',
     'text-halo-width': 1,
   },
@@ -349,7 +349,7 @@ function buildNATOMarkerSVG(affiliation, symbolType, size = 32) {
 
 /* ── Deployment path colours per unit ────────────────────────────────────── */
 // 25th ID fixed branded color
-const TWENTY_FIFTH_COLOR = '#C9A227';
+const TWENTY_FIFTH_COLOR = '#FFD700';
 
 // Partner unit palette – blues / cyans / teals (allied tones)
 const PARTNER_COLORS = [
@@ -1450,20 +1450,20 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                     aria-label="25th Infantry Division — C-17 in transit"
                     style={{
                       transform: `rotate(${divHeading}deg)`,
-                      filter: 'drop-shadow(0 0 6px #C9A227aa)',
+                      filter: 'drop-shadow(0 0 6px #FFD700aa)',
                       transition: 'transform 1s cubic-bezier(0.4,0,0.2,1)',
                     }}
                   >
                     <title>25th Infantry Division — C-17 in transit</title>
-                    <path d="M16,3 C15,5.5 14.5,8 14.5,12 L14.5,22 C14.8,24 15.3,26 16,29 C16.7,26 17.2,24 17.5,22 L17.5,12 C17.5,8 17,5.5 16,3 Z" fill="#C9A227" />
-                    <path d="M14.5,11 L3,15.5 L3,16.8 L14.5,13.5 Z" fill="#C9A227" />
-                    <path d="M17.5,11 L29,15.5 L29,16.8 L17.5,13.5 Z" fill="#C9A227" />
-                    <ellipse cx="6" cy="15.8" rx="1.8" ry="0.7" fill="#C9A227" opacity="0.85" />
-                    <ellipse cx="10" cy="14.5" rx="1.6" ry="0.65" fill="#C9A227" opacity="0.85" />
-                    <ellipse cx="22" cy="14.5" rx="1.6" ry="0.65" fill="#C9A227" opacity="0.85" />
-                    <ellipse cx="26" cy="15.8" rx="1.8" ry="0.7" fill="#C9A227" opacity="0.85" />
-                    <path d="M14.5,22 L9.5,25.5 L10,26.5 L14.5,24 Z" fill="#C9A227" opacity="0.9" />
-                    <path d="M17.5,22 L22.5,25.5 L22,26.5 L17.5,24 Z" fill="#C9A227" opacity="0.9" />
+                    <path d="M16,3 C15,5.5 14.5,8 14.5,12 L14.5,22 C14.8,24 15.3,26 16,29 C16.7,26 17.2,24 17.5,22 L17.5,12 C17.5,8 17,5.5 16,3 Z" fill="#FFD700" />
+                    <path d="M14.5,11 L3,15.5 L3,16.8 L14.5,13.5 Z" fill="#FFD700" />
+                    <path d="M17.5,11 L29,15.5 L29,16.8 L17.5,13.5 Z" fill="#FFD700" />
+                    <ellipse cx="6" cy="15.8" rx="1.8" ry="0.7" fill="#FFD700" opacity="0.85" />
+                    <ellipse cx="10" cy="14.5" rx="1.6" ry="0.65" fill="#FFD700" opacity="0.85" />
+                    <ellipse cx="22" cy="14.5" rx="1.6" ry="0.65" fill="#FFD700" opacity="0.85" />
+                    <ellipse cx="26" cy="15.8" rx="1.8" ry="0.7" fill="#FFD700" opacity="0.85" />
+                    <path d="M14.5,22 L9.5,25.5 L10,26.5 L14.5,24 Z" fill="#FFD700" opacity="0.9" />
+                    <path d="M17.5,22 L22.5,25.5 L22,26.5 L17.5,24 Z" fill="#FFD700" opacity="0.9" />
                   </svg>
                 ) : (
                   /* NATO HQ marker at rest / deployed */
@@ -1481,9 +1481,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                 <span
                   className="text-[8px] font-black whitespace-nowrap px-1.5 py-0.5 rounded tracking-widest uppercase mt-0.5"
                   style={{
-                    color: '#C9A227',
+                    color: '#FFD700',
                     background: 'rgba(0,0,0,0.88)',
-                    border: '1px solid rgba(201,162,39,0.35)',
+                    border: '1px solid rgba(255,215,0,0.35)',
                     letterSpacing: '0.12em',
                   }}
                 >
@@ -1637,8 +1637,8 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
               className="text-white"
               style={{
                 background: 'rgba(8,14,28,0.97)',
-                border: '1px solid rgba(201,162,39,0.3)',
-                borderTop: '2px solid #C9A227',
+                border: '1px solid rgba(255,215,0,0.3)',
+                borderTop: '2px solid #FFD700',
                 borderRadius: 4,
                 padding: '10px 12px',
                 minWidth: 220,
@@ -1689,7 +1689,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                   {/* Title */}
                   <h3
                     className="font-black text-sm tracking-wide uppercase"
-                    style={{ color: '#C9A227' }}
+                    style={{ color: '#FFD700' }}
                   >
                     {deploymentPopup.data.title}
                   </h3>
@@ -1716,9 +1716,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                   {/* Countdown */}
                   <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <circle cx="5" cy="5" r="4" stroke="#C9A227" strokeWidth="1" opacity="0.7" />
-                      <line x1="5" y1="5" x2="5" y2="2.5" stroke="#C9A227" strokeWidth="1" strokeLinecap="round" opacity="0.8" />
-                      <line x1="5" y1="5" x2="7" y2="6.5" stroke="#C9A227" strokeWidth="0.8" strokeLinecap="round" opacity="0.8" />
+                      <circle cx="5" cy="5" r="4" stroke="#FFD700" strokeWidth="1" opacity="0.7" />
+                      <line x1="5" y1="5" x2="5" y2="2.5" stroke="#FFD700" strokeWidth="1" strokeLinecap="round" opacity="0.8" />
+                      <line x1="5" y1="5" x2="7" y2="6.5" stroke="#FFD700" strokeWidth="0.8" strokeLinecap="round" opacity="0.8" />
                     </svg>
                     <span className="font-mono text-tropic-gold text-[11px]">
                       {computeCountdownLabel(deploymentPopup.data) || 'Arrived'}
@@ -1736,7 +1736,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
                   {/* Route points */}
                   {Array.isArray(deploymentPopup.data.route_points) && deploymentPopup.data.route_points.length > 0 && (
-                    <div className="mt-2 border-t pt-2" style={{ borderColor: 'rgba(201,162,39,0.2)' }}>
+                    <div className="mt-2 border-t pt-2" style={{ borderColor: 'rgba(255,215,0,0.2)' }}>
                       <p className="text-[9px] font-black tracking-[0.15em] text-tropic-gold uppercase mb-1">
                         Route
                       </p>
@@ -1751,7 +1751,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
                                   width: 6,
                                   height: 6,
                                   borderRadius: i === 0 || i === arr.length - 1 ? 1 : '50%',
-                                  backgroundColor: i === 0 ? '#22c55e' : i === arr.length - 1 ? '#ef4444' : '#C9A227',
+                                  backgroundColor: i === 0 ? '#22c55e' : i === arr.length - 1 ? '#ef4444' : '#FFD700',
                                   display: 'inline-block',
                                 }}
                               />
@@ -1780,7 +1780,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           style={{
             bottom: 288,
             background: 'rgba(8,14,28,0.94)',
-            borderColor: 'rgba(201,162,39,0.35)',
+            borderColor: 'rgba(255,215,0,0.35)',
             maxWidth: 240,
             zIndex: 15,
             backdropFilter: 'blur(6px)',
@@ -1789,11 +1789,11 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           {/* Legend header */}
           <div
             className="flex items-center gap-2 px-3 py-1.5 border-b"
-            style={{ borderColor: 'rgba(201,162,39,0.2)' }}
+            style={{ borderColor: 'rgba(255,215,0,0.2)' }}
           >
             <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true">
               <title>Deployment indicator</title>
-              <polygon points="5,0 10,10 0,10" fill="#C9A227" opacity="0.8" />
+              <polygon points="5,0 10,10 0,10" fill="#FFD700" opacity="0.8" />
             </svg>
             <span className="text-[8px] font-black tracking-[0.15em] text-tropic-gold uppercase">
               Active Deployments

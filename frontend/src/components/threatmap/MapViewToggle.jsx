@@ -8,7 +8,7 @@ export default function MapViewToggle() {
   return (
     <div className="flex items-center rounded-lg overflow-hidden border"
       style={{
-        borderColor: 'rgba(201,162,39,0.4)',
+        borderColor: 'rgba(255,215,0,0.4)',
         background: 'rgba(0,0,0,0.85)',
         backdropFilter: 'blur(8px)',
       }}
@@ -25,7 +25,7 @@ export default function MapViewToggle() {
         <Globe className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Globe</span>
       </button>
-      <div className="w-px h-5" style={{ background: 'rgba(201,162,39,0.3)' }} />
+      <div className="w-px h-5" style={{ background: 'rgba(255,215,0,0.3)' }} />
       <button
         onClick={() => setMapViewMode('overlay')}
         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-200 ${

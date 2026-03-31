@@ -48,7 +48,7 @@ const pointLayer = {
       'medium', threatLevelColors.medium,
       'low', threatLevelColors.low,
       'info', threatLevelColors.info,
-      '#3b82f6',
+      '#94a3b8',
     ],
     'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 4, 6, 7, 12, 10],
     'circle-stroke-width': 1.5,
@@ -76,7 +76,7 @@ const pointLabelLayer = {
   },
 };
 
-export default function OverlayMapView({ operations = [], intelEvents = [], campaignEvents = [] }) {
+export default function OverlayMapView({ operations = [], intelEvents = [], campaignEvents = [], isAdmin = false }) {
   const mapRef = useRef(null);
   const {
     viewport, showHeatmap, showClusters, showMilitaryBases,
@@ -104,13 +104,12 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
       .filter(([, v]) => v)
       .map(([k]) => k);
 
-    if (activeLayers.length === 0) return displayEvents;
+    // If no layers are active, show nothing (user turned everything off)
+    if (activeLayers.length === 0) return [];
 
-    // If all default layers are on, show everything
-    const allDefaults = ['conflicts', 'military'];
-    const isDefaultState = activeLayers.length <= allDefaults.length &&
-      activeLayers.every(l => allDefaults.includes(l));
-    if (isDefaultState) return displayEvents;
+    // If ALL layers are active, show everything (no need to filter)
+    const allLayerIds = Object.keys(overlayLayers);
+    if (activeLayers.length === allLayerIds.length) return displayEvents;
 
     return displayEvents.filter(e => {
       const cat = e.category || e.layer || 'conflict';
@@ -243,8 +242,8 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
               paint={{
                 'circle-color': [
                   'match', ['get', 'type'],
-                  'usa', '#3b82f6',
-                  'nato', '#6366f1',
+                  'usa', '#FFD700',
+                  'nato', '#FFE44D',
                   '#94a3b8',
                 ],
                 'circle-radius': 5,
@@ -265,7 +264,7 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
                 'text-anchor': 'top',
               }}
               paint={{
-                'text-color': '#93c5fd',
+                'text-color': '#FFE44D',
                 'text-halo-color': 'rgba(0,0,0,0.8)',
                 'text-halo-width': 1,
               }}
@@ -301,7 +300,7 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
             <div
               className="h-3.5 w-3.5 rounded-sm border border-tropic-gold bg-tropic-gold/40"
               title={op.title}
-              style={{ boxShadow: '0 0 6px rgba(201,162,39,0.5)' }}
+              style={{ boxShadow: '0 0 6px rgba(255,215,0,0.5)' }}
             />
           </Marker>
         ))}
@@ -318,7 +317,7 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
             maxWidth="320px"
             className="threat-map-popup"
           >
-            <EventPopup event={popupInfo.event} onClose={() => setPopupInfo(null)} />
+            <EventPopup event={popupInfo.event} isAdmin={isAdmin} onClose={() => setPopupInfo(null)} />
           </Popup>
         )}
       </Map>
@@ -326,7 +325,7 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
       {/* Overlay view attribution */}
       <div
         className="absolute bottom-2 left-2 z-10 text-[9px] px-1.5 py-0.5 rounded"
-        style={{ color: 'rgba(201,162,39,0.5)', background: 'rgba(0,0,0,0.6)' }}
+        style={{ color: 'rgba(255,215,0,0.5)', background: 'rgba(0,0,0,0.6)' }}
       >
         Intelligence Overlay View • {layerFilteredEvents.length} events
       </div>

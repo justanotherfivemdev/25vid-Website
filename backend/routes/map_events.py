@@ -11,6 +11,7 @@ from starlette.responses import StreamingResponse
 from config import VALYU_COUNTRY_CACHE_HOURS
 from database import db
 from middleware.auth import get_current_user
+from models.community_event import CREDIBILITY_VALUES
 from services.threat_intel import (
     VALYU_API_KEY, VALYU_CACHE_TTL_MINUTES,
     THREAT_QUERIES, MILITARY_BASES_DATA,
@@ -258,6 +259,13 @@ async def _get_community_events() -> list:
     for d in docs:
         d.setdefault("source", "community")
         d.setdefault("provider", "community")
+        d.setdefault("event_nature", "real")
+        # Ensure timestamp exists for filtering
+        if "timestamp" not in d and "created_at" in d:
+            d["timestamp"] = d["created_at"] if isinstance(d["created_at"], str) else d["created_at"].isoformat()
+        # Apply admin description override for display
+        if d.get("admin_description"):
+            d["summary"] = d["admin_description"]
     return docs
 
 
@@ -280,6 +288,9 @@ async def get_threat_events():
     stored_events = await db.external_events.find(
         {}, {"_id": 0}
     ).sort("ingested_at", -1).to_list(200)
+    for ext in stored_events:
+        if ext.get("admin_description"):
+            ext["summary"] = ext["admin_description"]
     if stored_events:
         merged = community + stored_events[:200]
         result = {
@@ -499,3 +510,69 @@ async def get_military_bases():
         "bases": MILITARY_BASES_DATA,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+# ── Admin Intelligence Editing ─────────────────────────────────────────────
+
+@router.put("/admin/events/{event_id}/override")
+async def admin_override_event(
+    event_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """Admin-only: Override event description, source attribution, and credibility.
+    Works for both community events and external (Valyu) events.
+    Admin overrides are stored as separate fields so originals are preserved."""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    body = await request.json()
+    admin_description = body.get("admin_description")
+    admin_source = body.get("admin_source")
+    credibility = body.get("credibility")
+
+    if credibility and credibility not in CREDIBILITY_VALUES:
+        raise HTTPException(status_code=400, detail="Invalid credibility value")
+
+    updates = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "admin_modified_by": current_user.get("username", "admin"),
+        "admin_modified_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if admin_description is not None:
+        updates["admin_description"] = admin_description
+    if admin_source is not None:
+        updates["admin_source"] = admin_source
+    if credibility is not None:
+        updates["credibility"] = credibility
+
+    # Try community events first
+    result = await db.community_events.update_one(
+        {"id": event_id}, {"$set": updates}
+    )
+    if result.matched_count > 0:
+        doc = await db.community_events.find_one({"id": event_id}, {"_id": 0})
+        return doc
+
+    # Try external events — use content_hash as stable identifier
+    # (external event `id` can be overwritten on re-ingest)
+    result = await db.external_events.update_one(
+        {"content_hash": event_id}, {"$set": updates}
+    )
+    if result.matched_count == 0:
+        # Fallback: try by id for events that were never re-ingested
+        result = await db.external_events.update_one(
+            {"id": event_id}, {"$set": updates}
+        )
+    if result.matched_count > 0:
+        doc = await db.external_events.find_one(
+            {"$or": [{"content_hash": event_id}, {"id": event_id}]}, {"_id": 0}
+        )
+        return doc
+
+    raise HTTPException(status_code=404, detail="Event not found")
+
+
+@router.get("/map/geo-plans")
+async def get_geo_plans(current_user: dict = Depends(get_current_user)):
+    return await _get_geo_plans()
