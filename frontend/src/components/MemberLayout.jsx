@@ -27,6 +27,9 @@ export const useMemberLayout = () => useContext(MemberLayoutContext);
 
 const STORAGE_KEY_MEMBER_SECTIONS = 'member-sidebar-sections';
 
+/** Approximate pixel height per navigation item (min-h-[44px] + spacing). */
+const ITEM_HEIGHT_PX = 56;
+
 /**
  * Read persisted open/closed sidebar section state from localStorage.
  * Returns a map of { [groupId]: boolean } or null if nothing stored.
@@ -69,7 +72,7 @@ const SidebarGroup = ({ group, collapsed, location, onNavigate, open, onToggle }
       <div
         className="overflow-hidden transition-all duration-200 ease-in-out"
         style={{
-          maxHeight: collapsed || open ? `${items.length * 56}px` : '0px',
+          maxHeight: collapsed || open ? `${items.length * ITEM_HEIGHT_PX}px` : '0px',
           opacity: collapsed || open ? 1 : 0,
         }}
       >

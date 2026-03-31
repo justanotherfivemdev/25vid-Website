@@ -21,6 +21,9 @@ import { ADMIN_NAV_GROUPS } from '@/config/adminNavigationConfig';
 
 const STORAGE_KEY_ADMIN_SECTIONS = 'admin-sidebar-sections';
 
+/** Approximate pixel height per navigation item (min-h-[44px] + spacing). */
+const ITEM_HEIGHT_PX = 56;
+
 /**
  * Read persisted open/closed sidebar section state from localStorage.
  */
@@ -62,7 +65,7 @@ const SidebarGroup = ({ group, collapsed, location, onNavigate, open, onToggle }
       <div
         className="overflow-hidden transition-all duration-200 ease-in-out"
         style={{
-          maxHeight: collapsed || open ? `${items.length * 56}px` : '0px',
+          maxHeight: collapsed || open ? `${items.length * ITEM_HEIGHT_PX}px` : '0px',
           opacity: collapsed || open ? 1 : 0,
         }}
       >
