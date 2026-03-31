@@ -53,7 +53,7 @@ export default function EventPopup({ event }) {
             event.threatLevel === 'high' ? 'bg-orange-500/20 text-orange-400' :
             event.threatLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
             event.threatLevel === 'low' ? 'bg-green-500/20 text-green-400' :
-            'bg-blue-500/20 text-blue-400'
+            'bg-slate-500/20 text-slate-400'
           }`}
         >
           {event.threatLevel}

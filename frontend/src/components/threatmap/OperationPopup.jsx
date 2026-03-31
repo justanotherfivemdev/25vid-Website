@@ -45,7 +45,7 @@ export default function OperationPopup({ operation }) {
         )}
       </div>
 
-      <div className="mt-3 pt-2 border-t flex flex-col gap-1.5" style={{ borderColor: 'rgba(201,162,39,0.15)' }}>
+      <div className="mt-3 pt-2 border-t flex flex-col gap-1.5" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
         <Link
           to={`/hub/operations/${operation.id}`}
           className="inline-flex items-center gap-1 text-xs text-tropic-gold hover:text-tropic-gold-light transition-colors"

@@ -1,14 +1,14 @@
-/* Threat Map - 25th Infantry Division Black & Gold Theme */
+/* Threat Map - 25th Infantry Division Tropic Lightning Theme */
 
 .threat-map-page {
   --tm-bg: #080e1c;
   --tm-card: #0e1420;
   --tm-card-elevated: #141c2e;
-  --tm-border: rgba(201, 162, 39, 0.2);
-  --tm-gold: #C9A227;
-  --tm-gold-light: #E3C766;
-  --tm-gold-dark: #8F701A;
-  --tm-red: #B01C2E;
+  --tm-border: rgba(255, 215, 0, 0.2);
+  --tm-gold: #FFD700;
+  --tm-gold-light: #FFE44D;
+  --tm-gold-dark: #B8960F;
+  --tm-red: #C8102E;
   --tm-text: #e5e7eb;
   --tm-muted: #6b7280;
 }
@@ -18,15 +18,15 @@
   background-color: #0e1420 !important;
   color: #e5e7eb !important;
   border-radius: 6px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 1px rgba(201, 162, 39, 0.15) !important;
-  border: 1px solid rgba(201, 162, 39, 0.2) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 215, 0, 0.15) !important;
+  border: 1px solid rgba(255, 215, 0, 0.2) !important;
   padding: 0 !important;
   overflow: hidden !important;
   max-width: 350px !important;
 }
 
 .threat-map-popup .mapboxgl-popup-close-button {
-  color: rgba(201, 162, 39, 0.7) !important;
+  color: rgba(255, 215, 0, 0.7) !important;
   font-size: 16px !important;
   padding: 4px 8px !important;
   right: 4px !important;
@@ -35,8 +35,8 @@
 }
 
 .threat-map-popup .mapboxgl-popup-close-button:hover {
-  color: #C9A227 !important;
-  background-color: rgba(201, 162, 39, 0.08) !important;
+  color: #FFD700 !important;
+  background-color: rgba(255, 215, 0, 0.08) !important;
   border-radius: 3px !important;
 }
 
@@ -59,23 +59,23 @@
 /* Mapbox navigation controls – refined dark + gold theme */
 .threat-map-page .mapboxgl-ctrl-group {
   background-color: rgba(14, 20, 32, 0.95) !important;
-  border-color: rgba(201, 162, 39, 0.2) !important;
+  border-color: rgba(255, 215, 0, 0.2) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
   backdrop-filter: blur(6px) !important;
 }
 
 .threat-map-page .mapboxgl-ctrl-group button {
-  color: rgba(201, 162, 39, 0.75) !important;
+  color: rgba(255, 215, 0, 0.75) !important;
   transition: color 0.15s ease, background-color 0.15s ease !important;
 }
 
 .threat-map-page .mapboxgl-ctrl-group button:hover {
-  color: #C9A227 !important;
-  background-color: rgba(201, 162, 39, 0.08) !important;
+  color: #FFD700 !important;
+  background-color: rgba(255, 215, 0, 0.08) !important;
 }
 
 .threat-map-page .mapboxgl-ctrl-group button + button {
-  border-top-color: rgba(201, 162, 39, 0.12) !important;
+  border-top-color: rgba(255, 215, 0, 0.12) !important;
 }
 
 .threat-map-page .mapboxgl-ctrl-attrib {
@@ -84,7 +84,7 @@
 }
 
 .threat-map-page .mapboxgl-ctrl-attrib a {
-  color: #8F701A !important;
+  color: #B8960F !important;
 }
 
 /* Custom scrollbar for threat map sidebar */
@@ -98,12 +98,12 @@
 }
 
 .threat-map-page ::-webkit-scrollbar-thumb {
-  background-color: rgba(201, 162, 39, 0.2);
+  background-color: rgba(255, 215, 0, 0.2);
   border-radius: 9999px;
 }
 
 .threat-map-page ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(201, 162, 39, 0.4);
+  background-color: rgba(255, 215, 0, 0.4);
 }
 
 /* Event feed card enter animation */
@@ -143,7 +143,7 @@
 .threat-map-page .prose h2,
 .threat-map-page .prose h3,
 .threat-map-page .prose h4 {
-  color: #E3C766;
+  color: #FFE44D;
 }
 
 .threat-map-page .prose p {
@@ -151,19 +151,19 @@
 }
 
 .threat-map-page .prose a {
-  color: #C9A227;
+  color: #FFD700;
 }
 
 .threat-map-page .prose a:hover {
-  color: #E3C766;
+  color: #FFE44D;
 }
 
 .threat-map-page .prose strong {
-  color: #E3C766;
+  color: #FFE44D;
 }
 
 .threat-map-page .prose code {
-  color: #E3C766;
+  color: #FFE44D;
   background-color: #141c2e;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
@@ -176,7 +176,7 @@
 
 /* Gold accent glow for active elements */
 .threat-map-page .gold-glow {
-  box-shadow: 0 0 8px rgba(201, 162, 39, 0.2);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
 }
 
 /* Mobile-specific threat map improvements */

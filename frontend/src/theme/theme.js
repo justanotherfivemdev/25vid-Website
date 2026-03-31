@@ -15,12 +15,12 @@ export const colors = {
   goldDark: '#8F701A',
 
   // Tropic Lightning palette (shared with Tailwind config)
-  tropicRed: '#B01C2E',
-  tropicGold: '#C9A227',
-  tropicGoldLight: '#E3C766',
-  tropicGoldDark: '#8F701A',
-  tropicRedDark: '#7E1420',
-  tropicRedLight: '#D33A4C',
+  tropicRed: '#C8102E',
+  tropicGold: '#FFD700',
+  tropicGoldLight: '#FFE44D',
+  tropicGoldDark: '#B8960F',
+  tropicRedDark: '#8B0A1E',
+  tropicRedLight: '#E0334A',
   tropicOlive: '#556B2F',
 
   // Background hierarchy
@@ -36,11 +36,11 @@ export const colors = {
   // Text
   textPrimary: '#e5e7eb',
   textMuted: '#6b7280',
-  textGold: '#C9A227',
+  textGold: '#FFD700',
 
   // Map marker colors
   markerExternal: '#ef4444',   // Red – external/global threats
-  markerOperation: '#C9A227',  // Gold – operations
+  markerOperation: '#FFD700',  // Gold – operations
   markerIntel: '#a855f7',      // Purple – intel
   markerCampaign: '#3b82f6',   // Blue – campaigns
 

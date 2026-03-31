@@ -19,18 +19,18 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
     <header className="relative flex h-14 items-center justify-between border-b px-4"
       style={{
         background: 'rgba(5,10,20,0.98)',
-        borderColor: 'rgba(201,162,39,0.35)',
-        borderBottom: '1px solid rgba(201,162,39,0.35)',
+        borderColor: 'rgba(255,215,0,0.35)',
+        borderBottom: '1px solid rgba(255,215,0,0.35)',
       }}
     >
       <div className="flex items-center gap-3">
         <Link
           to="/hub"
           className="flex items-center gap-1 transition-colors mr-1"
-          style={{ color: 'rgba(201,162,39,0.6)' }}
+          style={{ color: 'rgba(255,215,0,0.6)' }}
           title="Back to Hub"
-          onMouseEnter={(e) => e.currentTarget.style.color = '#C9A227'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(201,162,39,0.6)'}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#FFD700'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,215,0,0.6)'}
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
@@ -43,25 +43,25 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
             style={{
               width: 28,
               height: 28,
-              background: 'rgba(201,162,39,0.12)',
-              borderColor: 'rgba(201,162,39,0.4)',
+              background: 'rgba(255,215,0,0.12)',
+              borderColor: 'rgba(255,215,0,0.4)',
             }}
           >
             <svg width="14" height="18" viewBox="0 0 14 18" fill="none" aria-label="Tropic Lightning bolt">
               <title>Tropic Lightning — 25th Infantry Division</title>
-              <polygon points="8,0 2,10 7,10 6,18 12,8 7,8" fill="#C9A227" />
+              <polygon points="8,0 2,10 7,10 6,18 12,8 7,8" fill="#FFD700" />
             </svg>
           </div>
           <div className="flex flex-col leading-none">
             <span
               className="text-[10px] font-black tracking-[0.22em] uppercase"
-              style={{ color: 'rgba(201,162,39,0.7)' }}
+              style={{ color: 'rgba(255,215,0,0.7)' }}
             >
               25th Infantry Division
             </span>
             <span
               className="text-[13px] font-black tracking-[0.08em] uppercase"
-              style={{ color: '#C9A227' }}
+              style={{ color: '#FFD700' }}
             >
               Global Threat Map
             </span>
@@ -87,7 +87,7 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
             target="_blank"
             rel="noopener noreferrer"
             className="font-bold hover:underline"
-            style={{ color: '#C9A227' }}
+            style={{ color: '#FFD700' }}
           >
             Valyu
           </a>
@@ -112,9 +112,9 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
             variant="outline"
             className="text-[10px]"
             style={{
-              borderColor: 'rgba(201,162,39,0.4)',
-              color: '#C9A227',
-              background: 'rgba(201,162,39,0.06)',
+              borderColor: 'rgba(255,215,0,0.4)',
+              color: '#FFD700',
+              background: 'rgba(255,215,0,0.06)',
             }}
           >
             {filteredEvents.length} Events
@@ -141,7 +141,7 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
           disabled={isLoading}
           title="Refresh events"
           className="hover:bg-tropic-gold/10"
-          style={{ color: 'rgba(201,162,39,0.7)' }}
+          style={{ color: 'rgba(255,215,0,0.7)' }}
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         </Button>

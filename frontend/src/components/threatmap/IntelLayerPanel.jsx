@@ -73,7 +73,7 @@ export default function IntelLayerPanel() {
           variant="ghost"
           size="icon"
           className="h-9 w-9 rounded-lg border bg-black/90 text-tropic-gold hover:bg-tropic-gold/10 backdrop-blur-md"
-          style={{ borderColor: 'rgba(201,162,39,0.4)' }}
+          style={{ borderColor: 'rgba(255,215,0,0.4)' }}
           onClick={() => setIsCollapsed(false)}
           title="Show intelligence layers"
         >
@@ -87,14 +87,14 @@ export default function IntelLayerPanel() {
     <div
       className="absolute top-16 left-3 z-20 w-56 rounded-lg border shadow-xl overflow-hidden"
       style={{
-        borderColor: 'rgba(201,162,39,0.3)',
+        borderColor: 'rgba(255,215,0,0.3)',
         background: 'rgba(5,10,20,0.95)',
         backdropFilter: 'blur(12px)',
       }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b"
-        style={{ borderColor: 'rgba(201,162,39,0.2)' }}
+        style={{ borderColor: 'rgba(255,215,0,0.2)' }}
       >
         <div className="flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5 text-tropic-gold" />
@@ -113,7 +113,7 @@ export default function IntelLayerPanel() {
       </div>
 
       {/* Data source filter */}
-      <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(201,162,39,0.15)' }}>
+      <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
         <div className="flex items-center gap-1.5 mb-1.5">
           <Database className="h-3 w-3 text-gray-500" />
           <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
@@ -180,7 +180,7 @@ export default function IntelLayerPanel() {
       </div>
 
       {/* View mode indicator */}
-      <div className="px-3 py-1.5 border-t text-center" style={{ borderColor: 'rgba(201,162,39,0.15)' }}>
+      <div className="px-3 py-1.5 border-t text-center" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
         <span className="text-[8px] text-gray-600 uppercase tracking-wider">
           {mapViewMode === 'globe' ? '🌍 Globe View' : '🗺️ Overlay View'}
         </span>

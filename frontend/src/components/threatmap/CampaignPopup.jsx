@@ -51,7 +51,7 @@ export default function CampaignPopup({ campaign }) {
         )}
       </div>
 
-      <div className="mt-3 pt-2 border-t" style={{ borderColor: 'rgba(201,162,39,0.15)' }}>
+      <div className="mt-3 pt-2 border-t" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
         <Link
           to={campaign.related_entity_id ? `/hub/campaign?id=${campaign.related_entity_id}` : '/hub/campaign'}
           className="inline-flex items-center gap-1 text-xs text-tropic-gold hover:text-tropic-gold-light transition-colors"
