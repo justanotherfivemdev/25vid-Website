@@ -9,6 +9,7 @@ export default function ThreatMapControls() {
     showMilitaryBases, toggleMilitaryBases,
     showADSB, toggleADSB,
     militaryBases,
+    mapViewMode,
   } = useMapStore();
 
   return (
@@ -49,17 +50,20 @@ export default function ThreatMapControls() {
         <Shield className="h-4 w-4" />
       </button>
 
-      <button
-        onClick={toggleADSB}
-        className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
-          showADSB
-            ? 'bg-cyan-600 text-white hover:bg-cyan-500 shadow-cyan-600/30'
-            : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
-        } backdrop-blur-md`}
-        title={showADSB ? 'Hide Military Air Traffic' : 'Show Military Air Traffic'}
-      >
-        <Plane className="h-4 w-4" />
-      </button>
+      {/* ADS-B only available in globe mode */}
+      {mapViewMode === 'globe' && (
+        <button
+          onClick={toggleADSB}
+          className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
+            showADSB
+              ? 'bg-cyan-600 text-white hover:bg-cyan-500 shadow-cyan-600/30'
+              : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+          } backdrop-blur-md`}
+          title={showADSB ? 'Hide Military Air Traffic' : 'Show Military Air Traffic'}
+        >
+          <Plane className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 }

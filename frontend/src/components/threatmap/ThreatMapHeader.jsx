@@ -1,12 +1,14 @@
 import React from 'react';
-import { useEventsStore } from '@/stores/threatMapStore';
+import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Activity, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import MapViewToggle from './MapViewToggle';
 
 export default function ThreatMapHeader({ onRefresh, isLoading }) {
   const { filteredEvents } = useEventsStore();
+  const { dataSourceFilter } = useMapStore();
 
   const threatCounts = filteredEvents.reduce((acc, event) => {
     acc[event.threatLevel] = (acc[event.threatLevel] || 0) + 1;
@@ -75,18 +77,22 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
         </Badge>
       </div>
 
-      {/* Center tagline */}
-      <div className="absolute left-1/2 -translate-x-1/2 text-[11px] text-gray-600 hidden lg:flex items-center gap-1.5">
-        <span>Intelligence powered by</span>
-        <a
-          href="https://www.valyu.ai"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-bold hover:underline"
-          style={{ color: '#C9A227' }}
-        >
-          Valyu
-        </a>
+      {/* Center — map toggle + tagline */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
+        <MapViewToggle />
+        <div className="text-[11px] text-gray-600 hidden lg:flex items-center gap-1.5">
+          <span>Intelligence powered by</span>
+          <a
+            href="https://www.valyu.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold hover:underline"
+            style={{ color: '#C9A227' }}
+          >
+            Valyu
+          </a>
+          <span className="text-gray-700">+ Community</span>
+        </div>
       </div>
 
       {/* Right – threat counts + refresh */}
@@ -113,6 +119,19 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
           >
             {filteredEvents.length} Events
           </Badge>
+          {dataSourceFilter !== 'all' && (
+            <Badge
+              variant="outline"
+              className="text-[10px]"
+              style={{
+                borderColor: dataSourceFilter === 'fictional' ? 'rgba(139,92,246,0.4)' : 'rgba(34,197,94,0.4)',
+                color: dataSourceFilter === 'fictional' ? '#a78bfa' : '#22c55e',
+                background: dataSourceFilter === 'fictional' ? 'rgba(139,92,246,0.06)' : 'rgba(34,197,94,0.06)',
+              }}
+            >
+              {dataSourceFilter === 'fictional' ? 'Fictional' : 'Real-World'}
+            </Badge>
+          )}
         </div>
 
         <Button

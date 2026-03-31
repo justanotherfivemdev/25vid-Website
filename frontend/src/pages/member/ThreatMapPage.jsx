@@ -2,9 +2,11 @@ import React, { useEffect, useCallback, useState } from 'react';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
 import GlobalThreatMap from '@/components/threatmap/GlobalThreatMap';
+import OverlayMapView from '@/components/threatmap/OverlayMapView';
 import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
 import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
+import IntelLayerPanel from '@/components/threatmap/IntelLayerPanel';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
 import '@/components/threatmap/threatmap.css';
 
@@ -13,7 +15,7 @@ const REFRESH_INTERVAL = 300000; // 5 minutes
 
 export default function ThreatMapPage() {
   const { setEvents, setLoading, setError, isLoading } = useEventsStore();
-  const { setMilitaryBases, setMilitaryBasesLoading } = useMapStore();
+  const { setMilitaryBases, setMilitaryBasesLoading, mapViewMode } = useMapStore();
   const [operations, setOperations] = useState([]);
   const [intelEvents, setIntelEvents] = useState([]);
   const [campaignEvents, setCampaignEvents] = useState([]);
@@ -96,9 +98,15 @@ export default function ThreatMapPage() {
       <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+          {/* Dual Map System */}
+          {mapViewMode === 'globe' ? (
+            <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+          ) : (
+            <OverlayMapView operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+          )}
           <TimelineScrubber />
           <ThreatMapControls />
+          <IntelLayerPanel />
         </div>
         <ThreatMapSidebar />
       </div>
