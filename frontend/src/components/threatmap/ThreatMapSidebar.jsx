@@ -4,7 +4,7 @@ import EventFeed from './EventFeed';
 import EntitySearch from './EntitySearch';
 import { Activity, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function ThreatMapSidebar() {
+export default function ThreatMapSidebar({ isAdmin = false }) {
   const [activeTab, setActiveTab] = useState('feed');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -56,7 +56,7 @@ export default function ThreatMapSidebar() {
             ))}
           </div>
           <div className="flex-1 overflow-hidden">
-            {activeTab === 'feed' && <EventFeed />}
+            {activeTab === 'feed' && <EventFeed isAdmin={isAdmin} />}
             {activeTab === 'search' && <EntitySearch />}
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function ThreatMapSidebar() {
           </div>
 
           <div className="flex-1 overflow-hidden">
-            {activeTab === 'feed' && <EventFeed />}
+            {activeTab === 'feed' && <EventFeed isAdmin={isAdmin} />}
             {activeTab === 'search' && <EntitySearch />}
           </div>
         </>

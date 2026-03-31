@@ -5,7 +5,7 @@ import EventCard from './EventCard';
 import FeedFilters from './FeedFilters';
 import { Loader2 } from 'lucide-react';
 
-export default function EventFeed() {
+export default function EventFeed({ isAdmin = false }) {
   const { filteredEvents, isLoading, error, selectedEvent, selectEvent } = useEventsStore();
 
   return (
@@ -15,7 +15,7 @@ export default function EventFeed() {
         <p className="text-sm text-tropic-gold-dark">{filteredEvents.length} events</p>
       </div>
 
-      <FeedFilters />
+      <FeedFilters isAdmin={isAdmin} />
 
       <ScrollArea className="flex-1 p-4">
         {isLoading && (

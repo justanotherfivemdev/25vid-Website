@@ -258,6 +258,15 @@ async def _get_community_events() -> list:
     for d in docs:
         d.setdefault("source", "community")
         d.setdefault("provider", "community")
+        d.setdefault("event_nature", "real")
+        # Ensure timestamp exists for filtering
+        if "timestamp" not in d and "created_at" in d:
+            d["timestamp"] = d["created_at"] if isinstance(d["created_at"], str) else d["created_at"].isoformat()
+        # Apply admin overrides for display (hide original source)
+        if d.get("admin_description"):
+            d["summary"] = d["admin_description"]
+        if d.get("admin_source"):
+            d["source"] = d["admin_source"]
     return docs
 
 
@@ -499,3 +508,61 @@ async def get_military_bases():
         "bases": MILITARY_BASES_DATA,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+# ── Admin Intelligence Editing ─────────────────────────────────────────────
+
+@router.put("/admin/events/{event_id}/override")
+async def admin_override_event(
+    event_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """Admin-only: Override event description, source attribution, and credibility.
+    Works for both community events and external (Valyu) events.
+    Admin overrides are stored as separate fields so originals are preserved."""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    body = await request.json()
+    admin_description = body.get("admin_description")
+    admin_source = body.get("admin_source")
+    credibility = body.get("credibility")
+
+    if credibility and credibility not in ("confirmed", "probable", "possible", "doubtful"):
+        raise HTTPException(status_code=400, detail="Invalid credibility value")
+
+    updates = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "admin_modified_by": current_user.get("username", "admin"),
+        "admin_modified_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if admin_description is not None:
+        updates["admin_description"] = admin_description
+    if admin_source is not None:
+        updates["admin_source"] = admin_source
+    if credibility is not None:
+        updates["credibility"] = credibility
+
+    # Try community events first
+    result = await db.community_events.update_one(
+        {"id": event_id}, {"$set": updates}
+    )
+    if result.matched_count > 0:
+        doc = await db.community_events.find_one({"id": event_id}, {"_id": 0})
+        return doc
+
+    # Try external events
+    result = await db.external_events.update_one(
+        {"id": event_id}, {"$set": updates}
+    )
+    if result.matched_count > 0:
+        doc = await db.external_events.find_one({"id": event_id}, {"_id": 0})
+        return doc
+
+    raise HTTPException(status_code=404, detail="Event not found")
+
+
+@router.get("/map/geo-plans")
+async def get_geo_plans(current_user: dict = Depends(get_current_user)):
+    return await _get_geo_plans()

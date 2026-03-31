@@ -76,7 +76,7 @@ const pointLabelLayer = {
   },
 };
 
-export default function OverlayMapView({ operations = [], intelEvents = [], campaignEvents = [] }) {
+export default function OverlayMapView({ operations = [], intelEvents = [], campaignEvents = [], isAdmin = false }) {
   const mapRef = useRef(null);
   const {
     viewport, showHeatmap, showClusters, showMilitaryBases,
@@ -104,13 +104,12 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
       .filter(([, v]) => v)
       .map(([k]) => k);
 
-    if (activeLayers.length === 0) return displayEvents;
+    // If no layers are active, show nothing (user turned everything off)
+    if (activeLayers.length === 0) return [];
 
-    // If all default layers are on, show everything
-    const allDefaults = ['conflicts', 'military'];
-    const isDefaultState = activeLayers.length <= allDefaults.length &&
-      activeLayers.every(l => allDefaults.includes(l));
-    if (isDefaultState) return displayEvents;
+    // If ALL layers are active, show everything (no need to filter)
+    const allLayerIds = Object.keys(overlayLayers);
+    if (activeLayers.length === allLayerIds.length) return displayEvents;
 
     return displayEvents.filter(e => {
       const cat = e.category || e.layer || 'conflict';
@@ -318,7 +317,7 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
             maxWidth="320px"
             className="threat-map-popup"
           >
-            <EventPopup event={popupInfo.event} onClose={() => setPopupInfo(null)} />
+            <EventPopup event={popupInfo.event} isAdmin={isAdmin} onClose={() => setPopupInfo(null)} />
           </Popup>
         )}
       </Map>

@@ -107,10 +107,18 @@ async def update_community_event(
         raise HTTPException(status_code=403, detail="Not authorized to edit this event")
 
     updates = {k: v for k, v in body.model_dump(exclude_none=True).items()}
-    # Only admins may set moderation fields; strip them for regular users
+    # Only admins may set moderation and admin override fields; strip them for regular users
     if not is_admin:
         updates.pop("approved", None)
         updates.pop("visible", None)
+        updates.pop("admin_description", None)
+        updates.pop("admin_source", None)
+        updates.pop("credibility", None)
+    else:
+        # Track which admin made the override
+        if any(k in updates for k in ("admin_description", "admin_source", "credibility")):
+            updates["admin_modified_by"] = current_user.get("username", "admin")
+            updates["admin_modified_at"] = datetime.now(timezone.utc).isoformat()
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
     await db[COLLECTION].update_one({"id": event_id}, {"$set": updates})

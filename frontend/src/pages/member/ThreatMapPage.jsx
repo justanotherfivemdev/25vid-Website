@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
+import { useAuth } from '@/context/AuthContext';
 import GlobalThreatMap from '@/components/threatmap/GlobalThreatMap';
 import OverlayMapView from '@/components/threatmap/OverlayMapView';
 import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
@@ -16,6 +17,8 @@ const REFRESH_INTERVAL = 300000; // 5 minutes
 export default function ThreatMapPage() {
   const { setEvents, setLoading, setError, isLoading } = useEventsStore();
   const { setMilitaryBases, setMilitaryBasesLoading, mapViewMode } = useMapStore();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [operations, setOperations] = useState([]);
   const [intelEvents, setIntelEvents] = useState([]);
   const [campaignEvents, setCampaignEvents] = useState([]);
@@ -102,13 +105,13 @@ export default function ThreatMapPage() {
           {mapViewMode === 'globe' ? (
             <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
           ) : (
-            <OverlayMapView operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+            <OverlayMapView operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} isAdmin={isAdmin} />
           )}
           <TimelineScrubber />
           <ThreatMapControls />
-          <IntelLayerPanel />
+          {mapViewMode === 'overlay' && <IntelLayerPanel />}
         </div>
-        <ThreatMapSidebar />
+        <ThreatMapSidebar isAdmin={isAdmin} />
       </div>
     </div>
   );
