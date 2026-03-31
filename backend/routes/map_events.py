@@ -364,6 +364,8 @@ async def get_threat_events():
         return {
             "events": community,
             "count": len(community),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "valyu_failed",
             "error": str(e),
             "sources": {"community": len(community), "external": 0},
         }

@@ -32,8 +32,25 @@ async def list_community_events(
     threat_level: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
 ):
-    """List community events with optional filters."""
-    query: dict = {"visible": True}
+    """List community events with optional filters.
+
+    By default only approved & visible events are returned.
+    Admins also see unapproved events; creators see their own pending items.
+    """
+    is_admin = current_user.get("role") == "admin"
+    user_id = current_user.get("id", "")
+
+    if is_admin:
+        query: dict = {"visible": True}
+    else:
+        # Non-admins see approved events OR their own unapproved events
+        query = {
+            "visible": True,
+            "$or": [
+                {"approved": True},
+                {"created_by": user_id},
+            ],
+        }
 
     if event_nature and event_nature in ("real", "fictional"):
         query["event_nature"] = event_nature
@@ -90,6 +107,10 @@ async def update_community_event(
         raise HTTPException(status_code=403, detail="Not authorized to edit this event")
 
     updates = {k: v for k, v in body.model_dump(exclude_none=True).items()}
+    # Only admins may set moderation fields; strip them for regular users
+    if not is_admin:
+        updates.pop("approved", None)
+        updates.pop("visible", None)
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
     await db[COLLECTION].update_one({"id": event_id}, {"$set": updates})

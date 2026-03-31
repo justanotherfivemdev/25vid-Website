@@ -130,7 +130,7 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
   const eventsGeoJSON = useMemo(() => ({
     type: 'FeatureCollection',
     features: layerFilteredEvents
-      .filter(e => e.location?.latitude && e.location?.longitude)
+      .filter(e => e.location?.latitude != null && e.location?.longitude != null)
       .map(e => ({
         type: 'Feature',
         id: e.id,
@@ -296,7 +296,7 @@ export default function OverlayMapView({ operations = [], intelEvents = [], camp
         ))}
 
         {/* Internal operations */}
-        {operations.filter(op => op.lat && op.lng).map(op => (
+        {operations.filter(op => op.lat != null && op.lng != null).map(op => (
           <Marker key={op.id} longitude={op.lng} latitude={op.lat} anchor="center">
             <div
               className="h-3.5 w-3.5 rounded-sm border border-tropic-gold bg-tropic-gold/40"

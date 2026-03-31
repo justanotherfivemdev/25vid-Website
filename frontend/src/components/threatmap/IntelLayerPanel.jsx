@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMapStore } from '@/stores/threatMapStore';
 import { Button } from '@/components/ui/button';
 import {
-  Layers, ChevronLeft, ChevronRight,
+  Layers, ChevronLeft,
   Swords, Shield, Building2, TrendingDown,
   Landmark, Leaf, Database, Eye, EyeOff,
 } from 'lucide-react';
