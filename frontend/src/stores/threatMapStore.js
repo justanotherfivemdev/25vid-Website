@@ -75,6 +75,9 @@ export const useMapStore = create((set) => ({
     military: true,
     diplomatic: false,
     environmental: false,
+    flights: false,
+    earthquakes: false,
+    weather: false,
   })),
 
   setMapViewMode: (mode) => {

@@ -6,6 +6,7 @@ import {
   Swords, Shield, Building2, TrendingDown,
   Landmark, Leaf, Database, Eye, EyeOff,
   AlertTriangle, Activity,
+  Plane, Mountain, CloudRain,
 } from 'lucide-react';
 
 const LAYER_GROUPS = [
@@ -50,6 +51,27 @@ const LAYER_GROUPS = [
     icon: Leaf,
     description: 'Disasters, climate, health crises',
     color: '#14b8a6',
+  },
+  {
+    id: 'flights',
+    label: 'Flights & Aviation',
+    icon: Plane,
+    description: 'Military aircraft, FAA delays',
+    color: '#38bdf8',
+  },
+  {
+    id: 'earthquakes',
+    label: 'Seismic Activity',
+    icon: Mountain,
+    description: 'USGS earthquakes, tsunamis',
+    color: '#f97316',
+  },
+  {
+    id: 'weather',
+    label: 'Weather Alerts',
+    icon: CloudRain,
+    description: 'NWS severe weather alerts',
+    color: '#06b6d4',
   },
 ];
 
