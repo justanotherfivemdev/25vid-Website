@@ -7,8 +7,6 @@ import OverlayMapView from '@/components/threatmap/OverlayMapView';
 import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
 import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
-import IntelLayerPanel from '@/components/threatmap/IntelLayerPanel';
-import CorrelationPanel from '@/components/threatmap/CorrelationPanel';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
 import '@/components/threatmap/threatmap.css';
 
@@ -23,6 +21,8 @@ export default function ThreatMapPage() {
   const [operations, setOperations] = useState([]);
   const [intelEvents, setIntelEvents] = useState([]);
   const [campaignEvents, setCampaignEvents] = useState([]);
+
+  const isGlobe = mapViewMode === 'globe';
 
   // Fetch threat events from our backend (Valyu-powered)
   const fetchEvents = useCallback(async () => {
@@ -102,18 +102,18 @@ export default function ThreatMapPage() {
       <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          {/* Dual Map System */}
-          {mapViewMode === 'globe' ? (
+          {/* Dual Map System — Globe (Mapbox 3D) or Overlay (World Monitor) */}
+          {isGlobe ? (
             <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
           ) : (
-            <OverlayMapView operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} isAdmin={isAdmin} />
+            <OverlayMapView />
           )}
-          <TimelineScrubber />
-          <ThreatMapControls />
-          {mapViewMode === 'overlay' && <IntelLayerPanel />}
-          {mapViewMode === 'overlay' && <CorrelationPanel />}
+          {/* Globe-only controls (not needed for World Monitor overlay) */}
+          {isGlobe && <TimelineScrubber />}
+          {isGlobe && <ThreatMapControls />}
         </div>
-        <ThreatMapSidebar isAdmin={isAdmin} />
+        {/* Sidebar — only shown in Globe mode; World Monitor has its own panels */}
+        {isGlobe && <ThreatMapSidebar isAdmin={isAdmin} />}
       </div>
     </div>
   );

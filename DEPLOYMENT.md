@@ -126,6 +126,9 @@ Create `frontend/.env`:
 REACT_APP_BACKEND_URL=https://yourdomain.com
 REACT_APP_MAPBOX_TOKEN=pk.your_mapbox_public_token_here
 # REACT_APP_MAP_STYLE=mapbox://styles/mapbox/dark-v11
+
+# World Monitor Intelligence Overlay (Overlay view in Global Threat Map)
+REACT_APP_WORLDMONITOR_URL=https://yourdomain.com/worldmonitor/
 ```
 
 For local/staging work, you can start from `frontend/.env.example` and then
@@ -137,6 +140,34 @@ Build frontend:
 yarn build
 # Output: /opt/25th-id/frontend/build
 ```
+
+---
+
+## 4b) World Monitor Intelligence Overlay (Optional)
+
+The Global Threat Map's **Overlay** view is powered by [World Monitor](https://github.com/swatfa/worldmonitor-bayesian).
+The source lives in the `worldmonitor/` directory.
+
+```bash
+cd /opt/25th-id/worldmonitor
+npm install
+npm run build
+# Output: /opt/25th-id/worldmonitor/dist
+```
+
+Then add a location block to your Nginx config to serve the built assets (see section 6 below).
+
+Optional API keys for enhanced data feeds — add to `worldmonitor/.env`:
+
+```env
+# FINNHUB_API_KEY=your_key
+# CLOUDFLARE_API_TOKEN=your_token
+# FRED_API_KEY=your_key
+# ACLED_EMAIL=your_email
+# ACLED_PASSWORD=your_password
+```
+
+See `worldmonitor/API_CONFIGURATION.md` for the full list of data sources.
 
 ---
 
@@ -201,6 +232,13 @@ server {
         alias /opt/25th-id/frontend/build/static/;
         expires 1y;
         add_header Cache-Control "public, immutable";
+    }
+
+    # World Monitor Intelligence Overlay (built from worldmonitor/ directory)
+    location /worldmonitor/ {
+        alias /opt/25th-id/worldmonitor/dist/;
+        try_files $uri $uri/ /worldmonitor/index.html;
+        expires 1h;
     }
 
     location / {

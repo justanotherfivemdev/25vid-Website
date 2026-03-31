@@ -115,8 +115,71 @@ CI=true REACT_APP_BACKEND_URL=http://localhost:8000 REACT_APP_MAPBOX_TOKEN=pk.te
 ### Frontend (`frontend/.env`)
 
 - `REACT_APP_BACKEND_URL=https://yourdomain.com`
-- `REACT_APP_MAPBOX_TOKEN` (required for Global Threat Map)
+- `REACT_APP_MAPBOX_TOKEN` (required for Global Threat Map Globe view)
 - `REACT_APP_MAP_STYLE` (optional, defaults to `mapbox://styles/mapbox/dark-v11`)
+- `REACT_APP_WORLDMONITOR_URL` (required for Intelligence Overlay view — see below)
+
+---
+
+## World Monitor Intelligence Overlay
+
+The **Overlay** view in the Global Threat Map is powered by [World Monitor \[Black Swan Edition\]](https://github.com/swatfa/worldmonitor-bayesian), a real-time global intelligence dashboard that aggregates news, markets, geopolitical data, military infrastructure, and more.
+
+The full World Monitor source code lives in the `worldmonitor/` directory (copied 1-to-1 from the upstream repo).
+
+### Setting up the World Monitor Overlay
+
+```bash
+# 1. Install World Monitor dependencies
+cd worldmonitor
+npm install
+
+# 2. Start the dev server (default port 3000)
+npm run dev
+```
+
+Then in your `frontend/.env`, set:
+
+```
+REACT_APP_WORLDMONITOR_URL=http://localhost:3000
+```
+
+Restart the frontend dev server and click the **Overlay** toggle in the Threat Map header to see the World Monitor dashboard.
+
+### World Monitor API Keys (Optional)
+
+World Monitor can connect to several external data sources. Add these to a `worldmonitor/.env` file:
+
+| Variable | Service | Required? |
+|---|---|---|
+| `FINNHUB_API_KEY` | Finnhub stock/market data | Optional |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare Radar outage data | Optional |
+| `FRED_API_KEY` | Federal Reserve economic data | Optional |
+| `ACLED_EMAIL` / `ACLED_PASSWORD` | ACLED conflict/protest data | Optional |
+
+All data sources gracefully degrade when API keys are not configured — the dashboard still works with its free/public data feeds (GDELT, USGS earthquakes, RSS news, etc.).
+
+See `worldmonitor/API_CONFIGURATION.md` for the full list of supported data sources.
+
+### Production Deployment
+
+For production, build World Monitor and serve it as static files:
+
+```bash
+cd worldmonitor
+npm run build          # outputs to worldmonitor/dist/
+```
+
+Then serve the `dist/` directory at a URL and set `REACT_APP_WORLDMONITOR_URL` to that URL. For example with Nginx:
+
+```nginx
+location /worldmonitor/ {
+    alias /opt/25th-id/worldmonitor/dist/;
+    try_files $uri $uri/ /worldmonitor/index.html;
+}
+```
+
+Then set `REACT_APP_WORLDMONITOR_URL=https://yourdomain.com/worldmonitor/` in `frontend/.env`.
 
 ---
 
