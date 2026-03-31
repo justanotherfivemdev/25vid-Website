@@ -89,9 +89,7 @@ async def update_community_event(
     if not is_admin and not is_owner:
         raise HTTPException(status_code=403, detail="Not authorized to edit this event")
 
-    updates = {k: v for k, v in body.model_dump().items() if v is not None}
-    if "location" in updates and updates["location"] is not None:
-        updates["location"] = updates["location"].model_dump() if hasattr(updates["location"], "model_dump") else updates["location"]
+    updates = {k: v for k, v in body.model_dump(exclude_none=True).items()}
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
     await db[COLLECTION].update_one({"id": event_id}, {"$set": updates})

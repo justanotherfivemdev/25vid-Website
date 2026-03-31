@@ -68,7 +68,7 @@ export const useMapStore = create((set) => ({
   dataSourceFilter: 'all', // 'all' | 'real' | 'fictional'
 
   // Layer visibility (worldmonitor-inspired)
-  overlayLayers: JSON.parse(localStorage.getItem('overlayLayers') ?? JSON.stringify({
+  overlayLayers: JSON.parse(localStorage.getItem('overlayLayers') || JSON.stringify({
     conflicts: true,
     infrastructure: false,
     economic: false,

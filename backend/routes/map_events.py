@@ -289,6 +289,7 @@ async def get_threat_events():
             "source": "hybrid",
             "sources": {"community": len(community), "external": len(stored_events[:200])},
         }
+        # Cache only external events; community events are always loaded fresh
         await _set_cached_response("threat_events_global", {
             "events": stored_events[:200],
             "count": len(stored_events[:200]),
