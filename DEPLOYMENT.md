@@ -54,6 +54,14 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+Create a persistent upload directory **outside** the repo so uploads
+survive `git pull` / `git reset` / redeployments:
+
+```bash
+sudo mkdir -p /opt/data/uploads
+sudo chown www-data:www-data /opt/data/uploads
+```
+
 Create `backend/.env`:
 
 ```env
@@ -63,6 +71,10 @@ JWT_SECRET=<GENERATE_A_STRONG_SECRET>
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
 COOKIE_SECURE=true
+
+# Persistent upload directory (OUTSIDE the git repo).
+# This ensures images/maps/voice clips survive git pull and redeployments.
+UPLOAD_DIR=/opt/data/uploads
 
 # Required — set to the public URL of your frontend (no trailing slash).
 # This controls both CORS allowed origins and OAuth redirect URLs.
@@ -290,7 +302,7 @@ Example cron entries:
 0 3 * * * mongodump --db 25th_infantry_division --out /opt/backups/mongo/$(date +\%Y\%m\%d) --gzip
 
 # Daily uploads backup
-0 3 * * * tar -czf /opt/backups/uploads/$(date +\%Y\%m\%d).tar.gz /opt/25th-id/backend/uploads/
+0 3 * * * tar -czf /opt/backups/uploads/$(date +\%Y\%m\%d).tar.gz /opt/data/uploads/
 
 # Purge backups older than 30 days
 0 4 * * * find /opt/backups -mtime +30 -delete
@@ -316,9 +328,38 @@ sudo systemctl restart 25th-id-backend
 sudo systemctl reload nginx
 ```
 
+> **Note:** Because `UPLOAD_DIR` is set to `/opt/data/uploads` (outside the
+> repo), `git pull` and `git reset` will **not** affect uploaded files.
+
 ---
 
-## 12) Operations Checklist (Hosting Party)
+## 12) Migrate Existing Uploads (one-time)
+
+If you are upgrading from a previous install where uploads lived inside the
+repo at `/opt/25th-id/backend/uploads/`, run these steps **once** to move
+them to the persistent location:
+
+```bash
+# 1. Create persistent directory
+sudo mkdir -p /opt/data/uploads/maps /opt/data/uploads/voice
+
+# 2. Copy existing uploads (preserves originals as backup)
+sudo cp -rn /opt/25th-id/backend/uploads/* /opt/data/uploads/
+
+# 3. Set ownership so the backend can write
+sudo chown -R www-data:www-data /opt/data/uploads
+
+# 4. Add UPLOAD_DIR to backend/.env (if not already present)
+grep -q 'UPLOAD_DIR' /opt/25th-id/backend/.env || \
+  echo 'UPLOAD_DIR=/opt/data/uploads' >> /opt/25th-id/backend/.env
+
+# 5. Restart backend
+sudo systemctl restart 25th-id-backend
+```
+
+---
+
+## 13) Operations Checklist (Hosting Party)
 
 Use this after every fresh deploy and every update:
 

@@ -43,7 +43,7 @@ export const MEMBER_NAV_GROUPS = [
   {
     id: 'hub',
     label: 'HUB',
-    defaultOpen: true,
+    defaultOpen: false,
     items: [
       { path: '/hub', label: 'Dashboard', icon: LayoutDashboard, exact: true },
       { path: '/hub/profile', label: 'Profile', icon: User },
@@ -53,7 +53,7 @@ export const MEMBER_NAV_GROUPS = [
   {
     id: 'operations',
     label: 'OPERATIONS',
-    defaultOpen: true,
+    defaultOpen: false,
     items: [
       { path: '/hub/discussions', label: 'Discussions', icon: MessageSquare },
       { path: '/hub/campaign', label: 'Campaigns', icon: MapPin },

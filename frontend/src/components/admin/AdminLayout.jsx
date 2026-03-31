@@ -19,9 +19,32 @@ import { ADMIN_NAV_GROUPS } from '@/config/adminNavigationConfig';
 
 // ── Sidebar Section (accordion group) ──────────────────────────────────────
 
-const SidebarGroup = ({ group, collapsed, location, onNavigate }) => {
-  const [open, setOpen] = useState(group.defaultOpen ?? true);
+const STORAGE_KEY_ADMIN_SECTIONS = 'admin-sidebar-sections';
 
+/** Approximate pixel height per navigation item (min-h-[44px] + spacing). */
+const ITEM_HEIGHT_PX = 56;
+
+/**
+ * Read persisted open/closed sidebar section state from localStorage.
+ */
+const loadSectionState = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveSectionState = (key, state) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(state));
+  } catch {
+    // Storage full or unavailable — silently ignore
+  }
+};
+
+const SidebarGroup = ({ group, collapsed, location, onNavigate, open, onToggle }) => {
   const items = group.items;
   if (!items.length) return null;
 
@@ -30,7 +53,7 @@ const SidebarGroup = ({ group, collapsed, location, onNavigate }) => {
       {/* Group header — clickable accordion toggle */}
       {!collapsed && (
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => onToggle(group.id)}
           className="flex w-full items-center justify-between px-4 py-2 text-[10px] font-bold tracking-[0.2em] text-gray-500 hover:text-tropic-gold transition-colors"
         >
           {group.label}
@@ -38,8 +61,14 @@ const SidebarGroup = ({ group, collapsed, location, onNavigate }) => {
         </button>
       )}
 
-      {/* Items */}
-      {(collapsed || open) && (
+      {/* Items — animated expand/collapse */}
+      <div
+        className="overflow-hidden transition-all duration-200 ease-in-out"
+        style={{
+          maxHeight: collapsed || open ? `${items.length * ITEM_HEIGHT_PX}px` : '0px',
+          opacity: collapsed || open ? 1 : 0,
+        }}
+      >
         <nav className="space-y-0.5 px-2">
           {items.map((item) => {
             const Icon = item.icon;
@@ -73,7 +102,7 @@ const SidebarGroup = ({ group, collapsed, location, onNavigate }) => {
             );
           })}
         </nav>
-      )}
+      </div>
     </div>
   );
 };
@@ -88,6 +117,24 @@ const AdminLayout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('admin-sidebar-collapsed') === 'true'; } catch { return false; }
   });
+
+  // Centralised open/closed state for sidebar sections (persisted to localStorage)
+  const [sectionState, setSectionState] = useState(() => {
+    const stored = loadSectionState(STORAGE_KEY_ADMIN_SECTIONS);
+    if (stored) return stored;
+    // All sections collapsed by default
+    const defaults = {};
+    ADMIN_NAV_GROUPS.forEach((g) => { defaults[g.id] = g.defaultOpen ?? false; });
+    return defaults;
+  });
+
+  const toggleSection = (groupId) => {
+    setSectionState((prev) => {
+      const next = { ...prev, [groupId]: !prev[groupId] };
+      saveSectionState(STORAGE_KEY_ADMIN_SECTIONS, next);
+      return next;
+    });
+  };
 
   const role = authUser?.role || 'member';
 
@@ -245,6 +292,8 @@ const AdminLayout = ({ children }) => {
                   collapsed={false}
                   location={location}
                   onNavigate={closeMobileSidebar}
+                  open={!!sectionState[group.id]}
+                  onToggle={toggleSection}
                 />
               ))}
             </div>
@@ -298,6 +347,8 @@ const AdminLayout = ({ children }) => {
               group={group}
               collapsed={collapsed}
               location={location}
+              open={!!sectionState[group.id]}
+              onToggle={toggleSection}
             />
           ))}
         </div>
