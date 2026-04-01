@@ -25,8 +25,8 @@ FROM node:20-alpine AS worldmonitor-build
 
 WORKDIR /app
 
-COPY worldmonitor/package.json worldmonitor/package-lock.json ./
-RUN npm ci 2>/dev/null || npm install
+COPY worldmonitor/package.json ./
+RUN npm install
 
 COPY worldmonitor/ .
 RUN npm run build
