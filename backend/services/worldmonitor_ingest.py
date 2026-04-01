@@ -14,6 +14,7 @@ Data sources:
   - ACLED Protests / Civil Unrest
 """
 
+import os
 import logging
 import hashlib
 from datetime import datetime, timezone, timedelta
@@ -22,6 +23,7 @@ from typing import List, Optional, Dict, Any
 import httpx
 
 from database import db
+from services.threat_intel import extract_country
 
 logger = logging.getLogger("worldmonitor_ingest")
 
@@ -53,14 +55,16 @@ async def _wm_set_cached(key: str, data: Any) -> None:
 
 
 def _content_hash(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest()[:16]
+    return hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest()
 
 
 # ============================================================================
 # GDELT Intelligence Ingestion
 # ============================================================================
 
-GDELT_DOC_API = "https://api.gdeltproject.org/api/v2/doc/doc"
+GDELT_DOC_API = os.environ.get(
+    "GDELT_API_URL", "https://api.gdeltproject.org/api/v2/doc/doc"
+)
 
 GDELT_INTEL_TOPICS = [
     {"label": "Military Activity", "query": "(military OR troops OR deployment OR airstrike) sourcelang:eng"},
@@ -74,7 +78,7 @@ GDELT_INTEL_TOPICS = [
 
 async def fetch_gdelt_articles(query: str, max_records: int = 10, timespan: str = "24h") -> List[dict]:
     """Fetch articles from GDELT DOC API (no auth required)."""
-    cache_key = f"gdelt_{_content_hash(query)}"
+    cache_key = f"gdelt_{_content_hash(f'{query}|max={max_records}|ts={timespan}')}"
     cached = await _wm_get_cached(cache_key, 5)  # 5-min cache per WorldMonitor
     if cached:
         return cached
@@ -119,18 +123,33 @@ async def ingest_gdelt_intel() -> int:
         articles = await fetch_gdelt_articles(topic["query"], max_records=10)
         for art in articles:
             content_hash = _content_hash(f"gdelt_{art.get('url', '')}{art.get('title', '')}")
+            # Parse GDELT seendate (e.g. "20250401T120000Z") into ISO-8601
+            raw_date = art.get("date", "")
+            try:
+                parsed_dt = datetime.strptime(raw_date, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+                iso_timestamp = parsed_dt.isoformat()
+            except (ValueError, TypeError):
+                iso_timestamp = datetime.now(timezone.utc).isoformat()
+            # Derive country-level coordinates from article title
+            title_text = art.get("title", "")
+            country, lat, lng = extract_country(title_text, title=title_text)
             evt = {
                 "id": f"gdelt_{content_hash}",
-                "title": art["title"],
-                "summary": art["title"],
+                "title": title_text,
+                "summary": title_text,
                 "category": _gdelt_topic_to_category(topic["label"]),
                 "threatLevel": _gdelt_tone_to_threat(art.get("tone", 0)),
-                "location": {"latitude": None, "longitude": None, "placeName": "", "country": ""},
-                "timestamp": art.get("date", datetime.now(timezone.utc).isoformat()),
+                "location": {
+                    "latitude": lat,
+                    "longitude": lng,
+                    "placeName": country or "",
+                    "country": country or "",
+                },
+                "timestamp": iso_timestamp,
                 "source": "gdelt",
                 "sourceUrl": art.get("url", ""),
                 "keywords": [topic["label"].lower()],
-                "rawContent": art["title"],
+                "rawContent": title_text,
                 "provider": "gdelt",
                 "gdelt_topic": topic["label"],
                 "content_hash": content_hash,
@@ -175,7 +194,10 @@ def _gdelt_tone_to_threat(tone) -> str:
 # USGS Earthquake Ingestion
 # ============================================================================
 
-USGS_API_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson"
+USGS_API_URL = os.environ.get(
+    "USGS_API_URL",
+    "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson",
+)
 
 
 async def fetch_earthquakes() -> List[dict]:
@@ -262,7 +284,14 @@ async def ingest_earthquakes() -> int:
 # NWS Weather Alerts
 # ============================================================================
 
-NWS_ALERTS_URL = "https://api.weather.gov/alerts/active"
+NWS_ALERTS_URL = os.environ.get(
+    "NWS_ALERTS_URL", "https://api.weather.gov/alerts/active"
+)
+
+# NWS requires a valid User-Agent with contact info. Configure via env var.
+NWS_USER_AGENT = os.environ.get(
+    "NWS_USER_AGENT", "(25vid-worldmonitor, contact@yourdomain.com)"
+)
 
 
 async def fetch_weather_alerts() -> List[dict]:
@@ -273,7 +302,7 @@ async def fetch_weather_alerts() -> List[dict]:
         return cached
 
     try:
-        headers = {"User-Agent": "(25vid-worldmonitor, admin@example.com)"}
+        headers = {"User-Agent": NWS_USER_AGENT}
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(NWS_ALERTS_URL, headers=headers)
             resp.raise_for_status()
@@ -307,7 +336,9 @@ async def fetch_weather_alerts() -> List[dict]:
 # FRED Economic Data
 # ============================================================================
 
-FRED_BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
+FRED_BASE_URL = os.environ.get(
+    "FRED_API_URL", "https://api.stlouisfed.org/fred/series/observations"
+)
 
 FRED_INDICATORS = [
     {"series_id": "WALCL", "name": "Fed Total Assets", "display": "Fed Assets"},
@@ -366,12 +397,14 @@ async def fetch_fred_data(api_key: str) -> List[dict]:
 # Polymarket Prediction Markets
 # ============================================================================
 
-POLYMARKET_API_URL = "https://gamma-api.polymarket.com/events"
+POLYMARKET_API_URL = os.environ.get(
+    "POLYMARKET_API_URL", "https://gamma-api.polymarket.com/events"
+)
 
 
 async def fetch_polymarket_events(limit: int = 20) -> List[dict]:
     """Fetch active prediction market events from Polymarket (no auth required)."""
-    cache_key = "polymarket_events"
+    cache_key = f"polymarket_events_limit_{limit}"
     cached = await _wm_get_cached(cache_key, 5)
     if cached:
         return cached
@@ -419,7 +452,9 @@ async def fetch_polymarket_events(limit: int = 20) -> List[dict]:
 # ACLED Protests / Civil Unrest
 # ============================================================================
 
-ACLED_API_URL = "https://api.acleddata.com/acled/read"
+ACLED_API_URL = os.environ.get(
+    "ACLED_API_URL", "https://api.acleddata.com/acled/read"
+)
 
 
 async def fetch_acled_protests(api_key: str, email: str, limit: int = 50) -> List[dict]:

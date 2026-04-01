@@ -10,7 +10,7 @@ import os
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 
 from services.worldmonitor_ingest import (
     fetch_gdelt_articles,
@@ -42,7 +42,6 @@ async def get_gdelt_intel(
     if topic:
         topics = [t for t in GDELT_INTEL_TOPICS if t["label"].lower() == topic.lower()]
         if not topics:
-            from fastapi import HTTPException
             raise HTTPException(
                 status_code=400,
                 detail=f"Unknown topic: {topic}. Available: {[t['label'] for t in GDELT_INTEL_TOPICS]}",
@@ -100,11 +99,10 @@ async def get_economic_data():
     """Fetch latest FRED economic indicators."""
     api_key = os.environ.get("FRED_API_KEY", "")
     if not api_key:
-        return {
-            "indicators": [],
-            "error": "FRED_API_KEY not configured",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        raise HTTPException(
+            status_code=503,
+            detail="FRED_API_KEY not configured",
+        )
     indicators = await fetch_fred_data(api_key)
     return {
         "indicators": indicators,
@@ -140,11 +138,10 @@ async def get_protests():
     api_key = os.environ.get("ACLED_ACCESS_TOKEN", "")
     email = os.environ.get("ACLED_EMAIL", "")
     if not api_key or not email:
-        return {
-            "protests": [],
-            "error": "ACLED_ACCESS_TOKEN and ACLED_EMAIL not configured",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        raise HTTPException(
+            status_code=503,
+            detail="ACLED_ACCESS_TOKEN and ACLED_EMAIL not configured",
+        )
     protests = await fetch_acled_protests(api_key, email)
     return {
         "protests": protests,
@@ -178,7 +175,7 @@ async def get_pipeline_status():
         },
         "adsb_military": {"configured": True, "auth_required": False},
         "opensky": {
-            "configured": bool(os.environ.get("OPENSKY_CLIENT_ID")),
+            "configured": bool(os.environ.get("OPENSKY_CLIENT_ID") and os.environ.get("OPENSKY_CLIENT_SECRET")),
             "auth_required": True,
         },
         "valyu_intel": {

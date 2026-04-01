@@ -53,7 +53,7 @@ Complete documentation for the WorldMonitor overlay system integration with the
 │  └────────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │              Background Ingestion Service                   │ │
-│  │  Valyu → GDELT → USGS → ACLED → OpenAI (periodic cycle)   │ │
+│  │  Valyu → OpenAI → GDELT → USGS → ACLED (periodic cycle)   │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────┬───────────────────────────────────┘
                               │
@@ -86,7 +86,7 @@ External APIs → Backend Ingestion → MongoDB → Backend Routes → Frontend
 
 1. **Background ingestion** runs on a configurable interval (default: every
    `VALYU_EVENT_REFRESH_MINUTES` minutes).
-2. Each cycle processes: Valyu, GDELT, USGS, ACLED, and OpenAI sources.
+2. Each cycle processes: Valyu, OpenAI, GDELT, USGS, and ACLED sources.
 3. Events are deduplicated by `content_hash` and stored in `external_events`.
 4. Frontend fetches via `POST /api/threat-events` (hybrid: community + external).
 5. WorldMonitor overlay runs as a standalone Vite app embedded via iframe.
@@ -377,7 +377,8 @@ End users:
 
 - Increase `VALYU_EVENT_REFRESH_MINUTES` to reduce API load.
 - Set `MAX_VALYU_QUERIES_PER_CYCLE` to control Valyu queries per cycle.
-- GDELT, USGS, and NWS are free APIs with no rate limits.
+- GDELT and USGS are free APIs without strict published rate limits, but you should still use reasonable polling intervals.
+- NWS is a free API but enforces fair-use and may throttle; configure a compliant `User-Agent` with contact information (via `NWS_USER_AGENT` env var) and avoid aggressive polling.
 - FRED has no rate limit but data updates infrequently (hourly cache).
 - ACLED has a 10 req/min limit; the 10-min cache respects this.
 
