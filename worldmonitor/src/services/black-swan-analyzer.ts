@@ -109,7 +109,7 @@ function sourceCandidates(data: DataSnapshot): DataSnapshot {
     protests: data.protests.filter(p => (p.fatalities || 0) > 0 || (p.eventType && p.eventType.toLowerCase().includes('violence')) || (p.summary && p.summary.toLowerCase().includes('violence'))),
     vessels: data.vessels, // Military is always high signal
     flights: data.flights,
-    outages: data.outages.filter(o => o.severity !== 'partial'),
+    outages: data.outages,
     news: data.news,
     predictions: data.predictions.filter(p => p.yesPrice > 0.05 && p.yesPrice < 0.95),
     alertCounts: data.alertCounts
