@@ -50,6 +50,8 @@ class Permission(str, Enum):
     VIEW_ROSTER = "view_roster"
     # Operations planning
     MANAGE_PLANS = "manage_plans"
+    # Server management
+    MANAGE_SERVERS = "manage_servers"
     # System-level
     VIEW_DASHBOARD = "view_dashboard"
     VIEW_LOGS = "view_logs"
@@ -87,6 +89,7 @@ _S3_PERMISSIONS = {
 _S4_PERMISSIONS = {
     Permission.VIEW_DASHBOARD,
     Permission.MANAGE_DEPLOYMENTS,
+    Permission.MANAGE_SERVERS,
     Permission.VIEW_ROSTER, Permission.VIEW_INTEL,
 }
 

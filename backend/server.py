@@ -64,6 +64,7 @@ from routes.voice import router as voice_router
 from routes.user_settings import router as user_settings_router
 from routes.community_events import router as community_events_router
 from routes.worldmonitor import router as worldmonitor_router
+from routes.servers import router as servers_router
 
 
 # Create the main app
@@ -97,6 +98,7 @@ api_router.include_router(voice_router)
 api_router.include_router(user_settings_router)
 api_router.include_router(community_events_router)
 api_router.include_router(worldmonitor_router)
+api_router.include_router(servers_router)
 
 
 @api_router.get("/")

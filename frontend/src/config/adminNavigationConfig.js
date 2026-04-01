@@ -25,6 +25,9 @@ import {
   ScrollText,
   AlertTriangle,
   Map,
+  Server,
+  Package,
+  Layers,
 } from 'lucide-react';
 
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
@@ -186,6 +189,38 @@ export const ADMIN_NAV_GROUPS = [
         label: 'Partner Applications',
         icon: ClipboardList,
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_PARTNERS),
+      },
+    ],
+  },
+  {
+    id: 'server-management',
+    label: 'SERVER MANAGEMENT',
+    defaultOpen: false,
+    items: [
+      {
+        path: '/admin/servers',
+        label: 'Server Dashboard',
+        icon: Server,
+        exact: true,
+        show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
+      },
+      {
+        path: '/admin/servers/workshop',
+        label: 'Workshop Browser',
+        icon: Package,
+        show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
+      },
+      {
+        path: '/admin/servers/presets',
+        label: 'Mod Presets',
+        icon: Layers,
+        show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
+      },
+      {
+        path: '/admin/servers/mod-issues',
+        label: 'Mod Issues',
+        icon: AlertTriangle,
+        show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
       },
     ],
   },
