@@ -190,8 +190,9 @@ npm install
 npm run dev
 ```
 
-Opens at http://localhost:5173. Set `REACT_APP_WORLDMONITOR_URL=http://localhost:5173`
-in `frontend/.env` to embed it in the Overlay view.
+Opens at http://localhost:5173. World Monitor is a standalone app — access it
+directly at http://localhost:5173 in your browser (no `REACT_APP_WORLDMONITOR_URL` needed;
+the legacy iframe embedding approach has been replaced with full-page navigation to `/worldmonitor/`).
 
 ### Running Ingestion Jobs Manually
 
@@ -370,7 +371,7 @@ End users:
 
    # WorldMonitor (build static)
    cd worldmonitor && npm run build
-   # Serve dist/ via Nginx or set REACT_APP_WORLDMONITOR_URL
+   # Serve dist/ via Nginx at /worldmonitor/ (REACT_APP_WORLDMONITOR_URL is legacy/unused)
    ```
 
 ### Scaling Ingestion Pipelines
@@ -393,8 +394,10 @@ See `nginx-production.conf` for the production Nginx config. Key paths:
 
 ## Troubleshooting
 
-### WorldMonitor overlay shows "Not Configured"
-Set `REACT_APP_WORLDMONITOR_URL` in `frontend/.env` and restart.
+### WorldMonitor not loading
+World Monitor is now a standalone app at `/worldmonitor/`. Ensure Nginx serves the built
+`worldmonitor/dist/` directory at that path. The legacy `REACT_APP_WORLDMONITOR_URL` iframe
+approach is no longer used — navigation is via full-page redirect.
 
 ### No threat events appearing
 1. Check `curl http://localhost:8001/api/worldmonitor/status` for pipeline health.

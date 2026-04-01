@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
 import GlobalThreatMap from '@/components/threatmap/GlobalThreatMap';
-import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
+
 import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';

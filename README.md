@@ -117,6 +117,7 @@ CI=true REACT_APP_BACKEND_URL=http://localhost:8000 REACT_APP_MAPBOX_TOKEN=pk.te
 - `REACT_APP_BACKEND_URL=https://yourdomain.com`
 - `REACT_APP_MAPBOX_TOKEN` (required for Global Threat Map Globe view)
 - `REACT_APP_MAP_STYLE` (optional, defaults to `mapbox://styles/mapbox/dark-v11`)
+- `REACT_APP_WORLDMONITOR_URL` (**legacy/unused**; safe to omit, World Monitor is now served as a standalone app under `/worldmonitor/` and uses full-page navigation instead)
 
 ---
 
@@ -145,7 +146,7 @@ Clicking "World Monitor" in the Threat Map header performs `window.location.href
 1. From the Hub, click **Global Threat Map** in the sidebar
 2. The default view is the **Global Threat Map** (3D Globe) at `/hub/threat-map`
 3. Use the **World Monitor** button in the header to navigate to the standalone World Monitor app at `/worldmonitor/`
-4. In World Monitor, use the **Back to Threat Map** link to return to `/hub/threat-map`
+4. To return to the Global Threat Map, use your browser's Back button or navigate directly to `/hub/threat-map`
 5. The two apps serve different purposes:
    - **Global Threat Map**: Interactive 3D globe with threat events, military bases, intel layers, and timeline scrubbing
    - **World Monitor**: Real-time intelligence dashboard aggregating GDELT, USGS, financial markets, and geopolitical data
@@ -190,7 +191,7 @@ In development, the World Monitor dev server runs independently. In production, 
 1. Navigate to `/hub/threat-map` → Global Threat Map (3D Globe) loads
 2. Click **World Monitor** button → browser performs full navigation to `/worldmonitor/`, World Monitor dashboard loads
 3. No blank screen or "No routes matched" error occurs
-4. In World Monitor, click "Back to Threat Map" → browser navigates to `/hub/threat-map`
+4. From World Monitor, use your browser's Back button or open `/hub/threat-map` in a new tab → Global Threat Map still loads correctly
 5. Refresh browser on `/worldmonitor/` → World Monitor loads correctly (Nginx serves it)
 
 ### World Monitor API Keys (Optional)
