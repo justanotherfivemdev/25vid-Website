@@ -544,7 +544,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         else console.warn('Failed to fetch deployments:', deploymentsRes.reason);
         if (divRes.status === 'fulfilled') setDivisionLocation(divRes.value.data);
         else console.warn('Failed to fetch division location:', divRes.reason);
-      } catch { /* silently fail for unauthenticated sessions */ }
+      } catch { /* ignore unexpected errors; individual request failures are handled above */ }
     };
     fetchMapData();
   }, []);

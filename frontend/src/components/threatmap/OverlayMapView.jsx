@@ -37,7 +37,9 @@ export default function OverlayMapView() {
     }
   }, []);
 
-  // Timeout fallback: if iframe hasn't loaded within the threshold, show error
+  // Timeout fallback: if iframe hasn't loaded within the threshold, show error.
+  // WORLDMONITOR_URL and IFRAME_LOAD_TIMEOUT_MS are module-level constants that
+  // never change, so the empty dependency array is intentional (run once on mount).
   useEffect(() => {
     if (!WORLDMONITOR_URL) return;
     timeoutRef.current = setTimeout(() => {
@@ -52,6 +54,7 @@ export default function OverlayMapView() {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- module-level constants, not reactive state
   }, []);
 
   if (!WORLDMONITOR_URL) {

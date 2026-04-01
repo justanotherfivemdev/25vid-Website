@@ -88,6 +88,8 @@ export const useMapStore = create((set) => ({
   setDataSourceFilter: (filter) => {
     localStorage.setItem('dataSourceFilter', filter);
     set({ dataSourceFilter: filter });
+    // Re-apply event filters so the data source change takes effect immediately
+    useEventsStore.getState().applyFilters();
   },
 
   setOverlayLayer: (layer, visible) =>
@@ -189,7 +191,15 @@ export const useEventsStore = create((set, get) => ({
 
   applyFilters: () => {
     const { events, timeRange, categoryFilters, threatLevelFilters, searchQuery } = get();
+    const { dataSourceFilter } = useMapStore.getState();
     let filtered = [...events];
+
+    // Filter by data source (real-world vs fictional/milsim)
+    if (dataSourceFilter === 'real') {
+      filtered = filtered.filter((event) => event.event_nature !== 'fictional');
+    } else if (dataSourceFilter === 'fictional') {
+      filtered = filtered.filter((event) => event.event_nature === 'fictional');
+    }
 
     if (timeRange) {
       filtered = filtered.filter((event) => {
