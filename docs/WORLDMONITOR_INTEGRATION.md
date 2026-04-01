@@ -391,8 +391,9 @@ See `nginx-production.conf` for the production Nginx config. Key paths:
 - `/worldmonitor/` → WorldMonitor static files
 
 **Important:** The `/worldmonitor/` location block **must** appear before the
-catch-all `location /` block. Without it, all requests to `/worldmonitor/` fall
-through to the React SPA, which has no route for that path (black screen).
+catch-all `location /` block. Without it, requests to `/worldmonitor/` are handled
+by the React SPA's defensive `/worldmonitor/*` route and show a diagnostic page
+instead of the actual World Monitor overlay.
 
 For VPS deployments, deploy the worldmonitor build output alongside the React build:
 ```bash
