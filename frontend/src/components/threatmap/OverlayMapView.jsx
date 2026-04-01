@@ -4,10 +4,10 @@ const WORLDMONITOR_URL = process.env.REACT_APP_WORLDMONITOR_URL;
 const IFRAME_LOAD_TIMEOUT_MS = 30000; // 30 seconds
 
 /**
- * Overlay Map View — World Monitor [Black Swan Edition]
+ * World Monitor View
  *
  * Embeds the worldmonitor-bayesian intelligence dashboard
- * (https://github.com/swatfa/worldmonitor-bayesian) as the overlay view.
+ * (https://github.com/swatfa/worldmonitor-bayesian) as the World Monitor view.
  * The full source is available in the /worldmonitor directory.
  *
  * Set REACT_APP_WORLDMONITOR_URL in your .env to point at the running
@@ -72,7 +72,7 @@ export default function OverlayMapView() {
             World Monitor Not Configured
           </h2>
           <p className="mb-4 text-sm text-gray-400">
-            The Intelligence Overlay requires the World Monitor dashboard to be running.
+            The World Monitor view requires the dashboard to be running.
             Set the <code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs" style={{ color: '#FFD700' }}>REACT_APP_WORLDMONITOR_URL</code> environment
             variable in your frontend <code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-300">.env</code> file.
           </p>
@@ -132,7 +132,7 @@ export default function OverlayMapView() {
 
       <iframe
         src={WORLDMONITOR_URL}
-        title="World Monitor — Intelligence Overlay"
+        title="World Monitor — Intelligence Dashboard"
         className="h-full w-full border-0"
         allow="fullscreen"
         allowFullScreen

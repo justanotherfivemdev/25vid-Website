@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useLayoutEffect, useCallback, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
 import GlobalThreatMap from '@/components/threatmap/GlobalThreatMap';
@@ -19,12 +19,23 @@ const REFRESH_INTERVAL = 300000; // 5 minutes
 
 export default function PartnerThreatMap() {
   const { setEvents, setLoading, setError, isLoading } = useEventsStore();
-  const { setMilitaryBases, setMilitaryBasesLoading, mapViewMode } = useMapStore();
+  const { setMilitaryBases, setMilitaryBasesLoading, setMapViewMode } = useMapStore();
   const [operations, setOperations] = useState([]);
   const [intelEvents, setIntelEvents] = useState([]);
   const [campaignEvents, setCampaignEvents] = useState([]);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
+
+  // Route-driven view: /partner/threat-map → Globe, /partner/threat-map/world-monitor → World Monitor
+  const location = useLocation();
+  const isWorldMonitor = location.pathname.replace(/\/+$/, '').endsWith('/world-monitor');
+  const isGlobe = !isWorldMonitor;
+
+  // Keep store in sync with route — useLayoutEffect prevents a visible flash
+  // where children read a stale mapViewMode from localStorage before the sync runs.
+  useLayoutEffect(() => {
+    setMapViewMode(isWorldMonitor ? 'overlay' : 'globe');
+  }, [isWorldMonitor, setMapViewMode]);
 
   // Auth check
   useEffect(() => {
@@ -122,7 +133,7 @@ export default function PartnerThreatMap() {
             <Badge className="bg-tropic-olive/20 text-tropic-olive border border-tropic-olive/40 text-[9px]">
               PARTNER VIEW
             </Badge>
-            <MapViewToggle />
+            <MapViewToggle basePath="/partner/threat-map" />
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -141,17 +152,17 @@ export default function PartnerThreatMap() {
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          {mapViewMode === 'globe' ? (
+          {isGlobe ? (
             <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
           ) : (
             <OverlayMapView />
           )}
-          {/* Globe-only controls (World Monitor overlay has its own) */}
-          {mapViewMode === 'globe' && <TimelineScrubber />}
-          {mapViewMode === 'globe' && <ThreatMapControls />}
+          {/* Globe-only controls (World Monitor has its own) */}
+          {isGlobe && <TimelineScrubber />}
+          {isGlobe && <ThreatMapControls />}
         </div>
         {/* Sidebar — only shown in Globe mode; World Monitor has its own panels */}
-        {mapViewMode === 'globe' && <ThreatMapSidebar />}
+        {isGlobe && <ThreatMapSidebar />}
       </div>
     </div>
   );
