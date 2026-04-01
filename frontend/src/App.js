@@ -1261,7 +1261,7 @@ function WorldMonitorNginxFallback() {
           lineHeight: 1.7,
         }}>
           <div style={{ color: '#64748b', marginBottom: 4 }}># 1. Build the World Monitor app</div>
-          <div>cd worldmonitor &amp;&amp; npm run build</div>
+          <div>cd worldmonitor && npm run build</div>
           <div style={{ color: '#64748b', marginTop: 8, marginBottom: 4 }}># 2. Copy build output to Nginx root</div>
           <div>cp -r dist/* /opt/25th-id/frontend/build/worldmonitor/</div>
           <div style={{ color: '#64748b', marginTop: 8, marginBottom: 4 }}># 3. Add to nginx config (before the catch-all location /)</div>
