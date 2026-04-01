@@ -407,6 +407,12 @@ const TRACKING_ZOOM_CAP = 5;
 // so overlapping routes remain visually distinguishable (~16 km per unit).
 const PARTNER_LINE_OFFSET_DEG = 0.15;
 
+/** Returns true if a route point has valid numeric coordinates. */
+function isValidCoordinate(rp) {
+  return typeof rp.longitude === 'number' && typeof rp.latitude === 'number'
+    && !Number.isNaN(rp.longitude) && !Number.isNaN(rp.latitude);
+}
+
 function getUnitColor(originUnitId, unitIndex, originType) {
   if (!originUnitId) return TWENTY_FIFTH_COLOR; // 25th ID gold
   if (originType === 'counterpart') {
@@ -786,7 +792,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     if (rps.length === 0) return [];
     const sorted = [...rps].sort((a, b) => a.order - b.order);
     return sorted
-      .filter(rp => typeof rp.longitude === 'number' && typeof rp.latitude === 'number' && !Number.isNaN(rp.longitude) && !Number.isNaN(rp.latitude))
+      .filter(isValidCoordinate)
       .map(rp => [rp.longitude, rp.latitude + offsetLat]);
   }
 

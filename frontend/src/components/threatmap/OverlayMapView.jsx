@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 
 const WORLDMONITOR_URL = process.env.REACT_APP_WORLDMONITOR_URL;
+const IFRAME_LOAD_TIMEOUT_MS = 30000; // 30 seconds
 
 /**
  * Overlay Map View — World Monitor [Black Swan Edition]
@@ -16,15 +17,41 @@ const WORLDMONITOR_URL = process.env.REACT_APP_WORLDMONITOR_URL;
 export default function OverlayMapView() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const timeoutRef = useRef(null);
 
   const handleLoad = useCallback(() => {
     setIsLoading(false);
     setHasError(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
   }, []);
 
   const handleError = useCallback(() => {
     setIsLoading(false);
     setHasError(true);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  // Timeout fallback: if iframe hasn't loaded within the threshold, show error
+  useEffect(() => {
+    if (!WORLDMONITOR_URL) return;
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading((loading) => {
+        if (loading) {
+          setHasError(true);
+          return false;
+        }
+        return loading;
+      });
+    }, IFRAME_LOAD_TIMEOUT_MS);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, []);
 
   if (!WORLDMONITOR_URL) {
