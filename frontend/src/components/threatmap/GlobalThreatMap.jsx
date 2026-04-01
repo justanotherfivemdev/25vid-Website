@@ -533,8 +533,11 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           axios.get(`${API}/map/division-location`, { withCredentials: true }),
         ]);
         if (markersRes.status === 'fulfilled') setNatoMarkers(markersRes.value.data);
+        else console.warn('Failed to fetch NATO markers:', markersRes.reason);
         if (deploymentsRes.status === 'fulfilled') setDeployments(deploymentsRes.value.data);
+        else console.warn('Failed to fetch deployments:', deploymentsRes.reason);
         if (divRes.status === 'fulfilled') setDivisionLocation(divRes.value.data);
+        else console.warn('Failed to fetch division location:', divRes.reason);
       } catch { /* silently fail for unauthenticated sessions */ }
     };
     fetchMapData();
@@ -706,6 +709,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       zoom: Math.min(map.getZoom(), TRACKING_ZOOM_CAP),
       duration: 2000,
     });
+    // Helper functions (getDeploymentCoords, computeProgress, interpolateAlongLine) are
+    // defined in component scope but are functionally stable — their behavior depends only
+    // on the arguments passed plus nowTick, which is already in the dependency array.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackDeployment, nowTick, deployments]);
 
@@ -779,7 +785,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     const rps = Array.isArray(dep.route_points) ? dep.route_points : [];
     if (rps.length === 0) return [];
     const sorted = [...rps].sort((a, b) => a.order - b.order);
-    return sorted.map(rp => [rp.longitude, rp.latitude + offsetLat]);
+    return sorted
+      .filter(rp => typeof rp.longitude === 'number' && typeof rp.latitude === 'number' && !Number.isNaN(rp.longitude) && !Number.isNaN(rp.latitude))
+      .map(rp => [rp.longitude, rp.latitude + offsetLat]);
   }
 
   // Interpolate a position along a multi-segment LineString by fractional progress (0-1)

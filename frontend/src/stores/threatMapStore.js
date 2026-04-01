@@ -65,7 +65,7 @@ export const useMapStore = create((set) => ({
   mapViewMode: localStorage.getItem('mapViewMode') || 'globe', // 'globe' | 'overlay'
 
   // Data source filter
-  dataSourceFilter: 'all', // 'all' | 'real' | 'fictional'
+  dataSourceFilter: localStorage.getItem('dataSourceFilter') || 'all', // 'all' | 'real' | 'fictional'
 
   // Layer visibility (worldmonitor-inspired)
   overlayLayers: JSON.parse(localStorage.getItem('overlayLayers') || JSON.stringify({
@@ -85,7 +85,10 @@ export const useMapStore = create((set) => ({
     set({ mapViewMode: mode });
   },
 
-  setDataSourceFilter: (filter) => set({ dataSourceFilter: filter }),
+  setDataSourceFilter: (filter) => {
+    localStorage.setItem('dataSourceFilter', filter);
+    set({ dataSourceFilter: filter });
+  },
 
   setOverlayLayer: (layer, visible) =>
     set((state) => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 
 const WORLDMONITOR_URL = process.env.REACT_APP_WORLDMONITOR_URL;
 
@@ -14,6 +14,19 @@ const WORLDMONITOR_URL = process.env.REACT_APP_WORLDMONITOR_URL;
  * or your deployed URL for production).
  */
 export default function OverlayMapView() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  const handleLoad = useCallback(() => {
+    setIsLoading(false);
+    setHasError(false);
+  }, []);
+
+  const handleError = useCallback(() => {
+    setIsLoading(false);
+    setHasError(true);
+  }, []);
+
   if (!WORLDMONITOR_URL) {
     return (
       <div className="flex h-full w-full items-center justify-center" style={{ background: '#050a14' }}>
@@ -58,6 +71,35 @@ export default function OverlayMapView() {
 
   return (
     <div className="relative h-full w-full" style={{ background: '#050a14' }}>
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center" style={{ background: '#050a14' }}>
+          <div className="flex flex-col items-center gap-3">
+            <div
+              className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
+              style={{ borderColor: 'rgba(255,215,0,0.3)', borderTopColor: 'transparent' }}
+            />
+            <span className="text-xs text-gray-500">Loading World Monitor…</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {hasError && !isLoading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center" style={{ background: '#050a14' }}>
+          <div className="text-center p-6">
+            <div className="mb-3 text-3xl">⚠️</div>
+            <p className="text-sm font-medium" style={{ color: '#FFD700' }}>
+              Failed to load World Monitor
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              Check that the dashboard is running at{' '}
+              <code className="rounded bg-gray-800 px-1 py-0.5 text-gray-400">{WORLDMONITOR_URL}</code>
+            </p>
+          </div>
+        </div>
+      )}
+
       <iframe
         src={WORLDMONITOR_URL}
         title="World Monitor — Intelligence Overlay"
@@ -67,6 +109,8 @@ export default function OverlayMapView() {
         referrerPolicy="no-referrer"
         sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
         loading="eager"
+        onLoad={handleLoad}
+        onError={handleError}
         style={{
           background: '#0a0f0a',
           colorScheme: 'dark',
