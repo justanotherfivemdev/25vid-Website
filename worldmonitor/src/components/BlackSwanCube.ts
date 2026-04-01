@@ -133,7 +133,9 @@ export class BlackSwanCube {
   public updateData(data: CubeVisualizationData): void {
     // Clear existing cube
     while (this.cube.children.length > 0) {
-      this.cube.remove(this.cube.children[0]);
+      const child = this.cube.children[0];
+      if (!child) break;
+      this.cube.remove(child);
     }
     
     // Double-shell wireframe
@@ -259,13 +261,13 @@ export class BlackSwanCube {
     if (matrix.length < 3) return;
     
     // XY plane (Economic vs Seismic)
-    this.addHeatmapPlane(matrix[0][1], cubeSize, 'xy', -cubeSize / 2);
+    this.addHeatmapPlane(matrix[0]?.[1] ?? 0, cubeSize, 'xy', -cubeSize / 2);
     
     // XZ plane (Economic vs Social)
-    this.addHeatmapPlane(matrix[0][2], cubeSize, 'xz', -cubeSize / 2);
+    this.addHeatmapPlane(matrix[0]?.[2] ?? 0, cubeSize, 'xz', -cubeSize / 2);
     
     // YZ plane (Seismic vs Social)
-    this.addHeatmapPlane(matrix[1][2], cubeSize, 'yz', -cubeSize / 2);
+    this.addHeatmapPlane(matrix[1]?.[2] ?? 0, cubeSize, 'yz', -cubeSize / 2);
   }
   
   private addHeatmapPlane(correlation: number, size: number, plane: 'xy' | 'xz' | 'yz', offset: number): void {

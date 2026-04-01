@@ -1697,6 +1697,7 @@ export class App {
           riskMatrix: { probability: 0, impact: 0 }
         },
         martingaleMetrics: { accumulationRate: 0, decayFactor: 0, compoundedRisk: 0 },
+        highRiskRegions: [],
         correlationMatrix: Array(6).fill(0).map(() => Array(6).fill(0)),
         dimensionLabels: ['Error'],
         timestamp: new Date()
@@ -1704,31 +1705,7 @@ export class App {
     }
   }
 
-  private async getMarketData(): Promise<any[]> {
-    // Get current market data from markets panel
-    const marketsPanel = this.panels['markets'] as any;
-    if (!marketsPanel || !marketsPanel.markets) return [];
-    return marketsPanel.markets || [];
-  }
 
-  private async getEarthquakeData(): Promise<any[]> {
-    // Get earthquakes from map
-    if (!this.map) return [];
-    return (this.map as any).earthquakes || [];
-  }
-
-  private async getProtestData(): Promise<any[]> {
-    // Get protest events from map
-    if (!this.map) return [];
-    const protests = (this.map as any).protests || [];
-    return protests;
-  }
-
-  private async getOutageData(): Promise<any[]> {
-    // Get internet outages from map
-    if (!this.map) return [];
-    return (this.map as any).outages || [];
-  }
 
   private getNewsAlertCounts(): Array<{ category: string; alertCount: number }> {
     // Count alert keywords in news across all panels
