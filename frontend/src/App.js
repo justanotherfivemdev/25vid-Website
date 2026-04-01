@@ -43,6 +43,7 @@ import PartnerHub from '@/pages/partner/PartnerHub';
 import PartnerAdmin from '@/pages/partner/PartnerAdmin';
 import PartnerApply from '@/pages/partner/PartnerApply';
 import PartnerThreatMap from '@/pages/partner/PartnerThreatMap';
+import WorldMonitorNginxFallback from '@/components/threatmap/WorldMonitorNginxFallback';
 import PartnerApplicationsReview from '@/pages/admin/PartnerApplicationsReview';
 import AuditLogsManager from '@/pages/admin/AuditLogsManager';
 import ErrorLogsManager from '@/pages/admin/ErrorLogsManager';
@@ -1288,6 +1289,12 @@ function App() {
         {/* Legacy world-monitor route — redirect to standalone World Monitor app */}
         <Route path="/partner/threat-map/world-monitor" element={<ExternalRedirect to="/worldmonitor/" />} />
         <Route path="/partner/shared" element={<PartnerSharedArea />} />
+        {/* Defensive fallback: if Nginx is misconfigured and serves the React app
+            at /worldmonitor/, show a diagnostic message instead of a black screen.
+            In a correctly configured deployment, Nginx serves the standalone
+            worldmonitor Vite app at this path and React never sees these requests. */}
+        <Route path="/worldmonitor" element={<WorldMonitorNginxFallback />} />
+        <Route path="/worldmonitor/*" element={<WorldMonitorNginxFallback />} />
       </Routes>
     </BrowserRouter>
   );
