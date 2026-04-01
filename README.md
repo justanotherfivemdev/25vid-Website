@@ -117,7 +117,6 @@ CI=true REACT_APP_BACKEND_URL=http://localhost:8000 REACT_APP_MAPBOX_TOKEN=pk.te
 - `REACT_APP_BACKEND_URL=https://yourdomain.com`
 - `REACT_APP_MAPBOX_TOKEN` (required for Global Threat Map Globe view)
 - `REACT_APP_MAP_STYLE` (optional, defaults to `mapbox://styles/mapbox/dark-v11`)
-- `REACT_APP_WORLDMONITOR_URL` (required for World Monitor view — see below)
 
 ---
 
@@ -126,30 +125,38 @@ CI=true REACT_APP_BACKEND_URL=http://localhost:8000 REACT_APP_MAPBOX_TOKEN=pk.te
 The Global Threat Map is an integrated feature inside the Member Hub.
 It provides a 3D Globe view (Mapbox) with intelligence overlays powered by [Valyu](https://www.valyu.ai) and community event data.
 
-The **World Monitor** is a separate secondary experience powered by [World Monitor \[Black Swan Edition\]](https://github.com/swatfa/worldmonitor-bayesian), a real-time global intelligence dashboard that aggregates news, markets, geopolitical data, military infrastructure, and more.
+The **World Monitor** is a **standalone application** powered by [World Monitor \[Black Swan Edition\]](https://github.com/swatfa/worldmonitor-bayesian), a real-time global intelligence dashboard that aggregates news, markets, geopolitical data, military infrastructure, and more.
+
+> **Important:** World Monitor is NOT a React route. It is a separate Vite/TypeScript app served by Nginx at `/worldmonitor/`. Switching between the Global Threat Map and World Monitor triggers a **full page navigation** (`window.location.href`), not React Router navigation.
 
 The full World Monitor source code lives in the `worldmonitor/` directory (copied 1-to-1 from the upstream repo).
+
+### Architecture
+
+| Component | Type | Route / URL | Description |
+|---|---|---|---|
+| Global Threat Map | React feature (internal) | `/hub/threat-map` | 3D Globe with threat events, military bases, intel layers, timeline |
+| World Monitor | Standalone Vite/TS app | `/worldmonitor/` | Real-time intelligence dashboard (GDELT, USGS, markets, geopolitical) |
+
+Clicking "World Monitor" in the Threat Map header performs `window.location.href = '/worldmonitor/'`, which causes the browser to leave the React SPA entirely and load the standalone World Monitor app. This is intentional — React Router must **not** handle `/worldmonitor/` because it is served by Nginx from a separate build artifact.
 
 ### End-user flow
 
 1. From the Hub, click **Global Threat Map** in the sidebar
 2. The default view is the **Global Threat Map** (3D Globe) at `/hub/threat-map`
-3. Use the **World Monitor** tab in the header to switch to the World Monitor view at `/hub/threat-map/world-monitor`
-4. Users can switch back and forth between the two — they serve different purposes:
+3. Use the **World Monitor** button in the header to navigate to the standalone World Monitor app at `/worldmonitor/`
+4. In World Monitor, use the **Back to Threat Map** link to return to `/hub/threat-map`
+5. The two apps serve different purposes:
    - **Global Threat Map**: Interactive 3D globe with threat events, military bases, intel layers, and timeline scrubbing
    - **World Monitor**: Real-time intelligence dashboard aggregating GDELT, USGS, financial markets, and geopolitical data
 
 ### Developer / hosting flow
 
-| Route | View | Component |
+| Route | View | Served By |
 |---|---|---|
-| `/hub/threat-map` | Global Threat Map (3D Globe) | `ThreatMapPage` → `GlobalThreatMap` |
-| `/hub/threat-map/world-monitor` | World Monitor | `ThreatMapPage` → `OverlayMapView` (iframe) |
-| `/partner/threat-map` | Partner Globe view | `PartnerThreatMap` → `GlobalThreatMap` |
-| `/partner/threat-map/world-monitor` | Partner World Monitor | `PartnerThreatMap` → `OverlayMapView` (iframe) |
-
-World Monitor is embedded via an `<iframe>` pointing at `REACT_APP_WORLDMONITOR_URL`.  
-In production, the worldmonitor app is built as static files and served by Nginx at `/worldmonitor/`.
+| `/hub/threat-map` | Global Threat Map (3D Globe) | React SPA (React Router) |
+| `/partner/threat-map` | Partner Globe view | React SPA (React Router) |
+| `/worldmonitor/` | World Monitor dashboard | Nginx (static files from `worldmonitor/dist/`) |
 
 ### Setting up World Monitor
 
@@ -162,36 +169,29 @@ npm install
 npm run dev
 ```
 
-Then in your `frontend/.env`, set:
-
-```
-REACT_APP_WORLDMONITOR_URL=http://localhost:3000
-```
-
-Restart the frontend dev server and click the **World Monitor** tab in the Threat Map header to see the dashboard.
+In development, the World Monitor dev server runs independently. In production, it is built as static files and served by Nginx.
 
 ### Relevant env/config values
 
 | Variable | Location | Purpose |
 |---|---|---|
-| `REACT_APP_WORLDMONITOR_URL` | `frontend/.env` | URL of the running World Monitor instance |
 | `REACT_APP_MAPBOX_TOKEN` | `frontend/.env` | Mapbox token for the Globe view |
 | `REACT_APP_BACKEND_URL` | `frontend/.env` | Backend API URL (powers threat events) |
 
 ### Nginx / frontend / backend pieces
 
 - **Frontend**: React SPA served from `frontend/build/`; Nginx `try_files` sends all non-API routes to `index.html`
-- **World Monitor**: Separate Vite/TS app built to `worldmonitor/dist/`; Nginx serves it at `/worldmonitor/` with its own `try_files` fallback
+- **World Monitor**: Separate Vite/TS app built to `worldmonitor/dist/`; Nginx serves it at `/worldmonitor/` with its own `try_files` fallback — this prevents the React SPA from intercepting `/worldmonitor/` requests
 - **Backend**: FastAPI at `/api/*`; provides threat events, military bases, and worldmonitor data pipelines at `/api/worldmonitor/*`
 - **Docker**: World Monitor is built in a separate Dockerfile stage (`worldmonitor-build`) and copied to `/usr/share/nginx/html/worldmonitor`
 
 ### How to verify after deploy
 
 1. Navigate to `/hub/threat-map` → Global Threat Map (3D Globe) loads
-2. Click **World Monitor** tab → URL changes to `/hub/threat-map/world-monitor`, World Monitor dashboard loads in iframe
-3. Click **Globe** tab → URL changes back to `/hub/threat-map`, Globe view loads
-4. Refresh browser on `/hub/threat-map/world-monitor` → World Monitor loads correctly (no black screen)
-5. Check that no "Overlay" label appears anywhere in the UI
+2. Click **World Monitor** button → browser performs full navigation to `/worldmonitor/`, World Monitor dashboard loads
+3. No blank screen or "No routes matched" error occurs
+4. In World Monitor, click "Back to Threat Map" → browser navigates to `/hub/threat-map`
+5. Refresh browser on `/worldmonitor/` → World Monitor loads correctly (Nginx serves it)
 
 ### World Monitor API Keys (Optional)
 
@@ -217,7 +217,7 @@ cd worldmonitor
 npm run build          # outputs to worldmonitor/dist/
 ```
 
-Then serve the `dist/` directory at a URL and set `REACT_APP_WORLDMONITOR_URL` to that URL. For example with Nginx:
+Then serve the `dist/` directory at `/worldmonitor/` via Nginx. For example:
 
 ```nginx
 location /worldmonitor/ {
@@ -226,7 +226,7 @@ location /worldmonitor/ {
 }
 ```
 
-Then set `REACT_APP_WORLDMONITOR_URL=https://yourdomain.com/worldmonitor/` in `frontend/.env`.
+Nginx must serve `/worldmonitor/` **before** the React SPA catch-all, so that the browser loads the standalone World Monitor app instead of the React app's `index.html`.
 
 ---
 

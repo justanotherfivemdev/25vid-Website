@@ -1261,7 +1261,6 @@ function App() {
         <Route path="/hub/profile" element={<ProtectedRoute allowRecruit><MemberLayout><EditProfile /></MemberLayout></ProtectedRoute>} />
         {/* Threat map: full-screen layout, no sidebar */}
         <Route path="/hub/threat-map" element={<ProtectedRoute><ThreatMapPage /></ProtectedRoute>} />
-        <Route path="/hub/threat-map/world-monitor" element={<ProtectedRoute><ThreatMapPage /></ProtectedRoute>} />
         {/* Operations Planner: full-screen layout, no sidebar */}
         <Route path="/hub/operations-planner" element={<ProtectedRoute><OperationsPlanner /></ProtectedRoute>} />
         <Route path="/hub/operations-planner/:id" element={<ProtectedRoute><OperationsPlanner /></ProtectedRoute>} />
@@ -1277,7 +1276,6 @@ function App() {
         <Route path="/partner/discussions" element={<DiscussionForum />} />
         <Route path="/partner/discussions/:id" element={<DiscussionThread />} />
         <Route path="/partner/threat-map" element={<PartnerThreatMap />} />
-        <Route path="/partner/threat-map/world-monitor" element={<PartnerThreatMap />} />
         <Route path="/partner/shared" element={<PartnerSharedArea />} />
       </Routes>
     </BrowserRouter>

@@ -1,10 +1,8 @@
 import React, { useEffect, useLayoutEffect, useCallback, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
 import { useAuth } from '@/context/AuthContext';
 import GlobalThreatMap from '@/components/threatmap/GlobalThreatMap';
-import OverlayMapView from '@/components/threatmap/OverlayMapView';
 import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
 import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
@@ -25,17 +23,11 @@ export default function ThreatMapPage() {
   const [intelEvents, setIntelEvents] = useState([]);
   const [campaignEvents, setCampaignEvents] = useState([]);
 
-  // Route-driven view: /hub/threat-map → Globe, /hub/threat-map/world-monitor → World Monitor
-  const location = useLocation();
-  const isWorldMonitor = location.pathname.replace(/\/+$/, '') === '/hub/threat-map/world-monitor';
-  const isGlobe = !isWorldMonitor;
-
-  // Keep store in sync with route so other components (header, panels) can read it.
-  // useLayoutEffect ensures the store is updated before the first paint, preventing
-  // a flash where children read a stale mapViewMode from localStorage.
+  // This page always renders the Globe view. World Monitor is a standalone app
+  // at /worldmonitor/ (served by Nginx), not a React route.
   useLayoutEffect(() => {
-    setMapViewMode(isWorldMonitor ? 'overlay' : 'globe');
-  }, [isWorldMonitor, setMapViewMode]);
+    setMapViewMode('globe');
+  }, [setMapViewMode]);
 
   // Fetch threat events from our backend (Valyu-powered)
   const fetchEvents = useCallback(async () => {
@@ -115,21 +107,13 @@ export default function ThreatMapPage() {
       <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          {/* Dual Map System — Global Threat Map (Mapbox 3D) or World Monitor (iframe) */}
-          {isGlobe ? (
-            <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
-          ) : (
-            <OverlayMapView />
-          )}
-          {/* Globe-only controls (not needed for World Monitor) */}
-          {isGlobe && <TimelineScrubber />}
-          {isGlobe && <ThreatMapControls />}
-          {/* Intelligence panels — Globe mode only; WorldMonitor has its own panels */}
-          {isGlobe && <IntelLayerPanel />}
-          {isGlobe && <CorrelationPanel />}
+          <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+          <TimelineScrubber />
+          <ThreatMapControls />
+          <IntelLayerPanel />
+          <CorrelationPanel />
         </div>
-        {/* Sidebar — only shown in Globe mode; World Monitor has its own panels */}
-        {isGlobe && <ThreatMapSidebar isAdmin={isAdmin} />}
+        <ThreatMapSidebar isAdmin={isAdmin} />
       </div>
     </div>
   );
