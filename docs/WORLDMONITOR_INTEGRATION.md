@@ -386,18 +386,39 @@ End users:
 ### Nginx Configuration
 
 See `nginx-production.conf` for the production Nginx config. Key paths:
-- `/` → Frontend static files
+- `/` → Frontend static files (React SPA)
 - `/api/` → Backend proxy pass
-- `/worldmonitor/` → WorldMonitor static files (if self-hosted)
+- `/worldmonitor/` → WorldMonitor static files
+
+**Important:** The `/worldmonitor/` location block **must** appear before the
+catch-all `location /` block. Without it, all requests to `/worldmonitor/` fall
+through to the React SPA, which has no route for that path (black screen).
+
+For VPS deployments, deploy the worldmonitor build output alongside the React build:
+```bash
+cd worldmonitor && npm run build
+mkdir -p /opt/25th-id/frontend/build/worldmonitor
+cp -r dist/* /opt/25th-id/frontend/build/worldmonitor/
+```
 
 ---
 
 ## Troubleshooting
 
 ### WorldMonitor not loading
-World Monitor is now a standalone app at `/worldmonitor/`. Ensure Nginx serves the built
-`worldmonitor/dist/` directory at that path. The legacy `REACT_APP_WORLDMONITOR_URL` iframe
-approach is no longer used — navigation is via full-page redirect.
+World Monitor is a standalone Vite/TypeScript app served by Nginx at `/worldmonitor/`.
+If you see a black screen or a "Nginx Configuration Required" message:
+
+1. **Verify Nginx config** — `nginx-production.conf` (VPS) or `frontend/nginx.conf` (Docker)
+   must include the `/worldmonitor/` location block **before** the catch-all `location /`.
+2. **Verify build output exists** — the worldmonitor `dist/` must be deployed to the Nginx
+   root under `worldmonitor/` (e.g. `/opt/25th-id/frontend/build/worldmonitor/index.html`
+   for VPS, or `/usr/share/nginx/html/worldmonitor/index.html` for Docker).
+3. **Rebuild if needed** — `cd worldmonitor && npm run build` then copy `dist/*` to the
+   appropriate path.
+
+The legacy `REACT_APP_WORLDMONITOR_URL` iframe approach is no longer used — navigation
+is via full-page redirect (`window.location.href = '/worldmonitor/'`).
 
 ### No threat events appearing
 1. Check `curl http://localhost:8001/api/worldmonitor/status` for pipeline health.
