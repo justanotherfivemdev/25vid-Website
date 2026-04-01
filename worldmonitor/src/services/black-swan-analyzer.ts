@@ -16,10 +16,10 @@ import type {
   PredictionMarket, 
   MilitaryVessel, 
   MilitaryFlight, 
-  WeatherAlert,
   NewsItem,
   CryptoData
 } from '@/types';
+import type { WeatherAlert } from '@/services/weather';
 
 export interface BlackSwanSignal {
   id: string;
@@ -109,7 +109,7 @@ function sourceCandidates(data: DataSnapshot): DataSnapshot {
     protests: data.protests.filter(p => (p.fatalities || 0) > 0 || (p.eventType && p.eventType.toLowerCase().includes('violence')) || (p.summary && p.summary.toLowerCase().includes('violence'))),
     vessels: data.vessels, // Military is always high signal
     flights: data.flights,
-    outages: data.outages.filter(o => o.severity !== 'minor'),
+    outages: data.outages.filter(o => o.severity !== 'partial'),
     news: data.news,
     predictions: data.predictions.filter(p => p.yesPrice > 0.05 && p.yesPrice < 0.95),
     alertCounts: data.alertCounts
@@ -162,7 +162,7 @@ function generateNarrativeTitle(cluster: BlackSwanSignal[]): string {
   const types = [...new Set(cluster.map(s => s.type))];
   const locations = [...new Set(cluster.map(s => s.location?.name).filter(Boolean))];
   
-  if (locations.length > 0) return `${types[0].toUpperCase()} instability in ${locations[0]}`;
+  if (locations.length > 0 && types[0]) return `${types[0].toUpperCase()} instability in ${locations[0]}`;
   return `Coordinated ${types.join('/')} volatility`;
 }
 
@@ -183,20 +183,23 @@ function calculateCentrality(signals: BlackSwanSignal[]): void {
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         if (i === j) continue;
-        const isRelated = signals[i].type === signals[j].type || signals[i].clusterId === signals[j].clusterId;
+        const si = signals[i];
+        const sj = signals[j];
+        if (!si || !sj) continue;
+        const isRelated = si.type === sj.type || si.clusterId === sj.clusterId;
         if (isRelated) {
-          nextWeights[j] += dampening * weights[i] * (signals[i].severity / 100);
+          nextWeights[j] = (nextWeights[j] ?? 0) + dampening * (weights[i] ?? 0) * (si.severity / 100);
         }
       }
     }
     // Normalize
     const sum = nextWeights.reduce((a, b) => a + b, 0);
     if (sum > 0) {
-      for (let i = 0; i < n; i++) weights[i] = nextWeights[i] / sum;
+      for (let i = 0; i < n; i++) weights[i] = (nextWeights[i] ?? 0) / sum;
     }
   }
 
-  signals.forEach((s, i) => s.centrality = weights[i]);
+  signals.forEach((s, i) => s.centrality = weights[i] ?? 0);
 }
 
 /**
@@ -214,7 +217,7 @@ function calculateMartingaleRisk(values: number[], decayFactor = 0.95): number {
   let score = 0;
   let multiplier = 1;
   for (let i = values.length - 1; i >= 0; i--) {
-    const val = values[i];
+    const val = values[i] ?? 0;
     score += val * multiplier;
     if (val > 50) multiplier *= 1.2;
     multiplier *= decayFactor;
