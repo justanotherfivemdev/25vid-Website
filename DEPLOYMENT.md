@@ -127,8 +127,8 @@ REACT_APP_BACKEND_URL=https://yourdomain.com
 REACT_APP_MAPBOX_TOKEN=pk.your_mapbox_public_token_here
 # REACT_APP_MAP_STYLE=mapbox://styles/mapbox/dark-v11
 
-# World Monitor (World Monitor view in Global Threat Map)
-REACT_APP_WORLDMONITOR_URL=https://yourdomain.com/worldmonitor/
+# World Monitor (LEGACY — no longer required; World Monitor uses full-page navigation)
+# REACT_APP_WORLDMONITOR_URL=https://yourdomain.com/worldmonitor/
 ```
 
 For local/staging work, you can start from `frontend/.env.example` and then
