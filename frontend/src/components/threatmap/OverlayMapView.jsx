@@ -72,7 +72,7 @@ export default function OverlayMapView() {
             World Monitor Not Configured
           </h2>
           <p className="mb-4 text-sm text-gray-400">
-            The World Monitor requires the World Monitor dashboard to be running.
+            The World Monitor view requires the dashboard to be running.
             Set the <code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs" style={{ color: '#FFD700' }}>REACT_APP_WORLDMONITOR_URL</code> environment
             variable in your frontend <code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-300">.env</code> file.
           </p>

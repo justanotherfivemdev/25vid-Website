@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useCallback, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
@@ -31,8 +31,9 @@ export default function PartnerThreatMap() {
   const isWorldMonitor = location.pathname.replace(/\/+$/, '').endsWith('/world-monitor');
   const isGlobe = !isWorldMonitor;
 
-  // Keep store in sync with route
-  useEffect(() => {
+  // Keep store in sync with route — useLayoutEffect prevents a visible flash
+  // where children read a stale mapViewMode from localStorage before the sync runs.
+  useLayoutEffect(() => {
     setMapViewMode(isWorldMonitor ? 'overlay' : 'globe');
   }, [isWorldMonitor, setMapViewMode]);
 

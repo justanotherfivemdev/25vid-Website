@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
@@ -30,8 +30,10 @@ export default function ThreatMapPage() {
   const isWorldMonitor = location.pathname.replace(/\/+$/, '') === '/hub/threat-map/world-monitor';
   const isGlobe = !isWorldMonitor;
 
-  // Keep store in sync with route so other components (header, panels) can read it
-  useEffect(() => {
+  // Keep store in sync with route so other components (header, panels) can read it.
+  // useLayoutEffect ensures the store is updated before the first paint, preventing
+  // a flash where children read a stale mapViewMode from localStorage.
+  useLayoutEffect(() => {
     setMapViewMode(isWorldMonitor ? 'overlay' : 'globe');
   }, [isWorldMonitor, setMapViewMode]);
 
