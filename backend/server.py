@@ -26,6 +26,11 @@ from config import (
 from database import db, client
 
 from services.map_service import backfill_map_events
+from services.worldmonitor_ingest import (
+    ingest_gdelt_intel,
+    ingest_earthquakes,
+    ingest_acled_protests,
+)
 from services.threat_intel import (
     THREAT_QUERIES,
     classify_category, extract_country, extract_keywords_from_text,
@@ -58,6 +63,7 @@ from routes.operations_events import router as operations_events_router
 from routes.voice import router as voice_router
 from routes.user_settings import router as user_settings_router
 from routes.community_events import router as community_events_router
+from routes.worldmonitor import router as worldmonitor_router
 
 
 # Create the main app
@@ -90,6 +96,7 @@ api_router.include_router(operations_events_router)
 api_router.include_router(voice_router)
 api_router.include_router(user_settings_router)
 api_router.include_router(community_events_router)
+api_router.include_router(worldmonitor_router)
 
 
 @api_router.get("/")
@@ -393,8 +400,8 @@ async def _restore_uploads_from_mongodb():
 
 
 async def _valyu_background_ingestion():
-    """Periodically fetch threat events from Valyu and OpenAI."""
-    vlog = logging.getLogger("valyu")
+    """Periodically fetch threat events from Valyu, OpenAI, and WorldMonitor sources."""
+    vlog = logging.getLogger("ingestion")
     vlog.info("Background ingestion service started")
     while True:
         try:
@@ -403,6 +410,23 @@ async def _valyu_background_ingestion():
                 await _run_valyu_ingestion()
             if os.environ.get("OPENAI_API_KEY", ""):
                 await _run_openai_ingestion()
+            # WorldMonitor-aligned ingestion pipelines (no auth required)
+            try:
+                await ingest_gdelt_intel()
+            except Exception as exc:
+                vlog.warning(f"GDELT ingestion error: {exc}")
+            try:
+                await ingest_earthquakes()
+            except Exception as exc:
+                vlog.warning(f"Earthquake ingestion error: {exc}")
+            # ACLED requires credentials
+            acled_key = os.environ.get("ACLED_ACCESS_TOKEN", "")
+            acled_email = os.environ.get("ACLED_EMAIL", "")
+            if acled_key and acled_email:
+                try:
+                    await ingest_acled_protests(acled_key, acled_email)
+                except Exception as exc:
+                    vlog.warning(f"ACLED protest ingestion error: {exc}")
             await asyncio.sleep(VALYU_EVENT_REFRESH_MINUTES * 60)
         except asyncio.CancelledError:
             break
@@ -502,6 +526,9 @@ async def startup_event():
         await db.community_events.create_index("event_nature")
         await db.community_events.create_index("category")
         await db.community_events.create_index("created_at")
+        # WorldMonitor cache collection
+        await db.wm_cache.create_index("key", unique=True)
+        await db.external_events.create_index("provider")
     except Exception as e:
         vlog.warning(f"Index creation note: {e}")
 
