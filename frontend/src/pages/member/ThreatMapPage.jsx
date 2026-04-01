@@ -27,7 +27,7 @@ export default function ThreatMapPage() {
 
   // Route-driven view: /hub/threat-map → Globe, /hub/threat-map/world-monitor → World Monitor
   const location = useLocation();
-  const isWorldMonitor = location.pathname === '/hub/threat-map/world-monitor';
+  const isWorldMonitor = location.pathname.replace(/\/+$/, '') === '/hub/threat-map/world-monitor';
   const isGlobe = !isWorldMonitor;
 
   // Keep store in sync with route so other components (header, panels) can read it

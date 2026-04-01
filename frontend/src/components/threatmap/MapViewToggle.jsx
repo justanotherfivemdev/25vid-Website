@@ -10,7 +10,7 @@ import { Globe, Map as MapIcon } from 'lucide-react';
  */
 export default function MapViewToggle({ basePath = '/hub/threat-map' }) {
   const location = useLocation();
-  const isWorldMonitor = location.pathname.endsWith('/world-monitor');
+  const isWorldMonitor = location.pathname.replace(/\/+$/, '').endsWith('/world-monitor');
 
   return (
     <div className="flex items-center rounded-lg overflow-hidden border"

@@ -28,7 +28,7 @@ export default function PartnerThreatMap() {
 
   // Route-driven view: /partner/threat-map → Globe, /partner/threat-map/world-monitor → World Monitor
   const location = useLocation();
-  const isWorldMonitor = location.pathname.endsWith('/world-monitor');
+  const isWorldMonitor = location.pathname.replace(/\/+$/, '').endsWith('/world-monitor');
   const isGlobe = !isWorldMonitor;
 
   // Keep store in sync with route
