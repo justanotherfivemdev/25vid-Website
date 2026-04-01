@@ -64,14 +64,15 @@ services:
     networks:
       - internal
 
-  # ── Frontend (React build served by Nginx) ────────────────
+  # ── Frontend (React + World Monitor, served by Nginx) ─────
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-}
         REACT_APP_MAPBOX_TOKEN: ${REACT_APP_MAPBOX_TOKEN:-}
+        REACT_APP_WORLDMONITOR_URL: ${REACT_APP_WORLDMONITOR_URL:-/worldmonitor/}
     container_name: 25vid-frontend
     restart: unless-stopped
     depends_on:
