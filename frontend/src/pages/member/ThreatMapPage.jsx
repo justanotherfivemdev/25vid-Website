@@ -8,6 +8,8 @@ import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
 import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
+import IntelLayerPanel from '@/components/threatmap/IntelLayerPanel';
+import CorrelationPanel from '@/components/threatmap/CorrelationPanel';
 import '@/components/threatmap/threatmap.css';
 
 import { API } from '@/utils/api';
@@ -111,6 +113,9 @@ export default function ThreatMapPage() {
           {/* Globe-only controls (not needed for World Monitor overlay) */}
           {isGlobe && <TimelineScrubber />}
           {isGlobe && <ThreatMapControls />}
+          {/* Intelligence panels — Globe mode only; WorldMonitor has its own panels */}
+          {isGlobe && <IntelLayerPanel />}
+          {isGlobe && <CorrelationPanel />}
         </div>
         {/* Sidebar — only shown in Globe mode; World Monitor has its own panels */}
         {isGlobe && <ThreatMapSidebar isAdmin={isAdmin} />}

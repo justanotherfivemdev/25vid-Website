@@ -407,6 +407,12 @@ const TRACKING_ZOOM_CAP = 5;
 // so overlapping routes remain visually distinguishable (~16 km per unit).
 const PARTNER_LINE_OFFSET_DEG = 0.15;
 
+/** Returns true if a route point has valid numeric coordinates. */
+function isValidCoordinate(rp) {
+  return typeof rp.longitude === 'number' && typeof rp.latitude === 'number'
+    && !Number.isNaN(rp.longitude) && !Number.isNaN(rp.latitude);
+}
+
 function getUnitColor(originUnitId, unitIndex, originType) {
   if (!originUnitId) return TWENTY_FIFTH_COLOR; // 25th ID gold
   if (originType === 'counterpart') {
@@ -533,9 +539,12 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           axios.get(`${API}/map/division-location`, { withCredentials: true }),
         ]);
         if (markersRes.status === 'fulfilled') setNatoMarkers(markersRes.value.data);
+        else console.warn('Failed to fetch NATO markers:', markersRes.reason);
         if (deploymentsRes.status === 'fulfilled') setDeployments(deploymentsRes.value.data);
+        else console.warn('Failed to fetch deployments:', deploymentsRes.reason);
         if (divRes.status === 'fulfilled') setDivisionLocation(divRes.value.data);
-      } catch { /* silently fail for unauthenticated sessions */ }
+        else console.warn('Failed to fetch division location:', divRes.reason);
+      } catch { /* ignore unexpected errors; individual request failures are handled above */ }
     };
     fetchMapData();
   }, []);
@@ -706,6 +715,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
       zoom: Math.min(map.getZoom(), TRACKING_ZOOM_CAP),
       duration: 2000,
     });
+    // Helper functions (getDeploymentCoords, computeProgress, interpolateAlongLine) are
+    // defined in component scope but are functionally stable — their behavior depends only
+    // on the arguments passed plus nowTick, which is already in the dependency array.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackDeployment, nowTick, deployments]);
 
@@ -779,7 +791,9 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     const rps = Array.isArray(dep.route_points) ? dep.route_points : [];
     if (rps.length === 0) return [];
     const sorted = [...rps].sort((a, b) => a.order - b.order);
-    return sorted.map(rp => [rp.longitude, rp.latitude + offsetLat]);
+    return sorted
+      .filter(isValidCoordinate)
+      .map(rp => [rp.longitude, rp.latitude + offsetLat]);
   }
 
   // Interpolate a position along a multi-segment LineString by fractional progress (0-1)

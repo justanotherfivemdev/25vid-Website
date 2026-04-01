@@ -65,7 +65,7 @@ export const useMapStore = create((set) => ({
   mapViewMode: localStorage.getItem('mapViewMode') || 'globe', // 'globe' | 'overlay'
 
   // Data source filter
-  dataSourceFilter: 'all', // 'all' | 'real' | 'fictional'
+  dataSourceFilter: localStorage.getItem('dataSourceFilter') || 'all', // 'all' | 'real' | 'fictional'
 
   // Layer visibility (worldmonitor-inspired)
   overlayLayers: JSON.parse(localStorage.getItem('overlayLayers') || JSON.stringify({
@@ -85,7 +85,12 @@ export const useMapStore = create((set) => ({
     set({ mapViewMode: mode });
   },
 
-  setDataSourceFilter: (filter) => set({ dataSourceFilter: filter }),
+  setDataSourceFilter: (filter) => {
+    localStorage.setItem('dataSourceFilter', filter);
+    set({ dataSourceFilter: filter });
+    // Re-apply event filters so the data source change takes effect immediately
+    useEventsStore.getState().applyFilters();
+  },
 
   setOverlayLayer: (layer, visible) =>
     set((state) => {
@@ -186,7 +191,15 @@ export const useEventsStore = create((set, get) => ({
 
   applyFilters: () => {
     const { events, timeRange, categoryFilters, threatLevelFilters, searchQuery } = get();
+    const { dataSourceFilter } = useMapStore.getState();
     let filtered = [...events];
+
+    // Filter by data source (real-world vs fictional/milsim)
+    if (dataSourceFilter === 'real') {
+      filtered = filtered.filter((event) => event.event_nature !== 'fictional');
+    } else if (dataSourceFilter === 'fictional') {
+      filtered = filtered.filter((event) => event.event_nature === 'fictional');
+    }
 
     if (timeRange) {
       filtered = filtered.filter((event) => {
