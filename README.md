@@ -117,17 +117,41 @@ CI=true REACT_APP_BACKEND_URL=http://localhost:8000 REACT_APP_MAPBOX_TOKEN=pk.te
 - `REACT_APP_BACKEND_URL=https://yourdomain.com`
 - `REACT_APP_MAPBOX_TOKEN` (required for Global Threat Map Globe view)
 - `REACT_APP_MAP_STYLE` (optional, defaults to `mapbox://styles/mapbox/dark-v11`)
-- `REACT_APP_WORLDMONITOR_URL` (required for Intelligence Overlay view — see below)
+- `REACT_APP_WORLDMONITOR_URL` (required for World Monitor view — see below)
 
 ---
 
-## World Monitor Intelligence Overlay
+## Global Threat Map & World Monitor
 
-The **Overlay** view in the Global Threat Map is powered by [World Monitor \[Black Swan Edition\]](https://github.com/swatfa/worldmonitor-bayesian), a real-time global intelligence dashboard that aggregates news, markets, geopolitical data, military infrastructure, and more.
+The Global Threat Map is an integrated feature inside the Member Hub.
+It provides a 3D Globe view (Mapbox) with intelligence overlays powered by [Valyu](https://www.valyu.ai) and community event data.
+
+The **World Monitor** is a separate secondary experience powered by [World Monitor \[Black Swan Edition\]](https://github.com/swatfa/worldmonitor-bayesian), a real-time global intelligence dashboard that aggregates news, markets, geopolitical data, military infrastructure, and more.
 
 The full World Monitor source code lives in the `worldmonitor/` directory (copied 1-to-1 from the upstream repo).
 
-### Setting up the World Monitor Overlay
+### End-user flow
+
+1. From the Hub, click **Global Threat Map** in the sidebar
+2. The default view is the **Global Threat Map** (3D Globe) at `/hub/threat-map`
+3. Use the **World Monitor** tab in the header to switch to the World Monitor view at `/hub/threat-map/world-monitor`
+4. Users can switch back and forth between the two — they serve different purposes:
+   - **Global Threat Map**: Interactive 3D globe with threat events, military bases, intel layers, and timeline scrubbing
+   - **World Monitor**: Real-time intelligence dashboard aggregating GDELT, USGS, financial markets, and geopolitical data
+
+### Developer / hosting flow
+
+| Route | View | Component |
+|---|---|---|
+| `/hub/threat-map` | Global Threat Map (3D Globe) | `ThreatMapPage` → `GlobalThreatMap` |
+| `/hub/threat-map/world-monitor` | World Monitor | `ThreatMapPage` → `OverlayMapView` (iframe) |
+| `/partner/threat-map` | Partner Globe view | `PartnerThreatMap` → `GlobalThreatMap` |
+| `/partner/threat-map/world-monitor` | Partner World Monitor | `PartnerThreatMap` → `OverlayMapView` (iframe) |
+
+World Monitor is embedded via an `<iframe>` pointing at `REACT_APP_WORLDMONITOR_URL`.  
+In production, the worldmonitor app is built as static files and served by Nginx at `/worldmonitor/`.
+
+### Setting up World Monitor
 
 ```bash
 # 1. Install World Monitor dependencies
@@ -144,7 +168,30 @@ Then in your `frontend/.env`, set:
 REACT_APP_WORLDMONITOR_URL=http://localhost:3000
 ```
 
-Restart the frontend dev server and click the **Overlay** toggle in the Threat Map header to see the World Monitor dashboard.
+Restart the frontend dev server and click the **World Monitor** tab in the Threat Map header to see the dashboard.
+
+### Relevant env/config values
+
+| Variable | Location | Purpose |
+|---|---|---|
+| `REACT_APP_WORLDMONITOR_URL` | `frontend/.env` | URL of the running World Monitor instance |
+| `REACT_APP_MAPBOX_TOKEN` | `frontend/.env` | Mapbox token for the Globe view |
+| `REACT_APP_BACKEND_URL` | `frontend/.env` | Backend API URL (powers threat events) |
+
+### Nginx / frontend / backend pieces
+
+- **Frontend**: React SPA served from `frontend/build/`; Nginx `try_files` sends all non-API routes to `index.html`
+- **World Monitor**: Separate Vite/TS app built to `worldmonitor/dist/`; Nginx serves it at `/worldmonitor/` with its own `try_files` fallback
+- **Backend**: FastAPI at `/api/*`; provides threat events, military bases, and worldmonitor data pipelines at `/api/worldmonitor/*`
+- **Docker**: World Monitor is built in a separate Dockerfile stage (`worldmonitor-build`) and copied to `/usr/share/nginx/html/worldmonitor`
+
+### How to verify after deploy
+
+1. Navigate to `/hub/threat-map` → Global Threat Map (3D Globe) loads
+2. Click **World Monitor** tab → URL changes to `/hub/threat-map/world-monitor`, World Monitor dashboard loads in iframe
+3. Click **Globe** tab → URL changes back to `/hub/threat-map`, Globe view loads
+4. Refresh browser on `/hub/threat-map/world-monitor` → World Monitor loads correctly (no black screen)
+5. Check that no "Overlay" label appears anywhere in the UI
 
 ### World Monitor API Keys (Optional)
 

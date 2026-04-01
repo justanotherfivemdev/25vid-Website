@@ -1,9 +1,16 @@
 import React from 'react';
-import { useMapStore } from '@/stores/threatMapStore';
+import { Link, useLocation } from 'react-router-dom';
 import { Globe, Map as MapIcon } from 'lucide-react';
 
-export default function MapViewToggle() {
-  const { mapViewMode, setMapViewMode } = useMapStore();
+/**
+ * MapViewToggle — switches between Global Threat Map (Globe) and World Monitor.
+ *
+ * Uses route-based navigation. Pass `basePath` to control the root path
+ * (defaults to "/hub/threat-map" for member hub; partners use "/partner/threat-map").
+ */
+export default function MapViewToggle({ basePath = '/hub/threat-map' }) {
+  const location = useLocation();
+  const isWorldMonitor = location.pathname.endsWith('/world-monitor');
 
   return (
     <div className="flex items-center rounded-lg overflow-hidden border"
@@ -13,31 +20,31 @@ export default function MapViewToggle() {
         backdropFilter: 'blur(8px)',
       }}
     >
-      <button
-        onClick={() => setMapViewMode('globe')}
+      <Link
+        to={basePath}
         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-          mapViewMode === 'globe'
+          !isWorldMonitor
             ? 'bg-tropic-gold text-black'
             : 'text-tropic-gold-light hover:bg-tropic-gold/10'
         }`}
-        title="Globe View — 3D Mapbox projection"
+        title="Global Threat Map — 3D Globe view"
       >
         <Globe className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Globe</span>
-      </button>
+      </Link>
       <div className="w-px h-5" style={{ background: 'rgba(255,215,0,0.3)' }} />
-      <button
-        onClick={() => setMapViewMode('overlay')}
+      <Link
+        to={`${basePath}/world-monitor`}
         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-          mapViewMode === 'overlay'
+          isWorldMonitor
             ? 'bg-tropic-gold text-black'
             : 'text-tropic-gold-light hover:bg-tropic-gold/10'
         }`}
-        title="World Monitor — Real-time intelligence overlay"
+        title="World Monitor — Real-time intelligence dashboard"
       >
         <MapIcon className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Overlay</span>
-      </button>
+        <span className="hidden sm:inline">World Monitor</span>
+      </Link>
     </div>
   );
 }

@@ -127,7 +127,7 @@ REACT_APP_BACKEND_URL=https://yourdomain.com
 REACT_APP_MAPBOX_TOKEN=pk.your_mapbox_public_token_here
 # REACT_APP_MAP_STYLE=mapbox://styles/mapbox/dark-v11
 
-# World Monitor Intelligence Overlay (Overlay view in Global Threat Map)
+# World Monitor (World Monitor view in Global Threat Map)
 REACT_APP_WORLDMONITOR_URL=https://yourdomain.com/worldmonitor/
 ```
 
@@ -143,9 +143,9 @@ yarn build
 
 ---
 
-## 4b) World Monitor Intelligence Overlay (Optional)
+## 4b) World Monitor (Optional)
 
-The Global Threat Map's **Overlay** view is powered by [World Monitor](https://github.com/swatfa/worldmonitor-bayesian).
+The Global Threat Map's **World Monitor** view is powered by [World Monitor](https://github.com/swatfa/worldmonitor-bayesian).
 The source lives in the `worldmonitor/` directory.
 
 ```bash
@@ -234,7 +234,7 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
-    # World Monitor Intelligence Overlay (built from worldmonitor/ directory)
+    # World Monitor (World Monitor view in Global Threat Map — built from worldmonitor/ directory)
     location /worldmonitor/ {
         alias /opt/25th-id/worldmonitor/dist/;
         try_files $uri $uri/ /worldmonitor/index.html;

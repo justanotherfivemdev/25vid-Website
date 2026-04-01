@@ -244,7 +244,7 @@ export default function IntelLayerPanel() {
         <div className="flex items-center justify-center gap-1.5">
           <Activity className="h-3 w-3 text-green-500" />
           <span className="text-[8px] text-gray-600 uppercase tracking-wider">
-            {mapViewMode === 'globe' ? '🌍 Globe View' : '🗺️ Overlay View'} • Live
+            {mapViewMode === 'globe' ? '🌍 Globe View' : '🗺️ World Monitor'} • Live
           </span>
         </div>
       </div>
