@@ -98,8 +98,12 @@ async def _get_cached(key: str) -> Optional[dict]:
     doc = await db[_PROXY_CACHE].find_one({"key": key}, {"_id": 0})
     if doc:
         expires_at = doc.get("expires_at")
-        if expires_at and expires_at > datetime.now(timezone.utc):
-            return doc.get("data")
+        if expires_at:
+            # MongoDB may return offset-naive datetimes; normalize to UTC-aware
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at > datetime.now(timezone.utc):
+                return doc.get("data")
     return None
 
 
@@ -158,84 +162,69 @@ def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
 
     # Collect mod data from the grid cards.
     # Each card is an <a> with class "group" inside the grid.
+    # All fields are extracted per-card to avoid index-misalignment when a
+    # card is missing an element (e.g. no author or no rating).
     cards = soup.select("div.grid a.group[href]")
-    names = [el.get_text(strip=True) for el in soup.select("div.grid h2.break-words")]
-    authors_raw = soup.select("div.grid span.mt-1")
-    authors = []
-    for el in authors_raw:
-        txt = el.get_text(strip=True)
-        # Author text starts with "by " — strip it
-        authors.append(txt[3:] if txt.lower().startswith("by ") else txt)
 
-    # Images — from aspect-h-9 containers, find img tags
-    image_els = soup.select("div.grid div.aspect-h-9 img")
-    images: List[str] = []
-    for img in image_els:
-        src = img.get("src") or img.get("srcset", "").split(",")[0].split(" ")[0]
-        if src:
-            if src.startswith("/"):
-                src = f"{WORKSHOP_BASE}{src}"
-            images.append(src)
-        else:
-            images.append("")
-
-    # If aspect-h-9 img selector doesn't match, try broader approach
-    if not images:
-        for card in cards:
-            img = card.select_one("img")
-            if img:
-                src = img.get("src") or img.get("srcset", "").split(",")[0].split(" ")[0]
-                if src and src.startswith("/"):
-                    src = f"{WORKSHOP_BASE}{src}"
-                images.append(src or "")
-            else:
-                images.append("")
-
-    # Sizes and ratings from span.ml-1
-    span_ml1 = soup.select("div.grid span.ml-1")
-    sizes: List[str] = []
-    ratings: List[str] = []
-    for el in span_ml1:
-        txt = el.get_text(strip=True)
-        if "%" in txt:
-            ratings.append(txt)
-        else:
-            sizes.append(txt)
-
-    # Tags — from tag badge elements within each card
-    # Tags appear as small labels/badges within the card area
-    card_tags: List[List[str]] = []
     for card in cards:
-        tag_els = card.select("span.text-xs, span.badge, a[href*='tags=']")
-        mod_tags = []
-        for tag_el in tag_els:
-            txt = tag_el.get_text(strip=True)
-            # Skip author text, ratings, sizes
-            if txt and not txt.startswith("by ") and "%" not in txt and len(txt) < 40:
-                href = tag_el.get("href", "")
-                if "tags=" in href:
-                    mod_tags.append(txt)
-        card_tags.append(mod_tags)
-
-    for i, card in enumerate(cards):
         href = card.get("href", "")
-        # Extract mod_id from URL like /workshop/5965550F0AA2C145-ModName
+
+        # ── mod_id & URL ────────────────────────────────────────────
         mod_id = ""
         parts = href.strip("/").split("/")
         if len(parts) >= 2:
             slug = parts[-1]
             mod_id = slug.split("-")[0]
-
         mod_url = f"{WORKSHOP_BASE}{href}" if href.startswith("/") else href
+
+        # ── name ────────────────────────────────────────────────────
+        name_el = card.select_one("h2.break-words")
+        name = name_el.get_text(strip=True) if name_el else ""
+
+        # ── author ──────────────────────────────────────────────────
+        author = ""
+        author_el = card.select_one("span.mt-1")
+        if author_el:
+            txt = author_el.get_text(strip=True)
+            author = txt[3:] if txt.lower().startswith("by ") else txt
+
+        # ── thumbnail ───────────────────────────────────────────────
+        thumbnail_url = ""
+        img_el = card.select_one("div.aspect-h-9 img") or card.select_one("img")
+        if img_el:
+            src = img_el.get("src") or img_el.get("srcset", "").split(",")[0].split(" ")[0]
+            if src:
+                if src.startswith("/"):
+                    src = f"{WORKSHOP_BASE}{src}"
+                thumbnail_url = src
+
+        # ── size & rating (both use span.ml-1 inside the card) ─────
+        size = ""
+        rating = ""
+        for span in card.select("span.ml-1"):
+            txt = span.get_text(strip=True)
+            if "%" in txt:
+                rating = txt
+            elif txt:
+                size = txt
+
+        # ── tags ────────────────────────────────────────────────────
+        mod_tags: List[str] = []
+        for tag_el in card.select("span.text-xs, span.badge, a[href*='tags=']"):
+            txt = tag_el.get_text(strip=True)
+            if txt and not txt.startswith("by ") and "%" not in txt and len(txt) < 40:
+                tag_href = tag_el.get("href", "")
+                if "tags=" in tag_href:
+                    mod_tags.append(txt)
 
         mods.append({
             "mod_id": mod_id,
-            "name": names[i] if i < len(names) else "",
-            "author": authors[i] if i < len(authors) else "",
-            "thumbnail_url": images[i] if i < len(images) else "",
-            "size": sizes[i] if i < len(sizes) else "",
-            "rating": ratings[i] if i < len(ratings) else "",
-            "tags": card_tags[i] if i < len(card_tags) else [],
+            "name": name,
+            "author": author,
+            "thumbnail_url": thumbnail_url,
+            "size": size,
+            "rating": rating,
+            "tags": mod_tags,
             "workshop_url": mod_url,
         })
 
