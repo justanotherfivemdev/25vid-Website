@@ -82,7 +82,8 @@ async def _allocate_ports() -> dict:
     """Auto-allocate the next available port block for a new server.
 
     Uses configured base ports and increments by SERVER_PORT_BLOCK_SIZE for
-    each existing server to avoid collisions.
+    each existing server to avoid collisions.  Port values are validated
+    against the valid 1-65535 range.
     """
     servers = await db.managed_servers.find({}, {"ports": 1, "_id": 0}).to_list(None)
     used_game = set()
@@ -97,16 +98,23 @@ async def _allocate_ports() -> dict:
         if "rcon" in p:
             used_rcon.add(int(p["rcon"]))
 
-    step = SERVER_PORT_BLOCK_SIZE
+    step = SERVER_PORT_BLOCK_SIZE  # validated > 0 in config.py
+
     game = SERVER_PORT_BASE_GAME
     while game in used_game:
         game += step
+        if game > 65535:
+            raise HTTPException(status_code=409, detail="No available game ports remaining.")
     query = SERVER_PORT_BASE_QUERY
     while query in used_query:
         query += step
+        if query > 65535:
+            raise HTTPException(status_code=409, detail="No available query ports remaining.")
     rcon = SERVER_PORT_BASE_RCON
     while rcon in used_rcon:
         rcon += step
+        if rcon > 65535:
+            raise HTTPException(status_code=409, detail="No available RCON ports remaining.")
 
     return {"game": game, "query": query, "rcon": rcon}
 
@@ -125,7 +133,8 @@ async def create_server(
     """Create a new managed server definition. S1/Admin only.
 
     Ports and Docker image are automatically assigned when not provided
-    by the client.
+    by the client.  A retry loop handles the unlikely race where two
+    concurrent requests pick the same port block.
     """
     # Auto-allocate ports when the client sends default/empty values
     ports = body.ports
@@ -137,33 +146,44 @@ async def create_server(
             and ports.get("rcon") == 19999
         )
     )
-    if is_default:
-        ports = await _allocate_ports()
 
-    server = ManagedServer(
-        name=body.name,
-        description=body.description,
-        docker_image=body.docker_image,
-        container_name=f"25vid-gs-{body.name.lower().replace(' ', '-')[:30]}",
-        config=body.config,
-        mods=body.mods,
-        ports=ports,
-        environment=sanitize_mongo_payload(body.environment),
-        tags=body.tags,
-        auto_restart=body.auto_restart,
-        max_restart_attempts=body.max_restart_attempts,
-        created_by=current_user["id"],
-    )
-    doc = server.model_dump()
-    # Convert datetime fields to ISO strings for MongoDB
-    for key in ("created_at", "updated_at", "last_started", "last_stopped"):
-        val = doc.get(key)
-        if isinstance(val, datetime):
-            doc[key] = val.isoformat()
-        elif val is None:
-            doc[key] = None
+    max_retries = 3
+    for attempt in range(max_retries):
+        if is_default:
+            ports = await _allocate_ports()
 
-    await db.managed_servers.insert_one(doc)
+        server = ManagedServer(
+            name=body.name,
+            description=body.description,
+            docker_image=body.docker_image,
+            container_name=f"25vid-gs-{body.name.lower().replace(' ', '-')[:30]}",
+            config=body.config,
+            mods=body.mods,
+            ports=ports,
+            environment=sanitize_mongo_payload(body.environment),
+            tags=body.tags,
+            auto_restart=body.auto_restart,
+            max_restart_attempts=body.max_restart_attempts,
+            created_by=current_user["id"],
+        )
+        doc = server.model_dump()
+        # Convert datetime fields to ISO strings for MongoDB
+        for key in ("created_at", "updated_at", "last_started", "last_stopped"):
+            val = doc.get(key)
+            if isinstance(val, datetime):
+                doc[key] = val.isoformat()
+            elif val is None:
+                doc[key] = None
+
+        try:
+            await db.managed_servers.insert_one(doc)
+        except Exception as exc:
+            # Retry on duplicate port collision when auto-allocating
+            if is_default and attempt < max_retries - 1 and "duplicate" in str(exc).lower():
+                logger.warning("Port allocation collision on attempt %d, retrying", attempt + 1)
+                continue
+            raise
+        break
     await log_audit(
         user_id=current_user["id"],
         action_type="server_create",

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import {
   Server, Plus, Search, RefreshCw, Activity, AlertTriangle,
-  Gauge, Wifi, X, Save,
+  Gauge, Wifi, X, Save, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
@@ -27,7 +26,34 @@ import ServerCard from '@/components/servers/ServerCard';
 
 const AUTO_REFRESH_MS = 15_000;
 const METRICS_REFRESH_MS = 30_000;
-const PERIOD_API_MAP = { '1d': '24h', '7d': '7d', '30d': '7d' };
+const PERIOD_API_MAP = { '1d': '24h', '7d': '7d' };
+
+const SECTION_STORAGE_KEY = 'dashboard-sections';
+
+/** Persist collapsible section state to localStorage. */
+function loadSections() {
+  try {
+    const raw = localStorage.getItem(SECTION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveSections(state) {
+  try { localStorage.setItem(SECTION_STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+/** Collapsible section header — mirrors AdminLayout SidebarGroup pattern. */
+function SectionHeader({ label, open, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex w-full items-center gap-2 py-2 text-[10px] font-bold tracking-[0.2em] text-gray-500 hover:text-tropic-gold transition-colors"
+    >
+      {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      {label}
+    </button>
+  );
+}
 
 const EMPTY_FORM = {
   name: '',
@@ -54,6 +80,19 @@ function ServerDashboard() {
   const periodsRef = useRef(serverPeriods);
   useEffect(() => { periodsRef.current = serverPeriods; }, [serverPeriods]);
 
+  /* ── collapsible section state (persisted) ─────────────────────────── */
+  const [sections, setSections] = useState(() => {
+    const stored = loadSections();
+    return stored ?? { status: true, servers: true };
+  });
+  const toggleSection = useCallback((key) => {
+    setSections((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      saveSections(next);
+      return next;
+    });
+  }, []);
+
   /* ── create-modal state ────────────────────────────────────────────── */
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -61,7 +100,10 @@ function ServerDashboard() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null);
 
-  const canManage = user && hasPermission(user.role, PERMISSIONS.MANAGE_SERVERS);
+  // Only admin / s1_personnel can create servers (matches backend auth)
+  const canManage =
+    user && hasPermission(user.role, PERMISSIONS.MANAGE_SERVERS) &&
+    ['admin', 's1_personnel'].includes(user.role);
 
   /* ── fetch servers ─────────────────────────────────────────────────── */
   const fetchServers = useCallback(async (opts = {}) => {
@@ -364,84 +406,111 @@ function ServerDashboard() {
       {/* ── Main content ────────────────────────────────────────────── */}
       {!loading && (
         <>
-          {/* Command Center Summary Bar */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            {summaryCards.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <Card
-                  key={stat.label}
-                  className={`border-tropic-gold-dark/10 bg-black/60 backdrop-blur-sm ${stat.glow}`}
-                >
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-xs font-medium uppercase tracking-wider text-gray-500">
-                      {stat.label}
-                    </CardTitle>
-                    <Icon className={`h-4 w-4 ${stat.color}`} />
-                  </CardHeader>
-                  <CardContent>
-                    <div
-                      className="text-2xl font-bold text-white"
-                      style={{ fontFamily: 'Rajdhani, sans-serif' }}
-                    >
-                      {stat.value}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Search bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search servers by name\u2026"
-              className="border-tropic-gold-dark/20 bg-black/60 pl-10 text-white placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
-            />
-          </div>
-
-          {/* Server grid — 2 columns on lg */}
-          {filteredServers.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {filteredServers.map((server) => (
-                <ServerCard
-                  key={server.id}
-                  server={server}
-                  metrics={serverMetrics[server.id] ?? null}
-                  period={serverPeriods[server.id] || '1d'}
-                  onPeriodChange={handlePeriodChange}
-                  onStart={onStart}
-                  onStop={onStop}
-                  onRestart={onRestart}
-                />
-              ))}
-            </div>
-          ) : (
-            <Card className="border-tropic-gold-dark/10 bg-black/60">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <Activity className="mb-4 h-12 w-12 text-tropic-gold-dark/40" />
-                <p className="text-lg font-semibold text-gray-300">
-                  {searchQuery ? 'No servers match your search' : 'No servers configured'}
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                  {searchQuery ? 'Try a different search term.' : 'Add a server to get started.'}
-                </p>
-                {!searchQuery && canManage && (
-                  <Button
-                    size="sm"
-                    className="mt-4 bg-tropic-gold text-black hover:bg-tropic-gold-light"
-                    onClick={openCreateModal}
+          {/* ── STATUS OVERVIEW (collapsible) ───────────────────────── */}
+          <SectionHeader
+            label="STATUS OVERVIEW"
+            open={sections.status}
+            onToggle={() => toggleSection('status')}
+          />
+          <div
+            className="overflow-hidden transition-all duration-200 ease-in-out"
+            style={{
+              maxHeight: sections.status ? '500px' : '0px',
+              opacity: sections.status ? 1 : 0,
+            }}
+          >
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+              {summaryCards.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <Card
+                    key={stat.label}
+                    className={`border-tropic-gold-dark/10 bg-black/60 backdrop-blur-sm ${stat.glow}`}
                   >
-                    <Plus className="mr-1.5 h-4 w-4" />
-                    New Server
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                        {stat.label}
+                      </CardTitle>
+                      <Icon className={`h-4 w-4 ${stat.color}`} />
+                    </CardHeader>
+                    <CardContent>
+                      <div
+                        className="text-2xl font-bold text-white"
+                        style={{ fontFamily: 'Rajdhani, sans-serif' }}
+                      >
+                        {stat.value}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── SERVERS (collapsible) ────────────────────────────────── */}
+          <SectionHeader
+            label="SERVERS"
+            open={sections.servers}
+            onToggle={() => toggleSection('servers')}
+          />
+          <div
+            className="overflow-hidden transition-all duration-200 ease-in-out space-y-6"
+            style={{
+              maxHeight: sections.servers ? '9999px' : '0px',
+              opacity: sections.servers ? 1 : 0,
+            }}
+          >
+            {/* Search bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search servers by name\u2026"
+                className="border-tropic-gold-dark/20 bg-black/60 pl-10 text-white placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
+              />
+            </div>
+
+            {/* Server grid — 2 columns on lg */}
+            {filteredServers.length > 0 ? (
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                {filteredServers.map((server) => (
+                  <ServerCard
+                    key={server.id}
+                    server={server}
+                    metrics={serverMetrics[server.id] ?? null}
+                    period={serverPeriods[server.id] || '1d'}
+                    onPeriodChange={handlePeriodChange}
+                    onStart={onStart}
+                    onStop={onStop}
+                    onRestart={onRestart}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="border-tropic-gold-dark/10 bg-black/60">
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <Activity className="mb-4 h-12 w-12 text-tropic-gold-dark/40" />
+                  <p className="text-lg font-semibold text-gray-300">
+                    {searchQuery ? 'No servers match your search' : 'No servers configured'}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {searchQuery ? 'Try a different search term.' : 'Add a server to get started.'}
+                  </p>
+                  {!searchQuery && canManage && (
+                    <Button
+                      size="sm"
+                      className="mt-4 bg-tropic-gold text-black hover:bg-tropic-gold-light"
+                      onClick={openCreateModal}
+                    >
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      New Server
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
           {/* Live indicator */}
           <div className="flex items-center justify-end gap-2 text-xs text-gray-600">

@@ -264,7 +264,7 @@ const AdminLayout = ({ children }) => {
             onClick={closeMobileSidebar}
           />
           <div
-            className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-black/95 border-r border-tropic-gold/10 overflow-y-auto overscroll-contain pt-14"
+            className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-black/95 border-r border-tropic-gold/10 overflow-y-auto command-center-scroll overscroll-contain pt-14"
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
@@ -322,7 +322,7 @@ const AdminLayout = ({ children }) => {
 
       {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
       <aside
-        className={`hidden md:flex flex-col fixed left-0 top-14 bottom-0 ${sidebarWidth} bg-black/95 border-r border-tropic-gold/10 overflow-y-auto transition-all duration-200 z-40`}
+        className={`hidden md:flex flex-col fixed left-0 top-14 bottom-0 ${sidebarWidth} bg-black/95 border-r border-tropic-gold/10 overflow-y-auto command-center-scroll transition-all duration-200 z-40`}
       >
         {/* Collapse toggle */}
         <div className="flex items-center justify-end p-2 border-b border-tropic-gold/10">
@@ -369,7 +369,7 @@ const AdminLayout = ({ children }) => {
           collapsed ? 'md:ml-16' : 'md:ml-60'
         }`}
       >
-        <div className="p-4 md:p-8">
+        <div className="p-4 md:p-8 command-center-scroll">
           {children || <Outlet />}
         </div>
       </main>

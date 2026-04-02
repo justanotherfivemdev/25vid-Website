@@ -72,10 +72,38 @@ MAX_VALYU_QUERIES_PER_CYCLE = int(os.environ.get("MAX_VALYU_QUERIES_PER_CYCLE", 
 
 # Server Management / Docker configuration
 DOCKER_SOCKET_PATH = os.environ.get("DOCKER_SOCKET_PATH", "unix:///var/run/docker.sock")
-SERVER_PORT_BASE_GAME = int(os.environ.get("SERVER_PORT_BASE_GAME", 2001))
-SERVER_PORT_BASE_QUERY = int(os.environ.get("SERVER_PORT_BASE_QUERY", 17777))
-SERVER_PORT_BASE_RCON = int(os.environ.get("SERVER_PORT_BASE_RCON", 19999))
-SERVER_PORT_BLOCK_SIZE = int(os.environ.get("SERVER_PORT_BLOCK_SIZE", 10))
+
+
+def _validate_port(env_name: str, value: int) -> int:
+    """Ensure a port value is within the valid TCP/UDP range."""
+    if not (1 <= value <= 65535):
+        raise ValueError(
+            f"Invalid value for {env_name}: {value}. Expected an integer between 1 and 65535."
+        )
+    return value
+
+
+def _validate_positive_int(env_name: str, value: int) -> int:
+    """Ensure an integer configuration value is strictly positive."""
+    if value <= 0:
+        raise ValueError(
+            f"Invalid value for {env_name}: {value}. Expected an integer greater than 0."
+        )
+    return value
+
+
+SERVER_PORT_BASE_GAME = _validate_port(
+    "SERVER_PORT_BASE_GAME", int(os.environ.get("SERVER_PORT_BASE_GAME", 2001))
+)
+SERVER_PORT_BASE_QUERY = _validate_port(
+    "SERVER_PORT_BASE_QUERY", int(os.environ.get("SERVER_PORT_BASE_QUERY", 17777))
+)
+SERVER_PORT_BASE_RCON = _validate_port(
+    "SERVER_PORT_BASE_RCON", int(os.environ.get("SERVER_PORT_BASE_RCON", 19999))
+)
+SERVER_PORT_BLOCK_SIZE = _validate_positive_int(
+    "SERVER_PORT_BLOCK_SIZE", int(os.environ.get("SERVER_PORT_BLOCK_SIZE", 10))
+)
 SERVER_HEALTH_CHECK_INTERVAL = int(os.environ.get("SERVER_HEALTH_CHECK_INTERVAL", 15))
 SERVER_METRICS_INTERVAL = int(os.environ.get("SERVER_METRICS_INTERVAL", 15))
 SERVER_METRICS_RETENTION_DAYS = int(os.environ.get("SERVER_METRICS_RETENTION_DAYS", 7))

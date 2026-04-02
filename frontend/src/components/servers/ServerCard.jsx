@@ -9,7 +9,7 @@ const STARTABLE = new Set(['stopped', 'created', 'error']);
 const STOPPABLE = new Set(['running']);
 const RESTARTABLE = new Set(['running']);
 
-const PERIODS = ['1d', '7d', '30d'];
+const PERIODS = ['1d', '7d'];
 
 function getStatusVisuals(status) {
   switch (status) {
@@ -116,7 +116,8 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
               {name || 'Unnamed Server'}
             </h3>
           </Link>
-          <span className={dotCls} aria-label={status} />
+          <span className={dotCls} role="img" aria-label={status} />
+          <span className="sr-only">{status}</span>
         </div>
         {description && (
           <p className="mt-1 text-xs text-gray-500 line-clamp-1">{description}</p>
@@ -142,6 +143,7 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
                 <button
                   key={p}
                   type="button"
+                  aria-pressed={period === p}
                   onClick={() => onPeriodChange?.(id, p)}
                   className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
                     period === p
