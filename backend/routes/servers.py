@@ -631,12 +631,14 @@ async def import_mods_json(
 
     before_mods = server.get("mods", [])
     normalized: list[dict] = []
+    seen_mod_ids: set = set()
     for m in body.mods:
         mod_id = m.get("mod_id") or m.get("modId") or ""
         name = m.get("name") or ""
         version = m.get("version") or ""
-        if not mod_id:
+        if not mod_id or mod_id in seen_mod_ids:
             continue
+        seen_mod_ids.add(mod_id)
         entry = {
             "mod_id": mod_id,
             "name": name,
@@ -696,6 +698,34 @@ async def export_mods_json(
 
 
 # ── Mod Download History ─────────────────────────────────────────────────────
+
+class RecordDownloadHistoryRequest(BaseModel):
+    server_id: str
+    mod_id: str
+    mod_name: str = ""
+
+
+@router.post("/servers/mod-download-history")
+async def record_download_history(
+    body: RecordDownloadHistoryRequest,
+    current_user: dict = Depends(_require_servers),
+):
+    """Record that a mod was added to a server (upsert latest download)."""
+    now = datetime.now(timezone.utc).isoformat()
+    await db.mod_download_history.update_one(
+        {"mod_id": body.mod_id, "server_id": body.server_id},
+        {"$set": {
+            "mod_id": body.mod_id,
+            "mod_name": body.mod_name,
+            "server_id": body.server_id,
+            "downloaded_by": current_user.get("username") or current_user.get("id", ""),
+            "downloaded_by_id": current_user["id"],
+            "downloaded_at": now,
+        }},
+        upsert=True,
+    )
+    return {"message": "Download history recorded"}
+
 
 @router.get("/servers/mod-download-history")
 async def get_mod_download_history(

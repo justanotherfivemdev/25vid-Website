@@ -188,10 +188,20 @@ function WorkshopBrowser() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsavedChanges, activeMainTab]);
 
-  // Get issue count for a mod
+  // Get issue count for a mod (precomputed map for O(1) lookups)
+  const modIssueCountMap = React.useMemo(() => {
+    const map = {};
+    for (const issue of modIssues) {
+      if (issue.confidence_score >= 0.6 && issue.mod_id) {
+        map[issue.mod_id] = (map[issue.mod_id] || 0) + 1;
+      }
+    }
+    return map;
+  }, [modIssues]);
+
   const getModIssueCount = useCallback(
-    (modId) => modIssues.filter(i => i.mod_id === modId && i.confidence_score >= 0.6).length,
-    [modIssues]
+    (modId) => modIssueCountMap[modId] || 0,
+    [modIssueCountMap]
   );
 
   // Save mod list to server
@@ -297,6 +307,17 @@ function WorkshopBrowser() {
 
       const updatedMods = [...currentMods, newMod];
       await axios.put(`${API}/servers/${downloadTargetServer}/mods`, { mods: updatedMods });
+
+      // Record download history so "Last used by ..." stays fresh
+      try {
+        await axios.post(`${API}/servers/mod-download-history`, {
+          server_id: downloadTargetServer,
+          mod_id: modId,
+          mod_name: downloadMod.name || '',
+        });
+      } catch (historyErr) {
+        console.error('Failed to update mod download history:', historyErr);
+      }
 
       if (downloadTargetServer === selectedServerId) {
         setServerMods(updatedMods);
@@ -443,7 +464,20 @@ function WorkshopBrowser() {
             />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setExportDialogOpen(false)} className="border-gray-700 text-gray-400">Close</Button>
-              <Button onClick={() => { navigator.clipboard.writeText(exportJson); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+              <Button onClick={async () => {
+                  try {
+                    if (navigator?.clipboard?.writeText) {
+                      await navigator.clipboard.writeText(exportJson);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    } else {
+                      window.prompt('Copy the JSON manually:', exportJson);
+                    }
+                  } catch (err) {
+                    console.error('Failed to copy export JSON to clipboard', err);
+                    window.alert('Failed to copy to clipboard. Please copy the text manually.');
+                  }
+                }}
                 className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
                 {copied ? <><Check className="mr-1.5 h-4 w-4" /> Copied</> : <><Copy className="mr-1.5 h-4 w-4" /> Copy</>}
               </Button>
@@ -924,6 +958,15 @@ function ReorderTab({ mods, setMods, hasUnsavedChanges, onSave, saving, getModIs
 // ═══════════════════════════════════════════════════════════════════════════
 function BatchTab({ mods, setMods, hasUnsavedChanges, onSave, saving, getModIssueCount }) {
   const [selected, setSelected] = useState(new Set());
+
+  // Clear selection when mods list changes (server switch, import, download, etc.)
+  const modsRef = useRef(mods);
+  useEffect(() => {
+    if (modsRef.current !== mods) {
+      setSelected(new Set());
+      modsRef.current = mods;
+    }
+  }, [mods]);
 
   const toggleSelect = (index) => {
     const next = new Set(selected);

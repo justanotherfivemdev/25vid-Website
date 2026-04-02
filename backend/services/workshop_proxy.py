@@ -16,7 +16,7 @@ import asyncio
 import logging
 import re
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote_plus
 
@@ -97,16 +97,17 @@ _PROXY_CACHE = "workshop_proxy_cache"
 async def _get_cached(key: str) -> Optional[dict]:
     doc = await db[_PROXY_CACHE].find_one({"key": key}, {"_id": 0})
     if doc:
-        cached_at = doc.get("cached_at", 0)
-        if (time.time() - cached_at) < _BROWSE_CACHE_TTL:
+        expires_at = doc.get("expires_at")
+        if expires_at and expires_at > datetime.now(timezone.utc):
             return doc.get("data")
     return None
 
 
 async def _set_cached(key: str, data: Any) -> None:
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=_BROWSE_CACHE_TTL)
     await db[_PROXY_CACHE].update_one(
         {"key": key},
-        {"$set": {"key": key, "cached_at": time.time(), "data": data}},
+        {"$set": {"key": key, "expires_at": expires_at, "data": data}},
         upsert=True,
     )
 

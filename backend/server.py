@@ -554,7 +554,14 @@ async def startup_event():
         await db.workshop_mods.create_index("mod_id", unique=True)
         await db.workshop_cache.create_index("key", unique=True)
         await db.workshop_proxy_cache.create_index("key", unique=True)
-        await db.mod_download_history.create_index([("mod_id", 1), ("server_id", 1)])
+        await db.workshop_proxy_cache.create_index(
+            "expires_at",
+            expireAfterSeconds=0,
+        )
+        await db.mod_download_history.create_index(
+            [("mod_id", 1), ("server_id", 1)],
+            unique=True,
+        )
         await db.mod_download_history.create_index("downloaded_at")
         await db.server_metrics.create_index([("server_id", 1), ("timestamp", -1)])
         # TTL index: auto-delete metrics older than retention period
