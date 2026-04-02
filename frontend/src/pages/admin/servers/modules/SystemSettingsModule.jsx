@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
   Settings,
-  Container,
   Cpu,
   HardDrive,
   Save,
@@ -29,13 +28,25 @@ function SystemSettingsModule() {
 
   // Server-level settings (not the Reforger config)
   const [dockerImage, setDockerImage] = useState(server?.docker_image || 'rouhim/arma-reforger-server');
-  const [containerName, setContainerName] = useState(server?.container_name || '');
+  const containerName = server?.container_name || '';
   const [autoRestart, setAutoRestart] = useState(server?.auto_restart !== false);
   const [maxRestartAttempts, setMaxRestartAttempts] = useState(server?.max_restart_attempts || 3);
   const [healthCheckInterval, setHealthCheckInterval] = useState(server?.health_check_interval || 15);
   const [envVars, setEnvVars] = useState(Object.entries(server?.environment || {}).map(([k, v]) => ({ key: k, value: v, hidden: k.toLowerCase().includes('password') || k.toLowerCase().includes('secret') })));
   const [showSecrets, setShowSecrets] = useState(false);
   const [volumes, setVolumes] = useState(Object.entries(server?.volumes || {}).map(([k, v]) => ({ host: k, container: v })));
+
+  // Sync local state when server data changes (unless user has unsaved edits)
+  useEffect(() => {
+    if (!dirty && server) {
+      setDockerImage(server.docker_image || 'rouhim/arma-reforger-server');
+      setAutoRestart(server.auto_restart !== false);
+      setMaxRestartAttempts(server.max_restart_attempts || 3);
+      setHealthCheckInterval(server.health_check_interval || 15);
+      setEnvVars(Object.entries(server.environment || {}).map(([k, v]) => ({ key: k, value: v, hidden: k.toLowerCase().includes('password') || k.toLowerCase().includes('secret') })));
+      setVolumes(Object.entries(server.volumes || {}).map(([k, v]) => ({ host: k, container: v })));
+    }
+  }, [server, dirty]);
 
   const markDirty = useCallback(() => setDirty(true), []);
 

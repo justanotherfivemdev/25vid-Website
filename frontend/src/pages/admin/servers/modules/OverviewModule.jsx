@@ -11,25 +11,18 @@ import {
   Cpu,
   HardDrive,
   AlertTriangle,
-  Play,
-  Square,
-  RotateCcw,
   Puzzle,
   Settings,
-  Tag,
-  Calendar,
   Network,
   Server,
   Loader2,
   CheckCircle,
-  XCircle,
-  ArrowUpRight,
   BarChart3,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
 function OverviewModule() {
-  const { server, serverId, fetchServer, canManage } = useOutletContext();
+  const { server, serverId, fetchServer } = useOutletContext();
   const [metricsSummary, setMetricsSummary] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);

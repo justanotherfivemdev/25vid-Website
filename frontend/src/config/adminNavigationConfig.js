@@ -210,7 +210,7 @@ export const ADMIN_NAV_GROUPS = [
         path: '/admin/servers/create',
         label: 'Provision Server',
         icon: Plus,
-        show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
+        show: (role) => ['admin', 's1_personnel'].includes(role),
       },
       {
         path: '/admin/servers/workshop',

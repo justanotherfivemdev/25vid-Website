@@ -151,15 +151,16 @@ async def fetch_mod_metadata(mod_id: str) -> Optional[dict]:
     # Preserve manual_overrides and metadata_locked flag
     existing = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
     if existing and existing.get("metadata_locked"):
-        # Don't overwrite locked (manually curated) records
-        return metadata
+        # Don't overwrite locked (manually curated) records;
+        # return the stored doc so callers see canonical data
+        return existing
 
     update_doc = {**metadata}
     if existing and existing.get("manual_overrides"):
         # Merge: keep manual_overrides, apply them on top
         update_doc["manual_overrides"] = existing["manual_overrides"]
         for field, val in existing["manual_overrides"].items():
-            if val:  # Apply non-empty manual overrides
+            if val is not None:  # Apply manual overrides, allowing falsy values
                 update_doc[field] = val
         update_doc["metadata_source"] = "hybrid"
 

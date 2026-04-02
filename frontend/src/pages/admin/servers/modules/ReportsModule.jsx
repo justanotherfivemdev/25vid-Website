@@ -5,15 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  FileText,
-  RotateCcw,
   AlertTriangle,
   Settings,
   Puzzle,
   Download,
   RefreshCw,
   Loader2,
-  Clock,
   CheckCircle,
 } from 'lucide-react';
 import { API } from '@/utils/api';

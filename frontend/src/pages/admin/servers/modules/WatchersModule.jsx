@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
@@ -13,13 +11,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Eye,
   Plus,
   Trash2,
@@ -27,10 +18,7 @@ import {
   Activity,
   FileText,
   AlertTriangle,
-  Loader2,
-  Clock,
 } from 'lucide-react';
-import { API } from '@/utils/api';
 
 const STORAGE_KEY_PREFIX = 'server_watchers_';
 
@@ -206,7 +194,10 @@ function WatchersModule() {
                 <div>
                   <label className="text-xs text-gray-400">Threshold</label>
                   <Input type="number" value={newWatcher.threshold}
-                    onChange={(e) => setNewWatcher(p => ({ ...p, threshold: parseInt(e.target.value) }))}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value);
+                      setNewWatcher(p => ({ ...p, threshold: Number.isFinite(n) ? n : 0 }));
+                    }}
                     className="mt-1 border-zinc-800 bg-black/60 text-sm text-white" />
                 </div>
               </>

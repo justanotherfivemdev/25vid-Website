@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, NavLink, Outlet, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +30,6 @@ import {
   Circle,
   AlertOctagon,
   Info,
-  Clock,
   RefreshCw,
 } from 'lucide-react';
 import { API } from '@/utils/api';

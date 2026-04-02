@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
@@ -13,22 +12,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Bell,
   Plus,
   Trash2,
   Send,
-  CheckCircle,
-  XCircle,
   Loader2,
   Webhook,
-  ExternalLink,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
@@ -95,14 +84,10 @@ function NotificationsModule() {
   const testWebhook = useCallback(async (webhook) => {
     setTesting(webhook.id);
     try {
-      // Send a test payload to the webhook URL
-      await axios.post(webhook.url, {
-        event: 'test',
-        message: `Test notification from 25VID Server Management`,
-        timestamp: new Date().toISOString(),
-      });
+      // Proxy test through backend to avoid CORS issues
+      await axios.post(`${API}/servers/webhooks/${webhook.id}/test`);
     } catch {
-      // Expected to potentially fail for Discord webhooks without proper format
+      // Webhook test may fail if endpoint not reachable
     } finally {
       setTesting(null);
     }

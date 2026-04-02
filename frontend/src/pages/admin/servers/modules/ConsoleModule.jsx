@@ -60,9 +60,16 @@ function ConsoleModule() {
       ws.onopen = () => setWsConnected(true);
       ws.onmessage = (e) => {
         if (pausedRef.current) return;
-        const line = e.data;
-        if (line) {
-          setLogs(prev => [...prev.slice(-2000), { id: Date.now() + Math.random(), text: line, ts: Date.now() }]);
+        let text = e.data;
+        // Backend sends JSON frames with a `line` field
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed && typeof parsed.line === 'string') text = parsed.line;
+        } catch {
+          // raw text, use as-is
+        }
+        if (text) {
+          setLogs(prev => [...prev.slice(-2000), { id: Date.now() + Math.random(), text, ts: Date.now() }]);
         }
       };
       ws.onclose = () => setWsConnected(false);

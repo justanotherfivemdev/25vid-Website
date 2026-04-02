@@ -18,24 +18,17 @@ import {
   Search,
   Plus,
   Trash2,
-  GripVertical,
   AlertTriangle,
   CheckCircle,
   RefreshCw,
-  ExternalLink,
   Shield,
-  ChevronRight,
   Loader2,
   Save,
   Eye,
-  XCircle,
   ArrowUp,
   ArrowDown,
   Package,
   Info,
-  Star,
-  Clock,
-  BarChart3,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
@@ -160,9 +153,11 @@ function ModsModule() {
 
   // Add mod from workshop
   const addMod = useCallback((mod) => {
+    const id = mod.mod_id || mod.modId;
     setEnabledMods(prev => {
-      if (prev.some(m => (m.mod_id || m.modId) === mod.mod_id)) return prev;
-      return [...prev, { mod_id: mod.mod_id, modId: mod.mod_id, name: mod.name || mod.mod_id, version: mod.version || '', enabled: true }];
+      if (!id) return prev;
+      if (prev.some(m => (m.mod_id || m.modId) === id)) return prev;
+      return [...prev, { mod_id: id, modId: id, name: mod.name || id, version: mod.version || '', enabled: true }];
     });
     setDirty(true);
   }, []);
@@ -257,7 +252,7 @@ function ModsModule() {
             {validating ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Shield className="mr-1 h-3 w-3" />}
             Validate
           </Button>
-          <Button size="sm" onClick={saveMods} disabled={!dirty || saving}
+          <Button size="sm" onClick={saveMods} disabled={!dirty || saving || !canManage}
             className="h-7 bg-tropic-gold text-black hover:bg-tropic-gold-light text-xs">
             {saving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
             Deploy
@@ -519,7 +514,9 @@ function ModsModule() {
                 </Button>
                 <Button size="sm" variant="outline"
                   onClick={async () => {
-                    try { await axios.post(`${API}/servers/workshop/mod/${selectedMod.mod_id}/refresh`); }
+                    const modId = selectedMod.mod_id || selectedMod.modId;
+                    if (!modId) return;
+                    try { await axios.post(`${API}/servers/workshop/mod/${modId}/refresh`); }
                     catch { /* ignore */ }
                   }}
                   className="border-zinc-800 text-xs text-gray-400">

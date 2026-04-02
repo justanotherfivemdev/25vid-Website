@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -11,16 +10,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Play,
   RotateCcw,
   HardDrive,
-  CheckCircle,
-  RefreshCw,
   Loader2,
   AlertTriangle,
   Zap,
   Shield,
-  FileText,
   Package,
 } from 'lucide-react';
 import { API } from '@/utils/api';
@@ -66,16 +61,6 @@ const TASKS = [
     border: 'border-purple-600/20',
     confirm: false,
   },
-  {
-    id: 'rotate_logs',
-    label: 'Rotate Logs',
-    desc: 'Archive current logs and start fresh',
-    icon: FileText,
-    action: 'rotate_logs',
-    color: 'text-cyan-400',
-    border: 'border-cyan-600/20',
-    confirm: false,
-  },
 ];
 
 function TriggerExecModule() {
@@ -99,22 +84,32 @@ function TriggerExecModule() {
         result.success = true;
         result.message = 'Backup created successfully';
       } else if (task.action === 'validate') {
-        const res = await axios.get(`${API}/servers/${serverId}/config`);
+        const mods = server?.mods || [];
+        const res = await axios.post(`${API}/servers/${serverId}/mods/validate`, { mods });
+        const issues = res.data?.issues || [];
         result.success = true;
-        result.message = 'Configuration valid';
+        result.message = issues.length === 0
+          ? 'Configuration valid — no issues found'
+          : `Validation found ${issues.length} issue(s)`;
       } else if (task.action === 'refresh_mods') {
         const mods = server?.mods || [];
+        let successCount = 0;
+        let failureCount = 0;
         for (const mod of mods) {
           const modId = mod.mod_id || mod.modId;
           if (modId) {
-            try { await axios.post(`${API}/servers/workshop/mod/${modId}/refresh`); } catch { /* skip */ }
+            try {
+              await axios.post(`${API}/servers/workshop/mod/${modId}/refresh`);
+              successCount++;
+            } catch {
+              failureCount++;
+            }
           }
         }
-        result.success = true;
-        result.message = `Refreshed metadata for ${mods.length} mods`;
-      } else {
-        result.success = true;
-        result.message = 'Task completed';
+        result.success = failureCount === 0;
+        result.message = failureCount > 0
+          ? `Refreshed ${successCount} mod(s), ${failureCount} failed`
+          : `Refreshed metadata for ${successCount} mod(s)`;
       }
       await fetchServer(true);
     } catch (err) {

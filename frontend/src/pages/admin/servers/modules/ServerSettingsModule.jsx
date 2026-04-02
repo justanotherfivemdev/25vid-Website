@@ -14,21 +14,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Settings,
   Save,
   History,
   Code,
-  FileText,
   AlertTriangle,
   Loader2,
   RotateCcw,
   Eye,
-  CheckCircle,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
 function ServerSettingsModule() {
-  const { server, serverId, fetchServer, canManage } = useOutletContext();
+  const { server, serverId, fetchServer } = useOutletContext();
   const [config, setConfig] = useState(null);
   const [configHistory, setConfigHistory] = useState([]);
   const [loading, setLoading] = useState(true);

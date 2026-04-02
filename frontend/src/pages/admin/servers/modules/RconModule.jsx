@@ -1,14 +1,12 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Monitor,
   Send,
-  Copy,
   Trash2,
   Clock,
   ChevronRight,

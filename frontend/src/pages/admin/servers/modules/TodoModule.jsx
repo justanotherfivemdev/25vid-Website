@@ -12,7 +12,6 @@ import {
   CheckCircle,
   Clock,
   User,
-  GripVertical,
 } from 'lucide-react';
 
 const STORAGE_KEY_PREFIX = 'server_todos_';
