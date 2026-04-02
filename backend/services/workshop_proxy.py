@@ -99,7 +99,7 @@ async def _get_cached(key: str) -> Optional[dict]:
     if doc:
         expires_at = doc.get("expires_at")
         if expires_at:
-            # MongoDB may return offset-naive datetimes; normalise to UTC-aware
+            # MongoDB may return offset-naive datetimes; normalize to UTC-aware
             if expires_at.tzinfo is None:
                 expires_at = expires_at.replace(tzinfo=timezone.utc)
             if expires_at > datetime.now(timezone.utc):
