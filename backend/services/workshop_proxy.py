@@ -473,11 +473,12 @@ async def search_workshop(
     query: str,
     page: int = 1,
     sort: str = "popularity",
+    tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Search the workshop by keyword with pagination."""
+    """Search the workshop by keyword with pagination and optional tag filter."""
     sort_value = sort if sort in VALID_SORTS else "popularity"
 
-    cache_key = f"search:{query}:{sort_value}:{page}"
+    cache_key = f"search:{query}:{sort_value}:{page}:{','.join(tags or [])}"
     cached = await _get_cached(cache_key)
     if cached:
         logger.debug("Workshop proxy cache hit: %s", cache_key)
@@ -485,6 +486,9 @@ async def search_workshop(
 
     encoded_q = quote_plus(query)
     url = f"{WORKSHOP_URL}?page={page}&search={encoded_q}&sort={sort_value}"
+    if tags:
+        for tag in tags:
+            url += f"&tags={quote_plus(tag.upper())}"
 
     html = await _fetch_html(url)
     if html is None:
