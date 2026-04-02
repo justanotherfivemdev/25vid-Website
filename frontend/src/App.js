@@ -53,7 +53,6 @@ import PipelineManager from '@/pages/admin/PipelineManager';
 import DeploymentManager from '@/pages/admin/DeploymentManager';
 import ServerDashboard from '@/pages/admin/servers/ServerDashboard';
 import ServerDetail from '@/pages/admin/servers/ServerDetail';
-import ServerCreate from '@/pages/admin/servers/ServerCreate';
 import WorkshopBrowser from '@/pages/admin/servers/WorkshopBrowser';
 import ModPresets from '@/pages/admin/servers/ModPresets';
 import ModIssues from '@/pages/admin/servers/ModIssues';
@@ -1277,7 +1276,6 @@ function App() {
           <Route path="/admin/users/:id" element={<AdminMemberDetail />} />
           {/* ── Server Management routes (S4/S1 only) ────────────────────── */}
           <Route path="/admin/servers" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDashboard /></ProtectedRoute>} />
-          <Route path="/admin/servers/create" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel']}><ServerCreate /></ProtectedRoute>} />
           <Route path="/admin/servers/workshop" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><WorkshopBrowser /></ProtectedRoute>} />
           <Route path="/admin/servers/presets" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ModPresets /></ProtectedRoute>} />
           <Route path="/admin/servers/mod-issues" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ModIssues /></ProtectedRoute>} />

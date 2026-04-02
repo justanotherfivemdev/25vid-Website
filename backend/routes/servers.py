@@ -13,12 +13,19 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+from pymongo.errors import DuplicateKeyError
 
 from database import db
 from middleware.auth import get_current_user, get_current_admin
 from middleware.rbac import require_permission, Permission
 from services.audit_service import log_audit
 from services.mongo_sanitize import sanitize_mongo_payload
+from config import (
+    SERVER_PORT_BASE_GAME,
+    SERVER_PORT_BASE_QUERY,
+    SERVER_PORT_BASE_RCON,
+    SERVER_PORT_BLOCK_SIZE,
+)
 from services.docker_agent import DockerAgent
 from services.server_config_generator import generate_reforger_config, write_config_file
 from services.rcon_bridge import rcon_pool
@@ -71,6 +78,47 @@ def _server_response(server: dict) -> dict:
 
 # ── Server Lifecycle ─────────────────────────────────────────────────────────
 
+
+async def _allocate_ports() -> dict:
+    """Auto-allocate the next available port block for a new server.
+
+    Uses configured base ports and increments by SERVER_PORT_BLOCK_SIZE for
+    each existing server to avoid collisions.  Port values are validated
+    against the valid 1-65535 range.
+    """
+    servers = await db.managed_servers.find({}, {"ports": 1, "_id": 0}).to_list(None)
+    used_game = set()
+    used_query = set()
+    used_rcon = set()
+    for s in servers:
+        p = s.get("ports") or {}
+        if "game" in p:
+            used_game.add(int(p["game"]))
+        if "query" in p:
+            used_query.add(int(p["query"]))
+        if "rcon" in p:
+            used_rcon.add(int(p["rcon"]))
+
+    step = SERVER_PORT_BLOCK_SIZE  # validated > 0 in config.py
+
+    game = SERVER_PORT_BASE_GAME
+    while game in used_game:
+        game += step
+        if game > 65535:
+            raise HTTPException(status_code=409, detail="No available game ports remaining.")
+    query = SERVER_PORT_BASE_QUERY
+    while query in used_query:
+        query += step
+        if query > 65535:
+            raise HTTPException(status_code=409, detail="No available query ports remaining.")
+    rcon = SERVER_PORT_BASE_RCON
+    while rcon in used_rcon:
+        rcon += step
+        if rcon > 65535:
+            raise HTTPException(status_code=409, detail="No available RCON ports remaining.")
+
+    return {"game": game, "query": query, "rcon": rcon}
+
 @router.get("/servers")
 async def list_servers(current_user: dict = Depends(_require_servers)):
     """List all managed game servers."""
@@ -83,31 +131,62 @@ async def create_server(
     body: ServerCreate,
     current_user: dict = Depends(get_current_admin),
 ):
-    """Create a new managed server definition. S1/Admin only."""
-    server = ManagedServer(
-        name=body.name,
-        description=body.description,
-        docker_image=body.docker_image,
-        container_name=f"25vid-gs-{body.name.lower().replace(' ', '-')[:30]}",
-        config=body.config,
-        mods=body.mods,
-        ports=body.ports,
-        environment=sanitize_mongo_payload(body.environment),
-        tags=body.tags,
-        auto_restart=body.auto_restart,
-        max_restart_attempts=body.max_restart_attempts,
-        created_by=current_user["id"],
-    )
-    doc = server.model_dump()
-    # Convert datetime fields to ISO strings for MongoDB
-    for key in ("created_at", "updated_at", "last_started", "last_stopped"):
-        val = doc.get(key)
-        if isinstance(val, datetime):
-            doc[key] = val.isoformat()
-        elif val is None:
-            doc[key] = None
+    """Create a new managed server definition. S1/Admin only.
 
-    await db.managed_servers.insert_one(doc)
+    Ports and Docker image are automatically assigned when not provided
+    by the client.  A retry loop handles the unlikely race where two
+    concurrent requests pick the same port block.
+    """
+    # Auto-allocate ports when the client sends default/empty values
+    ports = body.ports
+    is_default = (
+        not ports
+        or (
+            ports.get("game") == 2001
+            and ports.get("query") == 17777
+            and ports.get("rcon") == 19999
+        )
+    )
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        if is_default:
+            ports = await _allocate_ports()
+
+        server = ManagedServer(
+            name=body.name,
+            description=body.description,
+            docker_image=body.docker_image,
+            container_name=f"25vid-gs-{body.name.lower().replace(' ', '-')[:30]}",
+            config=body.config,
+            mods=body.mods,
+            ports=ports,
+            environment=sanitize_mongo_payload(body.environment),
+            tags=body.tags,
+            auto_restart=body.auto_restart,
+            max_restart_attempts=body.max_restart_attempts,
+            created_by=current_user["id"],
+        )
+        doc = server.model_dump()
+        # Convert datetime fields to ISO strings for MongoDB
+        for key in ("created_at", "updated_at", "last_started", "last_stopped"):
+            val = doc.get(key)
+            if isinstance(val, datetime):
+                doc[key] = val.isoformat()
+            elif val is None:
+                doc[key] = None
+
+        try:
+            await db.managed_servers.insert_one(doc)
+        except DuplicateKeyError:
+            # Retry on duplicate port collision when auto-allocating
+            if is_default and attempt < max_retries - 1:
+                logger.warning("Port allocation collision on attempt %d, retrying", attempt + 1)
+                continue
+            raise
+        except Exception:
+            raise
+        break
     await log_audit(
         user_id=current_user["id"],
         action_type="server_create",

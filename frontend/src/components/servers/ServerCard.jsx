@@ -1,138 +1,103 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Play,
-  Square,
-  RotateCcw,
-  Container,
-  Tag,
-  Puzzle,
-  Network,
-  Clock,
-  CheckCircle,
-  Loader2,
-  Circle,
-  AlertTriangle,
-  AlertOctagon,
-  Info,
-  HelpCircle,
-} from 'lucide-react';
-
-const STATUS_CONFIG = {
-  running: {
-    icon: CheckCircle,
-    label: 'RUNNING',
-    badgeCls: 'bg-green-600/20 text-green-400 border-green-600/30',
-    dotCls: 'bg-green-400',
-  },
-  starting: {
-    icon: Loader2,
-    label: 'STARTING',
-    badgeCls: 'bg-amber-600/20 text-amber-400 border-amber-600/30',
-    dotCls: 'bg-amber-400',
-    spin: true,
-  },
-  stopping: {
-    icon: Loader2,
-    label: 'STOPPING',
-    badgeCls: 'bg-amber-600/20 text-amber-400 border-amber-600/30',
-    dotCls: 'bg-amber-400',
-    spin: true,
-  },
-  stopped: {
-    icon: Circle,
-    label: 'STOPPED',
-    badgeCls: 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30',
-    dotCls: 'bg-zinc-500',
-  },
-  created: {
-    icon: Info,
-    label: 'CREATED',
-    badgeCls: 'bg-blue-600/20 text-blue-400 border-blue-600/30',
-    dotCls: 'bg-blue-400',
-  },
-  error: {
-    icon: AlertTriangle,
-    label: 'ERROR',
-    badgeCls: 'bg-red-600/20 text-red-400 border-red-600/30',
-    dotCls: 'bg-red-400',
-  },
-  crash_loop: {
-    icon: AlertOctagon,
-    label: 'CRASH LOOP',
-    badgeCls: 'bg-red-600/20 text-red-400 border-red-600/30',
-    dotCls: 'bg-red-400',
-  },
-};
-
-const DEFAULT_STATUS = {
-  icon: HelpCircle,
-  label: 'UNKNOWN',
-  badgeCls: 'bg-orange-600/20 text-orange-400 border-orange-600/30',
-  dotCls: 'bg-orange-400',
-};
+import { Play, Square, RotateCcw, Users, Gauge, Wifi } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const STARTABLE = new Set(['stopped', 'created', 'error']);
 const STOPPABLE = new Set(['running']);
 const RESTARTABLE = new Set(['running']);
 
-function formatTimestamp(ts) {
-  if (!ts) return null;
+const PERIODS = ['1d', '7d'];
+
+function getStatusVisuals(status) {
+  switch (status) {
+    case 'running':
+      return {
+        glow: 'shadow-[0_0_15px_rgba(34,197,94,0.15)]',
+        dotCls: 'h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse',
+      };
+    case 'error':
+    case 'crash_loop':
+      return {
+        glow: 'shadow-[0_0_15px_rgba(239,68,68,0.2)]',
+        dotCls: 'h-2.5 w-2.5 rounded-full bg-red-500 animate-[blink_1s_step-end_infinite]',
+      };
+    case 'starting':
+    case 'stopping':
+      return {
+        glow: '',
+        dotCls: 'h-2.5 w-2.5 rounded-full bg-amber-400 animate-spin border-t-2 border-amber-200',
+      };
+    case 'stopped':
+    case 'created':
+      return {
+        glow: '',
+        dotCls: 'h-2.5 w-2.5 rounded-full bg-zinc-600',
+      };
+    default:
+      return {
+        glow: '',
+        dotCls: 'h-2.5 w-2.5 rounded-full bg-zinc-600',
+      };
+  }
+}
+
+function formatGraphTime(timestamp) {
+  if (!timestamp) return '';
   try {
-    return new Date(ts).toLocaleString();
+    const d = new Date(timestamp);
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   } catch {
-    return null;
+    return '';
   }
 }
 
-function formatPorts(ports) {
-  if (!ports) return null;
-
-  // Handle array of ports (existing behavior)
-  if (Array.isArray(ports)) {
-    if (ports.length === 0) return null;
-    if (ports.length <= 2) return ports.join(', ');
-    return `${ports[0]}, ${ports[1]} +${ports.length - 2}`;
-  }
-
-  // Handle object/dict of ports, e.g. { game, query, rcon }
-  if (typeof ports === 'object') {
-    const entries = Object.entries(ports)
-      .filter(([, value]) => value !== null && value !== undefined)
-      .map(([key, value]) => `${key}: ${value}`);
-
-    if (entries.length === 0) return null;
-    if (entries.length <= 2) return entries.join(', ');
-    return `${entries[0]}, ${entries[1]} +${entries.length - 2}`;
-  }
-
-  // Fallback for unexpected types
-  return String(ports);
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded border border-tropic-gold-dark/30 bg-black/95 px-3 py-2 text-xs shadow-lg">
+      <p className="mb-1 text-tropic-gold-dark">{label}</p>
+      {payload.map((entry) => (
+        <p key={entry.dataKey} style={{ color: entry.color }}>
+          {entry.name}: {entry.value ?? '—'}
+        </p>
+      ))}
+    </div>
+  );
 }
 
-function ServerCard({ server, onStart, onStop, onRestart }) {
+function StatBox({ icon: Icon, label, value }) {
+  return (
+    <div className="flex flex-1 items-center gap-2 rounded bg-zinc-900/60 px-3 py-2">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-tropic-gold-dark" />
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wider text-tropic-gold-dark">{label}</p>
+        <p className="truncate text-sm font-semibold text-gray-200">{value ?? '—'}</p>
+      </div>
+    </div>
+  );
+}
+
+function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChange, period = '1d' }) {
   if (!server) return null;
 
-  const {
-    id,
-    name,
-    description,
-    status,
-    docker_image,
-    tags,
-    mods,
-    last_started,
-    ports,
-  } = server;
+  const { id, name, description, status } = server;
+  const { glow, dotCls } = getStatusVisuals(status);
 
-  const cfg = STATUS_CONFIG[status] || DEFAULT_STATUS;
-  const StatusIcon = cfg.icon;
-  const portDisplay = formatPorts(ports);
-  const lastStartedDisplay = formatTimestamp(last_started);
-  const modCount = Array.isArray(mods) ? mods.length : 0;
+  const latest = metrics?.latest;
+  const timeseries = metrics?.timeseries;
+  const hasTimeseries = Array.isArray(timeseries) && timeseries.length > 0;
+
+  const graphData = hasTimeseries
+    ? timeseries.map((pt) => ({
+        time: formatGraphTime(pt.timestamp),
+        FPS: pt.fps ?? null,
+        Players: pt.player_count ?? null,
+        Ping: pt.ping ?? null,
+      }))
+    : [];
 
   const canStart = STARTABLE.has(status);
   const canStop = STOPPABLE.has(status);
@@ -140,83 +105,112 @@ function ServerCard({ server, onStart, onStop, onRestart }) {
   const showFooter = (canStart && onStart) || (canStop && onStop) || (canRestart && onRestart);
 
   return (
-    <Card className="group border-tropic-gold-dark/15 bg-black/80 backdrop-blur-sm transition-all duration-200 hover:border-tropic-gold/30 hover:bg-black/90">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <Link
-            to={`/admin/servers/${id}`}
-            className="min-w-0 flex-1"
-          >
-            <CardTitle className="text-base font-semibold text-tropic-gold-light transition-colors group-hover:text-tropic-gold truncate">
+    <Card
+      className={`group flex flex-col border-tropic-gold-dark/15 bg-black/80 backdrop-blur-sm transition-all duration-200 hover:border-tropic-gold/30 hover:bg-black/90 ${glow}`}
+    >
+      {/* Top Section */}
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-3">
+          <Link to={`/admin/servers/${id}`} className="min-w-0 flex-1">
+            <h3 className="truncate text-base font-semibold text-tropic-gold-light transition-colors group-hover:text-tropic-gold">
               {name || 'Unnamed Server'}
-            </CardTitle>
+            </h3>
           </Link>
-
-          <Badge
-            variant="outline"
-            className={`${cfg.badgeCls} shrink-0 text-[10px] font-bold tracking-wider`}
-          >
-            <StatusIcon
-              className={`mr-1 h-3 w-3 ${cfg.spin ? 'animate-spin' : ''}`}
-            />
-            {cfg.label}
-          </Badge>
+          <span className={dotCls} role="img" aria-hidden="true" />
+          <span className="sr-only">Server status: {status}</span>
         </div>
+        {description && (
+          <p className="mt-1 text-xs text-gray-500 line-clamp-1">{description}</p>
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-3 pb-3">
-        {description && (
-          <p className="text-sm text-gray-400 line-clamp-2">{description}</p>
-        )}
-
-        {docker_image && (
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Container className="h-3.5 w-3.5 shrink-0 text-tropic-gold-dark" />
-            <code className="truncate rounded bg-zinc-800/60 px-1.5 py-0.5 font-mono text-gray-300">
-              {docker_image}
-            </code>
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-          {modCount > 0 && (
-            <span className="flex items-center gap-1">
-              <Puzzle className="h-3 w-3 text-tropic-gold-dark" />
-              {modCount} mod{modCount !== 1 ? 's' : ''}
-            </span>
-          )}
-
-          {portDisplay && (
-            <span className="flex items-center gap-1">
-              <Network className="h-3 w-3 text-tropic-gold-dark" />
-              {portDisplay}
-            </span>
-          )}
-
-          {lastStartedDisplay && (
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3 text-tropic-gold-dark" />
-              {lastStartedDisplay}
-            </span>
-          )}
+      <CardContent className="flex flex-1 flex-col gap-3 pb-3">
+        {/* Metrics Row */}
+        <div className="flex gap-2">
+          <StatBox icon={Users} label="Players" value={latest?.player_count} />
+          <StatBox icon={Gauge} label="FPS" value={latest?.fps} />
+          <StatBox icon={Wifi} label="Ping" value={latest?.ping != null ? `${latest.ping}ms` : undefined} />
         </div>
 
-        {tags && tags.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Tag className="h-3 w-3 shrink-0 text-tropic-gold-dark" />
-            {tags.map((tag) => (
-              <Badge
-                key={tag}
-                variant="outline"
-                className="border-tropic-gold-dark/20 bg-tropic-gold/5 text-[10px] text-tropic-gold-light"
-              >
-                {tag}
-              </Badge>
-            ))}
+        {/* Graph Area */}
+        <div className="flex-1 rounded bg-zinc-900/40 p-2">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-wider text-tropic-gold-dark">
+              Performance
+            </span>
+            <div className="flex gap-1">
+              {PERIODS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  aria-pressed={period === p}
+                  onClick={() => onPeriodChange?.(id, p)}
+                  className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                    period === p
+                      ? 'bg-tropic-gold/20 text-tropic-gold'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
+
+          {hasTimeseries ? (
+            <ResponsiveContainer width="100%" height={120}>
+              <LineChart data={graphData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <XAxis
+                  dataKey="time"
+                  tick={{ fontSize: 9, fill: '#71717a' }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  tick={{ fontSize: 9, fill: '#71717a' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Line
+                  type="monotone"
+                  dataKey="FPS"
+                  name="FPS"
+                  stroke="#22c55e"
+                  strokeWidth={1.5}
+                  dot={false}
+                  connectNulls
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Players"
+                  name="Players"
+                  stroke="#c9a227"
+                  strokeWidth={1.5}
+                  dot={false}
+                  connectNulls
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Ping"
+                  name="Ping"
+                  stroke="#3b82f6"
+                  strokeWidth={1.5}
+                  dot={false}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-[120px] items-center justify-center text-xs text-zinc-600">
+              No data available
+            </div>
+          )}
+        </div>
       </CardContent>
 
+      {/* Quick Actions Footer */}
       {showFooter && (
         <CardFooter className="gap-2 border-t border-tropic-gold-dark/10 pt-3">
           {canStart && onStart && (
@@ -256,6 +250,7 @@ function ServerCard({ server, onStart, onStop, onRestart }) {
           )}
         </CardFooter>
       )}
+
     </Card>
   );
 }
