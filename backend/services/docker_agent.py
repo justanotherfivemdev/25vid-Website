@@ -53,7 +53,7 @@ def _get_client():
 # Helpers
 # ---------------------------------------------------------------------------
 
-CONTAINER_PREFIX = "25vid-gs-"
+CONTAINER_PREFIX = os.environ.get("DOCKER_CONTAINER_PREFIX", "25vid-gs-")
 
 
 def _get_full_container_name(name: str) -> str:
