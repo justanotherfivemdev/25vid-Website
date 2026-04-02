@@ -19,6 +19,12 @@ from middleware.auth import get_current_user, get_current_admin
 from middleware.rbac import require_permission, Permission
 from services.audit_service import log_audit
 from services.mongo_sanitize import sanitize_mongo_payload
+from config import (
+    SERVER_PORT_BASE_GAME,
+    SERVER_PORT_BASE_QUERY,
+    SERVER_PORT_BASE_RCON,
+    SERVER_PORT_BLOCK_SIZE,
+)
 from services.docker_agent import DockerAgent
 from services.server_config_generator import generate_reforger_config, write_config_file
 from services.rcon_bridge import rcon_pool
@@ -71,6 +77,39 @@ def _server_response(server: dict) -> dict:
 
 # ── Server Lifecycle ─────────────────────────────────────────────────────────
 
+
+async def _allocate_ports() -> dict:
+    """Auto-allocate the next available port block for a new server.
+
+    Uses configured base ports and increments by SERVER_PORT_BLOCK_SIZE for
+    each existing server to avoid collisions.
+    """
+    servers = await db.managed_servers.find({}, {"ports": 1, "_id": 0}).to_list(200)
+    used_game = set()
+    used_query = set()
+    used_rcon = set()
+    for s in servers:
+        p = s.get("ports") or {}
+        if "game" in p:
+            used_game.add(int(p["game"]))
+        if "query" in p:
+            used_query.add(int(p["query"]))
+        if "rcon" in p:
+            used_rcon.add(int(p["rcon"]))
+
+    step = SERVER_PORT_BLOCK_SIZE
+    game = SERVER_PORT_BASE_GAME
+    while game in used_game:
+        game += step
+    query = SERVER_PORT_BASE_QUERY
+    while query in used_query:
+        query += step
+    rcon = SERVER_PORT_BASE_RCON
+    while rcon in used_rcon:
+        rcon += step
+
+    return {"game": game, "query": query, "rcon": rcon}
+
 @router.get("/servers")
 async def list_servers(current_user: dict = Depends(_require_servers)):
     """List all managed game servers."""
@@ -83,7 +122,17 @@ async def create_server(
     body: ServerCreate,
     current_user: dict = Depends(get_current_admin),
 ):
-    """Create a new managed server definition. S1/Admin only."""
+    """Create a new managed server definition. S1/Admin only.
+
+    Ports and Docker image are automatically assigned when not provided
+    by the client.
+    """
+    # Auto-allocate ports when the client sends default/empty values
+    ports = body.ports
+    default_ports = {"game": 2001, "query": 17777, "rcon": 19999}
+    if not ports or ports == default_ports:
+        ports = await _allocate_ports()
+
     server = ManagedServer(
         name=body.name,
         description=body.description,
@@ -91,7 +140,7 @@ async def create_server(
         container_name=f"25vid-gs-{body.name.lower().replace(' ', '-')[:30]}",
         config=body.config,
         mods=body.mods,
-        ports=body.ports,
+        ports=ports,
         environment=sanitize_mongo_payload(body.environment),
         tags=body.tags,
         auto_restart=body.auto_restart,
