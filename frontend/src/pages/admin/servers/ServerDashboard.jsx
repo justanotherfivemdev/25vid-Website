@@ -108,7 +108,7 @@ function ServerDashboard() {
           ]);
           results[srv.id] = {
             latest: summaryRes.status === 'fulfilled' ? summaryRes.value.data?.latest ?? null : null,
-            timeseries: tsRes.status === 'fulfilled' ? tsRes.value.data ?? [] : [],
+            timeseries: tsRes.status === 'fulfilled' ? (tsRes.value.data?.metrics ?? []) : [],
           };
         } catch {
           results[srv.id] = { latest: null, timeseries: [] };
@@ -139,7 +139,7 @@ function ServerDashboard() {
       });
       setServerMetrics((prev) => ({
         ...prev,
-        [serverId]: { ...prev[serverId], timeseries: res.data ?? [] },
+        [serverId]: { ...prev[serverId], timeseries: res.data?.metrics ?? [] },
       }));
     } catch (err) {
       console.error(`Failed to fetch metrics for period ${newPeriod}:`, err);
