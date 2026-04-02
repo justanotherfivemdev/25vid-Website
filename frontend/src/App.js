@@ -57,6 +57,23 @@ import ServerCreate from '@/pages/admin/servers/ServerCreate';
 import WorkshopBrowser from '@/pages/admin/servers/WorkshopBrowser';
 import ModPresets from '@/pages/admin/servers/ModPresets';
 import ModIssues from '@/pages/admin/servers/ModIssues';
+import ServerWorkspace from '@/pages/admin/servers/ServerWorkspace';
+import OverviewModule from '@/pages/admin/servers/modules/OverviewModule';
+import ConsoleModule from '@/pages/admin/servers/modules/ConsoleModule';
+import RconModule from '@/pages/admin/servers/modules/RconModule';
+import PlayersModule from '@/pages/admin/servers/modules/PlayersModule';
+import MetricsModule from '@/pages/admin/servers/modules/MetricsModule';
+import ModsModule from '@/pages/admin/servers/modules/ModsModule';
+import ServerSettingsModule from '@/pages/admin/servers/modules/ServerSettingsModule';
+import SystemSettingsModule from '@/pages/admin/servers/modules/SystemSettingsModule';
+import NotesModule from '@/pages/admin/servers/modules/NotesModule';
+import NotificationsModule from '@/pages/admin/servers/modules/NotificationsModule';
+import IncidentsModule from '@/pages/admin/servers/modules/IncidentsModule';
+import FileManagerModule from '@/pages/admin/servers/modules/FileManagerModule';
+import TriggerExecModule from '@/pages/admin/servers/modules/TriggerExecModule';
+import ReportsModule from '@/pages/admin/servers/modules/ReportsModule';
+import TodoModule from '@/pages/admin/servers/modules/TodoModule';
+import WatchersModule from '@/pages/admin/servers/modules/WatchersModule';
 import SharedArea from '@/pages/member/SharedArea';
 import PartnerSharedArea from '@/pages/partner/PartnerSharedArea';
 import OperationsPlanner from '@/pages/member/OperationsPlanner';
@@ -64,14 +81,18 @@ import OperationsPlanView from '@/pages/member/OperationsPlanView';
 import JoinUs from '@/pages/JoinUs';
 import MemberLayout from '@/components/MemberLayout';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { isStaff, STAFF_ROLES } from '@/utils/permissions';
+import { isStaff, STAFF_ROLES, hasPermission, PERMISSIONS } from '@/utils/permissions';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
 const API = `${BACKEND_URL}/api`;
 
 const getPostAuthRoute = (user) => {
   if (!user) return '/login';
-  if (isStaff(user.role)) return '/admin';
+  if (isStaff(user.role)) {
+    // S1/S4 users with MANAGE_SERVERS go directly to server dashboard
+    if (hasPermission(user.role, PERMISSIONS.MANAGE_SERVERS)) return '/admin/servers';
+    return '/admin';
+  }
   if (user.status === 'recruit') return '/recruit';
   return '/hub';
 };
@@ -1260,7 +1281,27 @@ function App() {
           <Route path="/admin/servers/workshop" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><WorkshopBrowser /></ProtectedRoute>} />
           <Route path="/admin/servers/presets" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ModPresets /></ProtectedRoute>} />
           <Route path="/admin/servers/mod-issues" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ModIssues /></ProtectedRoute>} />
-          <Route path="/admin/servers/:id" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDetail /></ProtectedRoute>} />
+          {/* Per-server workspace with nested module routes */}
+          <Route path="/admin/servers/:id" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerWorkspace /></ProtectedRoute>}>
+            <Route index element={<OverviewModule />} />
+            <Route path="console" element={<ConsoleModule />} />
+            <Route path="rcon" element={<RconModule />} />
+            <Route path="players" element={<PlayersModule />} />
+            <Route path="metrics" element={<MetricsModule />} />
+            <Route path="mods" element={<ModsModule />} />
+            <Route path="config/server" element={<ServerSettingsModule />} />
+            <Route path="config/system" element={<SystemSettingsModule />} />
+            <Route path="tools/files" element={<FileManagerModule />} />
+            <Route path="tools/exec" element={<TriggerExecModule />} />
+            <Route path="tools/reports" element={<ReportsModule />} />
+            <Route path="tools/todos" element={<TodoModule />} />
+            <Route path="tools/watchers" element={<WatchersModule />} />
+            <Route path="admin/notes" element={<NotesModule />} />
+            <Route path="admin/notifications" element={<NotificationsModule />} />
+            <Route path="admin/incidents" element={<IncidentsModule />} />
+          </Route>
+          {/* Legacy detail route redirect */}
+          <Route path="/admin/servers/:id/overview" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDetail /></ProtectedRoute>} />
         </Route>
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         {/* ── Member routes with sidebar layout ─────────────────────────── */}

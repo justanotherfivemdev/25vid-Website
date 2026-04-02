@@ -28,6 +28,8 @@ import {
   Server,
   Package,
   Layers,
+  Plus,
+  Puzzle,
 } from 'lucide-react';
 
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
@@ -199,10 +201,16 @@ export const ADMIN_NAV_GROUPS = [
     items: [
       {
         path: '/admin/servers',
-        label: 'Server Dashboard',
+        label: 'Fleet Dashboard',
         icon: Server,
         exact: true,
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
+      },
+      {
+        path: '/admin/servers/create',
+        label: 'Provision Server',
+        icon: Plus,
+        show: (role) => ['admin', 's1_personnel'].includes(role),
       },
       {
         path: '/admin/servers/workshop',

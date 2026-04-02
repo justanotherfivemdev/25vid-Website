@@ -70,6 +70,8 @@ def _normalize_metadata(raw: dict, mod_id: str) -> dict:
         "scenario_ids": raw.get("scenario_ids") or raw.get("scenarioIds", []),
         "workshop_url": f"{WORKSHOP_BASE_URL}/{mod_id}",
         "metadata_source": "workshop",
+        "metadata_completeness": "full",
+        "metadata_locked": False,
         "last_fetched": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -87,7 +89,9 @@ def _partial_record(mod_id: str) -> dict:
         "scenario_ids": [],
         "workshop_url": f"{WORKSHOP_BASE_URL}/{mod_id}",
         "metadata_source": "workshop",
+        "metadata_completeness": "minimal",
         "metadata_incomplete": True,
+        "metadata_locked": False,
         "last_fetched": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -144,9 +148,25 @@ async def fetch_mod_metadata(mod_id: str) -> Optional[dict]:
     await _ws_set_cached(cache_key, metadata)
 
     # Upsert into the canonical workshop_mods collection
+    # Preserve manual_overrides and metadata_locked flag
+    existing = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
+    if existing and existing.get("metadata_locked"):
+        # Don't overwrite locked (manually curated) records;
+        # return the stored doc so callers see canonical data
+        return existing
+
+    update_doc = {**metadata}
+    if existing and existing.get("manual_overrides"):
+        # Merge: keep manual_overrides, apply them on top
+        update_doc["manual_overrides"] = existing["manual_overrides"]
+        for field, val in existing["manual_overrides"].items():
+            if val is not None:  # Apply manual overrides, allowing falsy values
+                update_doc[field] = val
+        update_doc["metadata_source"] = "hybrid"
+
     await db.workshop_mods.update_one(
         {"mod_id": mod_id},
-        {"$set": metadata},
+        {"$set": update_doc, "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}},
         upsert=True,
     )
 
@@ -173,6 +193,7 @@ _RATE_LIMIT_DELAY = 6  # seconds between fetches (≈10 per minute)
 async def workshop_refresh_loop(interval_hours: int = 24) -> None:
     """Periodically re-fetch metadata for all non-manual workshop mods.
 
+    Prioritizes mods used by active servers and retries incomplete records.
     Follows the same ``asyncio`` while-loop / ``CancelledError`` pattern as
     ``_valyu_background_ingestion`` in ``server.py``.
     """
@@ -183,21 +204,55 @@ async def workshop_refresh_loop(interval_hours: int = 24) -> None:
                 datetime.now(timezone.utc) - timedelta(hours=interval_hours)
             ).isoformat()
 
+            # Prioritize: collect mod IDs from active/running servers first
+            priority_mod_ids = set()
+            active_servers = db.managed_servers.find(
+                {"status": {"$in": ["running", "starting"]}},
+                {"mods": 1, "_id": 0},
+            )
+            async for srv in active_servers:
+                for mod in srv.get("mods", []):
+                    mid = mod.get("mod_id") or mod.get("modId")
+                    if mid:
+                        priority_mod_ids.add(mid)
+
+            # First pass: refresh priority mods that are stale or incomplete
+            refreshed = 0
+            for mod_id in priority_mod_ids:
+                existing = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
+                if existing and existing.get("metadata_locked"):
+                    continue
+                needs_refresh = (
+                    not existing
+                    or existing.get("metadata_incomplete")
+                    or existing.get("metadata_completeness") == "minimal"
+                    or (existing.get("last_fetched", "") < stale_threshold)
+                )
+                if needs_refresh:
+                    try:
+                        await fetch_mod_metadata(mod_id)
+                        refreshed += 1
+                    except Exception as exc:
+                        logger.warning("Failed to refresh priority mod %s: %s", mod_id, exc)
+                    await asyncio.sleep(_RATE_LIMIT_DELAY)
+
+            # Second pass: refresh other stale mods
             cursor = db.workshop_mods.find(
                 {
                     "metadata_source": {"$ne": "manual"},
+                    "metadata_locked": {"$ne": True},
                     "$or": [
                         {"last_fetched": {"$lt": stale_threshold}},
                         {"last_fetched": {"$exists": False}},
+                        {"metadata_incomplete": True},
                     ],
                 },
                 {"mod_id": 1, "_id": 0},
             )
 
-            refreshed = 0
             async for doc in cursor:
                 mod_id = doc.get("mod_id")
-                if not mod_id:
+                if not mod_id or mod_id in priority_mod_ids:
                     continue
                 try:
                     await fetch_mod_metadata(mod_id)

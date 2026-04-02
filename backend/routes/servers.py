@@ -453,6 +453,86 @@ async def update_server_mods(
     return {"message": "Mods updated", "count": len(body.mods)}
 
 
+class ModRef(BaseModel):
+    mod_id: Optional[str] = None
+    modId: Optional[str] = None
+    name: Optional[str] = None
+
+
+class ModValidateRequest(BaseModel):
+    mods: list[ModRef]
+
+
+@router.post("/servers/{server_id}/mods/validate")
+async def validate_server_mods(
+    server_id: str,
+    body: ModValidateRequest,
+    current_user: dict = Depends(_require_servers),
+):
+    """Validate a mod list for conflicts, missing deps, and known issues."""
+    # Verify server exists
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    issues = []
+
+    # Check for duplicates
+    seen_ids = set()
+    for mod in body.mods:
+        mid = mod.mod_id or mod.modId or ""
+        if mid in seen_ids:
+            issues.append({
+                "type": "duplicate",
+                "severity": "warning",
+                "mod_id": mid,
+                "message": f"Duplicate mod: {mod.name or mid}"
+            })
+        seen_ids.add(mid)
+
+    # Check for known problematic mods
+    active_issues = await db.mod_issues.find(
+        {"status": "active", "confidence_score": {"$gte": 0.6}}
+    ).to_list(200)
+    bad_mod_ids = {i["mod_id"] for i in active_issues if "mod_id" in i}
+    for mod in body.mods:
+        mid = mod.mod_id or mod.modId or ""
+        if mid in bad_mod_ids:
+            matching_issues = [i for i in active_issues if i.get("mod_id") == mid]
+            issues.append({
+                "type": "known_issue",
+                "severity": "high",
+                "mod_id": mid,
+                "message": f"Mod '{mod.name or mid}' has {len(matching_issues)} active issue(s) with high confidence"
+            })
+
+    # Check for missing dependencies (batch query to avoid N+1)
+    all_mod_ids = [m.mod_id or m.modId for m in body.mods if m.mod_id or m.modId]
+    workshop_docs = await db.workshop_mods.find(
+        {"mod_id": {"$in": all_mod_ids}}, {"_id": 0, "mod_id": 1, "dependencies": 1}
+    ).to_list(500)
+    ws_lookup = {d["mod_id"]: d for d in workshop_docs}
+
+    for mod in body.mods:
+        mid = mod.mod_id or mod.modId or ""
+        if not mid:
+            continue
+        workshop_mod = ws_lookup.get(mid)
+        if workshop_mod and workshop_mod.get("dependencies"):
+            for dep in workshop_mod["dependencies"]:
+                dep_id = dep.get("mod_id") or dep.get("modId", "")
+                if dep_id and dep_id not in seen_ids:
+                    issues.append({
+                        "type": "missing_dependency",
+                        "severity": "warning",
+                        "mod_id": mid,
+                        "dependency_id": dep_id,
+                        "message": f"Mod '{mod.name or mid}' depends on {dep_id} which is not in the mod list"
+                    })
+
+    return {"issues": issues, "mod_count": len(body.mods), "valid": len(issues) == 0}
+
+
 # ── Workshop Browser ─────────────────────────────────────────────────────────
 
 @router.get("/servers/workshop/search")
@@ -968,6 +1048,26 @@ async def delete_webhook(webhook_id: str, current_user: dict = Depends(_require_
         raise HTTPException(status_code=404, detail="Webhook not found")
     await db.server_webhooks.delete_one({"id": webhook_id})
     return {"message": "Webhook deleted", "id": webhook_id}
+
+
+@router.post("/servers/webhooks/{webhook_id}/test")
+async def test_webhook(webhook_id: str, current_user: dict = Depends(_require_servers)):
+    """Send a test payload to a webhook URL (server-side to avoid CORS)."""
+    webhook = await db.server_webhooks.find_one({"id": webhook_id}, {"_id": 0})
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    import httpx
+    payload = {
+        "event": "test",
+        "message": "Test notification from 25VID Server Management",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(webhook["url"], json=payload)
+            return {"message": "Test sent", "status_code": resp.status_code}
+    except Exception:
+        return {"message": "Test failed: could not reach webhook URL", "status_code": None}
 
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
