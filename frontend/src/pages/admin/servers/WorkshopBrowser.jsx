@@ -623,7 +623,7 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search by mod name or mod ID\u2026"
+            placeholder="Search by mod name or mod ID…"
             className="border-tropic-gold-dark/20 bg-black/60 pl-10 text-white placeholder:text-gray-500 focus-visible:ring-tropic-gold/40" />
         </div>
         {searchInput && (
@@ -665,7 +665,7 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
           <p className="text-sm text-gray-500">
             {isSearchMode
               ? `Found ${total.toLocaleString()} result${total !== 1 ? 's' : ''}`
-              : `Page ${page} of ${totalPages.toLocaleString()} \u2014 ${total.toLocaleString()} mods`}
+              : `Page ${page} of ${totalPages.toLocaleString()} — ${total.toLocaleString()} mods`}
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {mods.map((mod, idx) => {
