@@ -155,11 +155,14 @@ def _extract_next_data(html: str) -> Optional[dict]:
     ``<script id="__NEXT_DATA__">`` tag.  Parsing this JSON is far more
     reliable than scraping rendered HTML elements.
     """
-    soup = BeautifulSoup(html, "lxml")
-    script_el = soup.find("script", id="__NEXT_DATA__")
-    if script_el and script_el.string:
+    match = re.search(
+        r'<script[^>]*\bid=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
+        html,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if match:
         try:
-            return json.loads(script_el.string)
+            return json.loads(match.group(1))
         except (json.JSONDecodeError, TypeError):
             logger.warning("Failed to parse __NEXT_DATA__ JSON")
     return None
