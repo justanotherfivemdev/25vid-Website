@@ -635,7 +635,12 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
       setMods([]);
       setSource('error');
     } finally {
-      setLoading(false);
+      // Only clear loading if this fetch is still the active one;
+      // a superseded request must not flip loading off while the
+      // replacement is still in-flight.
+      if (abortRef.current === cancelSource) {
+        setLoading(false);
+      }
     }
   }, [activeCategory, page, isSearchMode, debouncedSearch]);
 
