@@ -15,6 +15,7 @@ from services import workshop_proxy
 def test_normalize_tags_handles_none_and_invalid_entries():
     assert workshop_proxy._normalize_tags(None) == []
     assert workshop_proxy._normalize_tags(["", " map ", None, "MAP"]) == ["MAP"]
+    assert workshop_proxy._normalize_tags(["zebra", "alpha", "zebra"]) == ["ALPHA", "ZEBRA"]
 
 
 def test_browse_workshop_normalizes_tags_for_cache_and_url(monkeypatch):
