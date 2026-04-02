@@ -117,6 +117,13 @@ def _normalize_tags(tags: Optional[List[Optional[str]]]) -> List[str]:
     return sorted(normalized)
 
 
+def _build_tag_query(normalized_tags: List[str]) -> str:
+    """Build the workshop query-string suffix for normalized tags."""
+    if not normalized_tags:
+        return ""
+    return "".join(f"&tags={quote_plus(tag)}" for tag in normalized_tags)
+
+
 async def _get_cached(key: str) -> Optional[dict]:
     doc = await db[_PROXY_CACHE].find_one({"key": key}, {"_id": 0})
     if doc:
@@ -461,10 +468,7 @@ async def browse_workshop(
         logger.debug("Workshop proxy cache hit: %s", cache_key)
         return cached
 
-    url = f"{WORKSHOP_URL}?page={page}&sort={sort_value}"
-    if normalized_tags:
-        for tag in normalized_tags:
-            url += f"&tags={quote_plus(tag)}"
+    url = f"{WORKSHOP_URL}?page={page}&sort={sort_value}{_build_tag_query(normalized_tags)}"
 
     html = await _fetch_html(url)
     if html is None:
@@ -508,10 +512,10 @@ async def search_workshop(
         return cached
 
     encoded_q = quote_plus(query)
-    url = f"{WORKSHOP_URL}?page={page}&search={encoded_q}&sort={sort_value}"
-    if normalized_tags:
-        for tag in normalized_tags:
-            url += f"&tags={quote_plus(tag)}"
+    url = (
+        f"{WORKSHOP_URL}?page={page}&search={encoded_q}&sort={sort_value}"
+        f"{_build_tag_query(normalized_tags)}"
+    )
 
     html = await _fetch_html(url)
     if html is None:
