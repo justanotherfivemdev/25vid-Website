@@ -98,8 +98,12 @@ async def _get_cached(key: str) -> Optional[dict]:
     doc = await db[_PROXY_CACHE].find_one({"key": key}, {"_id": 0})
     if doc:
         expires_at = doc.get("expires_at")
-        if expires_at and expires_at > datetime.now(timezone.utc):
-            return doc.get("data")
+        if expires_at:
+            # MongoDB may return offset-naive datetimes; normalise to UTC-aware
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at > datetime.now(timezone.utc):
+                return doc.get("data")
     return None
 
 

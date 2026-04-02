@@ -271,7 +271,13 @@ function WorkshopBrowser() {
   };
 
   // ── Download mod to server ─────────────────────────────────────────
+  const [noServerDialogOpen, setNoServerDialogOpen] = useState(false);
+
   const openDownloadDialog = (mod) => {
+    if (servers.length === 0) {
+      setNoServerDialogOpen(true);
+      return;
+    }
     setDownloadMod(mod);
     setIncludeVersion(false);
     setDownloadTargetServer(selectedServerId || (servers[0]?.id || ''));
@@ -550,6 +556,29 @@ function WorkshopBrowser() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── No Server Prompt Dialog ───────────────────────────────── */}
+      <Dialog open={noServerDialogOpen} onOpenChange={setNoServerDialogOpen}>
+        <DialogContent className="bg-gray-950 border-gray-800 text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-tropic-gold">No Servers Available</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 bg-amber-900/20 border border-amber-700/30 rounded-lg p-4">
+              <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-gray-300">
+                You need to create a server before you can install mods. Head over to the Dashboard and create one first.
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setNoServerDialogOpen(false)}
+                className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
+                Got it
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
