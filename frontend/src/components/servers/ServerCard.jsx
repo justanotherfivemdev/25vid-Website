@@ -249,13 +249,6 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
         </CardFooter>
       )}
 
-      {/* Blink keyframe for error status indicator */}
-      <style>{`
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-      `}</style>
     </Card>
   );
 }
