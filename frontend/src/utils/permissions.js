@@ -44,6 +44,7 @@ export const PERMISSIONS = {
   MANAGE_TRAINING: 'manage_training',
   MANAGE_PARTNERS: 'manage_partners',
   MANAGE_PLANS: 'manage_plans',
+  MANAGE_SERVERS: 'manage_servers',
   VIEW_ROSTER: 'view_roster',
   VIEW_DASHBOARD: 'view_dashboard',
   VIEW_LOGS: 'view_logs',
@@ -79,6 +80,7 @@ const ROLE_PERMISSIONS = {
   [ROLES.S4_LOGISTICS]: new Set([
     PERMISSIONS.VIEW_DASHBOARD,
     PERMISSIONS.MANAGE_DEPLOYMENTS,
+    PERMISSIONS.MANAGE_SERVERS,
     PERMISSIONS.VIEW_ROSTER,
     PERMISSIONS.VIEW_INTEL,
   ]),
