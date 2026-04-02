@@ -1066,8 +1066,8 @@ async def test_webhook(webhook_id: str, current_user: dict = Depends(_require_se
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(webhook["url"], json=payload)
             return {"message": "Test sent", "status_code": resp.status_code}
-    except Exception as exc:
-        return {"message": f"Test failed: {exc}", "status_code": None}
+    except Exception:
+        return {"message": "Test failed: could not reach webhook URL", "status_code": None}
 
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
