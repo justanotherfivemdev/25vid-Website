@@ -33,7 +33,7 @@ function PlayersModule() {
     // Player data comes from RCON or metrics - for now we show placeholder
     setLoading(false);
     // The actual player list would come from RCON #players command or a dedicated endpoint
-  }, [serverId]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchPlayers(); }, [fetchPlayers]);
 

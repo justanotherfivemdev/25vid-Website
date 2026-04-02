@@ -453,6 +453,69 @@ async def update_server_mods(
     return {"message": "Mods updated", "count": len(body.mods)}
 
 
+class ModValidateRequest(BaseModel):
+    mods: list
+
+
+@router.post("/servers/{server_id}/mods/validate")
+async def validate_server_mods(
+    server_id: str,
+    body: ModValidateRequest,
+    current_user: dict = Depends(_require_servers),
+):
+    """Validate a mod list for conflicts, missing deps, and known issues."""
+    issues = []
+
+    # Check for duplicates
+    seen_ids = set()
+    for mod in body.mods:
+        mod_id = mod.get("mod_id") or mod.get("modId", "")
+        if mod_id in seen_ids:
+            issues.append({
+                "type": "duplicate",
+                "severity": "warning",
+                "mod_id": mod_id,
+                "message": f"Duplicate mod: {mod.get('name', mod_id)}"
+            })
+        seen_ids.add(mod_id)
+
+    # Check for known problematic mods
+    active_issues = await db.mod_issues.find(
+        {"status": "active", "confidence_score": {"$gte": 0.6}}
+    ).to_list(200)
+    bad_mod_ids = {i["mod_id"] for i in active_issues if "mod_id" in i}
+    for mod in body.mods:
+        mod_id = mod.get("mod_id") or mod.get("modId", "")
+        if mod_id in bad_mod_ids:
+            matching_issues = [i for i in active_issues if i.get("mod_id") == mod_id]
+            issues.append({
+                "type": "known_issue",
+                "severity": "high",
+                "mod_id": mod_id,
+                "message": f"Mod '{mod.get('name', mod_id)}' has {len(matching_issues)} active issue(s) with high confidence"
+            })
+
+    # Check for missing dependencies
+    for mod in body.mods:
+        mod_id = mod.get("mod_id") or mod.get("modId", "")
+        if not mod_id:
+            continue
+        workshop_mod = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
+        if workshop_mod and workshop_mod.get("dependencies"):
+            for dep in workshop_mod["dependencies"]:
+                dep_id = dep.get("mod_id") or dep.get("modId", "")
+                if dep_id and dep_id not in seen_ids:
+                    issues.append({
+                        "type": "missing_dependency",
+                        "severity": "warning",
+                        "mod_id": mod_id,
+                        "dependency_id": dep_id,
+                        "message": f"Mod '{mod.get('name', mod_id)}' depends on {dep_id} which is not in the mod list"
+                    })
+
+    return {"issues": issues, "mod_count": len(body.mods), "valid": len(issues) == 0}
+
+
 # ── Workshop Browser ─────────────────────────────────────────────────────────
 
 @router.get("/servers/workshop/search")
