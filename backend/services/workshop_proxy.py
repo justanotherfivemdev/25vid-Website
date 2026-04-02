@@ -99,7 +99,7 @@ async def _acquire_rate_token() -> None:
 _PROXY_CACHE = "workshop_proxy_cache"
 
 
-def _normalize_tags(tags: Optional[List[Any]]) -> List[str]:
+def _normalize_tags(tags: Optional[List[Optional[str]]]) -> List[str]:
     """Return a stable, deduplicated list of workshop tags.
 
     Accepts malformed entries defensively so cache-key generation remains safe
