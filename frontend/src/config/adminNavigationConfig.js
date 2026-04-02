@@ -27,7 +27,6 @@ import {
   Map,
   Server,
   Package,
-  Layers,
   Puzzle,
 } from 'lucide-react';
 
@@ -207,14 +206,8 @@ export const ADMIN_NAV_GROUPS = [
       },
       {
         path: '/admin/servers/workshop',
-        label: 'Workshop Browser',
+        label: 'Workshop',
         icon: Package,
-        show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
-      },
-      {
-        path: '/admin/servers/presets',
-        label: 'Mod Presets',
-        icon: Layers,
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
       },
       {

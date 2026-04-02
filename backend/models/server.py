@@ -87,6 +87,7 @@ class WorkshopMod(BaseModel):
     version: str = ""
     description: str = ""
     license: str = ""
+    tags: List[str] = Field(default_factory=list)
     dependencies: List[Dict] = Field(default_factory=list)
     scenario_ids: List[str] = Field(default_factory=list)
     thumbnail_url: str = ""
@@ -103,6 +104,7 @@ class WorkshopModCreate(BaseModel):
     version: str = ""
     description: str = ""
     license: str = ""
+    tags: List[str] = Field(default_factory=list)
     dependencies: List[Dict] = Field(default_factory=list)
     scenario_ids: List[str] = Field(default_factory=list)
 
