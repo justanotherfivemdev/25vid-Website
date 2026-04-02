@@ -764,6 +764,7 @@ async def search_workshop_live(
     q: str = Query("", description="Search query"),
     page: int = Query(1, ge=1),
     sort: str = Query("popularity", description="Sort: popularity, newest, updated, name"),
+    tags: Optional[str] = Query(None, description="Comma-separated tags to filter by"),
     current_user: dict = Depends(_require_servers),
 ):
     """Search the live Arma Reforger Workshop with pagination."""
@@ -771,7 +772,8 @@ async def search_workshop_live(
 
     if not q.strip():
         return {"mods": [], "total": 0, "page": page, "per_page": 16, "total_pages": 0}
-    result = await search_workshop(query=q.strip(), page=page, sort=sort)
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
+    result = await search_workshop(query=q.strip(), page=page, sort=sort, tags=tag_list)
     return result
 
 

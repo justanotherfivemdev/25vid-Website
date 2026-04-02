@@ -1,9 +1,13 @@
 """
 Workshop Proxy Service.
 
-Fetches live mod listings from the Arma Reforger Workshop by scraping
-``reforger.armaplatform.com/workshop``.  No undocumented JSON API is
-assumed — every response is parsed from the rendered HTML.
+Fetches live mod listings from the Arma Reforger Workshop at
+``reforger.armaplatform.com/workshop``.
+
+The workshop is a Next.js application that embeds structured JSON data
+(including thumbnail URLs) in a ``<script id="__NEXT_DATA__">`` tag.
+This service extracts mod data from that JSON blob, falling back to HTML
+element scraping when the JSON is unavailable.
 
 The proxy adds:
  * browser-like request headers
@@ -13,6 +17,7 @@ The proxy adds:
 """
 
 import asyncio
+import json
 import logging
 import re
 import time
@@ -142,9 +147,152 @@ async def _fetch_html(url: str) -> Optional[str]:
 # ---------------------------------------------------------------------------
 # HTML parsing  — mod list page
 # ---------------------------------------------------------------------------
-def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
-    """Parse the workshop listing page and return (mods, total_results)."""
-    soup = BeautifulSoup(html, "lxml")
+def _extract_next_data(html: str) -> Optional[dict]:
+    """Extract the __NEXT_DATA__ JSON embedded in the workshop HTML.
+
+    The Arma Reforger Workshop is a Next.js application that embeds all
+    page data (including mod listings with image URLs) inside a
+    ``<script id="__NEXT_DATA__">`` tag.  Parsing this JSON is far more
+    reliable than scraping rendered HTML elements.
+    """
+    match = re.search(
+        r'<script[^>]*\bid=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
+        html,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except (json.JSONDecodeError, TypeError):
+            logger.warning("Failed to parse __NEXT_DATA__ JSON")
+    return None
+
+
+def _thumbnail_from_asset(asset: dict) -> str:
+    """Return the best thumbnail URL from a workshop asset dict."""
+    previews = asset.get("previews") or asset.get("images") or []
+    if isinstance(previews, list):
+        for preview in previews:
+            if not isinstance(preview, dict):
+                continue
+            # Next.js data stores thumbnails under previews[].thumbnails
+            thumbs = preview.get("thumbnails", {})
+            if isinstance(thumbs, dict):
+                for _mime, variants in thumbs.items():
+                    if isinstance(variants, list):
+                        for v in variants:
+                            url = v.get("url", "") if isinstance(v, dict) else ""
+                            if url:
+                                return url
+            # Fallback: direct preview URL
+            url = preview.get("url", "")
+            if url:
+                return url
+
+    # Legacy / alternative field names
+    for field in ("imageUrl", "image_url", "thumbnail", "thumbnailUrl"):
+        val = asset.get(field, "")
+        if val:
+            return val
+
+    return ""
+
+
+def _human_size(size_bytes: Any) -> str:
+    """Convert a byte count to a human-readable string (e.g. '12.3 MB')."""
+    try:
+        n = int(size_bytes)
+    except (TypeError, ValueError):
+        return ""
+    if n <= 0:
+        return ""
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024:
+            return f"{n:.1f} {unit}" if unit != "B" else f"{n} {unit}"
+        n /= 1024
+    return f"{n:.1f} TB"
+
+
+def _parse_mod_list_from_json(data: dict) -> Tuple[List[Dict], int]:
+    """Parse mod list from the __NEXT_DATA__ JSON structure."""
+    page_props = data.get("props", {}).get("pageProps", {})
+
+    # Assets can be at pageProps.assets or pageProps.data, etc.
+    assets_obj = page_props.get("assets") or page_props.get("data") or {}
+    rows: list = []
+    total = 0
+
+    if isinstance(assets_obj, dict):
+        rows = assets_obj.get("rows") or assets_obj.get("items") or []
+        total = assets_obj.get("count") or assets_obj.get("total") or 0
+    elif isinstance(assets_obj, list):
+        rows = assets_obj
+        total = len(rows)
+
+    mods: List[Dict] = []
+    for asset in rows:
+        if not isinstance(asset, dict):
+            continue
+
+        mod_id = asset.get("id", "") or asset.get("modId", "")
+
+        name = asset.get("name", "") or ""
+
+        # Author may be a string or an object with a username field
+        author_raw = asset.get("creator") or asset.get("author") or ""
+        if isinstance(author_raw, dict):
+            author = author_raw.get("username", "") or author_raw.get("name", "")
+        else:
+            author = str(author_raw)
+
+        thumbnail_url = _thumbnail_from_asset(asset)
+
+        # Size
+        size_raw = (
+            asset.get("currentVersionSize")
+            or asset.get("size")
+            or asset.get("fileSize")
+            or 0
+        )
+        size = _human_size(size_raw)
+
+        # Rating (averageRating is 0-1 float → convert to percentage string)
+        avg_rating = asset.get("averageRating")
+        if avg_rating is not None:
+            try:
+                rating = f"{round(float(avg_rating) * 100)}%"
+            except (TypeError, ValueError):
+                rating = ""
+        else:
+            rating = ""
+
+        # Tags / categories
+        mod_tags: List[str] = []
+        raw_tags = asset.get("tags") or asset.get("categories") or []
+        if isinstance(raw_tags, list):
+            for t in raw_tags:
+                tag_name = t.get("name", "") if isinstance(t, dict) else str(t)
+                if tag_name:
+                    mod_tags.append(tag_name)
+
+        workshop_url = f"{WORKSHOP_BASE}/workshop/{mod_id}" if mod_id else ""
+
+        mods.append({
+            "mod_id": mod_id,
+            "name": name,
+            "author": author,
+            "thumbnail_url": thumbnail_url,
+            "size": size,
+            "rating": rating,
+            "tags": mod_tags,
+            "workshop_url": workshop_url,
+        })
+
+    return mods, int(total) if total else len(mods)
+
+
+def _parse_mod_list_from_html(soup: BeautifulSoup) -> Tuple[List[Dict], int]:
+    """Fallback: parse the workshop listing from rendered HTML elements."""
     mods: List[Dict] = []
     total_results = 0
 
@@ -160,16 +308,12 @@ def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
     if no_results and "No mods found" in no_results.get_text():
         return [], 0
 
-    # Collect mod data from the grid cards.
-    # Each card is an <a> with class "group" inside the grid.
-    # All fields are extracted per-card to avoid index-misalignment when a
-    # card is missing an element (e.g. no author or no rating).
     cards = soup.select("div.grid a.group[href]")
 
     for card in cards:
         href = card.get("href", "")
 
-        # ── mod_id & URL ────────────────────────────────────────────
+        # ── mod_id & URL
         mod_id = ""
         parts = href.strip("/").split("/")
         if len(parts) >= 2:
@@ -177,28 +321,32 @@ def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
             mod_id = slug.split("-")[0]
         mod_url = f"{WORKSHOP_BASE}{href}" if href.startswith("/") else href
 
-        # ── name ────────────────────────────────────────────────────
+        # ── name
         name_el = card.select_one("h2.break-words")
         name = name_el.get_text(strip=True) if name_el else ""
 
-        # ── author ──────────────────────────────────────────────────
+        # ── author
         author = ""
         author_el = card.select_one("span.mt-1")
         if author_el:
             txt = author_el.get_text(strip=True)
             author = txt[3:] if txt.lower().startswith("by ") else txt
 
-        # ── thumbnail ───────────────────────────────────────────────
+        # ── thumbnail — check multiple attributes for lazy-loaded images
         thumbnail_url = ""
         img_el = card.select_one("div.aspect-h-9 img") or card.select_one("img")
         if img_el:
-            src = img_el.get("src") or img_el.get("srcset", "").split(",")[0].split(" ")[0]
-            if src:
+            src = (
+                img_el.get("src")
+                or img_el.get("data-src")
+                or img_el.get("srcset", "").split(",")[0].split(" ")[0]
+            )
+            if src and not src.startswith("data:"):
                 if src.startswith("/"):
                     src = f"{WORKSHOP_BASE}{src}"
                 thumbnail_url = src
 
-        # ── size & rating (both use span.ml-1 inside the card) ─────
+        # ── size & rating
         size = ""
         rating = ""
         for span in card.select("span.ml-1"):
@@ -208,7 +356,7 @@ def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
             elif txt:
                 size = txt
 
-        # ── tags ────────────────────────────────────────────────────
+        # ── tags
         mod_tags: List[str] = []
         for tag_el in card.select("span.text-xs, span.badge, a[href*='tags=']"):
             txt = tag_el.get_text(strip=True)
@@ -229,6 +377,38 @@ def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
         })
 
     return mods, total_results
+
+
+def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
+    """Parse the workshop listing page and return (mods, total_results).
+
+    The Arma Reforger Workshop is a Next.js application.  Image URLs and
+    other mod metadata are embedded in a ``<script id="__NEXT_DATA__">``
+    JSON blob — the rendered ``<img>`` tags may contain only placeholders
+    or optimised ``/_next/image`` paths that cannot be used directly.
+
+    Strategy:
+      1. Try to extract structured data from ``__NEXT_DATA__`` (reliable).
+      2. Fall back to scraping rendered HTML elements (legacy).
+    """
+    # ── Strategy 1: JSON from __NEXT_DATA__ ─────────────────────────
+    next_data = _extract_next_data(html)
+    if next_data:
+        try:
+            mods, total = _parse_mod_list_from_json(next_data)
+            if mods:
+                logger.debug(
+                    "Parsed %d mods from __NEXT_DATA__ JSON", len(mods)
+                )
+                return mods, total
+            logger.debug("__NEXT_DATA__ found but contained no mods")
+        except Exception as exc:
+            logger.warning("Failed to parse mods from __NEXT_DATA__: %s", exc)
+
+    # ── Strategy 2: HTML scraping fallback ──────────────────────────
+    logger.debug("Falling back to HTML scraping")
+    soup = BeautifulSoup(html, "lxml")
+    return _parse_mod_list_from_html(soup)
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +436,7 @@ async def browse_workshop(
     }
     sort_value = sort_map.get(category, "popularity")
 
-    cache_key = f"browse:{sort_value}:{page}:{','.join(tags or [])}"
+    cache_key = f"browse:{sort_value}:{page}:{','.join(sorted(tags or []))}"
     cached = await _get_cached(cache_key)
     if cached:
         logger.debug("Workshop proxy cache hit: %s", cache_key)
@@ -296,11 +476,12 @@ async def search_workshop(
     query: str,
     page: int = 1,
     sort: str = "popularity",
+    tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Search the workshop by keyword with pagination."""
+    """Search the workshop by keyword with pagination and optional tag filter."""
     sort_value = sort if sort in VALID_SORTS else "popularity"
 
-    cache_key = f"search:{query}:{sort_value}:{page}"
+    cache_key = f"search:{query}:{sort_value}:{page}:{','.join(sorted(tags or []))}"
     cached = await _get_cached(cache_key)
     if cached:
         logger.debug("Workshop proxy cache hit: %s", cache_key)
@@ -308,6 +489,9 @@ async def search_workshop(
 
     encoded_q = quote_plus(query)
     url = f"{WORKSHOP_URL}?page={page}&search={encoded_q}&sort={sort_value}"
+    if tags:
+        for tag in tags:
+            url += f"&tags={quote_plus(tag.upper())}"
 
     html = await _fetch_html(url)
     if html is None:

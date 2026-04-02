@@ -45,6 +45,10 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
+  Filter,
+  X,
+  SlidersHorizontal,
+  Tag,
 } from 'lucide-react';
 
 import { API } from '@/utils/api';
@@ -55,6 +59,28 @@ const CATEGORIES = [
   { key: 'newest', label: 'Newest', icon: Sparkles },
   { key: 'updated', label: 'Recently Updated', icon: ArrowUpDown },
   { key: 'name', label: 'Alphabetical', icon: Type },
+];
+
+// ── Sort options for search mode ───────────────────────────────────────────
+const SORT_OPTIONS = [
+  { value: 'popularity', label: 'Most Popular' },
+  { value: 'newest',     label: 'Newest' },
+  { value: 'updated',    label: 'Recently Updated' },
+  { value: 'name',       label: 'Name (A-Z)' },
+];
+
+// ── Workshop tag filters ───────────────────────────────────────────────────
+const TAG_FILTERS = [
+  { key: 'MAP',        label: 'Map' },
+  { key: 'SCENARIO',   label: 'Scenario' },
+  { key: 'WEAPON',     label: 'Weapon' },
+  { key: 'VEHICLE',    label: 'Vehicle' },
+  { key: 'GEAR',       label: 'Gear' },
+  { key: 'CHARACTER',  label: 'Character' },
+  { key: 'MODPACK',    label: 'Modpack' },
+  { key: 'DEPENDENCY', label: 'Dependency' },
+  { key: 'SOUND',      label: 'Sound' },
+  { key: 'UI',         label: 'UI' },
 ];
 
 // ── Debounce hook ──────────────────────────────────────────────────────────
@@ -601,8 +627,24 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebounce(searchInput, 400);
   const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchSort, setSearchSort] = useState('popularity');
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
   const abortRef = useRef(null);
   const [issuePopupMod, setIssuePopupMod] = useState(null);
+
+  const toggleTag = (tagKey) => {
+    setSelectedTags(prev =>
+      prev.includes(tagKey) ? prev.filter(t => t !== tagKey) : [...prev, tagKey]
+    );
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setSelectedTags([]);
+    setSearchSort('popularity');
+    setPage(1);
+  };
 
   const fetchMods = useCallback(async () => {
     if (abortRef.current) abortRef.current.cancel('superseded');
@@ -613,13 +655,17 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
     try {
       let res;
       if (isSearchMode && debouncedSearch.trim()) {
+        const params = { q: debouncedSearch.trim(), page, sort: searchSort };
+        if (selectedTags.length > 0) params.tags = selectedTags.join(',');
         res = await axios.get(`${API}/workshop/search`, {
-          params: { q: debouncedSearch.trim(), page, sort: 'popularity' },
+          params,
           cancelToken: cancelSource.token,
         });
       } else {
+        const params = { category: activeCategory, page };
+        if (selectedTags.length > 0) params.tags = selectedTags.join(',');
         res = await axios.get(`${API}/workshop/browse`, {
-          params: { category: activeCategory, page },
+          params,
           cancelToken: cancelSource.token,
         });
       }
@@ -642,7 +688,7 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
         setLoading(false);
       }
     }
-  }, [activeCategory, page, isSearchMode, debouncedSearch]);
+  }, [activeCategory, page, isSearchMode, debouncedSearch, searchSort, selectedTags]);
 
   useEffect(() => {
     fetchMods();
@@ -659,7 +705,11 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
     setPage(1);
     setSearchInput('');
     setIsSearchMode(false);
+    setSelectedTags([]);
+    setSearchSort('popularity');
   };
+
+  const activeFilterCount = selectedTags.length + (isSearchMode && searchSort !== 'popularity' ? 1 : 0);
 
   return (
     <div className="space-y-4">
@@ -686,16 +736,25 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
         ))}
       </div>
 
-      {/* Search */}
+      {/* Search + filter toggle */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search by mod name or mod ID…"
+            placeholder="Search by mod name, author, or mod ID…"
             className="border-tropic-gold-dark/20 bg-black/60 pl-10 text-white placeholder:text-gray-500 focus-visible:ring-tropic-gold/40" />
         </div>
+        <Button variant="outline" onClick={() => setShowFilters(f => !f)}
+          className={`border-gray-700 text-gray-300 hover:bg-gray-800 relative ${showFilters ? 'bg-gray-800 border-tropic-gold-dark/40' : ''}`}>
+          <SlidersHorizontal className="h-4 w-4" />
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-tropic-gold text-[10px] font-bold text-black">
+              {activeFilterCount}
+            </span>
+          )}
+        </Button>
         {searchInput && (
-          <Button variant="outline" onClick={() => { setSearchInput(''); setIsSearchMode(false); setPage(1); }}
+          <Button variant="outline" onClick={() => { setSearchInput(''); setIsSearchMode(false); setPage(1); clearFilters(); }}
             className="border-gray-700 text-gray-300 hover:bg-gray-800">Clear</Button>
         )}
         <Button variant="outline" onClick={fetchMods} disabled={loading}
@@ -703,6 +762,66 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </Button>
       </div>
+
+      {/* Filter panel */}
+      {showFilters && (
+        <div className="rounded-lg border border-tropic-gold-dark/20 bg-black/40 p-3 space-y-3">
+          {/* Sort control (visible in search mode) */}
+          {isSearchMode && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Sort by:</span>
+              {SORT_OPTIONS.map(opt => (
+                <Button key={opt.value} variant="outline" size="sm"
+                  onClick={() => { setSearchSort(opt.value); setPage(1); }}
+                  className={searchSort === opt.value
+                    ? 'bg-tropic-gold/20 text-tropic-gold border-tropic-gold-dark/40 text-xs h-7'
+                    : 'border-gray-700 text-gray-400 hover:text-tropic-gold hover:bg-tropic-gold/10 text-xs h-7'}>
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+          )}
+
+          {/* Tag filters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide flex items-center gap-1">
+              <Tag className="h-3 w-3" /> Tags:
+            </span>
+            {TAG_FILTERS.map(tag => (
+              <Button key={tag.key} variant="outline" size="sm"
+                onClick={() => toggleTag(tag.key)}
+                className={selectedTags.includes(tag.key)
+                  ? 'bg-tropic-gold/20 text-tropic-gold border-tropic-gold-dark/40 text-xs h-7'
+                  : 'border-gray-700 text-gray-400 hover:text-tropic-gold hover:bg-tropic-gold/10 text-xs h-7'}>
+                {tag.label}
+              </Button>
+            ))}
+            {activeFilterCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}
+                className="text-gray-500 hover:text-red-400 text-xs h-7 ml-1">
+                <X className="h-3 w-3 mr-1" />Clear filters
+              </Button>
+            )}
+          </div>
+
+          {/* Active filters summary */}
+          {selectedTags.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-gray-500">Active:</span>
+              {selectedTags.map(tagKey => {
+                const tag = TAG_FILTERS.find(t => t.key === tagKey);
+                return (
+                  <Badge key={tagKey}
+                    className="bg-tropic-gold/10 text-tropic-gold border-tropic-gold-dark/30 text-[10px] px-1.5 py-0 cursor-pointer hover:bg-red-600/20 hover:text-red-400 hover:border-red-600/30"
+                    onClick={() => toggleTag(tagKey)}>
+                    {tag?.label || tagKey} <X className="h-2.5 w-2.5 ml-0.5" />
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Error */}
       {error && (
