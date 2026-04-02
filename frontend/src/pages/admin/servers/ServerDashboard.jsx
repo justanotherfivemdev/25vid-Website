@@ -17,10 +17,10 @@ import {
 } from 'lucide-react';
 import { API } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
+import { hasPermission, PERMISSIONS } from '@/utils/permissions';
 import ServerCard from '@/components/servers/ServerCard';
 
 const AUTO_REFRESH_MS = 15_000;
-const ADMIN_ROLES = new Set(['admin', 's1_personnel']);
 
 function ServerDashboard() {
   const { user } = useAuth();
@@ -30,8 +30,9 @@ function ServerDashboard() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [actionError, setActionError] = useState(null);
 
-  const canManage = user && ADMIN_ROLES.has(user.role);
+  const canManage = user && hasPermission(user.role, PERMISSIONS.MANAGE_SERVERS);
 
   // ── Fetch servers ────────────────────────────────────────────────────────
   const fetchServers = useCallback(async (opts = {}) => {
@@ -67,10 +68,11 @@ function ServerDashboard() {
     async (serverId, action) => {
       try {
         await axios.post(`${API}/servers/${serverId}/${action}`);
+        setActionError(null);
         await fetchServers({ silent: true });
       } catch (err) {
         console.error(`Server ${action} failed:`, err);
-        alert(err.response?.data?.detail || `Failed to ${action} server.`);
+        setActionError(err.response?.data?.detail || `Failed to ${action} server.`);
       }
     },
     [fetchServers],
@@ -182,6 +184,22 @@ function ServerDashboard() {
             className="ml-auto text-red-400 hover:text-red-300"
           >
             Retry
+          </Button>
+        </div>
+      )}
+
+      {/* Action error banner */}
+      {actionError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-600/30 bg-red-600/10 px-4 py-3 text-sm text-red-400">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <span>{actionError}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setActionError(null)}
+            className="ml-auto text-red-400 hover:text-red-300"
+          >
+            Dismiss
           </Button>
         </div>
       )}
