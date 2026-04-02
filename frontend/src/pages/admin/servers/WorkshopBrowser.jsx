@@ -45,7 +45,6 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Filter,
   X,
   SlidersHorizontal,
   Tag,

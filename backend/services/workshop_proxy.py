@@ -99,6 +99,18 @@ async def _acquire_rate_token() -> None:
 _PROXY_CACHE = "workshop_proxy_cache"
 
 
+def _normalize_tags(tags: Optional[List[str]]) -> List[str]:
+    """Return a stable, deduplicated list of workshop tags."""
+    if not tags:
+        return []
+    normalized = {
+        tag.strip().upper()
+        for tag in tags
+        if isinstance(tag, str) and tag.strip()
+    }
+    return sorted(normalized)
+
+
 async def _get_cached(key: str) -> Optional[dict]:
     doc = await db[_PROXY_CACHE].find_one({"key": key}, {"_id": 0})
     if doc:
@@ -435,17 +447,18 @@ async def browse_workshop(
         "name": "name",
     }
     sort_value = sort_map.get(category, "popularity")
+    normalized_tags = _normalize_tags(tags)
 
-    cache_key = f"browse:{sort_value}:{page}:{','.join(sorted(tags or []))}"
+    cache_key = f"browse:{sort_value}:{page}:{','.join(normalized_tags)}"
     cached = await _get_cached(cache_key)
     if cached:
         logger.debug("Workshop proxy cache hit: %s", cache_key)
         return cached
 
     url = f"{WORKSHOP_URL}?page={page}&sort={sort_value}"
-    if tags:
-        for tag in tags:
-            url += f"&tags={quote_plus(tag.upper())}"
+    if normalized_tags:
+        for tag in normalized_tags:
+            url += f"&tags={quote_plus(tag)}"
 
     html = await _fetch_html(url)
     if html is None:
@@ -480,8 +493,9 @@ async def search_workshop(
 ) -> Dict[str, Any]:
     """Search the workshop by keyword with pagination and optional tag filter."""
     sort_value = sort if sort in VALID_SORTS else "popularity"
+    normalized_tags = _normalize_tags(tags)
 
-    cache_key = f"search:{query}:{sort_value}:{page}:{','.join(sorted(tags or []))}"
+    cache_key = f"search:{query}:{sort_value}:{page}:{','.join(normalized_tags)}"
     cached = await _get_cached(cache_key)
     if cached:
         logger.debug("Workshop proxy cache hit: %s", cache_key)
@@ -489,9 +503,9 @@ async def search_workshop(
 
     encoded_q = quote_plus(query)
     url = f"{WORKSHOP_URL}?page={page}&search={encoded_q}&sort={sort_value}"
-    if tags:
-        for tag in tags:
-            url += f"&tags={quote_plus(tag.upper())}"
+    if normalized_tags:
+        for tag in normalized_tags:
+            url += f"&tags={quote_plus(tag)}"
 
     html = await _fetch_html(url)
     if html is None:
