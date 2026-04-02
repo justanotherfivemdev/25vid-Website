@@ -101,7 +101,7 @@ function RconModule() {
         <ServerOfflinePanel
           title="RCON is unavailable while the server is offline"
           description="RCON commands, live server statistics, and other real-time admin tools are unavailable until the server is started."
-          onStart={() => handleServerAction?.('start')}
+          onStart={handleServerAction ? () => handleServerAction('start') : undefined}
           starting={actionLoading === 'start'}
         />
       )}

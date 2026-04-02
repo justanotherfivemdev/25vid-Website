@@ -156,7 +156,7 @@ function WorkshopBrowser({ initialServerId = '', lockServerSelection = false, em
         }
       } catch { /* ignore */ }
     })();
-  }, [initialServerId, selectedServerId]);
+  }, [initialServerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load server mods when selectedServerId changes
   useEffect(() => {

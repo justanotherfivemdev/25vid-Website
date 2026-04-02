@@ -322,6 +322,7 @@ async def write_config_file(
         target_dir.mkdir(parents=True, exist_ok=True)
         file_contents = json.dumps(config, indent=2, ensure_ascii=False)
         fd = os.open(target_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        os.fchmod(fd, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(file_contents)
         logger.info("Wrote server config to %s", target_file)

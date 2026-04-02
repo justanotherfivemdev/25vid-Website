@@ -33,7 +33,7 @@ function normalizeMetricPoint(point) {
   return {
     ...point,
     player_count: point.player_count ?? point.max_player_count ?? point.avg_player_count ?? null,
-    fps: point.fps ?? point.avg_cpu_percent ?? point.cpu_percent ?? null,
+    fps: point.fps ?? null,
     ping: point.ping ?? null,
   };
 }

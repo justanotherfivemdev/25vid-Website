@@ -33,7 +33,7 @@ function PlayersModule() {
       setSource(res.data?.source || 'rcon');
     } catch {
       setPlayers([]);
-      setSource('error');
+      setSource('rcon_error');
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ function PlayersModule() {
         <ServerOfflinePanel
           title="Players are unavailable while the server is offline"
           description="Player lists, join/leave activity, and other live server insights only appear after the server has been started."
-          onStart={() => handleServerAction?.('start')}
+          onStart={handleServerAction ? () => handleServerAction('start') : undefined}
           starting={actionLoading === 'start'}
         />
       )}
