@@ -709,7 +709,7 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
     setSearchSort('popularity');
   };
 
-  const activeFilterCount = selectedTags.length + (searchSort !== 'popularity' ? 1 : 0);
+  const activeFilterCount = selectedTags.length + (isSearchMode && searchSort !== 'popularity' ? 1 : 0);
 
   return (
     <div className="space-y-4">
@@ -754,7 +754,7 @@ function WorkshopTab({ onDownload, modIssues, getModIssueCount, downloadHistory 
           )}
         </Button>
         {searchInput && (
-          <Button variant="outline" onClick={() => { setSearchInput(''); setIsSearchMode(false); setPage(1); }}
+          <Button variant="outline" onClick={() => { setSearchInput(''); setIsSearchMode(false); setPage(1); clearFilters(); }}
             className="border-gray-700 text-gray-300 hover:bg-gray-800">Clear</Button>
         )}
         <Button variant="outline" onClick={fetchMods} disabled={loading}

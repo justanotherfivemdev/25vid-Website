@@ -433,7 +433,7 @@ async def browse_workshop(
     }
     sort_value = sort_map.get(category, "popularity")
 
-    cache_key = f"browse:{sort_value}:{page}:{','.join(tags or [])}"
+    cache_key = f"browse:{sort_value}:{page}:{','.join(sorted(tags or []))}"
     cached = await _get_cached(cache_key)
     if cached:
         logger.debug("Workshop proxy cache hit: %s", cache_key)
@@ -478,7 +478,7 @@ async def search_workshop(
     """Search the workshop by keyword with pagination and optional tag filter."""
     sort_value = sort if sort in VALID_SORTS else "popularity"
 
-    cache_key = f"search:{query}:{sort_value}:{page}:{','.join(tags or [])}"
+    cache_key = f"search:{query}:{sort_value}:{page}:{','.join(sorted(tags or []))}"
     cached = await _get_cached(cache_key)
     if cached:
         logger.debug("Workshop proxy cache hit: %s", cache_key)
