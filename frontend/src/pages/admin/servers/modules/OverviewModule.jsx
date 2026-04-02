@@ -24,6 +24,7 @@ import {
   CheckCircle,
   XCircle,
   ArrowUpRight,
+  BarChart3,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 

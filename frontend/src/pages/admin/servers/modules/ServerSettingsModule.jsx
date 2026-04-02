@@ -305,7 +305,7 @@ function ConfigField({ label, value, onChange, type = 'text', mono }) {
       <Input
         type={type}
         value={value}
-        onChange={(e) => onChange(type === 'number' ? e.target.value : e.target.value)}
+        onChange={(e) => onChange(type === 'number' ? (parseInt(e.target.value) || 0) : e.target.value)}
         className={`h-7 w-48 border-zinc-800 bg-black/60 text-right text-xs text-white ${mono ? 'font-mono' : ''}`}
       />
     </div>
