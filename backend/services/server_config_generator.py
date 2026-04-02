@@ -98,7 +98,13 @@ def _merge_nested_dicts(base: dict, incoming: dict) -> dict:
 
 
 def normalize_server_config(raw_config: dict | None, server: dict | None = None) -> dict:
-    """Normalize flat/legacy config payloads into the canonical nested shape."""
+    """Normalize server config payloads into the canonical nested shape.
+
+    Accepts either the older flat storage format or the newer nested UI/API
+    structure, merges the incoming values onto the current defaults, and
+    returns a complete nested configuration dictionary suitable for both the
+    frontend editor and final Reforger JSON generation.
+    """
     config = raw_config or {}
     normalized = build_default_server_config(server)
 

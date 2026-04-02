@@ -99,13 +99,13 @@ function ServerSettingsModule() {
 
   useEffect(() => {
     const onBeforeUnload = (event) => {
-      if (!missionHeaderError) return;
+      if (!dirty && !missionHeaderError) return;
       event.preventDefault();
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [missionHeaderError]);
+  }, [dirty, missionHeaderError]);
 
   const handleMissionHeaderChange = useCallback((value) => {
     setMissionHeaderText(value);

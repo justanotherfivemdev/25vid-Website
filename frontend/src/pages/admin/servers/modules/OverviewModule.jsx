@@ -5,6 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Activity,
   Clock,
   Users,
@@ -32,6 +38,7 @@ function OverviewModule() {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const fetchOverviewData = useCallback(async () => {
     try {
@@ -63,6 +70,7 @@ function OverviewModule() {
   const modCount = server?.mods?.length || 0;
   const ports = server?.ports || {};
   const troubleshooting = server?.troubleshooting || {};
+  const serverAdminToolsConfigTarget = troubleshooting.profile_directory || troubleshooting.cd_target || '';
   const serverAdminToolsInstalled = (server?.mods || []).some((mod) => {
     const haystack = `${mod.name || ''} ${mod.mod_id || mod.modId || ''}`.toLowerCase();
     return haystack.includes('server admin tools');
@@ -70,15 +78,12 @@ function OverviewModule() {
   const startupParameters = Array.isArray(server?.config?.startupParameters) ? server.config.startupParameters : [];
 
   const handleReset = useCallback(async () => {
-    const confirmed = window.confirm(
-      'Reset this server? This removes all mods, restores baseline server settings, and returns the server to its original post-creation state.',
-    );
-    if (!confirmed) return;
     setResetting(true);
     try {
       await axios.post(`${API}/servers/${serverId}/reset`);
       await fetchServer(true);
       await fetchOverviewData();
+      setResetDialogOpen(false);
     } finally {
       setResetting(false);
     }
@@ -272,7 +277,7 @@ function OverviewModule() {
                 className="justify-start border-amber-700/30 text-amber-400 hover:bg-amber-700/10 hover:text-amber-300">
                 {actionLoading === 'restart' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />} Restart
               </Button>
-              <Button variant="outline" size="sm" onClick={handleReset} disabled={resetting || !!actionLoading}
+              <Button variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} disabled={resetting || !!actionLoading}
                 className="justify-start border-red-800/40 text-red-300 hover:bg-red-900/20 hover:text-red-200">
                 {resetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />} Reset
               </Button>
@@ -315,7 +320,7 @@ function OverviewModule() {
           </CardHeader>
           <CardContent className="space-y-3">
             <DetailRow label="Installed" value={serverAdminToolsInstalled ? 'Detected in mod list' : 'Not detected'} />
-            <DetailRow label="Config Target" value={`${troubleshooting.profile_directory || troubleshooting.cd_target || '—'}/ServerAdminTools_Config.json`} mono />
+            <DetailRow label="Config Target" value={serverAdminToolsConfigTarget ? `${serverAdminToolsConfigTarget}/ServerAdminTools_Config.json` : '—'} mono />
             <DetailRow label="Bootstrap Status" value={serverAdminToolsInstalled ? 'Ready for admin troubleshooting' : 'Awaiting mod installation'} />
             <div>
               <span className="text-xs font-medium text-gray-500">Startup Parameters</span>
@@ -352,6 +357,26 @@ function OverviewModule() {
         </span>
         Auto-refreshing
       </div>
+
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="border-red-700/30 bg-zinc-950 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-red-300">Reset Server</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-300">
+            This will remove all mods, restore baseline server settings, and return the server to its original post-creation state.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setResetDialogOpen(false)} className="border-zinc-700 text-gray-300">
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleReset} disabled={resetting} className="bg-red-600 text-white hover:bg-red-500">
+              {resetting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
+              Confirm Reset
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -47,7 +47,7 @@ function PlayersModule() {
     return players.filter((player) => (player.name || '').toLowerCase().includes(term));
   }, [players, search]);
 
-  const playerCount = server?.config?.game?.playerCountLimit || server?.baseline_config?.game?.playerCountLimit || 64;
+  const playerCount = server?.config?.game?.playerCountLimit || 64;
 
   return (
     <div className="space-y-6">
