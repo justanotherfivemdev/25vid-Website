@@ -29,6 +29,7 @@ import {
   RotateCcw,
   ShieldAlert,
   RefreshCw,
+  Lock,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
@@ -76,6 +77,16 @@ function OverviewModule() {
     return haystack.includes('server admin tools');
   });
   const startupParameters = Array.isArray(server?.config?.startupParameters) ? server.config.startupParameters : [];
+  const [locking, setLocking] = useState(false);
+
+  const handleLockdown = useCallback(async () => {
+    setLocking(true);
+    try {
+      await axios.post(`${API}/servers/${serverId}/rcon`, { command: '#lock' });
+    } finally {
+      setLocking(false);
+    }
+  }, [serverId]);
 
   const handleReset = useCallback(async () => {
     setResetting(true);
@@ -277,8 +288,12 @@ function OverviewModule() {
                 className="justify-start border-amber-700/30 text-amber-400 hover:bg-amber-700/10 hover:text-amber-300">
                 {actionLoading === 'restart' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />} Restart
               </Button>
+              <Button variant="outline" size="sm" onClick={handleLockdown} disabled={!isRunning || locking || !!actionLoading}
+                className="justify-start border-purple-700/30 text-purple-400 hover:bg-purple-700/10 hover:text-purple-300">
+                {locking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />} Lockdown
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} disabled={resetting || !!actionLoading}
-                className="justify-start border-red-800/40 text-red-300 hover:bg-red-900/20 hover:text-red-200">
+                className="justify-start border-red-800/40 text-red-300 hover:bg-red-900/20 hover:text-red-200 sm:col-span-2">
                 {resetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />} Reset
               </Button>
             </div>

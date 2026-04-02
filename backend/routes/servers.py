@@ -6,6 +6,7 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 (S4 Logistics and S1/Admin).
 """
 
+import json
 import logging
 import asyncio
 from datetime import datetime, timezone
@@ -79,6 +80,30 @@ def _server_response(server: dict) -> dict:
     if "environment" in doc:
         doc["environment"] = _redact_env(doc["environment"])
     return doc
+
+
+def _validate_mission_header(config: dict) -> None:
+    """Validate that the missionHeader field (if present) is a JSON-serializable dict.
+
+    Raises HTTPException(422) when missionHeader is not a dict or contains
+    values that cannot be serialized to JSON.
+    """
+    game = config.get("game") if isinstance(config.get("game"), dict) else config
+    mission_header = game.get("missionHeader") if game else None
+    if mission_header is None:
+        return
+    if not isinstance(mission_header, dict):
+        raise HTTPException(
+            status_code=422,
+            detail="missionHeader must be a JSON object (not an array, string, or primitive).",
+        )
+    try:
+        json.dumps(mission_header, ensure_ascii=False)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"missionHeader contains values that cannot be serialized to JSON: {exc}",
+        )
 
 
 def _find_mount_source(mounts: list[dict], destination: str) -> Optional[str]:
@@ -320,6 +345,10 @@ async def update_server(
 
     if "environment" in updates:
         updates["environment"] = sanitize_mongo_payload(updates["environment"])
+
+    # Validate mission header before persisting
+    if "config" in updates:
+        _validate_mission_header(updates["config"])
 
     next_server = {**server, **updates}
 

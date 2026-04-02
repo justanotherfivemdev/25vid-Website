@@ -224,7 +224,7 @@ function ServerSettingsModule() {
         </Card>
       ) : (
         /* Form-based editor */
-          <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           {/* Game Settings */}
           <Card className="border-zinc-800 bg-black/60">
             <CardHeader className="pb-2">
