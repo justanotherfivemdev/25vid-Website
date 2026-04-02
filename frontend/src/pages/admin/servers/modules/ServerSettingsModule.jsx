@@ -60,12 +60,17 @@ function ServerSettingsModule() {
   }, [serverId, server?.config]);
 
   const updateField = useCallback((path, value) => {
+    // Disallow prototype pollution paths
+    const BLOCKED = new Set(['__proto__', 'constructor', 'prototype']);
     setConfig(prev => {
       const copy = JSON.parse(JSON.stringify(prev));
       const keys = path.split('.');
+      if (keys.some(k => BLOCKED.has(k))) return prev;
       let obj = copy;
       for (let i = 0; i < keys.length - 1; i++) {
-        if (!obj[keys[i]]) obj[keys[i]] = {};
+        if (!Object.prototype.hasOwnProperty.call(obj, keys[i]) || typeof obj[keys[i]] !== 'object') {
+          obj[keys[i]] = {};
+        }
         obj = obj[keys[i]];
       }
       obj[keys[keys.length - 1]] = value;
