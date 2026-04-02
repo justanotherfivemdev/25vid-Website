@@ -201,6 +201,21 @@ def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
         else:
             sizes.append(txt)
 
+    # Tags — from tag badge elements within each card
+    # Tags appear as small labels/badges within the card area
+    card_tags: List[List[str]] = []
+    for card in cards:
+        tag_els = card.select("span.text-xs, span.badge, a[href*='tags=']")
+        mod_tags = []
+        for tag_el in tag_els:
+            txt = tag_el.get_text(strip=True)
+            # Skip author text, ratings, sizes
+            if txt and not txt.startswith("by ") and "%" not in txt and len(txt) < 40:
+                href = tag_el.get("href", "")
+                if "tags=" in href:
+                    mod_tags.append(txt)
+        card_tags.append(mod_tags)
+
     for i, card in enumerate(cards):
         href = card.get("href", "")
         # Extract mod_id from URL like /workshop/5965550F0AA2C145-ModName
@@ -219,6 +234,7 @@ def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
             "thumbnail_url": images[i] if i < len(images) else "",
             "size": sizes[i] if i < len(sizes) else "",
             "rating": ratings[i] if i < len(ratings) else "",
+            "tags": card_tags[i] if i < len(card_tags) else [],
             "workshop_url": mod_url,
         })
 

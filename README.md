@@ -247,3 +247,77 @@ python3 scripts/create_admin.py
 - Keep `backend/.env` and `frontend/.env` out of source control.
 - Verify post-deploy checks after every update.
 - Keep regular backups of MongoDB and `/backend/uploads`.
+
+---
+
+## Workshop System (Arma Reforger Mod Management)
+
+The Workshop is an integrated mod-management system inside the Server Management portal. It allows S4 (Logistics) staff to browse, search, download, organize, and manage Arma Reforger Workshop mods for game servers.
+
+### Architecture Overview
+
+The Arma Reforger Workshop (`reforger.armaplatform.com/workshop`) **does not expose a stable documented public API**. The panel uses a **backend proxy/parsing strategy** to retrieve live workshop data:
+
+```
+Frontend → Backend Proxy → reforger.armaplatform.com → Parse HTML → Return JSON
+```
+
+- **Backend proxy** (`backend/services/workshop_proxy.py`) sends browser-like HTTP requests to the Workshop site, parses returned HTML using BeautifulSoup/lxml, and normalizes results into structured JSON.
+- **Rate limiting**: Token-bucket limiter (3 requests burst, sustained 1 request per 2 seconds) prevents abuse.
+- **Short-lived caching**: Results are cached in MongoDB for 5 minutes (collection: `workshop_proxy_cache`). Caching improves performance and resilience but is **not** the only source of records — live browsing is the primary experience.
+- **Graceful degradation**: If the Workshop is unreachable, the system returns partial data and allows manual mod entry.
+
+### Workshop Browsing
+
+- **Category browsing**: Popular, Newest, Recently Updated, Alphabetical — maps to the Workshop site's `sort` parameter.
+- **Search**: By mod name or mod ID, with 400ms debounce on the frontend.
+- **Pagination**: 16 results per page, matching the Workshop site's native pagination.
+- **Tag extraction**: Tags are parsed from HTML where available and stored with each mod.
+
+### Three-Tab Structure
+
+The Workshop page is organized into three operational tabs:
+
+| Tab | Purpose |
+|---|---|
+| **Workshop** | Live browsing, searching, downloading mods from the Arma Reforger Workshop |
+| **Reorder** | Drag-and-drop mod load-order management with position numbers |
+| **Batch** | Spreadsheet-like bulk editing of mod list (select, move, remove, inline edit) |
+
+### Download Flow
+
+When downloading a mod to a server:
+
+1. The mod is added to the server's mod JSON configuration
+2. All available metadata (name, author, tags, scenario IDs) is populated
+3. The user is prompted: **"Include version?"**
+   - If version is included → the server locks to that specific version
+   - If left blank → the server will always use the latest version
+4. If scenario IDs are detected, they are surfaced in the configuration
+
+### JSON Import / Export
+
+- **Import JSON**: Paste or upload a JSON mod list from another server. The import replaces the current mod list and records download history.
+- **Export JSON**: Export the current server mod list as copyable JSON for reuse on another server.
+
+### Scenario / Map Handling
+
+If a mod contains scenario IDs (format: `{MODID}Missions/SomeScenario.conf`), they are detected and stored. When downloaded, scenario IDs are surfaced in the server configuration area.
+
+### Error Flagging
+
+Mods with active issues (tracked by the Mod Issue Engine) display a warning icon in the Workshop, Reorder, and Batch tabs. Clicking the icon shows:
+- Error pattern text
+- Occurrence count and confidence score
+- Log excerpt evidence (if available)
+
+### Download History
+
+The system tracks who downloaded mods and when, providing operator context for previously used mods. This helps S4 staff understand whether a mod has been used before and who to ask about it.
+
+### Known Limitations
+
+- Workshop HTML parsing depends on the site's DOM structure — changes to the Workshop site may require parser updates.
+- Tag extraction accuracy depends on the Workshop site exposing tags in a parseable format.
+- Scenario ID detection from live browsing is limited; scenario IDs may need to be enriched from individual mod detail pages.
+- The rate limiter is process-wide; multiple backend instances would need shared state for distributed rate limiting.

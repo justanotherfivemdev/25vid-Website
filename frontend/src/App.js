@@ -54,7 +54,6 @@ import DeploymentManager from '@/pages/admin/DeploymentManager';
 import ServerDashboard from '@/pages/admin/servers/ServerDashboard';
 import ServerDetail from '@/pages/admin/servers/ServerDetail';
 import WorkshopBrowser from '@/pages/admin/servers/WorkshopBrowser';
-import ModPresets from '@/pages/admin/servers/ModPresets';
 import ModIssues from '@/pages/admin/servers/ModIssues';
 import ServerWorkspace from '@/pages/admin/servers/ServerWorkspace';
 import OverviewModule from '@/pages/admin/servers/modules/OverviewModule';
@@ -1277,7 +1276,6 @@ function App() {
           {/* ── Server Management routes (S4/S1 only) ────────────────────── */}
           <Route path="/admin/servers" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDashboard /></ProtectedRoute>} />
           <Route path="/admin/servers/workshop" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><WorkshopBrowser /></ProtectedRoute>} />
-          <Route path="/admin/servers/presets" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ModPresets /></ProtectedRoute>} />
           <Route path="/admin/servers/mod-issues" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ModIssues /></ProtectedRoute>} />
           {/* Per-server workspace with nested module routes */}
           <Route path="/admin/servers/:id" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerWorkspace /></ProtectedRoute>}>

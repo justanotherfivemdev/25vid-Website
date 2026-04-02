@@ -612,6 +612,106 @@ async def validate_server_mods(
     return {"issues": issues, "mod_count": len(body.mods), "valid": len(issues) == 0}
 
 
+# ── Mod JSON Import / Export ─────────────────────────────────────────────────
+
+class ModJsonImportRequest(BaseModel):
+    mods: list[dict]
+
+
+@router.post("/servers/{server_id}/mods/import-json")
+async def import_mods_json(
+    server_id: str,
+    body: ModJsonImportRequest,
+    current_user: dict = Depends(_require_servers),
+):
+    """Import a JSON mod list into a server, replacing its current mod list."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    before_mods = server.get("mods", [])
+    normalized: list[dict] = []
+    for m in body.mods:
+        mod_id = m.get("mod_id") or m.get("modId") or ""
+        name = m.get("name") or ""
+        version = m.get("version") or ""
+        if not mod_id:
+            continue
+        entry = {
+            "mod_id": mod_id,
+            "name": name,
+            "version": version,
+            "enabled": m.get("enabled", True),
+        }
+        # Preserve optional fields
+        for key in ("author", "tags", "scenario_ids", "description"):
+            if key in m:
+                entry[key] = m[key]
+        normalized.append(entry)
+
+    now = datetime.now(timezone.utc).isoformat()
+    await db.managed_servers.update_one(
+        {"id": server_id},
+        {"$set": {"mods": normalized, "updated_at": now}},
+    )
+    await log_audit(
+        user_id=current_user["id"],
+        action_type="server_mods_import",
+        resource_type="server",
+        resource_id=server_id,
+        before={"mods": before_mods},
+        after={"mods": normalized},
+    )
+
+    # Record download history for each imported mod
+    for mod in normalized:
+        await db.mod_download_history.update_one(
+            {"mod_id": mod["mod_id"], "server_id": server_id},
+            {"$set": {
+                "mod_id": mod["mod_id"],
+                "mod_name": mod.get("name", ""),
+                "server_id": server_id,
+                "downloaded_by": current_user.get("username") or current_user.get("id", ""),
+                "downloaded_by_id": current_user["id"],
+                "downloaded_at": now,
+            }},
+            upsert=True,
+        )
+
+    return {"message": "Mods imported", "count": len(normalized)}
+
+
+@router.get("/servers/{server_id}/mods/export-json")
+async def export_mods_json(
+    server_id: str,
+    current_user: dict = Depends(_require_servers),
+):
+    """Export the current mod list of a server as JSON."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    mods = server.get("mods", [])
+    return {"server_id": server_id, "server_name": server.get("name", ""), "mods": mods}
+
+
+# ── Mod Download History ─────────────────────────────────────────────────────
+
+@router.get("/servers/mod-download-history")
+async def get_mod_download_history(
+    mod_id: Optional[str] = Query(None),
+    current_user: dict = Depends(_require_servers),
+):
+    """Get download history for mods — optionally filtered by mod_id."""
+    query_filter = {}
+    if mod_id:
+        query_filter["mod_id"] = mod_id
+    history = await db.mod_download_history.find(
+        query_filter, {"_id": 0}
+    ).sort("downloaded_at", -1).to_list(500)
+    return history
+
+
 # ── Workshop Live Proxy (browse/search the real Workshop) ────────────────────
 
 @router.get("/workshop/browse")
