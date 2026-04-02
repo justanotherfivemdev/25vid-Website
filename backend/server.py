@@ -22,6 +22,9 @@ from config import (
     VALYU_MIN_EVENTS_THRESHOLD, EVENT_PRUNE_DAYS,
     MAX_VALYU_QUERIES_PER_CYCLE,
     OPENAI_INGESTION_INTERVAL_HOURS,
+    SERVER_HEALTH_CHECK_INTERVAL, SERVER_METRICS_INTERVAL,
+    SERVER_LOG_ANALYSIS_INTERVAL, WORKSHOP_REFRESH_INTERVAL_HOURS,
+    SERVER_METRICS_RETENTION_DAYS,
 )
 from database import db, client
 
@@ -215,6 +218,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 _background_ingestion_task = None
 _loa_expiration_task = None
+_server_health_task = None
+_metrics_collector_task = None
+_mod_issue_analysis_task = None
+_schedule_executor_task = None
+_workshop_refresh_task = None
 
 _OPENAI_THREAT_QUERIES = [
     "Summarize the top 5 active global military conflicts and security threats right now",
@@ -480,6 +488,8 @@ async def _expire_loa_requests():
 @app.on_event("startup")
 async def startup_event():
     global _background_ingestion_task, _loa_expiration_task
+    global _server_health_task, _metrics_collector_task
+    global _mod_issue_analysis_task, _schedule_executor_task, _workshop_refresh_task
     vlog = logging.getLogger("valyu")
 
     # Backfill map_events from existing entities
@@ -531,6 +541,24 @@ async def startup_event():
         # WorldMonitor cache collection
         await db.wm_cache.create_index("key", unique=True)
         await db.external_events.create_index("provider")
+        # Server Management indexes
+        await db.managed_servers.create_index("id", unique=True)
+        await db.managed_servers.create_index("status")
+        await db.server_incidents.create_index("server_id")
+        await db.server_incidents.create_index("status")
+        await db.mod_issues.create_index("error_signature")
+        await db.mod_issues.create_index("status")
+        await db.server_backups.create_index("server_id")
+        await db.server_schedules.create_index("server_id")
+        await db.server_webhooks.create_index("id", unique=True)
+        await db.workshop_mods.create_index("mod_id", unique=True)
+        await db.workshop_cache.create_index("key", unique=True)
+        await db.server_metrics.create_index([("server_id", 1), ("timestamp", -1)])
+        # TTL index: auto-delete metrics older than retention period
+        await db.server_metrics.create_index(
+            "timestamp",
+            expireAfterSeconds=SERVER_METRICS_RETENTION_DAYS * 86400,
+        )
     except Exception as e:
         vlog.warning(f"Index creation note: {e}")
 
@@ -549,13 +577,49 @@ async def startup_event():
     # Start background ingestion
     _background_ingestion_task = asyncio.create_task(_valyu_background_ingestion())
     _loa_expiration_task = asyncio.create_task(_expire_loa_requests())
-    vlog.info("Startup complete – background ingestion scheduled")
+
+    # Server Management background services
+    from services.server_health_monitor import server_health_loop
+    from services.server_metrics_collector import metrics_collection_loop
+    from services.mod_issue_engine import mod_issue_analysis_loop
+    from services.schedule_executor import schedule_execution_loop
+    from services.workshop_ingest import workshop_refresh_loop
+
+    _server_health_task = asyncio.create_task(
+        server_health_loop(check_interval=SERVER_HEALTH_CHECK_INTERVAL)
+    )
+    _metrics_collector_task = asyncio.create_task(
+        metrics_collection_loop(interval=SERVER_METRICS_INTERVAL)
+    )
+    _mod_issue_analysis_task = asyncio.create_task(
+        mod_issue_analysis_loop(interval=SERVER_LOG_ANALYSIS_INTERVAL)
+    )
+    _schedule_executor_task = asyncio.create_task(
+        schedule_execution_loop(check_interval=60)
+    )
+    _workshop_refresh_task = asyncio.create_task(
+        workshop_refresh_loop(interval_hours=WORKSHOP_REFRESH_INTERVAL_HOURS)
+    )
+    vlog.info("Startup complete – all background services scheduled")
 
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    if _background_ingestion_task and not _background_ingestion_task.done():
-        _background_ingestion_task.cancel()
-    if _loa_expiration_task and not _loa_expiration_task.done():
-        _loa_expiration_task.cancel()
+    for task in (
+        _background_ingestion_task,
+        _loa_expiration_task,
+        _server_health_task,
+        _metrics_collector_task,
+        _mod_issue_analysis_task,
+        _schedule_executor_task,
+        _workshop_refresh_task,
+    ):
+        if task and not task.done():
+            task.cancel()
+    # Close RCON connection pool
+    try:
+        from services.rcon_bridge import rcon_pool
+        await rcon_pool.close_all()
+    except Exception:
+        pass
     client.close()

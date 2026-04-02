@@ -7,10 +7,11 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 """
 
 import logging
+import asyncio
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
 from database import db
@@ -18,6 +19,9 @@ from middleware.auth import get_current_user, get_current_admin
 from middleware.rbac import require_permission, Permission
 from services.audit_service import log_audit
 from services.mongo_sanitize import sanitize_mongo_payload
+from services.docker_agent import DockerAgent
+from services.server_config_generator import generate_reforger_config, write_config_file
+from services.rcon_bridge import rcon_pool
 from models.server import (
     ManagedServer, ServerCreate, ServerUpdate,
     WorkshopMod, WorkshopModCreate,
@@ -33,6 +37,9 @@ from models.server import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Docker agent instance for container orchestration
+_docker = DockerAgent()
 
 # Shorthand dependency for all server-management endpoints
 _require_servers = require_permission(Permission.MANAGE_SERVERS)
@@ -174,7 +181,18 @@ async def delete_server(server_id: str, current_user: dict = Depends(get_current
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
+    # Attempt to remove the Docker container if it exists
+    container_name = server.get("container_name") or server.get("name", "")
+    if container_name:
+        await _docker.remove_container(container_name, force=True)
+
     await db.managed_servers.delete_one({"id": server_id})
+    # Clean up related data
+    await db.server_incidents.delete_many({"server_id": server_id})
+    await db.server_backups.delete_many({"server_id": server_id})
+    await db.server_schedules.delete_many({"server_id": server_id})
+    await db.server_metrics.delete_many({"server_id": server_id})
+
     await log_audit(
         user_id=current_user["id"],
         action_type="server_delete",
@@ -212,14 +230,49 @@ async def start_server(server_id: str, current_user: dict = Depends(_require_ser
         resource_type="server",
         resource_id=server_id,
     )
-    # NOTE: Actual Docker orchestration will be handled by the server agent
-    # in a future phase.  For now, update the status record.
-    return ServerActionResponse(
-        server_id=server_id,
-        action="start",
-        status="starting",
-        message="Server start initiated. The server agent will handle container orchestration.",
-    )
+
+    # Write server config to disk before starting
+    config_ok, config_result = await write_config_file(server)
+    if not config_ok:
+        logger.warning("Config generation failed for %s: %s", server_id, config_result)
+
+    # Attempt to start the Docker container
+    success, error = await _docker.start_container(server)
+    if success:
+        await db.managed_servers.update_one(
+            {"id": server_id},
+            {"$set": {"status": "running", "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return ServerActionResponse(
+            server_id=server_id,
+            action="start",
+            status="running",
+            message="Server started successfully.",
+        )
+    else:
+        await db.managed_servers.update_one(
+            {"id": server_id},
+            {"$set": {"status": "error", "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        # Auto-create an incident for the failure
+        incident = {
+            "id": f"inc_{__import__('uuid').uuid4().hex[:12]}",
+            "server_id": server_id,
+            "incident_type": "startup_failure",
+            "severity": "high",
+            "title": f"Failed to start — {server.get('name', server_id)}",
+            "description": f"Docker start failed: {error}",
+            "status": "open",
+            "detected_at": datetime.now(timezone.utc).isoformat(),
+            "auto_detected": True,
+        }
+        await db.server_incidents.insert_one(incident)
+        return ServerActionResponse(
+            server_id=server_id,
+            action="start",
+            status="error",
+            message=f"Server start failed: {error}",
+        )
 
 
 @router.post("/servers/{server_id}/stop")
@@ -232,7 +285,7 @@ async def stop_server(server_id: str, current_user: dict = Depends(_require_serv
     now = datetime.now(timezone.utc).isoformat()
     await db.managed_servers.update_one(
         {"id": server_id},
-        {"$set": {"status": "stopping", "last_stopped": now, "updated_at": now}},
+        {"$set": {"status": "stopping", "updated_at": now}},
     )
     await log_audit(
         user_id=current_user["id"],
@@ -240,12 +293,34 @@ async def stop_server(server_id: str, current_user: dict = Depends(_require_serv
         resource_type="server",
         resource_id=server_id,
     )
-    return ServerActionResponse(
-        server_id=server_id,
-        action="stop",
-        status="stopping",
-        message="Server stop initiated.",
-    )
+
+    container_name = server.get("container_name") or server.get("name", "")
+    success, error = await _docker.stop_container(container_name)
+    if success:
+        await db.managed_servers.update_one(
+            {"id": server_id},
+            {"$set": {"status": "stopped", "last_stopped": datetime.now(timezone.utc).isoformat(),
+                       "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return ServerActionResponse(
+            server_id=server_id,
+            action="stop",
+            status="stopped",
+            message="Server stopped successfully.",
+        )
+    else:
+        # Even if Docker stop fails, mark as stopped (container may already be gone)
+        await db.managed_servers.update_one(
+            {"id": server_id},
+            {"$set": {"status": "stopped", "last_stopped": datetime.now(timezone.utc).isoformat(),
+                       "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return ServerActionResponse(
+            server_id=server_id,
+            action="stop",
+            status="stopped",
+            message=f"Server marked as stopped. Docker note: {error}",
+        )
 
 
 @router.post("/servers/{server_id}/restart")
@@ -266,12 +341,31 @@ async def restart_server(server_id: str, current_user: dict = Depends(_require_s
         resource_type="server",
         resource_id=server_id,
     )
-    return ServerActionResponse(
-        server_id=server_id,
-        action="restart",
-        status="starting",
-        message="Server restart initiated.",
-    )
+
+    container_name = server.get("container_name") or server.get("name", "")
+    success, error = await _docker.restart_container(container_name)
+    if success:
+        await db.managed_servers.update_one(
+            {"id": server_id},
+            {"$set": {"status": "running", "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return ServerActionResponse(
+            server_id=server_id,
+            action="restart",
+            status="running",
+            message="Server restarted successfully.",
+        )
+    else:
+        await db.managed_servers.update_one(
+            {"id": server_id},
+            {"$set": {"status": "error", "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return ServerActionResponse(
+            server_id=server_id,
+            action="restart",
+            status="error",
+            message=f"Server restart failed: {error}",
+        )
 
 
 @router.get("/servers/{server_id}/status")
@@ -426,6 +520,45 @@ async def add_workshop_mod(
         await db.workshop_mods.insert_one(doc)
         doc.pop("_id", None)
         return {**doc, "action": "created"}
+
+
+class AutoFetchModRequest(BaseModel):
+    mod_id: str
+
+
+@router.post("/servers/workshop/mod/fetch", status_code=201)
+async def auto_fetch_workshop_mod(
+    body: AutoFetchModRequest,
+    current_user: dict = Depends(_require_servers),
+):
+    """Auto-fetch workshop mod metadata by mod_id from the Arma Reforger Workshop."""
+    from services.workshop_ingest import fetch_and_store_mod
+
+    result = await fetch_and_store_mod(body.mod_id)
+    if result:
+        result.pop("_id", None)
+        return {**result, "action": "fetched"}
+    else:
+        raise HTTPException(status_code=502, detail="Failed to fetch mod metadata from workshop")
+
+
+@router.post("/servers/workshop/mod/{mod_id}/refresh")
+async def refresh_workshop_mod(
+    mod_id: str,
+    current_user: dict = Depends(_require_servers),
+):
+    """Re-fetch metadata for an existing workshop mod."""
+    from services.workshop_ingest import fetch_mod_metadata
+
+    existing = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Mod not found")
+
+    result = await fetch_mod_metadata(mod_id)
+    if result:
+        return {"mod_id": mod_id, "refreshed": True, "metadata": result}
+    else:
+        return {"mod_id": mod_id, "refreshed": False, "message": "Could not refresh metadata"}
 
 
 # ── Mod Presets ──────────────────────────────────────────────────────────────
@@ -697,10 +830,13 @@ async def execute_rcon(
     body: RconCommand,
     current_user: dict = Depends(_require_servers),
 ):
-    """Execute an RCON command on a server. Actual RCON will be wired in a future phase."""
+    """Execute an RCON command on a server."""
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
+
+    if server.get("status") != "running":
+        raise HTTPException(status_code=400, detail="Server is not running")
 
     await log_audit(
         user_id=current_user["id"],
@@ -709,12 +845,26 @@ async def execute_rcon(
         resource_id=server_id,
         metadata={"command": body.command[:500]},
     )
-    # NOTE: Actual RCON communication will be implemented via the server agent.
+
+    # Extract RCON connection details from server config
+    ports = server.get("ports", {})
+    rcon_port = ports.get("rcon", 19999)
+    rcon_password = server.get("environment", {}).get("rcon_password", "")
+    host = "127.0.0.1"  # RCON connects to the container mapped port
+
+    success, response = await rcon_pool.execute(
+        server_id=server_id,
+        host=host,
+        port=rcon_port,
+        password=rcon_password,
+        command=body.command,
+    )
+
     return {
         "server_id": server_id,
         "command": body.command,
-        "response": "RCON bridge not yet connected. Command logged for audit.",
-        "executed": False,
+        "response": response,
+        "executed": success,
     }
 
 
@@ -802,22 +952,243 @@ async def delete_webhook(webhook_id: str, current_user: dict = Depends(_require_
     return {"message": "Webhook deleted", "id": webhook_id}
 
 
-# ── Metrics (stub) ───────────────────────────────────────────────────────────
+# ── Metrics ───────────────────────────────────────────────────────────────────
 
 @router.get("/servers/{server_id}/metrics")
-async def get_server_metrics(server_id: str, current_user: dict = Depends(_require_servers)):
-    """Get performance metrics for a server. Will be populated by the metrics collector."""
+async def get_server_metrics(
+    server_id: str,
+    period: str = Query("1h", regex="^(1h|6h|24h|7d)$"),
+    resolution: str = Query("raw", regex="^(raw|1m|5m|1h)$"),
+    current_user: dict = Depends(_require_servers),
+):
+    """Get performance metrics for a server with time range and resolution."""
+    from services.server_metrics_collector import get_metrics_range
+
     server = await db.managed_servers.find_one({"id": server_id})
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
-    # Return recent metrics from the collection (populated by background collector)
-    metrics = await db.server_metrics.find(
-        {"server_id": server_id}, {"_id": 0}
-    ).sort("timestamp", -1).limit(100).to_list(100)
+    metrics = await get_metrics_range(server_id, period=period, resolution=resolution)
+    latest = None
+    if metrics:
+        latest = metrics[0] if resolution == "raw" else metrics[-1]
 
     return {
         "server_id": server_id,
+        "period": period,
+        "resolution": resolution,
         "metrics": metrics,
-        "latest": metrics[0] if metrics else None,
+        "latest": latest,
+        "count": len(metrics),
     }
+
+
+@router.get("/servers/{server_id}/metrics/summary")
+async def get_server_metrics_summary(
+    server_id: str,
+    current_user: dict = Depends(_require_servers),
+):
+    """Get latest metrics plus 24h trend summary for a server."""
+    from services.server_metrics_collector import get_metrics_summary
+
+    server = await db.managed_servers.find_one({"id": server_id})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    summary = await get_metrics_summary(server_id)
+    return {"server_id": server_id, **summary}
+
+
+@router.get("/servers/{server_id}/logs/recent")
+async def get_server_logs(
+    server_id: str,
+    tail: int = Query(200, ge=1, le=5000),
+    current_user: dict = Depends(_require_servers),
+):
+    """Get recent container logs for a server."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    container_name = server.get("container_name") or server.get("name", "")
+    logs = await _docker.get_container_logs(container_name, tail=tail)
+    return {
+        "server_id": server_id,
+        "logs": logs,
+        "lines": len(logs.splitlines()) if logs else 0,
+    }
+
+
+# ── WebSocket: Live Log Streaming ────────────────────────────────────────────
+
+async def _authenticate_ws(websocket: WebSocket) -> Optional[dict]:
+    """Extract and verify JWT from WebSocket query param or cookie."""
+    import jwt as pyjwt
+    from config import JWT_SECRET, JWT_ALGORITHM, COOKIE_NAME
+
+    token = websocket.query_params.get("token")
+    if not token:
+        token = websocket.cookies.get(COOKIE_NAME)
+    if not token:
+        return None
+    try:
+        payload = pyjwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        return user
+    except Exception:
+        return None
+
+
+@router.websocket("/ws/servers/{server_id}/logs")
+async def ws_server_logs(websocket: WebSocket, server_id: str):
+    """Stream container logs in real-time via WebSocket.
+
+    Query params:
+      - token: JWT auth token
+      - tail: number of initial history lines (default 100)
+    """
+    from middleware.rbac import has_permission, Permission
+
+    user = await _authenticate_ws(websocket)
+    if not user:
+        await websocket.close(code=4001, reason="Authentication required")
+        return
+
+    if not has_permission(user.get("role", ""), Permission.MANAGE_SERVERS):
+        await websocket.close(code=4003, reason="Insufficient permissions")
+        return
+
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        await websocket.close(code=4004, reason="Server not found")
+        return
+
+    await websocket.accept()
+
+    container_name = server.get("container_name") or server.get("name", "")
+    tail = int(websocket.query_params.get("tail", "100"))
+    last_log_len = 0
+
+    try:
+        # Send initial log history
+        initial_logs = await _docker.get_container_logs(container_name, tail=tail)
+        if initial_logs:
+            for line in initial_logs.splitlines():
+                await websocket.send_json({
+                    "type": "log",
+                    "line": line,
+                    "stream": "stdout",
+                })
+            last_log_len = len(initial_logs)
+
+        # Poll for new logs every 2 seconds
+        while True:
+            await asyncio.sleep(2)
+            new_logs = await _docker.get_container_logs(container_name, tail=50)
+            if new_logs and len(new_logs) != last_log_len:
+                lines = new_logs.splitlines()
+                # Send only lines that are likely new
+                for line in lines[-20:]:
+                    await websocket.send_json({
+                        "type": "log",
+                        "line": line,
+                        "stream": "stdout",
+                    })
+                last_log_len = len(new_logs)
+
+    except WebSocketDisconnect:
+        logger.debug("Log stream disconnected for server %s", server_id)
+    except asyncio.CancelledError:
+        pass
+    except Exception as exc:
+        logger.error("Log stream error for %s: %s", server_id, exc)
+        try:
+            await websocket.close(code=1011, reason="Internal error")
+        except Exception:
+            pass
+
+
+@router.websocket("/ws/servers/{server_id}/rcon")
+async def ws_server_rcon(websocket: WebSocket, server_id: str):
+    """Interactive RCON console via WebSocket.
+
+    Client sends JSON: {"command": "..."}
+    Server responds: {"type": "response", "command": "...", "response": "...", "success": true}
+    """
+    from middleware.rbac import has_permission, Permission
+    from services.audit_service import log_audit as ws_log_audit
+
+    user = await _authenticate_ws(websocket)
+    if not user:
+        await websocket.close(code=4001, reason="Authentication required")
+        return
+
+    if not has_permission(user.get("role", ""), Permission.MANAGE_SERVERS):
+        await websocket.close(code=4003, reason="Insufficient permissions")
+        return
+
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        await websocket.close(code=4004, reason="Server not found")
+        return
+
+    if server.get("status") != "running":
+        await websocket.close(code=4000, reason="Server is not running")
+        return
+
+    await websocket.accept()
+
+    ports = server.get("ports", {})
+    rcon_port = ports.get("rcon", 19999)
+    rcon_password = server.get("environment", {}).get("rcon_password", "")
+
+    try:
+        while True:
+            raw = await websocket.receive_text()
+            try:
+                import json
+                msg = json.loads(raw)
+                command = msg.get("command", "").strip()
+            except Exception:
+                command = raw.strip()
+
+            if not command:
+                continue
+
+            # Audit log the command
+            await ws_log_audit(
+                user_id=user["id"],
+                action_type="rcon_command",
+                resource_type="server",
+                resource_id=server_id,
+                metadata={"command": command[:500], "via": "websocket"},
+            )
+
+            success, response = await rcon_pool.execute(
+                server_id=server_id,
+                host="127.0.0.1",
+                port=rcon_port,
+                password=rcon_password,
+                command=command,
+            )
+
+            await websocket.send_json({
+                "type": "response",
+                "command": command,
+                "response": response,
+                "success": success,
+            })
+
+    except WebSocketDisconnect:
+        logger.debug("RCON console disconnected for server %s", server_id)
+    except asyncio.CancelledError:
+        pass
+    except Exception as exc:
+        logger.error("RCON console error for %s: %s", server_id, exc)
+        try:
+            await websocket.close(code=1011, reason="Internal error")
+        except Exception:
+            pass

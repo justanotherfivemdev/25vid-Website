@@ -70,6 +70,14 @@ EVENT_PRUNE_DAYS = int(os.environ.get("EVENT_PRUNE_DAYS", 15))
 OPENAI_INGESTION_INTERVAL_HOURS = int(os.environ.get("OPENAI_INGESTION_INTERVAL_HOURS", 24))
 MAX_VALYU_QUERIES_PER_CYCLE = int(os.environ.get("MAX_VALYU_QUERIES_PER_CYCLE", 8))
 
+# Server Management / Docker configuration
+DOCKER_SOCKET_PATH = os.environ.get("DOCKER_SOCKET_PATH", "unix:///var/run/docker.sock")
+SERVER_HEALTH_CHECK_INTERVAL = int(os.environ.get("SERVER_HEALTH_CHECK_INTERVAL", 15))
+SERVER_METRICS_INTERVAL = int(os.environ.get("SERVER_METRICS_INTERVAL", 15))
+SERVER_METRICS_RETENTION_DAYS = int(os.environ.get("SERVER_METRICS_RETENTION_DAYS", 7))
+SERVER_LOG_ANALYSIS_INTERVAL = int(os.environ.get("SERVER_LOG_ANALYSIS_INTERVAL", 60))
+WORKSHOP_REFRESH_INTERVAL_HOURS = int(os.environ.get("WORKSHOP_REFRESH_INTERVAL_HOURS", 24))
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
