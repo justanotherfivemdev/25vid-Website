@@ -411,6 +411,18 @@ def _parse_mod_list(html: str) -> Tuple[List[Dict], int]:
     return _parse_mod_list_from_html(soup)
 
 
+def _normalize_tags(tags: Optional[List[str]]) -> List[str]:
+    """Normalize workshop tags for stable cache keys and query params."""
+    normalized: List[str] = []
+    seen = set()
+    for tag in tags or []:
+        value = str(tag).strip().upper()
+        if value and value not in seen:
+            seen.add(value)
+            normalized.append(value)
+    return normalized
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -435,17 +447,17 @@ async def browse_workshop(
         "name": "name",
     }
     sort_value = sort_map.get(category, "popularity")
+    normalized_tags = _normalize_tags(tags)
 
-    cache_key = f"browse:{sort_value}:{page}:{','.join(sorted(tags or []))}"
+    cache_key = f"browse:{sort_value}:{page}:{','.join(normalized_tags)}"
     cached = await _get_cached(cache_key)
     if cached:
         logger.debug("Workshop proxy cache hit: %s", cache_key)
         return cached
 
     url = f"{WORKSHOP_URL}?page={page}&sort={sort_value}"
-    if tags:
-        for tag in tags:
-            url += f"&tags={quote_plus(tag.upper())}"
+    for tag in normalized_tags:
+        url += f"&tags={quote_plus(tag)}"
 
     html = await _fetch_html(url)
     if html is None:
@@ -480,8 +492,9 @@ async def search_workshop(
 ) -> Dict[str, Any]:
     """Search the workshop by keyword with pagination and optional tag filter."""
     sort_value = sort if sort in VALID_SORTS else "popularity"
+    normalized_tags = _normalize_tags(tags)
 
-    cache_key = f"search:{query}:{sort_value}:{page}:{','.join(sorted(tags or []))}"
+    cache_key = f"search:{query}:{sort_value}:{page}:{','.join(normalized_tags)}"
     cached = await _get_cached(cache_key)
     if cached:
         logger.debug("Workshop proxy cache hit: %s", cache_key)
@@ -489,9 +502,8 @@ async def search_workshop(
 
     encoded_q = quote_plus(query)
     url = f"{WORKSHOP_URL}?page={page}&search={encoded_q}&sort={sort_value}"
-    if tags:
-        for tag in tags:
-            url += f"&tags={quote_plus(tag.upper())}"
+    for tag in normalized_tags:
+        url += f"&tags={quote_plus(tag)}"
 
     html = await _fetch_html(url)
     if html is None:
