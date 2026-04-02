@@ -84,9 +84,16 @@ function WorkshopBrowser() {
         params: { q: submittedQuery.trim(), page },
       });
 
-      setMods(Array.isArray(res.data?.results) ? res.data.results : []);
-      setTotalPages(res.data?.pages || 1);
-      setTotal(res.data?.total || 0);
+      const modsFromApi = Array.isArray(res.data?.mods) ? res.data.mods : [];
+      const totalFromApi = typeof res.data?.total === 'number' ? res.data.total : 0;
+      const perPageFromApi =
+        typeof res.data?.per_page === 'number' && res.data.per_page > 0
+          ? res.data.per_page
+          : modsFromApi.length || 1;
+
+      setMods(modsFromApi);
+      setTotal(totalFromApi);
+      setTotalPages(Math.max(1, Math.ceil(totalFromApi / perPageFromApi)));
     } catch (err) {
       console.error('Workshop search failed:', err);
       setError(err.response?.data?.detail || 'Failed to search workshop.');

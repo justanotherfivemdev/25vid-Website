@@ -59,7 +59,7 @@ import ServerStatusBanner from '@/components/servers/ServerStatusBanner';
 const AUTO_REFRESH_MS = 10_000;
 
 function ServerDetail() {
-  const { server_id } = useParams();
+  const { id: server_id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -290,11 +290,12 @@ function ServerDetail() {
         `${API}/servers/${server_id}/logs/recent?tail=200`,
       );
       const data = res.data;
+      const logsData = data && typeof data === 'object' && 'logs' in data ? data.logs : data;
       setLogs(
-        Array.isArray(data)
-          ? data
-          : typeof data === 'string'
-            ? data.split('\n').filter(Boolean)
+        Array.isArray(logsData)
+          ? logsData
+          : typeof logsData === 'string'
+            ? logsData.split('\n').filter(Boolean)
             : [],
       );
     } catch {
@@ -315,9 +316,13 @@ function ServerDetail() {
         ),
       ]);
       setMetricsSummary(summaryRes.data);
-      setMetrics(
-        Array.isArray(timeseriesRes.data) ? timeseriesRes.data : [],
-      );
+      const timeseriesData = timeseriesRes.data;
+      const metricsArray = Array.isArray(timeseriesData?.metrics)
+        ? timeseriesData.metrics
+        : Array.isArray(timeseriesData)
+          ? timeseriesData
+          : [];
+      setMetrics(metricsArray);
     } catch {
       setMetricsSummary(null);
       setMetrics([]);
@@ -1060,7 +1065,18 @@ function ServerDetail() {
                 </Card>
               ))}
             </div>
-          ) : metricsSummary ? (
+          ) : metricsSummary ? (() => {
+            const latest = metricsSummary.latest || {};
+            const cpuVal = latest.cpu_percent;
+            const memVal = latest.memory_mb;
+            const playerVal = latest.player_count;
+            const uptimeVal = latest.uptime_seconds;
+            const uptimeStr = uptimeVal != null
+              ? uptimeVal >= 3600
+                ? `${Math.floor(uptimeVal / 3600)}h ${Math.floor((uptimeVal % 3600) / 60)}m`
+                : `${Math.floor(uptimeVal / 60)}m`
+              : null;
+            return (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
                 <CardContent className="p-5">
@@ -1071,8 +1087,8 @@ function ServerDetail() {
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-wider">CPU</p>
                       <p className="text-2xl font-bold text-white">
-                        {metricsSummary.cpu_percent != null
-                          ? `${Number(metricsSummary.cpu_percent).toFixed(1)}%`
+                        {cpuVal != null
+                          ? `${Number(cpuVal).toFixed(1)}%`
                           : '—'}
                       </p>
                     </div>
@@ -1088,8 +1104,8 @@ function ServerDetail() {
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-wider">Memory</p>
                       <p className="text-2xl font-bold text-white">
-                        {metricsSummary.memory_mb != null
-                          ? `${Number(metricsSummary.memory_mb).toFixed(0)} MB`
+                        {memVal != null
+                          ? `${Number(memVal).toFixed(0)} MB`
                           : '—'}
                       </p>
                     </div>
@@ -1105,7 +1121,7 @@ function ServerDetail() {
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-wider">Players</p>
                       <p className="text-2xl font-bold text-white">
-                        {metricsSummary.players != null ? metricsSummary.players : '—'}
+                        {playerVal != null ? playerVal : '—'}
                       </p>
                     </div>
                   </div>
@@ -1120,14 +1136,15 @@ function ServerDetail() {
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-wider">Uptime</p>
                       <p className="text-2xl font-bold text-white">
-                        {metricsSummary.uptime != null ? metricsSummary.uptime : '—'}
+                        {uptimeStr || '—'}
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          ) : (
+            );
+          })() : (
             <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
               <CardContent className="text-center py-12">
                 <BarChart3 className="mx-auto mb-4 h-12 w-12 text-tropic-gold-dark/40" />

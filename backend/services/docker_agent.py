@@ -267,6 +267,25 @@ class DockerAgent:
             logger.error("Failed to fetch logs for %s: %s", full_name, exc)
             return ""
 
+    async def get_container_ip(self, container_name: str) -> Optional[str]:
+        """Return the IP address of a container on its first network, or *None*."""
+        client = _get_client()
+        if client is None:
+            return None
+
+        full_name = _get_full_container_name(container_name)
+        try:
+            container = await asyncio.to_thread(client.containers.get, full_name)
+            await asyncio.to_thread(container.reload)
+            networks = container.attrs.get("NetworkSettings", {}).get("Networks", {})
+            for _net_name, net_info in networks.items():
+                ip = net_info.get("IPAddress")
+                if ip:
+                    return ip
+        except Exception as exc:
+            logger.debug("Could not resolve IP for %s: %s", full_name, exc)
+        return None
+
     async def get_container_stats(self, container_name: str) -> Optional[Dict[str, Any]]:
         """Return a snapshot of CPU / memory / network stats, or *None*."""
         client = _get_client()

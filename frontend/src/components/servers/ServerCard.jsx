@@ -89,9 +89,28 @@ function formatTimestamp(ts) {
 }
 
 function formatPorts(ports) {
-  if (!ports || ports.length === 0) return null;
-  if (ports.length <= 2) return ports.join(', ');
-  return `${ports[0]}, ${ports[1]} +${ports.length - 2}`;
+  if (!ports) return null;
+
+  // Handle array of ports (existing behavior)
+  if (Array.isArray(ports)) {
+    if (ports.length === 0) return null;
+    if (ports.length <= 2) return ports.join(', ');
+    return `${ports[0]}, ${ports[1]} +${ports.length - 2}`;
+  }
+
+  // Handle object/dict of ports, e.g. { game, query, rcon }
+  if (typeof ports === 'object') {
+    const entries = Object.entries(ports)
+      .filter(([, value]) => value !== null && value !== undefined)
+      .map(([key, value]) => `${key}: ${value}`);
+
+    if (entries.length === 0) return null;
+    if (entries.length <= 2) return entries.join(', ');
+    return `${entries[0]}, ${entries[1]} +${entries.length - 2}`;
+  }
+
+  // Fallback for unexpected types
+  return String(ports);
 }
 
 function ServerCard({ server, onStart, onStop, onRestart }) {

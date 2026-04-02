@@ -131,7 +131,7 @@ def extract_mod_reference(
     # Pass 1 — direct (full) name match
     for mod in server_mods:
         mod_name = mod.get("name", "")
-        mod_id = mod.get("mod_id", "")
+        mod_id = mod.get("mod_id") or mod.get("modId", "")
         if mod_name and mod_name.lower() in line_lower:
             return mod_id, mod_name, 0.9
         if mod_id and mod_id.lower() in line_lower:
@@ -140,9 +140,10 @@ def extract_mod_reference(
     # Pass 2 — partial / substring match (tokens ≥ 4 chars)
     for mod in server_mods:
         mod_name = mod.get("name", "")
+        mod_id = mod.get("mod_id") or mod.get("modId", "")
         for token in mod_name.split():
             if len(token) >= 4 and token.lower() in line_lower:
-                return mod.get("mod_id", ""), mod_name, 0.7
+                return mod_id, mod_name, 0.7
 
     return None, None, 0.0
 
@@ -215,8 +216,8 @@ async def analyze_server_logs(
             "severity": event["severity"],
         }
 
-        affected_entry = {"server_id": server_id, "last_seen": now_iso}
-
+        # Upsert the issue (without touching affected_servers here to avoid
+        # $addToSet creating duplicates when the embedded object changes).
         result = await db.mod_issues.update_one(
             {"error_signature": signature},
             {
@@ -241,10 +242,21 @@ async def analyze_server_logs(
                 "$push": {
                     "evidence": {"$each": [evidence_entry], "$slice": -50},
                 },
-                "$addToSet": {"affected_servers": affected_entry},
             },
             upsert=True,
         )
+
+        # Update the affected_servers entry for this server_id in place,
+        # or add a new entry if the server hasn't been seen for this issue.
+        updated = await db.mod_issues.update_one(
+            {"error_signature": signature, "affected_servers.server_id": server_id},
+            {"$set": {"affected_servers.$.last_seen": now_iso}},
+        )
+        if updated.matched_count == 0:
+            await db.mod_issues.update_one(
+                {"error_signature": signature},
+                {"$push": {"affected_servers": {"server_id": server_id, "last_seen": now_iso}}},
+            )
 
         issue_doc = await db.mod_issues.find_one(
             {"error_signature": signature}, {"_id": 0}

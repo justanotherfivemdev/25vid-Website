@@ -224,7 +224,6 @@ class ScheduledAction(BaseModel):
 
 
 class ScheduledActionCreate(BaseModel):
-    server_id: str
     action_type: str = "restart"
     schedule: str = Field(min_length=1)
     enabled: bool = True

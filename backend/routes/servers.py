@@ -850,7 +850,12 @@ async def execute_rcon(
     ports = server.get("ports", {})
     rcon_port = ports.get("rcon", 19999)
     rcon_password = server.get("environment", {}).get("rcon_password", "")
-    host = "127.0.0.1"  # RCON connects to the container mapped port
+
+    # Resolve the container's IP on the Docker network instead of localhost
+    container_name = server.get("container_name") or server.get("name", "")
+    host = await _docker.get_container_ip(container_name) if container_name else None
+    if not host:
+        host = "127.0.0.1"  # fallback if container IP is unavailable
 
     success, response = await rcon_pool.execute(
         server_id=server_id,
@@ -898,15 +903,28 @@ async def create_schedule(
         created_by=current_user["id"],
     )
     doc = action.model_dump()
+
+    # Compute initial next_run so the schedule executor can find it.
+    from services.schedule_executor import parse_next_run
+    initial_next = parse_next_run(body.schedule)
+    doc["next_run"] = initial_next  # datetime or None
+
+    # Ensure datetime fields are stored as BSON dates (not strings).
+    for key in ("last_run", "created_at"):
+        val = doc.get(key)
+        if isinstance(val, str):
+            try:
+                doc[key] = datetime.fromisoformat(val)
+            except (ValueError, TypeError):
+                pass
+
+    await db.server_schedules.insert_one(doc)
+    doc.pop("_id", None)
+    # Serialise datetimes for JSON response
     for key in ("last_run", "next_run", "created_at"):
         val = doc.get(key)
         if isinstance(val, datetime):
             doc[key] = val.isoformat()
-        elif val is None:
-            doc[key] = None
-
-    await db.server_schedules.insert_one(doc)
-    doc.pop("_id", None)
     return doc
 
 
@@ -971,7 +989,7 @@ async def get_server_metrics(
     metrics = await get_metrics_range(server_id, period=period, resolution=resolution)
     latest = None
     if metrics:
-        latest = metrics[0] if resolution == "raw" else metrics[-1]
+        latest = metrics[-1]
 
     return {
         "server_id": server_id,

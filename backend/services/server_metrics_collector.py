@@ -35,7 +35,7 @@ async def collect_server_metrics(
 
     doc = {
         "server_id": server_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(timezone.utc),
         "cpu_percent": stats["cpu_percent"],
         "memory_mb": stats["memory_mb"],
         "memory_limit_mb": stats["memory_limit_mb"],
@@ -95,7 +95,7 @@ async def metrics_collection_loop(interval: int = 15):
 async def get_metrics_summary(server_id: str) -> dict:
     """Return the latest metrics document plus 24-hour trend indicators."""
     now = datetime.now(timezone.utc)
-    cutoff = (now - timedelta(hours=24)).isoformat()
+    cutoff = (now - timedelta(hours=24))
 
     latest = await db.server_metrics.find_one(
         {"server_id": server_id},
@@ -148,7 +148,7 @@ async def get_metrics_range(
         aggregation pipeline.
     """
     delta = _PERIOD_DELTAS.get(period, timedelta(hours=1))
-    cutoff = (datetime.now(timezone.utc) - delta).isoformat()
+    cutoff = datetime.now(timezone.utc) - delta
 
     base_match = {"server_id": server_id, "timestamp": {"$gte": cutoff}}
 
@@ -169,10 +169,10 @@ async def get_metrics_range(
             "$group": {
                 "_id": {
                     "$subtract": [
-                        {"$toLong": {"$dateFromString": {"dateString": "$timestamp"}}},
+                        {"$toLong": "$timestamp"},
                         {
                             "$mod": [
-                                {"$toLong": {"$dateFromString": {"dateString": "$timestamp"}}},
+                                {"$toLong": "$timestamp"},
                                 bucket_seconds * 1000,
                             ]
                         },
