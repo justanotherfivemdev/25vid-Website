@@ -26,7 +26,17 @@ import ServerCard from '@/components/servers/ServerCard';
 
 const AUTO_REFRESH_MS = 15_000;
 const METRICS_REFRESH_MS = 30_000;
-const PERIOD_API_MAP = { '1d': '24h', '7d': '7d' };
+const PERIOD_API_MAP = { '1d': '24h', '7d': '7d', '30d': '30d' };
+const PERIOD_RESOLUTION_MAP = { '1d': '5m', '7d': '1h', '30d': '1h' };
+
+function normalizeMetricPoint(point) {
+  return {
+    ...point,
+    player_count: point.player_count ?? point.max_player_count ?? point.avg_player_count ?? null,
+    fps: point.fps ?? point.avg_cpu_percent ?? point.cpu_percent ?? null,
+    ping: point.ping ?? null,
+  };
+}
 
 const SECTION_STORAGE_KEY = 'dashboard-sections';
 
@@ -145,12 +155,12 @@ function ServerDashboard() {
           const [summaryRes, tsRes] = await Promise.allSettled([
             axios.get(`${API}/servers/${srv.id}/metrics/summary`),
             axios.get(`${API}/servers/${srv.id}/metrics`, {
-              params: { period: apiPeriod, resolution: '5m' },
+              params: { period: apiPeriod, resolution: PERIOD_RESOLUTION_MAP[period] || '5m' },
             }),
           ]);
           results[srv.id] = {
             latest: summaryRes.status === 'fulfilled' ? summaryRes.value.data?.latest ?? null : null,
-            timeseries: tsRes.status === 'fulfilled' ? (tsRes.value.data?.metrics ?? []) : [],
+            timeseries: tsRes.status === 'fulfilled' ? (tsRes.value.data?.metrics ?? []).map(normalizeMetricPoint) : [],
           };
         } catch {
           results[srv.id] = { latest: null, timeseries: [] };
@@ -177,11 +187,11 @@ function ServerDashboard() {
     const apiPeriod = PERIOD_API_MAP[newPeriod] || '24h';
     try {
       const res = await axios.get(`${API}/servers/${serverId}/metrics`, {
-        params: { period: apiPeriod, resolution: '5m' },
+        params: { period: apiPeriod, resolution: PERIOD_RESOLUTION_MAP[newPeriod] || '5m' },
       });
       setServerMetrics((prev) => ({
         ...prev,
-        [serverId]: { ...prev[serverId], timeseries: res.data?.metrics ?? [] },
+        [serverId]: { ...prev[serverId], timeseries: (res.data?.metrics ?? []).map(normalizeMetricPoint) },
       }));
     } catch (err) {
       console.error(`Failed to fetch metrics for period ${newPeriod}:`, err);

@@ -244,6 +244,40 @@ class DockerAgent:
             logger.debug("Container %s not found or inaccessible: %s", full_name, exc)
             return None
 
+    async def get_container_runtime_details(self, container_name: str) -> Optional[Dict[str, Any]]:
+        """Return runtime details for a container, including actual name and mounts."""
+        client = _get_client()
+        if client is None:
+            return None
+
+        full_name = _get_full_container_name(container_name)
+        try:
+            container = await asyncio.to_thread(client.containers.get, full_name)
+            await asyncio.to_thread(container.reload)
+            state = container.attrs.get("State", {})
+            config = container.attrs.get("Config", {})
+            mounts = [
+                {
+                    "source": mount.get("Source"),
+                    "destination": mount.get("Destination"),
+                    "mode": mount.get("Mode"),
+                    "rw": mount.get("RW"),
+                }
+                for mount in container.attrs.get("Mounts", [])
+            ]
+            return {
+                "actual_container_name": container.name,
+                "requested_container_name": full_name,
+                "status": state.get("Status", "unknown"),
+                "running": state.get("Running", False),
+                "started_at": state.get("StartedAt"),
+                "working_dir": config.get("WorkingDir", ""),
+                "mounts": mounts,
+            }
+        except Exception as exc:
+            logger.debug("Could not inspect runtime details for %s: %s", full_name, exc)
+            return None
+
     async def get_container_logs(
         self,
         container_name: str,

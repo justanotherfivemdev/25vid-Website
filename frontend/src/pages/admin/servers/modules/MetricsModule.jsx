@@ -24,7 +24,25 @@ const PERIODS = [
   { value: '6h', label: '6 Hours' },
   { value: '24h', label: '24 Hours' },
   { value: '7d', label: '7 Days' },
+  { value: '30d', label: '30 Days' },
 ];
+
+const RESOLUTION_MAP = {
+  '1h': '1m',
+  '6h': '1m',
+  '24h': '5m',
+  '7d': '1h',
+  '30d': '1h',
+};
+
+function normalizeMetricPoint(point) {
+  return {
+    ...point,
+    cpu_percent: point.cpu_percent ?? point.avg_cpu_percent ?? 0,
+    memory_mb: point.memory_mb ?? point.avg_memory_mb ?? 0,
+    player_count: point.player_count ?? point.max_player_count ?? point.avg_player_count ?? 0,
+  };
+}
 
 function MetricsModule() {
   const { server, serverId } = useOutletContext();
@@ -37,10 +55,10 @@ function MetricsModule() {
     setLoading(true);
     try {
       const [metricsRes, summaryRes] = await Promise.allSettled([
-        axios.get(`${API}/servers/${serverId}/metrics?period=${period}&resolution=${period === '7d' ? '1h' : period === '24h' ? '5m' : '1m'}`),
+        axios.get(`${API}/servers/${serverId}/metrics?period=${period}&resolution=${RESOLUTION_MAP[period] || '1m'}`),
         axios.get(`${API}/servers/${serverId}/metrics/summary`),
       ]);
-      if (metricsRes.status === 'fulfilled') setMetrics(metricsRes.value.data?.metrics || []);
+      if (metricsRes.status === 'fulfilled') setMetrics((metricsRes.value.data?.metrics || []).map(normalizeMetricPoint));
       if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value.data);
     } finally {
       setLoading(false);
@@ -61,7 +79,7 @@ function MetricsModule() {
     {
       label: 'CPU',
       value: latest.cpu_percent != null ? `${latest.cpu_percent.toFixed(1)}%` : '—',
-      avg: trend.avg_cpu != null ? `${trend.avg_cpu.toFixed(1)}%` : null,
+        avg: trend.avg_cpu != null ? `${trend.avg_cpu.toFixed(1)}%` : null,
       icon: Cpu,
       color: 'text-blue-400',
       border: 'border-blue-600/20',
@@ -70,7 +88,7 @@ function MetricsModule() {
     {
       label: 'Memory',
       value: latest.memory_mb != null ? `${latest.memory_mb.toFixed(0)} MB` : '—',
-      avg: trend.avg_memory != null ? `${trend.avg_memory.toFixed(0)} MB` : null,
+        avg: trend.avg_memory != null ? `${trend.avg_memory.toFixed(0)} MB` : null,
       icon: HardDrive,
       color: 'text-purple-400',
       border: 'border-purple-600/20',

@@ -71,7 +71,6 @@ const NAV_SECTIONS = [
     label: 'TOOLS',
     items: [
       { to: 'tools/files', label: 'File Manager', icon: Wrench },
-      { to: 'tools/exec', label: 'Trigger / Exec', icon: Wrench },
       { to: 'tools/reports', label: 'Reports', icon: Wrench },
       { to: 'tools/todos', label: 'ToDo List', icon: Wrench },
       { to: 'tools/watchers', label: 'Watchers', icon: Wrench },
@@ -193,10 +192,10 @@ function ServerWorkspace() {
                 <h1 className="text-lg font-bold tracking-wide text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                   {server.name}
                 </h1>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span>{server.docker_image}</span>
                   <span>•</span>
-                  <span>{server.container_name}</span>
+                  <span>{server.troubleshooting?.actual_container_name || server.container_name}</span>
                 </div>
               </div>
             </div>
@@ -325,7 +324,7 @@ function ServerWorkspace() {
 
         {/* Content pane */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <Outlet context={{ server, serverId: id, fetchServer, canManage }} />
+          <Outlet context={{ server, serverId: id, fetchServer, canManage, handleServerAction: handleAction, actionLoading }} />
         </div>
       </div>
 
