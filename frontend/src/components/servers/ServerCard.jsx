@@ -116,8 +116,8 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
               {name || 'Unnamed Server'}
             </h3>
           </Link>
-          <span className={dotCls} role="img" aria-label={status} />
-          <span className="sr-only">{status}</span>
+          <span className={dotCls} role="img" aria-hidden="true" />
+          <span className="sr-only">Server status: {status}</span>
         </div>
         {description && (
           <p className="mt-1 text-xs text-gray-500 line-clamp-1">{description}</p>

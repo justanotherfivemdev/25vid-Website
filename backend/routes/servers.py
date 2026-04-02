@@ -13,6 +13,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+from pymongo.errors import DuplicateKeyError
 
 from database import db
 from middleware.auth import get_current_user, get_current_admin
@@ -177,11 +178,13 @@ async def create_server(
 
         try:
             await db.managed_servers.insert_one(doc)
-        except Exception as exc:
+        except DuplicateKeyError:
             # Retry on duplicate port collision when auto-allocating
-            if is_default and attempt < max_retries - 1 and "duplicate" in str(exc).lower():
+            if is_default and attempt < max_retries - 1:
                 logger.warning("Port allocation collision on attempt %d, retrying", attempt + 1)
                 continue
+            raise
+        except Exception:
             raise
         break
     await log_audit(

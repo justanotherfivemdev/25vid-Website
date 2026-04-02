@@ -415,7 +415,7 @@ function ServerDashboard() {
           <div
             className="overflow-hidden transition-all duration-200 ease-in-out"
             style={{
-              maxHeight: sections.status ? '500px' : '0px',
+              maxHeight: sections.status ? '1000px' : '0px',
               opacity: sections.status ? 1 : 0,
             }}
           >
