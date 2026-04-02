@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,9 +27,24 @@ import {
   Loader2,
   Download,
   Clock,
+  Flame,
+  Sparkles,
+  ArrowUpDown,
+  Type,
+  Wifi,
+  WifiOff,
+  ImageOff,
 } from 'lucide-react';
 
 import { API } from '@/utils/api';
+
+// ── Tab / category definitions ─────────────────────────────────────────────
+const CATEGORIES = [
+  { key: 'popular', label: 'Popular', icon: Flame },
+  { key: 'newest', label: 'Newest', icon: Sparkles },
+  { key: 'updated', label: 'Recently Updated', icon: ArrowUpDown },
+  { key: 'name', label: 'Alphabetical', icon: Type },
+];
 
 // ── Initial form state for the "Add Mod" dialog ───────────────────────────
 const EMPTY_MOD_FORM = {
@@ -41,77 +56,137 @@ const EMPTY_MOD_FORM = {
   license: '',
 };
 
+// ── Debounce hook ──────────────────────────────────────────────────────────
+function useDebounce(value, delay) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
+// ── Thumbnail with fallback ────────────────────────────────────────────────
+function ModThumbnail({ src, alt }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-zinc-900/80">
+        <ImageOff className="h-8 w-8 text-zinc-700" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="h-full w-full object-cover"
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 // ── WorkshopBrowser ────────────────────────────────────────────────────────
 function WorkshopBrowser() {
+  // ── Browse state ─────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState('popular');
   const [mods, setMods] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [submittedQuery, setSubmittedQuery] = useState('');
-
-  // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [source, setSource] = useState(''); // 'live' or 'error'
 
-  // Add-mod dialog
+  // ── Search state ─────────────────────────────────────────────────────────
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebounce(searchInput, 400);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+
+  // ── Add-mod dialog ───────────────────────────────────────────────────────
   const [dialogOpen, setDialogOpen] = useState(false);
   const [modForm, setModForm] = useState(EMPTY_MOD_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
 
-  // Auto-fetch dialog
+  // ── Auto-fetch dialog ────────────────────────────────────────────────────
   const [fetchDialogOpen, setFetchDialogOpen] = useState(false);
   const [fetchModId, setFetchModId] = useState('');
   const [fetching, setFetching] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [fetchResult, setFetchResult] = useState(null);
 
-  // ── Fetch mods ───────────────────────────────────────────────────────────
+  // ── Ref for abort controller ─────────────────────────────────────────────
+  const abortRef = useRef(null);
+
+  // ── Fetch mods (browse or search) ────────────────────────────────────────
   const fetchMods = useCallback(async () => {
-    if (!submittedQuery.trim()) {
-      setMods([]);
-      setTotalPages(1);
-      setTotal(0);
-      return;
-    }
+    // Cancel any in-flight request
+    if (abortRef.current) abortRef.current.cancel('superseded');
+    const cancelSource = axios.CancelToken.source();
+    abortRef.current = cancelSource;
 
     setLoading(true);
     setError(null);
 
     try {
-      const res = await axios.get(`${API}/servers/workshop/search`, {
-        params: { q: submittedQuery.trim(), page },
-      });
+      let res;
+      if (isSearchMode && debouncedSearch.trim()) {
+        // Live search via proxy
+        res = await axios.get(`${API}/workshop/search`, {
+          params: { q: debouncedSearch.trim(), page, sort: 'popularity' },
+          cancelToken: cancelSource.token,
+        });
+      } else {
+        // Browse by category via proxy
+        res = await axios.get(`${API}/workshop/browse`, {
+          params: { category: activeTab, page },
+          cancelToken: cancelSource.token,
+        });
+      }
 
-      const modsFromApi = Array.isArray(res.data?.mods) ? res.data.mods : [];
-      const totalFromApi = typeof res.data?.total === 'number' ? res.data.total : 0;
-      const perPageFromApi =
-        typeof res.data?.per_page === 'number' && res.data.per_page > 0
-          ? res.data.per_page
-          : modsFromApi.length || 1;
-
-      setMods(modsFromApi);
-      setTotal(totalFromApi);
-      setTotalPages(Math.max(1, Math.ceil(totalFromApi / perPageFromApi)));
+      const data = res.data || {};
+      setMods(Array.isArray(data.mods) ? data.mods : []);
+      setTotal(typeof data.total === 'number' ? data.total : 0);
+      setTotalPages(
+        typeof data.total_pages === 'number' && data.total_pages > 0
+          ? data.total_pages
+          : Math.max(1, Math.ceil((data.total || 0) / (data.per_page || 16)))
+      );
+      setSource(data.source || 'live');
+      if (data.error) setError(data.error);
     } catch (err) {
-      console.error('Workshop search failed:', err);
-      setError(err.response?.data?.detail || 'Failed to search workshop.');
+      if (axios.isCancel(err)) return; // superseded, ignore
+      console.error('Workshop fetch failed:', err);
+      setError(err.response?.data?.detail || 'Failed to fetch workshop data.');
       setMods([]);
+      setSource('error');
     } finally {
       setLoading(false);
     }
-  }, [submittedQuery, page]);
+  }, [activeTab, page, isSearchMode, debouncedSearch]);
 
+  // Trigger fetch on deps change
   useEffect(() => {
     fetchMods();
+    return () => {
+      if (abortRef.current) abortRef.current.cancel('cleanup');
+    };
   }, [fetchMods]);
 
-  // ── Search handler ───────────────────────────────────────────────────────
-  const handleSearch = (e) => {
-    e.preventDefault();
+  // Toggle search mode based on input
+  useEffect(() => {
+    setIsSearchMode(debouncedSearch.trim().length > 0);
     setPage(1);
-    setSubmittedQuery(searchQuery);
+  }, [debouncedSearch]);
+
+  // ── Tab change handler ───────────────────────────────────────────────────
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+    setPage(1);
+    setSearchInput('');
+    setIsSearchMode(false);
   };
 
   // ── Form helpers ─────────────────────────────────────────────────────────
@@ -142,9 +217,6 @@ function WorkshopBrowser() {
       await axios.post(`${API}/servers/workshop/mod`, payload);
       setDialogOpen(false);
       setModForm(EMPTY_MOD_FORM);
-
-      // Refresh current results
-      if (submittedQuery.trim()) fetchMods();
     } catch (err) {
       console.error('Failed to add mod:', err);
       const detail = err.response?.data?.detail;
@@ -169,7 +241,6 @@ function WorkshopBrowser() {
         mod_id: fetchModId.trim(),
       });
       setFetchResult(res.data);
-      if (submittedQuery.trim()) fetchMods();
     } catch (err) {
       console.error('Auto-fetch failed:', err);
       setFetchError(err.response?.data?.detail || 'Failed to fetch mod metadata from workshop.');
@@ -178,27 +249,29 @@ function WorkshopBrowser() {
     }
   };
 
-  // ── Refresh mod metadata ────────────────────────────────────────────────
-  const handleRefreshMod = async (modId) => {
-    try {
-      await axios.post(`${API}/servers/workshop/mod/${modId}/refresh`);
-      if (submittedQuery.trim()) fetchMods();
-    } catch (err) {
-      console.error('Refresh failed:', err);
-    }
-  };
-
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1
-          className="text-3xl font-bold tracking-widest text-tropic-gold"
-          style={{ fontFamily: 'Rajdhani, sans-serif' }}
-        >
-          WORKSHOP BROWSER
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1
+            className="text-3xl font-bold tracking-widest text-tropic-gold"
+            style={{ fontFamily: 'Rajdhani, sans-serif' }}
+          >
+            WORKSHOP
+          </h1>
+          {source === 'live' && !loading && (
+            <Badge className="bg-green-600/20 text-green-400 border-green-600/30 text-xs gap-1">
+              <Wifi className="h-3 w-3" /> Live
+            </Badge>
+          )}
+          {source === 'error' && (
+            <Badge className="bg-red-600/20 text-red-400 border-red-600/30 text-xs gap-1">
+              <WifiOff className="h-3 w-3" /> Offline
+            </Badge>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           <Button
@@ -211,7 +284,7 @@ function WorkshopBrowser() {
             className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
           >
             <Download className="mr-1.5 h-4 w-4" />
-            Auto-Fetch by ID
+            Fetch by ID
           </Button>
           <Button
             variant="outline"
@@ -228,40 +301,59 @@ function WorkshopBrowser() {
         </div>
       </div>
 
+      {/* Category tabs */}
+      <div className="flex flex-wrap items-center gap-2">
+        {CATEGORIES.map(({ key, label, icon: Icon }) => (
+          <Button
+            key={key}
+            variant={activeTab === key && !isSearchMode ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleTabChange(key)}
+            className={
+              activeTab === key && !isSearchMode
+                ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light'
+                : 'border-tropic-gold-dark/20 text-gray-400 hover:text-tropic-gold hover:bg-tropic-gold/10'
+            }
+          >
+            <Icon className="mr-1.5 h-3.5 w-3.5" />
+            {label}
+          </Button>
+        ))}
+      </div>
+
       {/* Search bar */}
-      <form onSubmit={handleSearch} className="flex gap-2">
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search mods by name, ID, or author…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search workshop mods…"
             className="border-tropic-gold-dark/20 bg-black/60 pl-10 text-white placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
           />
         </div>
-        <Button
-          type="submit"
-          disabled={loading}
-          className="bg-tropic-gold text-black hover:bg-tropic-gold-light disabled:opacity-30"
-        >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Search className="h-4 w-4" />
-          )}
-        </Button>
-        {submittedQuery && (
+        {(isSearchMode || searchInput) && (
           <Button
-            type="button"
             variant="outline"
-            onClick={() => fetchMods()}
-            disabled={loading}
-            className="border-gray-700 text-gray-300 hover:bg-gray-800 disabled:opacity-30"
+            onClick={() => {
+              setSearchInput('');
+              setIsSearchMode(false);
+              setPage(1);
+            }}
+            className="border-gray-700 text-gray-300 hover:bg-gray-800"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Clear
           </Button>
         )}
-      </form>
+        <Button
+          variant="outline"
+          onClick={() => fetchMods()}
+          disabled={loading}
+          className="border-gray-700 text-gray-300 hover:bg-gray-800 disabled:opacity-30"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
 
       {/* Error banner */}
       {error && (
@@ -281,14 +373,13 @@ function WorkshopBrowser() {
 
       {/* Loading skeleton */}
       {loading && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="animate-pulse border-tropic-gold-dark/10 bg-black/60">
-              <CardContent className="space-y-3 p-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Card key={i} className="animate-pulse border-tropic-gold-dark/10 bg-black/60 overflow-hidden">
+              <div className="aspect-video bg-zinc-800" />
+              <CardContent className="space-y-2 p-4">
                 <div className="h-5 w-3/4 rounded bg-zinc-800" />
                 <div className="h-4 w-1/2 rounded bg-zinc-800" />
-                <div className="h-4 w-2/3 rounded bg-zinc-800" />
-                <div className="h-4 w-full rounded bg-zinc-800" />
               </CardContent>
             </Card>
           ))}
@@ -298,76 +389,59 @@ function WorkshopBrowser() {
       {/* Results grid */}
       {!loading && mods.length > 0 && (
         <>
-          <p className="text-sm text-gray-500">
-            Showing {mods.length} of {total} result{total !== 1 ? 's' : ''}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">
+              {isSearchMode
+                ? `Found ${total.toLocaleString()} result${total !== 1 ? 's' : ''}`
+                : `Showing page ${page} of ${totalPages.toLocaleString()} — ${total.toLocaleString()} mod${total !== 1 ? 's' : ''} total`}
+            </p>
+          </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {mods.map((mod) => (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {mods.map((mod, idx) => (
               <Card
-                key={mod.mod_id || mod._id}
-                className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm"
+                key={mod.mod_id || idx}
+                className="group border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm overflow-hidden transition-colors hover:border-tropic-gold-dark/40"
               >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base font-bold text-white leading-tight">
-                      {mod.name}
-                    </CardTitle>
-                    <div className="flex shrink-0 gap-1">
-                      {mod.version && (
-                        <Badge className="bg-tropic-gold/20 text-tropic-gold border-tropic-gold-dark/30 text-xs">
-                          v{mod.version}
-                        </Badge>
-                      )}
-                      {mod.metadata_source === 'workshop' && (
-                        <Badge variant="outline" className="border-green-600/40 text-green-400 text-xs">
-                          Workshop
-                        </Badge>
-                      )}
-                      {(mod.manually_entered || mod.metadata_source === 'manual') && (
-                        <Badge variant="outline" className="border-amber-600/40 text-amber-400 text-xs">
-                          Manual
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
+                {/* Thumbnail */}
+                <div className="aspect-video overflow-hidden bg-zinc-900">
+                  <ModThumbnail src={mod.thumbnail_url} alt={mod.name} />
+                </div>
 
-                <CardContent className="space-y-2 text-sm">
-                  {/* Mod ID */}
-                  <p className="font-mono text-xs text-gray-500 break-all">{mod.mod_id}</p>
+                <CardContent className="space-y-2 p-4">
+                  {/* Name */}
+                  <h3 className="text-sm font-bold text-white leading-tight line-clamp-1">
+                    {mod.name || 'Unnamed Mod'}
+                  </h3>
 
                   {/* Author */}
                   {mod.author && (
-                    <p className="text-gray-400">
+                    <p className="text-xs text-gray-400">
                       <span className="text-gray-500">by </span>
                       {mod.author}
                     </p>
                   )}
 
-                  {/* Description */}
-                  {mod.description && (
-                    <p className="text-gray-400 line-clamp-2">{mod.description}</p>
-                  )}
+                  {/* Meta row */}
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    {mod.rating && (
+                      <span className="text-tropic-gold">{mod.rating}</span>
+                    )}
+                    {mod.size && <span>{mod.size}</span>}
+                    {mod.version && (
+                      <Badge className="bg-tropic-gold/20 text-tropic-gold border-tropic-gold-dark/30 text-[10px] px-1.5 py-0">
+                        v{mod.version}
+                      </Badge>
+                    )}
+                  </div>
 
-                  {/* License */}
-                  {mod.license && (
-                    <p className="text-xs text-gray-500">
-                      <Info className="mr-1 inline h-3 w-3" />
-                      {mod.license}
-                    </p>
-                  )}
+                  {/* Mod ID */}
+                  <p className="font-mono text-[10px] text-gray-600 break-all">
+                    {mod.mod_id}
+                  </p>
 
-                  {/* Dependencies */}
-                  {mod.dependencies?.length > 0 && (
-                    <p className="text-xs text-gray-500">
-                      <Package className="mr-1 inline h-3 w-3" />
-                      {mod.dependencies.length} dependenc{mod.dependencies.length === 1 ? 'y' : 'ies'}
-                    </p>
-                  )}
-
-                  {/* Workshop link + refresh */}
-                  <div className="flex items-center justify-between">
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-1">
                     {mod.workshop_url && (
                       <a
                         href={mod.workshop_url}
@@ -376,26 +450,10 @@ function WorkshopBrowser() {
                         className="inline-flex items-center gap-1 text-xs text-tropic-gold hover:text-tropic-gold-light transition-colors"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        View on Workshop
+                        Workshop
                       </a>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRefreshMod(mod.mod_id)}
-                      className="text-gray-500 hover:text-tropic-gold h-6 px-2"
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                    </Button>
                   </div>
-
-                  {/* Last fetched timestamp */}
-                  {mod.last_fetched && (
-                    <p className="text-[10px] text-gray-600 flex items-center gap-1">
-                      <Clock className="h-2.5 w-2.5" />
-                      Fetched {new Date(mod.last_fetched).toLocaleDateString()}
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             ))}
@@ -405,7 +463,7 @@ function WorkshopBrowser() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-4 border-t border-gray-800">
               <span className="text-sm text-gray-500">
-                Page {page} of {totalPages}
+                Page {page} of {totalPages.toLocaleString()}
               </span>
               <div className="flex items-center gap-2">
                 <Button
@@ -418,6 +476,53 @@ function WorkshopBrowser() {
                   <ChevronLeft className="mr-1 h-4 w-4" />
                   Previous
                 </Button>
+
+                {/* Page number buttons */}
+                <div className="hidden sm:flex items-center gap-1">
+                  {(() => {
+                    const pages = [];
+                    const maxVisible = 5;
+                    let start = Math.max(1, page - Math.floor(maxVisible / 2));
+                    let end = Math.min(totalPages, start + maxVisible - 1);
+                    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+                    if (start > 1) {
+                      pages.push(
+                        <Button key={1} variant="outline" size="sm"
+                          onClick={() => setPage(1)}
+                          className="border-gray-700 text-gray-300 hover:bg-gray-800 h-8 w-8 p-0">
+                          1
+                        </Button>
+                      );
+                      if (start > 2) pages.push(<span key="dots1" className="text-gray-600 px-1">…</span>);
+                    }
+                    for (let i = start; i <= end; i++) {
+                      pages.push(
+                        <Button key={i} variant={i === page ? 'default' : 'outline'} size="sm"
+                          onClick={() => setPage(i)}
+                          className={
+                            i === page
+                              ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light h-8 w-8 p-0'
+                              : 'border-gray-700 text-gray-300 hover:bg-gray-800 h-8 w-8 p-0'
+                          }>
+                          {i}
+                        </Button>
+                      );
+                    }
+                    if (end < totalPages) {
+                      if (end < totalPages - 1) pages.push(<span key="dots2" className="text-gray-600 px-1">…</span>);
+                      pages.push(
+                        <Button key={totalPages} variant="outline" size="sm"
+                          onClick={() => setPage(totalPages)}
+                          className="border-gray-700 text-gray-300 hover:bg-gray-800 h-8 w-8 p-0">
+                          {totalPages}
+                        </Button>
+                      );
+                    }
+                    return pages;
+                  })()}
+                </div>
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -440,13 +545,39 @@ function WorkshopBrowser() {
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Package className="mb-4 h-12 w-12 text-tropic-gold-dark/40" />
             <p className="text-lg font-semibold text-gray-300">
-              {submittedQuery ? 'No mods found' : 'Search the Workshop'}
+              {isSearchMode ? 'No mods found' : 'No mods available'}
             </p>
             <p className="mt-1 text-sm text-gray-500">
-              {submittedQuery
+              {isSearchMode
                 ? 'Try a different search term or add a mod manually.'
-                : 'Enter a mod name, ID, or author above to get started.'}
+                : 'Workshop data is loading or temporarily unavailable.'}
             </p>
+            <div className="mt-4 flex gap-2">
+              <Button
+                onClick={() => {
+                  setFetchModId('');
+                  setFetchError(null);
+                  setFetchResult(null);
+                  setFetchDialogOpen(true);
+                }}
+                className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
+              >
+                <Download className="mr-1.5 h-4 w-4" />
+                Fetch by Mod ID
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFormError(null);
+                  setModForm(EMPTY_MOD_FORM);
+                  setDialogOpen(true);
+                }}
+                className="border-tropic-gold-dark/30 text-tropic-gold hover:bg-tropic-gold/10"
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Add Manually
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -581,7 +712,7 @@ function WorkshopBrowser() {
       <Dialog open={fetchDialogOpen} onOpenChange={setFetchDialogOpen}>
         <DialogContent className="bg-gray-900 border-gray-800 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-tropic-gold">Auto-Fetch Mod from Workshop</DialogTitle>
+            <DialogTitle className="text-tropic-gold">Fetch Mod from Workshop</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleAutoFetch} className="space-y-4">

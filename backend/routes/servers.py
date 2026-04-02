@@ -612,7 +612,40 @@ async def validate_server_mods(
     return {"issues": issues, "mod_count": len(body.mods), "valid": len(issues) == 0}
 
 
-# ── Workshop Browser ─────────────────────────────────────────────────────────
+# ── Workshop Live Proxy (browse/search the real Workshop) ────────────────────
+
+@router.get("/workshop/browse")
+async def browse_workshop_live(
+    category: str = Query("popular", description="Category: popular, newest, updated, name"),
+    page: int = Query(1, ge=1),
+    tags: Optional[str] = Query(None, description="Comma-separated tags"),
+    current_user: dict = Depends(_require_servers),
+):
+    """Browse the live Arma Reforger Workshop by category with pagination."""
+    from services.workshop_proxy import browse_workshop
+
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
+    result = await browse_workshop(category=category, page=page, tags=tag_list)
+    return result
+
+
+@router.get("/workshop/search")
+async def search_workshop_live(
+    q: str = Query("", description="Search query"),
+    page: int = Query(1, ge=1),
+    sort: str = Query("popularity", description="Sort: popularity, newest, updated, name"),
+    current_user: dict = Depends(_require_servers),
+):
+    """Search the live Arma Reforger Workshop with pagination."""
+    from services.workshop_proxy import search_workshop
+
+    if not q.strip():
+        return {"mods": [], "total": 0, "page": page, "per_page": 16, "total_pages": 0}
+    result = await search_workshop(query=q.strip(), page=page, sort=sort)
+    return result
+
+
+# ── Workshop Browser (local cache) ──────────────────────────────────────────
 
 @router.get("/servers/workshop/search")
 async def search_workshop(

@@ -553,6 +553,7 @@ async def startup_event():
         await db.server_webhooks.create_index("id", unique=True)
         await db.workshop_mods.create_index("mod_id", unique=True)
         await db.workshop_cache.create_index("key", unique=True)
+        await db.workshop_proxy_cache.create_index("key", unique=True)
         await db.server_metrics.create_index([("server_id", 1), ("timestamp", -1)])
         # TTL index: auto-delete metrics older than retention period
         await db.server_metrics.create_index(

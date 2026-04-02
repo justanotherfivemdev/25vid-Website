@@ -19,3 +19,7 @@ valyu>=0.1.0
 # Server Management / Docker orchestration
 docker>=7.0.0
 croniter>=1.4.1
+
+# Workshop HTML parsing
+beautifulsoup4>=4.12.3
+lxml>=5.2.2
