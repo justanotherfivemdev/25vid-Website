@@ -52,7 +52,6 @@ import LOAManager from '@/pages/admin/LOAManager';
 import PipelineManager from '@/pages/admin/PipelineManager';
 import DeploymentManager from '@/pages/admin/DeploymentManager';
 import ServerDashboard from '@/pages/admin/servers/ServerDashboard';
-import ServerDetail from '@/pages/admin/servers/ServerDetail';
 import WorkshopBrowser from '@/pages/admin/servers/WorkshopBrowser';
 import ModIssues from '@/pages/admin/servers/ModIssues';
 import ServerWorkspace from '@/pages/admin/servers/ServerWorkspace';
@@ -68,7 +67,6 @@ import NotesModule from '@/pages/admin/servers/modules/NotesModule';
 import NotificationsModule from '@/pages/admin/servers/modules/NotificationsModule';
 import IncidentsModule from '@/pages/admin/servers/modules/IncidentsModule';
 import FileManagerModule from '@/pages/admin/servers/modules/FileManagerModule';
-import TriggerExecModule from '@/pages/admin/servers/modules/TriggerExecModule';
 import ReportsModule from '@/pages/admin/servers/modules/ReportsModule';
 import TodoModule from '@/pages/admin/servers/modules/TodoModule';
 import WatchersModule from '@/pages/admin/servers/modules/WatchersModule';
@@ -1288,7 +1286,7 @@ function App() {
             <Route path="config/server" element={<ServerSettingsModule />} />
             <Route path="config/system" element={<SystemSettingsModule />} />
             <Route path="tools/files" element={<FileManagerModule />} />
-            <Route path="tools/exec" element={<TriggerExecModule />} />
+            <Route path="tools/exec" element={<Navigate to="../.." relative="path" replace />} />
             <Route path="tools/reports" element={<ReportsModule />} />
             <Route path="tools/todos" element={<TodoModule />} />
             <Route path="tools/watchers" element={<WatchersModule />} />
@@ -1296,8 +1294,8 @@ function App() {
             <Route path="admin/notifications" element={<NotificationsModule />} />
             <Route path="admin/incidents" element={<IncidentsModule />} />
           </Route>
-          {/* Legacy detail route redirect */}
-          <Route path="/admin/servers/:id/overview" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDetail /></ProtectedRoute>} />
+          {/* Legacy detail route — redirect to workspace overview */}
+          <Route path="/admin/servers/:id/overview" element={<Navigate to=".." relative="path" replace />} />
         </Route>
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         {/* ── Member routes with sidebar layout ─────────────────────────── */}

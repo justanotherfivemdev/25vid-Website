@@ -9,7 +9,7 @@ const STARTABLE = new Set(['stopped', 'created', 'error']);
 const STOPPABLE = new Set(['running']);
 const RESTARTABLE = new Set(['running']);
 
-const PERIODS = ['1d', '7d'];
+const PERIODS = ['1d', '7d', '30d'];
 
 function getStatusVisuals(status) {
   switch (status) {

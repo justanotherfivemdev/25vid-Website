@@ -6,6 +6,7 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 (S4 Logistics and S1/Admin).
 """
 
+import json
 import logging
 import asyncio
 from datetime import datetime, timezone
@@ -27,7 +28,12 @@ from config import (
     SERVER_PORT_BLOCK_SIZE,
 )
 from services.docker_agent import DockerAgent
-from services.server_config_generator import generate_reforger_config, write_config_file
+from services.server_config_generator import (
+    build_default_server_config,
+    generate_reforger_config,
+    normalize_server_config,
+    write_config_file,
+)
 from services.rcon_bridge import rcon_pool
 from models.server import (
     ManagedServer, ServerCreate, ServerUpdate,
@@ -74,6 +80,105 @@ def _server_response(server: dict) -> dict:
     if "environment" in doc:
         doc["environment"] = _redact_env(doc["environment"])
     return doc
+
+
+def _validate_mission_header(config: dict) -> None:
+    """Validate that the missionHeader field (if present) is a JSON-serializable dict.
+
+    Raises HTTPException(422) when missionHeader is not a dict or contains
+    values that cannot be serialized to JSON.
+    """
+    game = config.get("game") if isinstance(config.get("game"), dict) else config
+    mission_header = game.get("missionHeader") if game else None
+    if mission_header is None:
+        return
+    if not isinstance(mission_header, dict):
+        raise HTTPException(
+            status_code=422,
+            detail="missionHeader must be a JSON object (not an array, string, or primitive).",
+        )
+    try:
+        json.dumps(mission_header, ensure_ascii=False)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"missionHeader contains values that cannot be serialized to JSON: {exc}",
+        )
+
+
+def _find_mount_source(mounts: list[dict], destination: str) -> Optional[str]:
+    for mount in mounts or []:
+        if mount.get("destination") == destination and mount.get("source"):
+            return mount["source"]
+    return None
+
+
+def _derive_troubleshooting(server: dict, runtime: Optional[dict] = None) -> dict:
+    runtime = runtime or {}
+    mounts = runtime.get("mounts") or []
+    server_id = server.get("id", "")
+
+    config_root = (
+        _find_mount_source(mounts, "/app/server-configs")
+        or next(
+            (host for host, container in (server.get("volumes") or {}).items() if container == "/app/server-configs"),
+            None,
+        )
+        or "/app/server-configs"
+    )
+    config_directory = f"{config_root.rstrip('/')}/{server_id}" if server_id else config_root
+    config_file = f"{config_directory.rstrip('/')}/config.json"
+
+    profile_root = (
+        _find_mount_source(mounts, "/app/profiles")
+        or next(
+            (
+                host
+                for host, container in (server.get("volumes") or {}).items()
+                if container in {"/app/profiles", "/profile", "/app/profile"}
+            ),
+            None,
+        )
+    )
+    profile_directory = (
+        f"{profile_root.rstrip('/')}/{server_id}"
+        if profile_root and server_id
+        else server.get("environment", {}).get("profile_path") or config_directory
+    )
+
+    return {
+        "actual_container_name": runtime.get("actual_container_name") or server.get("container_name") or server.get("name", ""),
+        "requested_container_name": server.get("container_name") or server.get("name", ""),
+        "working_directory": runtime.get("working_dir") or config_directory,
+        "config_directory": config_directory,
+        "config_file": config_file,
+        "profile_directory": profile_directory,
+        "cd_target": profile_directory or config_directory,
+        "mounts": mounts,
+    }
+
+
+def _parse_players_response(response: str) -> list[dict]:
+    players: list[dict] = []
+    for raw_line in (response or "").splitlines():
+        line = raw_line.strip()
+        if not line or line.lower().startswith(("players", "---", "name")):
+            continue
+        if "|" in line:
+            parts = [part.strip() for part in line.split("|") if part.strip()]
+            if len(parts) >= 2:
+                name = parts[1] if parts[0].isdigit() else parts[0]
+                players.append({
+                    "name": name,
+                    "raw": line,
+                    "ping": next((int(token[:-2]) for token in parts if token.lower().endswith("ms") and token[:-2].isdigit()), None),
+                })
+                continue
+        if line[0].isdigit():
+            name = line.lstrip("0123456789.-: ").strip()
+            if name:
+                players.append({"name": name, "raw": line, "ping": None})
+    return players
 
 
 # ── Server Lifecycle ─────────────────────────────────────────────────────────
@@ -158,15 +263,21 @@ async def create_server(
             description=body.description,
             docker_image=body.docker_image,
             container_name=f"25vid-gs-{body.name.lower().replace(' ', '-')[:30]}",
-            config=body.config,
+            config={},
+            baseline_config={},
             mods=body.mods,
             ports=ports,
             environment=sanitize_mongo_payload(body.environment),
+            volumes=body.volumes,
             tags=body.tags,
             auto_restart=body.auto_restart,
+            health_check_interval=body.health_check_interval,
             max_restart_attempts=body.max_restart_attempts,
             created_by=current_user["id"],
         )
+        normalized_config = normalize_server_config(body.config, server.model_dump())
+        server.config = normalized_config
+        server.baseline_config = normalized_config
         doc = server.model_dump()
         # Convert datetime fields to ISO strings for MongoDB
         for key in ("created_at", "updated_at", "last_started", "last_stopped"):
@@ -203,7 +314,15 @@ async def get_server(server_id: str, current_user: dict = Depends(_require_serve
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    return _server_response(server)
+    runtime = await _docker.get_container_runtime_details(server.get("container_name") or server.get("name", ""))
+    response = _server_response(server)
+    response["config"] = normalize_server_config(server.get("config", {}), server)
+    response["baseline_config"] = normalize_server_config(
+        server.get("baseline_config") or build_default_server_config(server),
+        server,
+    )
+    response["troubleshooting"] = _derive_troubleshooting(server, runtime)
+    return response
 
 
 @router.put("/servers/{server_id}")
@@ -227,11 +346,18 @@ async def update_server(
     if "environment" in updates:
         updates["environment"] = sanitize_mongo_payload(updates["environment"])
 
+    # Validate mission header before persisting
+    if "config" in updates:
+        _validate_mission_header(updates["config"])
+
+    next_server = {**server, **updates}
+
     # Store config history if config changed
     if "config" in updates and server.get("config") != updates["config"]:
+        updates["config"] = normalize_server_config(updates["config"], next_server)
         history_entry = {
             "version": len(server.get("config_history", [])) + 1,
-            "config": server.get("config", {}),
+            "config": normalize_server_config(server.get("config", {}), server),
             "changed_by": current_user["id"],
             "changed_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -310,8 +436,13 @@ async def start_server(server_id: str, current_user: dict = Depends(_require_ser
         resource_id=server_id,
     )
 
+    normalized_server = {
+        **server,
+        "config": normalize_server_config(server.get("config", {}), server),
+    }
+
     # Write server config to disk before starting
-    config_ok, config_result = await write_config_file(server)
+    config_ok, config_result = await write_config_file(normalized_server)
     if not config_ok:
         logger.warning("Config generation failed for %s: %s", server_id, config_result)
 
@@ -450,14 +581,70 @@ async def restart_server(server_id: str, current_user: dict = Depends(_require_s
 @router.get("/servers/{server_id}/status")
 async def get_server_status(server_id: str, current_user: dict = Depends(_require_servers)):
     """Get current status and health info for a server."""
-    server = await db.managed_servers.find_one(
-        {"id": server_id},
-        {"_id": 0, "id": 1, "name": 1, "status": 1, "last_started": 1,
-         "last_stopped": 1, "auto_restart": 1},
-    )
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    return server
+    runtime = await _docker.get_container_runtime_details(server.get("container_name") or server.get("name", ""))
+    return {
+        "id": server.get("id"),
+        "name": server.get("name"),
+        "status": server.get("status"),
+        "last_started": server.get("last_started"),
+        "last_stopped": server.get("last_stopped"),
+        "auto_restart": server.get("auto_restart"),
+        "troubleshooting": _derive_troubleshooting(server, runtime),
+    }
+
+
+@router.post("/servers/{server_id}/reset")
+async def reset_server(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Reset a managed server to its original post-creation baseline."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    container_name = server.get("container_name") or server.get("name", "")
+    if container_name:
+        await _docker.remove_container(container_name, force=True)
+
+    baseline = normalize_server_config(
+        server.get("baseline_config") or build_default_server_config(server),
+        server,
+    )
+    now = datetime.now(timezone.utc).isoformat()
+    history_entry = {
+        "version": len(server.get("config_history", [])) + 1,
+        "config": normalize_server_config(server.get("config", {}), server),
+        "changed_by": current_user["id"],
+        "changed_at": now,
+        "reason": "reset",
+    }
+    await db.managed_servers.update_one(
+        {"id": server_id},
+        {
+            "$set": {
+                "config": baseline,
+                "mods": [],
+                "status": "created",
+                "updated_at": now,
+                "last_stopped": now,
+            },
+            "$push": {"config_history": history_entry},
+        },
+    )
+    await log_audit(
+        user_id=current_user["id"],
+        action_type="server_reset",
+        resource_type="server",
+        resource_id=server_id,
+        before={"mods": server.get("mods", []), "config": server.get("config", {})},
+        after={"mods": [], "config": baseline},
+    )
+    return {
+        "server_id": server_id,
+        "status": "created",
+        "message": "Server reset to its baseline state. Mods were removed and baseline settings restored.",
+    }
 
 
 # ── Server Config ────────────────────────────────────────────────────────────
@@ -466,12 +653,12 @@ async def get_server_status(server_id: str, current_user: dict = Depends(_requir
 async def get_server_config(server_id: str, current_user: dict = Depends(_require_servers)):
     """Get the current server configuration."""
     server = await db.managed_servers.find_one(
-        {"id": server_id}, {"_id": 0, "config": 1, "config_history": 1}
+        {"id": server_id}, {"_id": 0, "id": 1, "name": 1, "ports": 1, "config": 1, "config_history": 1}
     )
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
     return {
-        "config": server.get("config", {}),
+        "config": normalize_server_config(server.get("config", {}), server),
         "history_count": len(server.get("config_history", [])),
     }
 
@@ -1197,6 +1384,58 @@ async def execute_rcon(
     }
 
 
+@router.get("/servers/{server_id}/players")
+async def get_server_players(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Get the live player list when the server is running."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    if server.get("status") != "running":
+        return {
+            "server_id": server_id,
+            "online": False,
+            "players": [],
+            "count": 0,
+            "source": "offline",
+        }
+
+    ports = server.get("ports", {})
+    rcon_port = ports.get("rcon", 19999)
+    rcon_password = server.get("environment", {}).get("rcon_password", "")
+    container_name = server.get("container_name") or server.get("name", "")
+    host = await _docker.get_container_ip(container_name) if container_name else None
+    if not host:
+        host = "127.0.0.1"
+
+    success, response = await rcon_pool.execute(
+        server_id=f"{server_id}:players",
+        host=host,
+        port=rcon_port,
+        password=rcon_password,
+        command="#players",
+    )
+    if not success:
+        return {
+            "server_id": server_id,
+            "online": True,
+            "players": [],
+            "count": 0,
+            "source": "rcon_error",
+            "message": response,
+        }
+
+    players = _parse_players_response(response)
+    return {
+        "server_id": server_id,
+        "online": True,
+        "players": players,
+        "count": len(players),
+        "source": "rcon",
+        "raw": response,
+    }
+
+
 # ── Scheduled Actions ────────────────────────────────────────────────────────
 
 @router.get("/servers/{server_id}/schedules")
@@ -1319,8 +1558,8 @@ async def test_webhook(webhook_id: str, current_user: dict = Depends(_require_se
 @router.get("/servers/{server_id}/metrics")
 async def get_server_metrics(
     server_id: str,
-    period: str = Query("1h", regex="^(1h|6h|24h|7d)$"),
-    resolution: str = Query("raw", regex="^(raw|1m|5m|1h)$"),
+    period: str = Query("1h", pattern="^(1h|6h|24h|7d|30d)$"),
+    resolution: str = Query("raw", pattern="^(raw|1m|5m|1h)$"),
     current_user: dict = Depends(_require_servers),
 ):
     """Get performance metrics for a server with time range and resolution."""

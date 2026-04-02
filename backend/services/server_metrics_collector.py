@@ -15,6 +15,7 @@ _PERIOD_DELTAS = {
     "6h": timedelta(hours=6),
     "24h": timedelta(hours=24),
     "7d": timedelta(days=7),
+    "30d": timedelta(days=30),
 }
 
 _RESOLUTION_SECONDS = {
@@ -124,7 +125,9 @@ async def get_metrics_summary(server_id: str) -> dict:
         "server_id": server_id,
         "latest": latest,
         "trend_24h": {
+            "avg_cpu": round(avg_cpu, 2),
             "avg_cpu_percent": round(avg_cpu, 2),
+            "avg_memory": round(avg_memory, 2),
             "avg_memory_mb": round(avg_memory, 2),
             "min_player_count": min(player_counts),
             "max_player_count": max(player_counts),

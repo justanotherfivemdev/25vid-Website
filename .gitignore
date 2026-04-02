@@ -11,6 +11,8 @@ __pycache__/
 .Python
 venv/
 env/
+.venv/
+**/.venv/
 
 # Build outputs
 build/

@@ -5,6 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Activity,
   Clock,
   Users,
@@ -18,14 +24,22 @@ import {
   Loader2,
   CheckCircle,
   BarChart3,
+  Play,
+  Square,
+  RotateCcw,
+  ShieldAlert,
+  RefreshCw,
+  Lock,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
 function OverviewModule() {
-  const { server, serverId, fetchServer } = useOutletContext();
+  const { server, serverId, fetchServer, handleServerAction, actionLoading } = useOutletContext();
   const [metricsSummary, setMetricsSummary] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const fetchOverviewData = useCallback(async () => {
     try {
@@ -51,8 +65,40 @@ function OverviewModule() {
   const trend = metricsSummary?.trend_24h || {};
   const status = server?.status || 'stopped';
   const isRunning = status === 'running';
+  const canStart = ['created', 'stopped', 'error', 'crash_loop'].includes(status);
+  const canStop = ['running', 'starting'].includes(status);
+  const canRestart = status === 'running';
   const modCount = server?.mods?.length || 0;
   const ports = server?.ports || {};
+  const troubleshooting = server?.troubleshooting || {};
+  const serverAdminToolsConfigTarget = troubleshooting.profile_directory || troubleshooting.cd_target || '';
+  const serverAdminToolsInstalled = (server?.mods || []).some((mod) => {
+    const haystack = `${mod.name || ''} ${mod.mod_id || mod.modId || ''}`.toLowerCase();
+    return haystack.includes('server admin tools');
+  });
+  const startupParameters = Array.isArray(server?.config?.startupParameters) ? server.config.startupParameters : [];
+  const [locking, setLocking] = useState(false);
+
+  const handleLockdown = useCallback(async () => {
+    setLocking(true);
+    try {
+      await axios.post(`${API}/servers/${serverId}/rcon`, { command: '#lock' });
+    } finally {
+      setLocking(false);
+    }
+  }, [serverId]);
+
+  const handleReset = useCallback(async () => {
+    setResetting(true);
+    try {
+      await axios.post(`${API}/servers/${serverId}/reset`);
+      await fetchServer(true);
+      await fetchOverviewData();
+      setResetDialogOpen(false);
+    } finally {
+      setResetting(false);
+    }
+  }, [fetchOverviewData, fetchServer, serverId]);
 
   const formatUptime = (seconds) => {
     if (!seconds) return '—';
@@ -162,7 +208,7 @@ function OverviewModule() {
             <DetailRow label="Name" value={server.name} />
             <DetailRow label="Description" value={server.description || '—'} />
             <DetailRow label="Docker Image" value={server.docker_image} mono />
-            <DetailRow label="Container" value={server.container_name} mono />
+            <DetailRow label="Container" value={troubleshooting.actual_container_name || server.container_name} mono />
             <DetailRow label="Created By" value={server.created_by || '—'} />
             <DetailRow label="Created" value={server.created_at ? new Date(server.created_at).toLocaleString() : '—'} />
           </CardContent>
@@ -225,30 +271,95 @@ function OverviewModule() {
         <Card className="border-zinc-800 bg-black/60">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
-              <Activity className="h-4 w-4 text-tropic-gold" /> QUICK ACTIONS
+              <Activity className="h-4 w-4 text-tropic-gold" /> OPERATIONS
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Link to="console" className="block">
-              <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
-                <Activity className="mr-2 h-4 w-4" /> View Console Logs
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button variant="outline" size="sm" onClick={() => handleServerAction?.('start')} disabled={!canStart || actionLoading === 'start' || resetting}
+                className="justify-start border-green-700/30 text-green-400 hover:bg-green-700/10 hover:text-green-300">
+                {actionLoading === 'start' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />} Start
               </Button>
-            </Link>
-            <Link to="rcon" className="block">
-              <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
-                <Settings className="mr-2 h-4 w-4" /> Open RCON Console
+              <Button variant="outline" size="sm" onClick={() => handleServerAction?.('stop')} disabled={!canStop || actionLoading === 'stop' || resetting}
+                className="justify-start border-red-700/30 text-red-400 hover:bg-red-700/10 hover:text-red-300">
+                {actionLoading === 'stop' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Square className="mr-2 h-4 w-4" />} Shutdown
               </Button>
-            </Link>
-            <Link to="config/server" className="block">
-              <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
-                <Settings className="mr-2 h-4 w-4" /> Edit Configuration
+              <Button variant="outline" size="sm" onClick={() => handleServerAction?.('restart')} disabled={!canRestart || actionLoading === 'restart' || resetting}
+                className="justify-start border-amber-700/30 text-amber-400 hover:bg-amber-700/10 hover:text-amber-300">
+                {actionLoading === 'restart' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />} Restart
               </Button>
-            </Link>
-            <Link to="metrics" className="block">
-              <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
-                <BarChart3 className="mr-2 h-4 w-4" /> View Metrics
+              <Button variant="outline" size="sm" onClick={handleLockdown} disabled={!isRunning || locking || !!actionLoading}
+                className="justify-start border-purple-700/30 text-purple-400 hover:bg-purple-700/10 hover:text-purple-300">
+                {locking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />} Lockdown
               </Button>
-            </Link>
+              <Button variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} disabled={resetting || !!actionLoading}
+                className="justify-start border-red-800/40 text-red-300 hover:bg-red-900/20 hover:text-red-200 sm:col-span-2">
+                {resetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />} Reset
+              </Button>
+            </div>
+            <p className="rounded border border-red-700/30 bg-red-900/10 px-3 py-2 text-xs text-gray-300">
+              Reset removes all mods, restores baseline server settings, and returns the server to its original post-creation state.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Link to="console" className="block">
+                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
+                  <Activity className="mr-2 h-4 w-4" /> View Console Logs
+                </Button>
+              </Link>
+              <Link to="rcon" className="block">
+                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
+                  <Settings className="mr-2 h-4 w-4" /> Open RCON Console
+                </Button>
+              </Link>
+              <Link to="config/server" className="block">
+                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
+                  <Settings className="mr-2 h-4 w-4" /> Edit Configuration
+                </Button>
+              </Link>
+              <Link to="metrics" className="block">
+                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
+                  <BarChart3 className="mr-2 h-4 w-4" /> View Metrics
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="border-zinc-800 bg-black/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+              <ShieldAlert className="h-4 w-4 text-tropic-gold" /> SERVER ADMIN TOOLS
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <DetailRow label="Installed" value={serverAdminToolsInstalled ? 'Detected in mod list' : 'Not detected'} />
+            <DetailRow label="Config Target" value={serverAdminToolsConfigTarget ? `${serverAdminToolsConfigTarget}/ServerAdminTools_Config.json` : '—'} mono />
+            <DetailRow label="Bootstrap Status" value={serverAdminToolsInstalled ? 'Ready for admin troubleshooting' : 'Awaiting mod installation'} />
+            <div>
+              <span className="text-xs font-medium text-gray-500">Startup Parameters</span>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {startupParameters.length > 0 ? startupParameters.map((param) => (
+                  <Badge key={param} variant="outline" className="border-zinc-700 text-gray-300">{param}</Badge>
+                )) : <span className="text-xs text-gray-600">No extra startup parameters configured</span>}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-zinc-800 bg-black/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+              <Settings className="h-4 w-4 text-tropic-gold" /> TROUBLESHOOTING
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <DetailRow label="Actual Container" value={troubleshooting.actual_container_name || '—'} mono />
+            <DetailRow label="Working Path" value={troubleshooting.working_directory || '—'} mono />
+            <DetailRow label="Config Directory" value={troubleshooting.config_directory || '—'} mono />
+            <DetailRow label="Profile Directory" value={troubleshooting.profile_directory || '—'} mono />
+            <DetailRow label="Tell admin to cd into" value={troubleshooting.cd_target || '—'} mono />
           </CardContent>
         </Card>
       </div>
@@ -261,6 +372,26 @@ function OverviewModule() {
         </span>
         Auto-refreshing
       </div>
+
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="border-red-700/30 bg-zinc-950 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-red-300">Reset Server</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-300">
+            This will remove all mods, restore baseline server settings, and return the server to its original post-creation state.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setResetDialogOpen(false)} className="border-zinc-700 text-gray-300">
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleReset} disabled={resetting} className="bg-red-600 text-white hover:bg-red-500">
+              {resetting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
+              Confirm Reset
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

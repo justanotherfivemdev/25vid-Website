@@ -27,6 +27,7 @@ class ManagedServer(BaseModel):
     container_name: str = ""
     status: str = "created"
     config: Dict = Field(default_factory=dict)
+    baseline_config: Dict = Field(default_factory=dict)
     config_history: List[Dict] = Field(default_factory=list)
     mods: List[Dict] = Field(default_factory=list)
     ports: Dict = Field(default_factory=lambda: {
@@ -41,8 +42,8 @@ class ManagedServer(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_started: Optional[datetime] = None
     last_stopped: Optional[datetime] = None
-    health_check_interval: int = 15
     auto_restart: bool = True
+    health_check_interval: int = 15
     max_restart_attempts: int = 3
     tags: List[str] = Field(default_factory=list)
     notes: List[Dict] = Field(default_factory=list)
@@ -60,20 +61,25 @@ class ServerCreate(BaseModel):
         "rcon": 19999,
     })
     environment: Dict = Field(default_factory=dict)
+    volumes: Dict = Field(default_factory=dict)
     tags: List[str] = Field(default_factory=list)
     auto_restart: bool = True
+    health_check_interval: int = 15
     max_restart_attempts: int = 3
 
 
 class ServerUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    docker_image: Optional[str] = None
     config: Optional[Dict] = None
     mods: Optional[List[Dict]] = None
     ports: Optional[Dict] = None
     environment: Optional[Dict] = None
+    volumes: Optional[Dict] = None
     tags: Optional[List[str]] = None
     auto_restart: Optional[bool] = None
+    health_check_interval: Optional[int] = None
     max_restart_attempts: Optional[int] = None
 
 

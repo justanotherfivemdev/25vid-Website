@@ -110,7 +110,7 @@ function ModThumbnail({ src, alt }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN WORKSHOP COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function WorkshopBrowser() {
+function WorkshopBrowser({ initialServerId = '', lockServerSelection = false, embedded = false }) {
   const [activeMainTab, setActiveMainTab] = useState('workshop');
 
   // ── Server context (for Reorder / Batch / Download) ──────────────────
@@ -150,11 +150,13 @@ function WorkshopBrowser() {
         const res = await axios.get(`${API}/servers`);
         const list = Array.isArray(res.data) ? res.data : [];
         setServers(list);
-        if (list.length > 0 && !selectedServerId) setSelectedServerId(list[0].id);
+        if (list.length > 0 && !selectedServerId) {
+          const initialMatch = initialServerId && list.some((server) => server.id === initialServerId);
+          setSelectedServerId(initialMatch ? initialServerId : list[0].id);
+        }
       } catch { /* ignore */ }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialServerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load server mods when selectedServerId changes
   useEffect(() => {
@@ -371,17 +373,19 @@ function WorkshopBrowser() {
       {/* ── Header ───────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-bold tracking-widest text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-          WORKSHOP
+          {embedded ? 'SERVER MODS' : 'WORKSHOP'}
         </h1>
         <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={selectedServerId}
-            onChange={(e) => setSelectedServerId(e.target.value)}
-            className="bg-black/60 border border-tropic-gold-dark/20 text-white text-sm rounded px-3 py-1.5 focus:ring-tropic-gold/40 focus:border-tropic-gold/40"
-          >
-            {servers.length === 0 && <option value="">No servers</option>}
-            {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          {!lockServerSelection && (
+            <select
+              value={selectedServerId}
+              onChange={(e) => setSelectedServerId(e.target.value)}
+              className="bg-black/60 border border-tropic-gold-dark/20 text-white text-sm rounded px-3 py-1.5 focus:ring-tropic-gold/40 focus:border-tropic-gold/40"
+            >
+              {servers.length === 0 && <option value="">No servers</option>}
+              {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          )}
           <Button size="sm" onClick={() => { setImportJson(''); setImportError(''); setImportDialogOpen(true); }}
             className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
             <Upload className="mr-1.5 h-3.5 w-3.5" /> Import JSON

@@ -11,11 +11,11 @@ import {
   Clock,
   ChevronRight,
   Loader2,
-  AlertTriangle,
   BookOpen,
   Zap,
 } from 'lucide-react';
 import { API } from '@/utils/api';
+import ServerOfflinePanel from '@/components/servers/ServerOfflinePanel';
 
 const QUICK_COMMANDS = [
   { label: '#status', cmd: '#status', desc: 'Server status' },
@@ -29,7 +29,7 @@ const QUICK_COMMANDS = [
 const SAVED_SNIPPETS_KEY = 'rcon_saved_snippets';
 
 function RconModule() {
-  const { server, serverId } = useOutletContext();
+  const { server, serverId, handleServerAction, actionLoading } = useOutletContext();
   const [command, setCommand] = useState('');
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -98,10 +98,12 @@ function RconModule() {
   return (
     <div className="flex h-full flex-col gap-4">
       {!isRunning && (
-        <div className="flex items-center gap-2 rounded border border-amber-600/30 bg-amber-600/10 px-3 py-2 text-xs text-amber-400">
-          <AlertTriangle className="h-4 w-4" />
-          Server must be running to use RCON console.
-        </div>
+        <ServerOfflinePanel
+          title="RCON is unavailable while the server is offline"
+          description="RCON commands, live server statistics, and other real-time admin tools are unavailable until the server is started."
+          onStart={handleServerAction ? () => handleServerAction('start') : undefined}
+          starting={actionLoading === 'start'}
+        />
       )}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_280px]">

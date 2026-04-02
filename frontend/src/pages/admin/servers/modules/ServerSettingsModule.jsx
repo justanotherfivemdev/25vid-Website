@@ -34,6 +34,8 @@ function ServerSettingsModule() {
   const [jsonMode, setJsonMode] = useState(false);
   const [jsonText, setJsonText] = useState('');
   const [jsonError, setJsonError] = useState(null);
+  const [missionHeaderText, setMissionHeaderText] = useState('{}');
+  const [missionHeaderError, setMissionHeaderError] = useState(null);
   const [diffOpen, setDiffOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [createBackup, setCreateBackup] = useState(true);
@@ -45,11 +47,13 @@ function ServerSettingsModule() {
       axios.get(`${API}/servers/${serverId}/config`),
       axios.get(`${API}/servers/${serverId}/config/history`),
     ]).then(([cfgRes, histRes]) => {
-      if (cfgRes.status === 'fulfilled') {
-        const cfg = cfgRes.value.data?.config || cfgRes.value.data || server?.config || {};
-        setConfig(cfg);
-        setJsonText(JSON.stringify(cfg, null, 2));
-      }
+        if (cfgRes.status === 'fulfilled') {
+          const cfg = cfgRes.value.data?.config || cfgRes.value.data || server?.config || {};
+          setConfig(cfg);
+          setJsonText(JSON.stringify(cfg, null, 2));
+          setMissionHeaderText(JSON.stringify(cfg?.game?.missionHeader || {}, null, 2));
+          setMissionHeaderError(null);
+        }
       if (histRes.status === 'fulfilled') {
         setConfigHistory(histRes.value.data?.history || histRes.value.data || []);
       }
@@ -85,13 +89,40 @@ function ServerSettingsModule() {
       setConfig(parsed);
       setDirty(true);
       setJsonError(null);
+      setMissionHeaderText(JSON.stringify(parsed?.game?.missionHeader || {}, null, 2));
+      setMissionHeaderError(null);
       setJsonMode(false);
     } catch (err) {
       setJsonError(err.message);
     }
   }, [jsonText]);
 
+  useEffect(() => {
+    const onBeforeUnload = (event) => {
+      if (!dirty && !missionHeaderError) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty, missionHeaderError]);
+
+  const handleMissionHeaderChange = useCallback((value) => {
+    setMissionHeaderText(value);
+    try {
+      const parsed = JSON.parse(value || '{}');
+      if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+        throw new Error('Mission header must be a JSON object.');
+      }
+      updateField('game.missionHeader', parsed);
+      setMissionHeaderError(null);
+    } catch (err) {
+      setMissionHeaderError(err.message);
+    }
+  }, [updateField]);
+
   const saveConfig = useCallback(async () => {
+    if (missionHeaderError) return;
     setSaving(true);
     try {
       if (createBackup) {
@@ -105,14 +136,14 @@ function ServerSettingsModule() {
     } finally {
       setSaving(false);
     }
-  }, [config, serverId, fetchServer, createBackup]);
+  }, [config, serverId, fetchServer, createBackup, missionHeaderError]);
 
   // Config field helpers
   const game = config?.game || {};
   const gameProps = game.gameProperties || {};
-  const rcon = config?.rcon || {};
-  const a2s = config?.a2s || {};
   const operating = config?.operating || {};
+  const startupParameters = Array.isArray(config?.startupParameters) ? config.startupParameters : [];
+  const troubleshooting = server?.troubleshooting || {};
 
   if (loading) {
     return (
@@ -143,7 +174,7 @@ function ServerSettingsModule() {
             className="h-7 border-zinc-800 text-xs text-gray-400" variant="outline">
             <Eye className="mr-1 h-3 w-3" /> Preview
           </Button>
-          <Button size="sm" onClick={saveConfig} disabled={!dirty || saving}
+          <Button size="sm" onClick={saveConfig} disabled={!dirty || saving || !!missionHeaderError}
             className="h-7 bg-tropic-gold text-black hover:bg-tropic-gold-light text-xs">
             {saving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
             Save
@@ -156,6 +187,19 @@ function ServerSettingsModule() {
         <Switch checked={createBackup} onCheckedChange={setCreateBackup} className="h-4 w-7" />
         Create rollback point before saving
       </div>
+
+      <Card className="border-zinc-800 bg-black/60">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">STARTUP PARAMETERS</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {startupParameters.length > 0 ? startupParameters.map((param) => (
+            <Badge key={param} variant="outline" className="mr-1 border-zinc-700 text-gray-300">{param}</Badge>
+          )) : (
+            <p className="text-xs text-gray-600">No extra startup parameters configured</p>
+          )}
+        </CardContent>
+      </Card>
 
       {jsonMode ? (
         /* JSON Editor */
@@ -194,6 +238,7 @@ function ServerSettingsModule() {
               <ConfigField label="Player Limit" value={game.playerCountLimit || 64} onChange={(v) => updateField('game.playerCountLimit', parseInt(v) || 64)} type="number" />
               <ConfigToggle label="Visible" checked={game.visible !== false} onChange={(v) => updateField('game.visible', v)} />
               <ConfigToggle label="Cross Platform" checked={game.crossPlatform !== false} onChange={(v) => updateField('game.crossPlatform', v)} />
+              <ConfigToggle label="Mods Required By Default" checked={game.modsRequiredByDefault !== false} onChange={(v) => updateField('game.modsRequiredByDefault', v)} />
             </CardContent>
           </Card>
 
@@ -209,21 +254,30 @@ function ServerSettingsModule() {
               <ConfigToggle label="Disable Third Person" checked={!!gameProps.disableThirdPerson} onChange={(v) => updateField('game.gameProperties.disableThirdPerson', v)} />
               <ConfigToggle label="Fast Validation" checked={gameProps.fastValidation !== false} onChange={(v) => updateField('game.gameProperties.fastValidation', v)} />
               <ConfigToggle label="BattlEye" checked={gameProps.battlEye !== false} onChange={(v) => updateField('game.gameProperties.battlEye', v)} />
+              <ConfigToggle label="VON Disable UI" checked={!!gameProps.VONDisableUI} onChange={(v) => updateField('game.gameProperties.VONDisableUI', v)} />
+              <ConfigToggle label="VON Disable Direct Speech UI" checked={!!gameProps.VONDisableDirectSpeechUI} onChange={(v) => updateField('game.gameProperties.VONDisableDirectSpeechUI', v)} />
+              <ConfigToggle label="VON Cross Faction" checked={gameProps.VONTransmitCrossFaction !== false} onChange={(v) => updateField('game.gameProperties.VONTransmitCrossFaction', v)} />
             </CardContent>
           </Card>
 
-          {/* Network */}
+          {/* Mission Header */}
           <Card className="border-zinc-800 bg-black/60">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">NETWORK</CardTitle>
+              <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">MISSION HEADER</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <ConfigField label="Bind Address" value={config?.gameHostBindAddress || '0.0.0.0'} onChange={(v) => updateField('gameHostBindAddress', v)} mono />
-              <ConfigField label="Game Port" value={config?.gameHostBindPort || 2001} onChange={(v) => updateField('gameHostBindPort', parseInt(v))} type="number" />
-              <ConfigField label="Query Port" value={a2s.port || 17777} onChange={(v) => updateField('a2s.port', parseInt(v))} type="number" />
-              <ConfigField label="RCON Port" value={rcon.port || 19999} onChange={(v) => updateField('rcon.port', parseInt(v))} type="number" />
-              <ConfigField label="RCON Password" value={rcon.password || ''} onChange={(v) => updateField('rcon.password', v)} type="password" />
-              <ConfigField label="RCON Max Clients" value={rcon.maxClients || 16} onChange={(v) => updateField('rcon.maxClients', parseInt(v))} type="number" />
+              <Textarea
+                value={missionHeaderText}
+                onChange={(e) => handleMissionHeaderChange(e.target.value)}
+                className="min-h-[220px] border-zinc-800 bg-black/80 font-mono text-xs text-green-400"
+              />
+              {missionHeaderError ? (
+                <div className="text-xs text-red-400">
+                  <AlertTriangle className="mr-1 inline h-3 w-3" /> {missionHeaderError}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-600">Mission header must remain valid JSON before configuration can be saved.</p>
+              )}
             </CardContent>
           </Card>
 
@@ -239,6 +293,20 @@ function ServerSettingsModule() {
               <ConfigToggle label="Disable AI" checked={!!operating.disableAI} onChange={(v) => updateField('operating.disableAI', v)} />
               <ConfigField label="Player Save Time" value={operating.playerSaveTime || 120} onChange={(v) => updateField('operating.playerSaveTime', parseInt(v))} type="number" />
               <ConfigField label="AI Limit" value={operating.aiLimit ?? -1} onChange={(v) => updateField('operating.aiLimit', parseInt(v))} type="number" />
+            </CardContent>
+          </Card>
+
+          <Card className="border-zinc-800 bg-black/60 lg:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">NETWORK (READ ONLY)</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2">
+              <ConfigReadOnly label="Bind Address" value={config?.gameHostBindAddress || '0.0.0.0'} mono />
+              <ConfigReadOnly label="Game Port" value={server?.ports?.game || '2001'} mono />
+              <ConfigReadOnly label="Query Port" value={server?.ports?.query || '17777'} mono />
+              <ConfigReadOnly label="RCON Port" value={server?.ports?.rcon || '19999'} mono />
+              <ConfigReadOnly label="Config Directory" value={troubleshooting.config_directory || '—'} mono />
+              <ConfigReadOnly label="Admin cd Target" value={troubleshooting.cd_target || '—'} mono />
             </CardContent>
           </Card>
         </div>
@@ -258,7 +326,7 @@ function ServerSettingsModule() {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" size="sm" onClick={() => setDiffOpen(false)}
               className="border-zinc-700 text-gray-400">Close</Button>
-            <Button size="sm" onClick={() => { saveConfig(); setDiffOpen(false); }}
+            <Button size="sm" disabled={!!missionHeaderError} onClick={() => { saveConfig(); setDiffOpen(false); }}
               className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
               <Save className="mr-1 h-3 w-3" /> Save Configuration
             </Button>
@@ -322,6 +390,15 @@ function ConfigToggle({ label, checked, onChange }) {
     <div className="flex items-center justify-between gap-4">
       <label className="text-xs text-gray-500">{label}</label>
       <Switch checked={checked} onCheckedChange={onChange} className="h-4 w-7" />
+    </div>
+  );
+}
+
+function ConfigReadOnly({ label, value, mono }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <label className="text-xs text-gray-500">{label}</label>
+      <span className={`text-right text-xs text-gray-300 ${mono ? 'font-mono' : ''}`}>{value}</span>
     </div>
   );
 }
