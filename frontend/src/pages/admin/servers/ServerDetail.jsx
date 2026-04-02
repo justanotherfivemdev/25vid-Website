@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   ArrowLeft,
   Play,
@@ -32,6 +41,15 @@ import {
   Plus,
   FileText,
   ExternalLink,
+  Terminal,
+  Calendar,
+  Timer,
+  Pause,
+  Search,
+  Send,
+  Cpu,
+  MemoryStick,
+  Users,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
@@ -60,6 +78,35 @@ function ServerDetail() {
   const [newNote, setNewNote] = useState('');
   const [noteSubmitting, setNoteSubmitting] = useState(false);
   const [backupCreating, setBackupCreating] = useState(false);
+
+  // Logs
+  const [logs, setLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsPaused, setLogsPaused] = useState(false);
+  const [logFilter, setLogFilter] = useState('');
+  const logContainerRef = useRef(null);
+
+  // RCON
+  const [rconCommand, setRconCommand] = useState('');
+  const [rconResponse, setRconResponse] = useState('');
+  const [rconLoading, setRconLoading] = useState(false);
+
+  // Metrics
+  const [metrics, setMetrics] = useState([]);
+  const [metricsSummary, setMetricsSummary] = useState(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsPeriod, setMetricsPeriod] = useState('1h');
+
+  // Schedules
+  const [schedules, setSchedules] = useState([]);
+  const [schedulesLoading, setSchedulesLoading] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [scheduleCreating, setScheduleCreating] = useState(false);
+  const [newSchedule, setNewSchedule] = useState({
+    action_type: 'restart',
+    schedule: '',
+    enabled: true,
+  });
 
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -138,7 +185,31 @@ function ServerDetail() {
   useEffect(() => {
     if (activeTab === 'backups') fetchBackups();
     if (activeTab === 'notes') fetchNotes();
-  }, [activeTab, fetchBackups, fetchNotes]);
+    if (activeTab === 'logs') fetchLogs();
+    if (activeTab === 'metrics') fetchMetrics();
+    if (activeTab === 'schedules') fetchSchedules();
+  }, [activeTab, fetchBackups, fetchNotes, fetchLogs, fetchMetrics, fetchSchedules]);
+
+  // Auto-refresh logs every 5 seconds
+  useEffect(() => {
+    if (activeTab !== 'logs' || logsPaused) return;
+    const id = setInterval(() => fetchLogs(), 5000);
+    return () => clearInterval(id);
+  }, [activeTab, logsPaused, fetchLogs]);
+
+  // Auto-refresh metrics every 15 seconds
+  useEffect(() => {
+    if (activeTab !== 'metrics') return;
+    const id = setInterval(() => fetchMetrics(), 15000);
+    return () => clearInterval(id);
+  }, [activeTab, fetchMetrics]);
+
+  // Auto-scroll logs to bottom
+  useEffect(() => {
+    if (logContainerRef.current && !logsPaused) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [logs, logsPaused]);
 
   // ── Server actions ───────────────────────────────────────────────────────
   const handleAction = useCallback(
@@ -210,6 +281,108 @@ function ServerDetail() {
     },
     [server_id, newNote, fetchNotes],
   );
+
+  // ── Fetch logs ──────────────────────────────────────────────────────────
+  const fetchLogs = useCallback(async () => {
+    setLogsLoading(true);
+    try {
+      const res = await axios.get(
+        `${API}/servers/${server_id}/logs/recent?tail=200`,
+      );
+      const data = res.data;
+      setLogs(
+        Array.isArray(data)
+          ? data
+          : typeof data === 'string'
+            ? data.split('\n').filter(Boolean)
+            : [],
+      );
+    } catch {
+      setLogs([]);
+    } finally {
+      setLogsLoading(false);
+    }
+  }, [server_id]);
+
+  // ── Fetch metrics ───────────────────────────────────────────────────────
+  const fetchMetrics = useCallback(async () => {
+    setMetricsLoading(true);
+    try {
+      const [summaryRes, timeseriesRes] = await Promise.all([
+        axios.get(`${API}/servers/${server_id}/metrics/summary`),
+        axios.get(
+          `${API}/servers/${server_id}/metrics?period=${metricsPeriod}&resolution=5m`,
+        ),
+      ]);
+      setMetricsSummary(summaryRes.data);
+      setMetrics(
+        Array.isArray(timeseriesRes.data) ? timeseriesRes.data : [],
+      );
+    } catch {
+      setMetricsSummary(null);
+      setMetrics([]);
+    } finally {
+      setMetricsLoading(false);
+    }
+  }, [server_id, metricsPeriod]);
+
+  // ── Fetch schedules ─────────────────────────────────────────────────────
+  const fetchSchedules = useCallback(async () => {
+    setSchedulesLoading(true);
+    try {
+      const res = await axios.get(`${API}/servers/${server_id}/schedules`);
+      setSchedules(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setSchedules([]);
+    } finally {
+      setSchedulesLoading(false);
+    }
+  }, [server_id]);
+
+  // ── Send RCON command ───────────────────────────────────────────────────
+  const handleRconSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if (!rconCommand.trim()) return;
+      setRconLoading(true);
+      setRconResponse('');
+      try {
+        const res = await axios.post(`${API}/servers/${server_id}/rcon`, {
+          command: rconCommand.trim(),
+        });
+        setRconResponse(
+          typeof res.data === 'string'
+            ? res.data
+            : res.data?.response || res.data?.output || JSON.stringify(res.data, null, 2),
+        );
+      } catch (err) {
+        setRconResponse(
+          `Error: ${err.response?.data?.detail || 'Failed to execute command.'}`,
+        );
+      } finally {
+        setRconLoading(false);
+      }
+    },
+    [server_id, rconCommand],
+  );
+
+  // ── Create schedule ─────────────────────────────────────────────────────
+  const handleCreateSchedule = useCallback(async () => {
+    if (!newSchedule.schedule.trim()) return;
+    setScheduleCreating(true);
+    try {
+      await axios.post(`${API}/servers/${server_id}/schedules`, newSchedule);
+      setScheduleDialogOpen(false);
+      setNewSchedule({ action_type: 'restart', schedule: '', enabled: true });
+      await fetchSchedules();
+    } catch (err) {
+      setActionError(
+        err.response?.data?.detail || 'Failed to create schedule.',
+      );
+    } finally {
+      setScheduleCreating(false);
+    }
+  }, [server_id, newSchedule, fetchSchedules]);
 
   // ── Status helpers ───────────────────────────────────────────────────────
   const statusBadge = (status) => {
@@ -451,6 +624,13 @@ function ServerDetail() {
           >
             <StickyNote className="w-4 h-4 mr-1.5" />
             Notes
+          </TabsTrigger>
+          <TabsTrigger
+            value="schedules"
+            className="data-[state=active]:bg-tropic-gold data-[state=active]:text-black"
+          >
+            <Calendar className="w-4 h-4 mr-1.5" />
+            Schedules
           </TabsTrigger>
         </TabsList>
 
@@ -702,44 +882,315 @@ function ServerDetail() {
         {/* ── Logs Tab ──────────────────────────────────────────────────── */}
         <TabsContent value="logs" className="space-y-4">
           <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                 Server Logs
               </CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
+                  <Input
+                    value={logFilter}
+                    onChange={(e) => setLogFilter(e.target.value)}
+                    placeholder="Filter logs…"
+                    className="h-8 w-48 pl-8 bg-gray-900 border-gray-700 text-white text-xs placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setLogsPaused((p) => !p)}
+                  className={`border-gray-700 text-xs ${logsPaused ? 'text-amber-400 border-amber-600/40' : 'text-gray-300'}`}
+                >
+                  {logsPaused ? (
+                    <>
+                      <Play className="mr-1 h-3.5 w-3.5" />
+                      Resume
+                    </>
+                  ) : (
+                    <>
+                      <Pause className="mr-1 h-3.5 w-3.5" />
+                      Pause
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={fetchLogs}
+                  disabled={logsLoading}
+                  className="border-gray-700 text-gray-300 text-xs"
+                >
+                  {logsLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="text-center py-12">
-              <ScrollText className="mx-auto mb-4 h-12 w-12 text-tropic-gold-dark/40" />
-              <p className="text-gray-400 text-sm">
-                Live log streaming will be available when the server agent is
-                connected.
-              </p>
+            <CardContent className="space-y-4">
+              {/* Log viewer */}
+              <div
+                ref={logContainerRef}
+                className="h-96 overflow-y-auto rounded-lg border border-gray-800 bg-gray-950 p-4 font-mono text-xs leading-relaxed"
+              >
+                {logsLoading && logs.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-6 w-6 animate-spin text-tropic-gold/40" />
+                  </div>
+                ) : logs.length === 0 ? (
+                  <p className="text-gray-600 text-center mt-16">
+                    No logs available.
+                  </p>
+                ) : (
+                  (logFilter
+                    ? logs.filter((line) =>
+                        (typeof line === 'string' ? line : line.message || '')
+                          .toLowerCase()
+                          .includes(logFilter.toLowerCase()),
+                      )
+                    : logs
+                  ).map((line, idx) => {
+                    const text = typeof line === 'string' ? line : line.message || JSON.stringify(line);
+                    return (
+                      <div key={idx} className="text-green-400 hover:bg-gray-900/60 px-1 -mx-1 rounded">
+                        <span className="text-gray-600 select-none mr-3">{String(idx + 1).padStart(4, ' ')}</span>
+                        {text}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Incidents link */}
               <Link
                 to={`/admin/servers/${server_id}/incidents`}
-                className="inline-flex items-center gap-1.5 mt-4 text-sm text-tropic-gold hover:text-tropic-gold-light transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm text-tropic-gold hover:text-tropic-gold-light transition-colors"
               >
                 <ExternalLink className="h-4 w-4" />
                 View Incidents
               </Link>
+
+              {/* RCON Console — only visible when server is running */}
+              {server.status === 'running' && (
+                <div className="space-y-3 pt-4 border-t border-gray-800">
+                  <h3 className="text-tropic-gold text-sm font-semibold tracking-wider uppercase flex items-center gap-2">
+                    <Terminal className="h-4 w-4" />
+                    RCON Console
+                  </h3>
+                  <form onSubmit={handleRconSubmit} className="flex gap-2">
+                    <Input
+                      value={rconCommand}
+                      onChange={(e) => setRconCommand(e.target.value)}
+                      placeholder="Enter command…"
+                      className="flex-1 bg-gray-900 border-gray-700 text-white font-mono text-sm placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
+                    />
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={rconLoading || !rconCommand.trim()}
+                      className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
+                    >
+                      {rconLoading ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="mr-1.5 h-4 w-4" />
+                      )}
+                      Send
+                    </Button>
+                  </form>
+                  {rconResponse && (
+                    <pre className="rounded-lg bg-gray-950 border border-gray-800 p-3 overflow-x-auto">
+                      <code className="text-sm text-green-400 font-mono whitespace-pre-wrap">
+                        {rconResponse}
+                      </code>
+                    </pre>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* ── Metrics Tab ───────────────────────────────────────────────── */}
         <TabsContent value="metrics" className="space-y-4">
-          <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
-                Performance Metrics
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center py-12">
-              <BarChart3 className="mx-auto mb-4 h-12 w-12 text-tropic-gold-dark/40" />
-              <p className="text-gray-400 text-sm">
-                Metrics collection will be available when the server agent is
-                connected.
-              </p>
-            </CardContent>
-          </Card>
+          {/* Period selector */}
+          <div className="flex items-center gap-2">
+            {['1h', '6h', '24h', '7d'].map((p) => (
+              <Button
+                key={p}
+                size="sm"
+                variant={metricsPeriod === p ? 'default' : 'outline'}
+                onClick={() => setMetricsPeriod(p)}
+                className={
+                  metricsPeriod === p
+                    ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light'
+                    : 'border-gray-700 text-gray-300 hover:text-white'
+                }
+              >
+                {p}
+              </Button>
+            ))}
+            <div className="ml-auto">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={fetchMetrics}
+                disabled={metricsLoading}
+                className="border-gray-700 text-gray-300 text-xs"
+              >
+                {metricsLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {metricsLoading && !metricsSummary ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="animate-pulse border-tropic-gold-dark/10 bg-black/60">
+                  <CardContent className="space-y-3 p-6">
+                    <div className="h-4 w-1/2 rounded bg-zinc-800" />
+                    <div className="h-8 w-3/4 rounded bg-zinc-800" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : metricsSummary ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-blue-600/20 p-2.5">
+                      <Cpu className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider">CPU</p>
+                      <p className="text-2xl font-bold text-white">
+                        {metricsSummary.cpu_percent != null
+                          ? `${Number(metricsSummary.cpu_percent).toFixed(1)}%`
+                          : '—'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-purple-600/20 p-2.5">
+                      <MemoryStick className="h-5 w-5 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider">Memory</p>
+                      <p className="text-2xl font-bold text-white">
+                        {metricsSummary.memory_mb != null
+                          ? `${Number(metricsSummary.memory_mb).toFixed(0)} MB`
+                          : '—'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-green-600/20 p-2.5">
+                      <Users className="h-5 w-5 text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider">Players</p>
+                      <p className="text-2xl font-bold text-white">
+                        {metricsSummary.players != null ? metricsSummary.players : '—'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-tropic-gold/20 p-2.5">
+                      <Timer className="h-5 w-5 text-tropic-gold" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider">Uptime</p>
+                      <p className="text-2xl font-bold text-white">
+                        {metricsSummary.uptime != null ? metricsSummary.uptime : '—'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+              <CardContent className="text-center py-12">
+                <BarChart3 className="mx-auto mb-4 h-12 w-12 text-tropic-gold-dark/40" />
+                <p className="text-gray-400 text-sm">
+                  No metrics available. Metrics will appear once the server has been running.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Timeseries data table */}
+          {metrics.length > 0 && (
+            <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
+                  Metrics History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-800 text-gray-400 text-xs uppercase tracking-wider">
+                        <th className="text-left py-2 px-3">Time</th>
+                        <th className="text-right py-2 px-3">CPU %</th>
+                        <th className="text-right py-2 px-3">Memory MB</th>
+                        <th className="text-right py-2 px-3">Players</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {metrics.slice(-20).map((m, idx) => (
+                        <tr key={idx} className="border-b border-gray-800/50 hover:bg-gray-900/30">
+                          <td className="py-2 px-3 text-gray-300 font-mono text-xs">
+                            {m.timestamp
+                              ? new Date(m.timestamp).toLocaleTimeString()
+                              : '—'}
+                          </td>
+                          <td className="py-2 px-3 text-right text-white">
+                            {m.cpu_percent != null ? `${Number(m.cpu_percent).toFixed(1)}%` : '—'}
+                          </td>
+                          <td className="py-2 px-3 text-right text-white">
+                            {m.memory_mb != null ? `${Number(m.memory_mb).toFixed(0)}` : '—'}
+                          </td>
+                          <td className="py-2 px-3 text-right text-white">
+                            {m.players != null ? m.players : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Auto-refresh indicator */}
+          <div className="flex items-center justify-end gap-2 text-xs text-gray-600">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tropic-gold/60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-tropic-gold" />
+            </span>
+            Auto-refreshing every 15 s
+          </div>
         </TabsContent>
 
         {/* ── Backups Tab ───────────────────────────────────────────────── */}
@@ -888,7 +1339,175 @@ function ServerDetail() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── Schedules Tab ──────────────────────────────────────────────── */}
+        <TabsContent value="schedules" className="space-y-4">
+          <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
+                Scheduled Actions
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={fetchSchedules}
+                  disabled={schedulesLoading}
+                  className="border-gray-700 text-gray-300 text-xs"
+                >
+                  {schedulesLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+                {canManage && (
+                  <Button
+                    size="sm"
+                    onClick={() => setScheduleDialogOpen(true)}
+                    className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Add Schedule
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {schedulesLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-16 animate-pulse rounded-lg bg-zinc-800/50"
+                    />
+                  ))}
+                </div>
+              ) : schedules.length > 0 ? (
+                <div className="space-y-2">
+                  {schedules.map((sched, idx) => (
+                    <div
+                      key={sched.id || idx}
+                      className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-4 w-4 text-tropic-gold/60" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-sm font-medium capitalize">
+                              {sched.action_type?.replace('_', ' ') || 'Unknown'}
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] ${sched.enabled ? 'bg-green-600/20 text-green-400 border-green-600/30' : 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30'}`}
+                            >
+                              {sched.enabled ? 'Enabled' : 'Disabled'}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 font-mono mt-0.5">
+                            {sched.schedule || '—'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right text-xs space-y-1">
+                        {sched.last_run && (
+                          <p className="text-gray-500">
+                            Last: {new Date(sched.last_run).toLocaleString()}
+                          </p>
+                        )}
+                        {sched.next_run && (
+                          <p className="text-gray-400">
+                            Next: {new Date(sched.next_run).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm text-center py-8">
+                  No scheduled actions configured for this server.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Schedule creation dialog */}
+      <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+        <DialogContent className="bg-gray-900 border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-tropic-gold">Add Scheduled Action</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">Action Type</label>
+              <Select
+                value={newSchedule.action_type}
+                onValueChange={(val) =>
+                  setNewSchedule((prev) => ({ ...prev, action_type: val }))
+                }
+              >
+                <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
+                  <SelectValue placeholder="Select action…" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectItem value="restart">Restart</SelectItem>
+                  <SelectItem value="backup">Backup</SelectItem>
+                  <SelectItem value="mod_update">Mod Update</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400">
+                Cron Expression
+              </label>
+              <Input
+                value={newSchedule.schedule}
+                onChange={(e) =>
+                  setNewSchedule((prev) => ({
+                    ...prev,
+                    schedule: e.target.value,
+                  }))
+                }
+                placeholder="e.g. 0 4 * * * (daily at 4 AM)"
+                className="bg-gray-900 border-gray-700 text-white font-mono placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={newSchedule.enabled}
+                onCheckedChange={(checked) =>
+                  setNewSchedule((prev) => ({ ...prev, enabled: checked }))
+                }
+              />
+              <label className="text-sm text-gray-300">Enabled</label>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setScheduleDialogOpen(false)}
+              className="border-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={scheduleCreating || !newSchedule.schedule.trim()}
+              onClick={handleCreateSchedule}
+              className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
+            >
+              {scheduleCreating ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-1.5 h-4 w-4" />
+              )}
+              Create Schedule
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
