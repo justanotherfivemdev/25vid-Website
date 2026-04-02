@@ -200,9 +200,10 @@ async def analyze_server_logs(
         )
         if mod_id is None:
             # Use the raw mod_reference extracted from the regex, if any
-            mod_id = event.get("mod_reference") or "unknown"
+            raw_ref = event.get("mod_reference")
+            mod_id = raw_ref or "unknown"
             mod_name = mod_name or mod_id
-            confidence = max(confidence, 0.5) if event.get("mod_reference") else 0.0
+            confidence = 0.5 if raw_ref else 0.0
 
         signature = compute_error_signature(event["log_line"])
         now_iso = now.isoformat()
