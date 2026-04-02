@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle2, Eye, RefreshCw, Search } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Eye, RefreshCw, Search, Server, Clock, TrendingUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -156,6 +156,52 @@ const ModIssues = () => {
                   <div><span className="text-gray-500">Occurrences:</span> <span className="text-gray-300">{selectedIssue.occurrence_count}</span></div>
                   <div><span className="text-gray-500">Servers:</span> <span className="text-gray-300">{(selectedIssue.affected_servers || []).length}</span></div>
                 </div>
+
+                {/* Timeline */}
+                <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
+                  <p className="text-xs text-gray-500 mb-2 flex items-center gap-1"><Clock className="h-3 w-3" /> Timeline</p>
+                  <div className="flex items-center gap-4 text-xs">
+                    {selectedIssue.first_seen && (
+                      <div>
+                        <span className="text-gray-500">First seen: </span>
+                        <span className="text-gray-300">{new Date(selectedIssue.first_seen).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {selectedIssue.last_seen && (
+                      <div>
+                        <span className="text-gray-500">Last seen: </span>
+                        <span className="text-gray-300">{new Date(selectedIssue.last_seen).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {selectedIssue.occurrence_count > 1 && selectedIssue.first_seen && selectedIssue.last_seen && (
+                      <div className="flex items-center gap-1 text-amber-400">
+                        <TrendingUp className="h-3 w-3" />
+                        <span>{selectedIssue.occurrence_count} occurrences</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cross-server correlation */}
+                {(selectedIssue.affected_servers || []).length > 0 && (
+                  <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
+                    <p className="text-xs text-gray-500 mb-2 flex items-center gap-1"><Server className="h-3 w-3" /> Affected Servers</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedIssue.affected_servers.map((srv, i) => (
+                        <Badge key={i} variant="outline" className="text-xs border-red-600/30 text-red-400">
+                          <Server className="h-2.5 w-2.5 mr-1" />
+                          {srv.server_name || srv.server_id || `Server ${i + 1}`}
+                        </Badge>
+                      ))}
+                    </div>
+                    {selectedIssue.affected_servers.length > 1 && (
+                      <p className="text-xs text-amber-400 mt-2">
+                        ⚠ This mod caused issues on {selectedIssue.affected_servers.length} servers — consider disabling it globally
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {selectedIssue.error_pattern && (
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Error Pattern</p>

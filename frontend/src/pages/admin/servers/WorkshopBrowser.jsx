@@ -25,6 +25,8 @@ import {
   ChevronRight,
   AlertTriangle,
   Loader2,
+  Download,
+  Clock,
 } from 'lucide-react';
 
 import { API } from '@/utils/api';
@@ -57,6 +59,13 @@ function WorkshopBrowser() {
   const [modForm, setModForm] = useState(EMPTY_MOD_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
+
+  // Auto-fetch dialog
+  const [fetchDialogOpen, setFetchDialogOpen] = useState(false);
+  const [fetchModId, setFetchModId] = useState('');
+  const [fetching, setFetching] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const [fetchResult, setFetchResult] = useState(null);
 
   // ── Fetch mods ───────────────────────────────────────────────────────────
   const fetchMods = useCallback(async () => {
@@ -138,6 +147,40 @@ function WorkshopBrowser() {
     }
   };
 
+  // ── Auto-fetch mod from workshop ────────────────────────────────────────
+  const handleAutoFetch = async (e) => {
+    e.preventDefault();
+    if (!fetchModId.trim()) {
+      setFetchError('Mod ID is required.');
+      return;
+    }
+    setFetching(true);
+    setFetchError(null);
+    setFetchResult(null);
+    try {
+      const res = await axios.post(`${API}/servers/workshop/mod/fetch`, {
+        mod_id: fetchModId.trim(),
+      });
+      setFetchResult(res.data);
+      if (submittedQuery.trim()) fetchMods();
+    } catch (err) {
+      console.error('Auto-fetch failed:', err);
+      setFetchError(err.response?.data?.detail || 'Failed to fetch mod metadata from workshop.');
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  // ── Refresh mod metadata ────────────────────────────────────────────────
+  const handleRefreshMod = async (modId) => {
+    try {
+      await axios.post(`${API}/servers/workshop/mod/${modId}/refresh`);
+      if (submittedQuery.trim()) fetchMods();
+    } catch (err) {
+      console.error('Refresh failed:', err);
+    }
+  };
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -150,17 +193,32 @@ function WorkshopBrowser() {
           WORKSHOP BROWSER
         </h1>
 
-        <Button
-          onClick={() => {
-            setFormError(null);
-            setModForm(EMPTY_MOD_FORM);
-            setDialogOpen(true);
-          }}
-          className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
-        >
-          <Plus className="mr-1.5 h-4 w-4" />
-          Add Mod Manually
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => {
+              setFetchModId('');
+              setFetchError(null);
+              setFetchResult(null);
+              setFetchDialogOpen(true);
+            }}
+            className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            Auto-Fetch by ID
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setFormError(null);
+              setModForm(EMPTY_MOD_FORM);
+              setDialogOpen(true);
+            }}
+            className="border-tropic-gold-dark/30 text-tropic-gold hover:bg-tropic-gold/10"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Add Manually
+          </Button>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -254,7 +312,12 @@ function WorkshopBrowser() {
                           v{mod.version}
                         </Badge>
                       )}
-                      {mod.manually_entered && (
+                      {mod.metadata_source === 'workshop' && (
+                        <Badge variant="outline" className="border-green-600/40 text-green-400 text-xs">
+                          Workshop
+                        </Badge>
+                      )}
+                      {(mod.manually_entered || mod.metadata_source === 'manual') && (
                         <Badge variant="outline" className="border-amber-600/40 text-amber-400 text-xs">
                           Manual
                         </Badge>
@@ -296,17 +359,35 @@ function WorkshopBrowser() {
                     </p>
                   )}
 
-                  {/* Workshop link */}
-                  {mod.workshop_url && (
-                    <a
-                      href={mod.workshop_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-tropic-gold hover:text-tropic-gold-light transition-colors"
+                  {/* Workshop link + refresh */}
+                  <div className="flex items-center justify-between">
+                    {mod.workshop_url && (
+                      <a
+                        href={mod.workshop_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-tropic-gold hover:text-tropic-gold-light transition-colors"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        View on Workshop
+                      </a>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRefreshMod(mod.mod_id)}
+                      className="text-gray-500 hover:text-tropic-gold h-6 px-2"
                     >
-                      <ExternalLink className="h-3 w-3" />
-                      View on Workshop
-                    </a>
+                      <RefreshCw className="h-3 w-3" />
+                    </Button>
+                  </div>
+
+                  {/* Last fetched timestamp */}
+                  {mod.last_fetched && (
+                    <p className="text-[10px] text-gray-600 flex items-center gap-1">
+                      <Clock className="h-2.5 w-2.5" />
+                      Fetched {new Date(mod.last_fetched).toLocaleDateString()}
+                    </p>
                   )}
                 </CardContent>
               </Card>
@@ -484,6 +565,77 @@ function WorkshopBrowser() {
                 )}
                 Add Mod
               </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Auto-Fetch Dialog ───────────────────────────────────────────── */}
+      <Dialog open={fetchDialogOpen} onOpenChange={setFetchDialogOpen}>
+        <DialogContent className="bg-gray-900 border-gray-800 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-tropic-gold">Auto-Fetch Mod from Workshop</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleAutoFetch} className="space-y-4">
+            {fetchError && (
+              <p className="text-sm text-red-400 bg-red-600/10 border border-red-600/30 rounded px-3 py-2">
+                {fetchError}
+              </p>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="fetch_mod_id" className="text-gray-300">
+                Mod ID <span className="text-red-400">*</span>
+              </Label>
+              <Input
+                id="fetch_mod_id"
+                value={fetchModId}
+                onChange={(e) => setFetchModId(e.target.value)}
+                placeholder="e.g. 5965550F0AA2C145"
+                className="border-gray-700 bg-black/60 text-white placeholder:text-gray-500 font-mono"
+              />
+              <p className="text-xs text-gray-500">
+                Enter the Arma Reforger Workshop mod ID. Metadata will be fetched automatically.
+              </p>
+            </div>
+
+            {fetchResult && (
+              <div className="rounded-lg border border-green-600/30 bg-green-600/10 p-4 space-y-2">
+                <p className="text-sm font-semibold text-green-400">✓ Mod fetched successfully</p>
+                <p className="text-sm text-white">{fetchResult.name || fetchResult.mod_id}</p>
+                {fetchResult.author && (
+                  <p className="text-xs text-gray-400">by {fetchResult.author}</p>
+                )}
+                {fetchResult.version && (
+                  <p className="text-xs text-gray-400">Version: {fetchResult.version}</p>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFetchDialogOpen(false)}
+                className="border-gray-700"
+              >
+                {fetchResult ? 'Done' : 'Cancel'}
+              </Button>
+              {!fetchResult && (
+                <Button
+                  type="submit"
+                  disabled={fetching}
+                  className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
+                >
+                  {fetching ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-1.5 h-4 w-4" />
+                  )}
+                  Fetch Metadata
+                </Button>
+              )}
             </div>
           </form>
         </DialogContent>
