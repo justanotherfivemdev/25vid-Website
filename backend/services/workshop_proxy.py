@@ -103,11 +103,13 @@ def _normalize_tags(tags: Optional[List[str]]) -> List[str]:
     """Return a stable, deduplicated list of workshop tags."""
     if not tags:
         return []
-    normalized = {
-        tag.strip().upper()
-        for tag in tags
-        if isinstance(tag, str) and tag.strip()
-    }
+    normalized = set()
+    for tag in tags:
+        if not isinstance(tag, str):
+            continue
+        stripped = tag.strip()
+        if stripped:
+            normalized.add(stripped.upper())
     return sorted(normalized)
 
 
