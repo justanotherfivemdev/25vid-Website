@@ -84,7 +84,7 @@ async def _allocate_ports() -> dict:
     Uses configured base ports and increments by SERVER_PORT_BLOCK_SIZE for
     each existing server to avoid collisions.
     """
-    servers = await db.managed_servers.find({}, {"ports": 1, "_id": 0}).to_list(200)
+    servers = await db.managed_servers.find({}, {"ports": 1, "_id": 0}).to_list(None)
     used_game = set()
     used_query = set()
     used_rcon = set()
@@ -129,8 +129,15 @@ async def create_server(
     """
     # Auto-allocate ports when the client sends default/empty values
     ports = body.ports
-    default_ports = {"game": 2001, "query": 17777, "rcon": 19999}
-    if not ports or ports == default_ports:
+    is_default = (
+        not ports
+        or (
+            ports.get("game") == 2001
+            and ports.get("query") == 17777
+            and ports.get("rcon") == 19999
+        )
+    )
+    if is_default:
         ports = await _allocate_ports()
 
     server = ManagedServer(

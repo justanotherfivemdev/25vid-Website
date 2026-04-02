@@ -272,7 +272,7 @@ function ServerDashboard() {
             DASHBOARD
           </h1>
           <p className="mt-1 text-sm text-gray-400">
-            Real-time operational overview &mdash; all 25VID servers.
+            Real-time operational overview {'\u2014'} all 25VID servers.
           </p>
         </div>
 
