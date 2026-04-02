@@ -60,20 +60,23 @@ function ServerSettingsModule() {
   }, [serverId, server?.config]);
 
   const updateField = useCallback((path, value) => {
-    // Disallow prototype pollution paths
-    const BLOCKED = new Set(['__proto__', 'constructor', 'prototype']);
     setConfig(prev => {
       const copy = JSON.parse(JSON.stringify(prev));
-      const keys = path.split('.');
-      if (keys.some(k => BLOCKED.has(k))) return prev;
-      let obj = copy;
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (!Object.prototype.hasOwnProperty.call(obj, keys[i]) || typeof obj[keys[i]] !== 'object') {
-          obj[keys[i]] = {};
-        }
-        obj = obj[keys[i]];
+      // Use a safe flat setter rather than dynamic path traversal
+      const parts = path.split('.');
+      // Reject dangerous keys
+      if (parts.some(k => k === '__proto__' || k === 'constructor' || k === 'prototype')) return prev;
+      // Only handle known depth levels (max 3) to avoid generic recursion
+      if (parts.length === 1) {
+        copy[parts[0]] = value;
+      } else if (parts.length === 2) {
+        if (!copy[parts[0]] || typeof copy[parts[0]] !== 'object') copy[parts[0]] = {};
+        copy[parts[0]][parts[1]] = value;
+      } else if (parts.length === 3) {
+        if (!copy[parts[0]] || typeof copy[parts[0]] !== 'object') copy[parts[0]] = {};
+        if (!copy[parts[0]][parts[1]] || typeof copy[parts[0]][parts[1]] !== 'object') copy[parts[0]][parts[1]] = {};
+        copy[parts[0]][parts[1]][parts[2]] = value;
       }
-      obj[keys[keys.length - 1]] = value;
       return copy;
     });
     setDirty(true);
