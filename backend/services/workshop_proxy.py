@@ -64,8 +64,8 @@ _BROWSE_CACHE_TTL = 300  # 5 minutes
 # ---------------------------------------------------------------------------
 # Token-bucket rate limiter (process-wide)
 # ---------------------------------------------------------------------------
-_RATE_TOKENS = 3.0       # max burst
-_RATE_REFILL = 0.5       # tokens per second (1 request every 2s sustained)
+_RATE_TOKENS = 3.0       # max burst (3 requests can be made immediately)
+_RATE_REFILL = 0.5       # tokens per second (burst: 3 requests, sustained: 1 every 2s)
 _bucket_tokens = _RATE_TOKENS
 _bucket_last = time.monotonic()
 _bucket_lock = asyncio.Lock()
