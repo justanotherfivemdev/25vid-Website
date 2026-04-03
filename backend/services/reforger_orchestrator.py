@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,6 +28,36 @@ from services.server_config_generator import generate_reforger_config, write_con
 logger = logging.getLogger(__name__)
 
 docker_agent = DockerAgent()
+
+# ── Readiness detection ─────────────────────────────────────────────────────
+# The Arma Reforger server typically restarts multiple times during first boot
+# while downloading and mounting mods.  We use log-based signals to distinguish
+# expected restart cycles from actual failures.
+
+# Log patterns that indicate the server has finished initial loading and is
+# accepting connections.
+_READINESS_LOG_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r"Game started", re.IGNORECASE),
+    re.compile(r"Scenario loaded", re.IGNORECASE),
+    re.compile(r"BattlEye Server:.+?Initialized", re.IGNORECASE),
+    re.compile(r"Server is ready", re.IGNORECASE),
+]
+
+# Patterns that indicate the server is in a mod download / content mount cycle
+# and a restart is expected (not a crash).
+_MOD_CYCLE_LOG_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r"Downloading mod", re.IGNORECASE),
+    re.compile(r"Mounting content", re.IGNORECASE),
+    re.compile(r"Workshop.*download", re.IGNORECASE),
+    re.compile(r"Addon.*loaded", re.IGNORECASE),
+]
+
+# Maximum restart cycles tolerated during initial provisioning before declaring
+# a genuine failure.
+MAX_PROVISION_RESTART_CYCLES = 5
+# Seconds to wait for readiness after initial startup (covers mod download +
+# mount + world load phases).
+DEFAULT_READINESS_TIMEOUT = 300
 
 
 # ── Provisioning stage tracking ─────────────────────────────────────────────
@@ -215,11 +246,133 @@ async def ensure_container(server: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+async def _check_server_readiness(container_name: str) -> bool:
+    """Check if the server is ready by scanning recent container logs.
+
+    Returns True if any readiness log pattern is found, indicating the
+    scenario has loaded and the server is accepting connections.
+    """
+    try:
+        logs = await docker_agent.get_container_logs(container_name, tail=200)
+    except Exception:
+        return False
+    if not logs:
+        return False
+    for pattern in _READINESS_LOG_PATTERNS:
+        if pattern.search(logs):
+            return True
+    return False
+
+
+def _is_in_mod_cycle(logs: str) -> bool:
+    """Check if recent logs indicate a mod download / mount cycle."""
+    if not logs:
+        return False
+    for pattern in _MOD_CYCLE_LOG_PATTERNS:
+        if pattern.search(logs):
+            return True
+    return False
+
+
+async def wait_for_server_readiness(
+    server: Dict[str, Any],
+    timeout: int = DEFAULT_READINESS_TIMEOUT,
+) -> Dict[str, Any]:
+    """Wait for the server to become fully ready, tolerating restart cycles.
+
+    During initial provisioning, the Arma Reforger server may restart several
+    times while downloading mods and mounting content.  This function tracks
+    restart cycles via container status and log inspection, only declaring
+    failure when the restart budget is exhausted without any readiness signal.
+
+    Returns a dict with readiness information.
+    """
+    container_name = server["container_name"]
+    deadline = asyncio.get_running_loop().time() + timeout
+    restart_count = 0
+
+    while asyncio.get_running_loop().time() < deadline:
+        # Check container status
+        status_info = await docker_agent.get_container_status(container_name)
+        container_running = status_info is not None and status_info.get("running", False)
+
+        if container_running:
+            # Check if the server has signalled readiness via logs
+            if await _check_server_readiness(container_name):
+                return {
+                    "server_ready": True,
+                    "restart_cycles": restart_count,
+                    "readiness_state": "ready",
+                }
+        else:
+            # Container is not running — could be a restart cycle
+            try:
+                logs = await docker_agent.get_container_logs(container_name, tail=100)
+            except Exception:
+                logs = ""
+
+            if _is_in_mod_cycle(logs):
+                restart_count += 1
+                logger.info(
+                    "Server %s restart cycle %d/%d detected (mod download/mount)",
+                    container_name, restart_count, MAX_PROVISION_RESTART_CYCLES,
+                )
+                if restart_count > MAX_PROVISION_RESTART_CYCLES:
+                    return {
+                        "server_ready": False,
+                        "restart_cycles": restart_count,
+                        "readiness_state": "failed",
+                        "error": f"Exceeded maximum restart cycles ({MAX_PROVISION_RESTART_CYCLES})",
+                    }
+                # Attempt to restart the container for the next cycle
+                await docker_agent.start_existing_container(container_name)
+
+        await asyncio.sleep(SERVER_PROFILE_POLL_SECONDS)
+
+    # Timeout reached — check one final time
+    if await _check_server_readiness(container_name):
+        return {
+            "server_ready": True,
+            "restart_cycles": restart_count,
+            "readiness_state": "ready",
+        }
+    return {
+        "server_ready": False,
+        "restart_cycles": restart_count,
+        "readiness_state": "degraded",
+        "error": f"Server did not signal readiness within {timeout}s",
+    }
+
+
 async def wait_for_profile_and_sat(server: Dict[str, Any]) -> Dict[str, Any]:
+    """Wait for server profile generation and SAT config discovery.
+
+    SAT (Server Admin Tools) initialization is gated behind server readiness:
+    we first wait for the server to finish its initial startup cycle (including
+    mod downloads and content mounting) before attempting SAT discovery.  This
+    prevents false errors from SAT probing an incomplete profile during early
+    restart cycles.
+    """
+    container_name = server.get("container_name", "")
     profile_root = Path(server["profile_path"])
     deadline = asyncio.get_running_loop().time() + SERVER_PROFILE_READY_TIMEOUT_SECONDS
     saw_profile = False
+    server_became_ready = False
 
+    # Phase 1: Wait for server readiness before SAT discovery
+    if container_name:
+        readiness = await wait_for_server_readiness(
+            server,
+            timeout=min(DEFAULT_READINESS_TIMEOUT, SERVER_PROFILE_READY_TIMEOUT_SECONDS),
+        )
+        server_became_ready = readiness.get("server_ready", False)
+        if readiness.get("restart_cycles", 0) > 0:
+            logger.info(
+                "Server %s completed %d restart cycle(s) during initial provisioning",
+                container_name, readiness["restart_cycles"],
+            )
+
+    # Phase 2: Now probe for profile and SAT config
     while asyncio.get_running_loop().time() < deadline:
         if profile_root.exists() and any(profile_root.iterdir()):
             saw_profile = True
@@ -240,7 +393,7 @@ async def wait_for_profile_and_sat(server: Dict[str, Any]) -> Dict[str, Any]:
                 return {
                     "sat_config_path": sat_path,
                     "sat_status": "configured" if baseline_applied else "discovered",
-                    "readiness_state": "ready",
+                    "readiness_state": "ready" if server_became_ready else "degraded",
                     "provisioning_state": "ready",
                     "provisioning_step": "ready",
                 }

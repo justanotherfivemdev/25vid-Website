@@ -216,6 +216,7 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
                 "VONDisableUI": _normalize_bool(game_props.get("VONDisableUI"), False),
                 "VONDisableDirectSpeechUI": _normalize_bool(game_props.get("VONDisableDirectSpeechUI"), False),
                 "VONCanTransmitCrossFaction": _normalize_bool(game_props.get("VONCanTransmitCrossFaction"), False),
+                "missionHeader": game_props.get("missionHeader") if isinstance(game_props.get("missionHeader"), dict) else {},
             },
             "mods": mods_for_config(ensure_required_mods(server.get("mods") or [])),
         },
@@ -265,8 +266,6 @@ def _flat_legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
     ):
         if src in config:
             game[dest] = config[src]
-    if isinstance(config.get("missionHeader"), dict):
-        game["missionHeader"] = config["missionHeader"]
 
     game_props: Dict[str, Any] = {}
     for src, dest in (
@@ -283,6 +282,8 @@ def _flat_legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
     ):
         if src in config:
             game_props[dest] = config[src]
+    if isinstance(config.get("missionHeader"), dict):
+        game_props["missionHeader"] = config["missionHeader"]
     if game_props:
         game["gameProperties"] = game_props
     if game:
@@ -327,9 +328,22 @@ def normalize_server_config(raw_config: Dict[str, Any] | None, server: Dict[str,
     normalized = _deep_merge(build_default_config({**server, "config": current}), current)
 
     game = normalized.setdefault("game", {})
-    if not isinstance(game.get("missionHeader"), dict):
-        game["missionHeader"] = {}
     game_props = game.setdefault("gameProperties", {})
+
+    # Migrate legacy placement: game.missionHeader → game.gameProperties.missionHeader
+    # The Arma Reforger engine schema only accepts missionHeader inside gameProperties;
+    # placing it directly under game triggers an additionalProperties validation error.
+    if isinstance(game.get("missionHeader"), dict):
+        if not isinstance(game_props.get("missionHeader"), dict) or not game_props["missionHeader"]:
+            game_props["missionHeader"] = game.pop("missionHeader")
+        else:
+            game.pop("missionHeader", None)
+    elif "missionHeader" in game:
+        game.pop("missionHeader")
+
+    if not isinstance(game_props.get("missionHeader"), dict):
+        game_props["missionHeader"] = {}
+
     if "VONTransmitCrossFaction" in game_props and "VONCanTransmitCrossFaction" not in game_props:
         game_props["VONCanTransmitCrossFaction"] = game_props["VONTransmitCrossFaction"]
     return normalized

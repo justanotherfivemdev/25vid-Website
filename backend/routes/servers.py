@@ -95,9 +95,22 @@ def _server_response(server: dict) -> dict:
 
 
 def _validate_mission_header(config: dict) -> None:
-    """Ensure missionHeader is a JSON-serializable object when provided."""
+    """Ensure missionHeader is a JSON-serializable object when provided.
+
+    The Arma Reforger engine schema expects missionHeader inside
+    game.gameProperties, but we also accept it at game level during input
+    and migrate it automatically during config normalization.
+    """
     game = config.get("game") if isinstance(config.get("game"), dict) else config
-    mission_header = game.get("missionHeader") if game else None
+    mission_header = None
+    if game:
+        # Check canonical location first (game.gameProperties.missionHeader)
+        gp = game.get("gameProperties")
+        if isinstance(gp, dict) and "missionHeader" in gp:
+            mission_header = gp["missionHeader"]
+        # Fall back to legacy location (game.missionHeader) — will be migrated
+        elif "missionHeader" in game:
+            mission_header = game["missionHeader"]
     if mission_header is None:
         return
     if not isinstance(mission_header, dict):

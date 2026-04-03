@@ -40,7 +40,8 @@ def test_normalize_server_config_upgrades_legacy_flat_shape():
     assert normalized["game"]["maxPlayers"] == 80
     assert normalized["game"]["gameProperties"]["disableThirdPerson"] is True
     assert normalized["game"]["gameProperties"]["VONCanTransmitCrossFaction"] is False
-    assert normalized["game"]["missionHeader"] == {"modes": ["Conflict"]}
+    assert normalized["game"]["gameProperties"]["missionHeader"] == {"modes": ["Conflict"]}
+    assert "missionHeader" not in normalized["game"]  # must NOT be at game level
 
 
 def test_generate_reforger_config_uses_nested_canonical_shape():
@@ -53,10 +54,10 @@ def test_generate_reforger_config_uses_nested_canonical_shape():
         "config": {
             "game": {
                 "name": "Bravo Live",
-                "missionHeader": {"rotations": [1, 2]},
                 "gameProperties": {
                     "disableThirdPerson": True,
                     "VONTransmitCrossFaction": False,
+                    "missionHeader": {"rotations": [1, 2]},
                 },
             }
         },
@@ -65,7 +66,8 @@ def test_generate_reforger_config_uses_nested_canonical_shape():
     generated = generate_reforger_config(server)
 
     assert generated["game"]["name"] == "Bravo Live"
-    assert generated["game"]["missionHeader"] == {"rotations": [1, 2]}
+    assert generated["game"]["gameProperties"]["missionHeader"] == {"rotations": [1, 2]}
+    assert "missionHeader" not in generated["game"]  # must NOT be at game level
     assert generated["game"]["gameProperties"]["disableThirdPerson"] is True
     assert generated["game"]["gameProperties"]["VONCanTransmitCrossFaction"] is False
     assert generated["bindPort"] == 2201
@@ -166,14 +168,21 @@ import pytest
 
 def test_validate_mission_header_rejects_non_object():
     with pytest.raises(Exception):
-        _validate_mission_header({"game": {"missionHeader": "not-an-object"}})
+        _validate_mission_header({"game": {"gameProperties": {"missionHeader": "not-an-object"}}})
 
     with pytest.raises(Exception):
-        _validate_mission_header({"game": {"missionHeader": [1, 2, 3]}})
+        _validate_mission_header({"game": {"gameProperties": {"missionHeader": [1, 2, 3]}}})
+
+    # Also reject at legacy location
+    with pytest.raises(Exception):
+        _validate_mission_header({"game": {"missionHeader": "not-an-object"}})
 
 
 def test_validate_mission_header_accepts_valid_dict():
-    # Should not raise
+    # Should not raise — canonical location
+    _validate_mission_header({"game": {"gameProperties": {"missionHeader": {"modes": ["Conflict"]}}}})
+    _validate_mission_header({"game": {"gameProperties": {"missionHeader": {}}}})
+    # Should not raise — legacy location (still accepted for input)
     _validate_mission_header({"game": {"missionHeader": {"modes": ["Conflict"]}}})
     _validate_mission_header({"game": {"missionHeader": {}}})
     _validate_mission_header({})  # no missionHeader at all
