@@ -331,6 +331,13 @@ async def create_server(
         updates["config"] = generate_reforger_config({**doc, **updates})
         updates["updated_at"] = datetime.now(timezone.utc)
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": updates})
+        # Log partial success as warning, not error
+        status = updates.get("status", "")
+        if status == "provisioning_partial":
+            logger.warning(
+                "Provisioning partially succeeded for %s: %s",
+                doc["id"], updates.get("last_docker_error", ""),
+            )
     except ProvisioningError as exc:
         failure_updates = {
             "status": "provisioning_failed",
@@ -338,6 +345,7 @@ async def create_server(
             "provisioning_step": exc.step,
             "readiness_state": "failed",
             "last_docker_error": exc.message,
+            "provisioning_stages": {},
             "updated_at": datetime.now(timezone.utc),
         }
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": failure_updates})

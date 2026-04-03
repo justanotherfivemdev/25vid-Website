@@ -5,9 +5,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import shutil
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from config import (
     SERVER_CONFIG_FILENAME,
@@ -27,6 +27,94 @@ from services.server_config_generator import generate_reforger_config, write_con
 logger = logging.getLogger(__name__)
 
 docker_agent = DockerAgent()
+
+
+# ── Provisioning stage tracking ─────────────────────────────────────────────
+
+PROVISIONING_STAGE_NAMES = [
+    "container_creation",
+    "initial_startup",
+    "config_generation",
+    "mod_injection",
+    "post_start_validation",
+]
+
+
+@dataclass
+class StageResult:
+    """Result of a single provisioning stage."""
+    name: str
+    status: str = "pending"      # pending | success | failed | skipped
+    message: str = ""
+    error: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        d: Dict[str, Any] = {"name": self.name, "status": self.status}
+        if self.message:
+            d["message"] = self.message
+        if self.error:
+            d["error"] = self.error
+        return d
+
+
+@dataclass
+class ProvisioningResult:
+    """Aggregated result across all provisioning stages."""
+    stages: List[StageResult] = field(default_factory=list)
+    updates: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def all_succeeded(self) -> bool:
+        return all(s.status == "success" for s in self.stages)
+
+    @property
+    def container_started(self) -> bool:
+        """True if at least container creation and startup succeeded."""
+        for s in self.stages:
+            if s.name in ("container_creation", "initial_startup") and s.status != "success":
+                return False
+        return any(s.name == "initial_startup" and s.status == "success" for s in self.stages)
+
+    @property
+    def failed_stages(self) -> List[StageResult]:
+        return [s for s in self.stages if s.status == "failed"]
+
+    def stages_dict(self) -> Dict[str, Any]:
+        return {s.name: s.to_dict() for s in self.stages}
+
+    @property
+    def overall_status(self) -> str:
+        if self.all_succeeded:
+            return "running"
+        if self.container_started:
+            return "provisioning_partial"
+        return "provisioning_failed"
+
+    @property
+    def provisioning_state(self) -> str:
+        if self.all_succeeded:
+            return "ready"
+        if self.container_started:
+            return "partial"
+        return "failed"
+
+    @property
+    def readiness_state(self) -> str:
+        if self.all_succeeded:
+            return "ready"
+        if self.container_started:
+            return "degraded"
+        return "failed"
+
+    @property
+    def summary_message(self) -> str:
+        if self.all_succeeded:
+            return "All provisioning stages completed successfully."
+        failed = self.failed_stages
+        names = [s.name for s in failed]
+        if self.container_started:
+            return f"Server started but the following stages failed: {', '.join(names)}"
+        return f"Provisioning failed at: {', '.join(names)}"
 
 
 @dataclass
@@ -181,20 +269,99 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     server = apply_runtime_defaults(server)
     await ensure_filesystem(server)
 
-    ok, config_result = await write_config_file(server)
-    if not ok:
-        raise ProvisioningError("writing_config", config_result)
+    result = ProvisioningResult()
 
-    runtime_updates = await ensure_container(server)
-    ok, error = await docker_agent.start_existing_container(server["container_name"])
-    if not ok:
-        raise ProvisioningError("starting_container", error or "Failed to start container")
+    # ── Stage: config_generation ──
+    config_stage = StageResult(name="config_generation")
+    result.stages.append(config_stage)
+    try:
+        ok, config_result = await write_config_file(server)
+        if not ok:
+            config_stage.status = "failed"
+            config_stage.error = config_result
+            raise ProvisioningError("writing_config", config_result)
+        config_stage.status = "success"
+        config_stage.message = f"Config written to {config_result}"
+    except ProvisioningError:
+        raise
+    except Exception as exc:
+        config_stage.status = "failed"
+        config_stage.error = str(exc)
+        raise ProvisioningError("writing_config", str(exc)) from exc
 
-    artifact_updates = await wait_for_profile_and_sat(server)
-    return {
-        **runtime_updates,
-        **artifact_updates,
-        "status": "running",
+    # ── Stage: container_creation ──
+    container_stage = StageResult(name="container_creation")
+    result.stages.append(container_stage)
+    try:
+        runtime_updates = await ensure_container(server)
+        container_stage.status = "success"
+        container_stage.message = f"Container {server['container_name']} created"
+        result.updates.update(runtime_updates)
+    except ProvisioningError:
+        container_stage.status = "failed"
+        container_stage.error = str(container_stage)
+        raise
+    except Exception as exc:
+        container_stage.status = "failed"
+        container_stage.error = str(exc)
+        raise ProvisioningError("creating_container", str(exc)) from exc
+
+    # ── Stage: initial_startup ──
+    startup_stage = StageResult(name="initial_startup")
+    result.stages.append(startup_stage)
+    try:
+        ok, error = await docker_agent.start_existing_container(server["container_name"])
+        if not ok:
+            startup_stage.status = "failed"
+            startup_stage.error = error or "Failed to start container"
+            raise ProvisioningError("starting_container", error or "Failed to start container")
+        startup_stage.status = "success"
+        startup_stage.message = "Container started"
+    except ProvisioningError:
+        raise
+    except Exception as exc:
+        startup_stage.status = "failed"
+        startup_stage.error = str(exc)
+        raise ProvisioningError("starting_container", str(exc)) from exc
+
+    # ── Stage: mod_injection (verify mods are in config) ──
+    mod_stage = StageResult(name="mod_injection")
+    result.stages.append(mod_stage)
+    try:
+        config = generate_reforger_config(server)
+        mods = config.get("game", {}).get("mods", [])
+        mod_stage.status = "success"
+        mod_stage.message = f"{len(mods)} mod(s) configured"
+    except Exception as exc:
+        mod_stage.status = "failed"
+        mod_stage.error = str(exc)
+        # mod_injection failure is not fatal — server is already running
+        logger.warning("Mod injection verification failed for %s: %s", server["id"], exc)
+
+    # ── Stage: post_start_validation (profile + SAT discovery) ──
+    validation_stage = StageResult(name="post_start_validation")
+    result.stages.append(validation_stage)
+    try:
+        artifact_updates = await wait_for_profile_and_sat(server)
+        validation_stage.status = "success"
+        validation_stage.message = "Profile and SAT config discovered"
+        result.updates.update(artifact_updates)
+    except ProvisioningError as exc:
+        validation_stage.status = "failed"
+        validation_stage.error = exc.message
+        # Post-start validation failure is NOT fatal if container started.
+        # The server is running, just degraded.
+        logger.warning(
+            "Post-start validation failed for %s at %s: %s",
+            server["id"], exc.step, exc.message,
+        )
+
+    # ── Build final updates ──
+    result.updates.update({
+        "status": result.overall_status,
+        "provisioning_state": result.provisioning_state,
+        "readiness_state": result.readiness_state,
+        "provisioning_stages": result.stages_dict(),
         "config_path": config_result,
         "data_root": server["data_root"],
         "profile_path": server["profile_path"],
@@ -204,7 +371,17 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         "container_name": server["container_name"],
         "ports": server["ports"],
         "port_allocations": server["ports"],
-    }
+    })
+
+    # If all stages succeeded, also set provisioning_step to ready
+    if result.all_succeeded:
+        result.updates["provisioning_step"] = "ready"
+    else:
+        failed = result.failed_stages
+        result.updates["provisioning_step"] = failed[0].name if failed else "unknown"
+        result.updates["last_docker_error"] = result.summary_message
+
+    return result.updates
 
 
 async def start_server(server: Dict[str, Any]) -> Dict[str, Any]:
@@ -276,6 +453,7 @@ async def get_diagnostics(server: Dict[str, Any]) -> Dict[str, Any]:
         "provisioning_step": server.get("provisioning_step", "pending"),
         "readiness_state": server.get("readiness_state", "pending"),
         "last_docker_error": server.get("last_docker_error", ""),
+        "provisioning_stages": server.get("provisioning_stages", {}),
         "ports": server.get("ports", {}),
         "paths": {
             "data_root": server.get("data_root", ""),
