@@ -204,9 +204,17 @@ def _legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _sanitize_operating(operating: Dict[str, Any]) -> Dict[str, Any]:
-    """Strip any keys from the ``operating`` section that are not in the
-    Arma Reforger server config schema.  Also coerce values that have an
-    incorrect type (e.g. legacy boolean ``disableNavmeshStreaming``).
+    """Strip unknown or incorrectly-typed keys from the ``operating`` section.
+
+    Only keys present in :data:`VALID_OPERATING_KEYS` are retained.  Values
+    whose type does not match the expected schema type are silently dropped
+    to prevent Reforger engine JSON-schema validation errors.
+
+    ``disableNavmeshStreaming`` receives special treatment: boolean values
+    (legacy pre-1.2 configs) are migrated to the required array type via
+    :func:`_normalize_navmesh_streaming`.
+
+    Returns a new dict containing only valid, correctly-typed keys.
     """
     sanitized: Dict[str, Any] = {}
     for key, value in operating.items():
@@ -238,6 +246,21 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
     game_props = game.get("gameProperties") or {}
     rcon = config.get("rcon") or {}
     a2s = config.get("a2s") or {}
+
+    # disableNavmeshStreaming is only emitted when explicitly requested
+    # (engine default = streaming enabled; the field is an array since 1.2).
+    navmesh_streaming = _normalize_navmesh_streaming(
+        operating.get("disableNavmeshStreaming"),
+    )
+    operating_section: Dict[str, Any] = {
+        "lobbyPlayerSynchronise": _normalize_bool(operating.get("lobbyPlayerSynchronise"), True),
+        "disableServerShutdown": _normalize_bool(operating.get("disableServerShutdown"), False),
+        "disableAI": _normalize_bool(operating.get("disableAI"), False),
+        "playerSaveTime": _normalize_int(operating.get("playerSaveTime"), 120),
+        "aiLimit": operating.get("aiLimit", -1),
+    }
+    if navmesh_streaming is not None:
+        operating_section["disableNavmeshStreaming"] = navmesh_streaming
 
     return {
         "bindAddress": config.get("bindAddress", "0.0.0.0"),
@@ -282,16 +305,7 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
             },
             "mods": mods_for_config(ensure_required_mods(server.get("mods") or [])),
         },
-        "operating": _sanitize_operating({
-            "lobbyPlayerSynchronise": _normalize_bool(operating.get("lobbyPlayerSynchronise"), True),
-            "disableServerShutdown": _normalize_bool(operating.get("disableServerShutdown"), False),
-            "disableAI": _normalize_bool(operating.get("disableAI"), False),
-            "playerSaveTime": _normalize_int(operating.get("playerSaveTime"), 120),
-            "aiLimit": operating.get("aiLimit", -1),
-            # disableNavmeshStreaming is only emitted when explicitly requested
-            # (engine default = streaming enabled; the field is an array since 1.2).
-            **({"disableNavmeshStreaming": ns} if (ns := _normalize_navmesh_streaming(operating.get("disableNavmeshStreaming"))) is not None else {}),
-        }),
+        "operating": _sanitize_operating(operating_section),
     }
 
 

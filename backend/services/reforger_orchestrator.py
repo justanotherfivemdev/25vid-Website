@@ -513,8 +513,8 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     try:
         live_status = await docker_agent.get_container_status(server["container_name"])
         live_running = live_status is not None and live_status.get("running", False)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Live container check failed for %s: %s", server["container_name"], exc)
 
     if live_running and result.container_started:
         effective_status = "running"
