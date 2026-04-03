@@ -90,55 +90,58 @@ async def analyze_server_logs(server_id: str, container_name: str, server_mods: 
     updated_issues: List[Dict] = []
 
     for finding in findings:
-        evidence_entry = {
-            "log_excerpt": finding["log_line"][:500],
-            "timestamp": now,
-            "severity": finding["severity"],
-        }
+        try:
+            evidence_entry = {
+                "log_excerpt": finding["log_line"][:500],
+                "timestamp": now,
+                "severity": finding["severity"],
+            }
 
-        await db.mod_issues.update_one(
-            {"error_signature": finding["error_signature"]},
-            {
-                "$set": {
-                    "mod_id": finding["mod_id"],
-                    "mod_name": finding["mod_name"],
-                    "error_pattern": finding["log_line"][:250],
-                    "confidence_score": finding["confidence_score"],
-                    "attribution_method": "log_correlation",
-                    "last_seen": now,
-                    "status": "active",
-                    "severity": finding["severity"],
-                    "impact_summary": finding["impact_summary"],
+            await db.mod_issues.update_one(
+                {"error_signature": finding["error_signature"]},
+                {
+                    "$set": {
+                        "mod_id": finding["mod_id"],
+                        "mod_name": finding["mod_name"],
+                        "error_pattern": finding["log_line"][:250],
+                        "confidence_score": finding["confidence_score"],
+                        "attribution_method": "log_correlation",
+                        "last_seen": now,
+                        "status": "active",
+                        "severity": finding["severity"],
+                        "impact_summary": finding["impact_summary"],
+                    },
+                    "$setOnInsert": {
+                        "id": f"mi_{uuid.uuid4().hex[:12]}",
+                        "error_signature": finding["error_signature"],
+                        "first_seen": now,
+                        "recommended_actions": [],
+                        "evidence": [],
+                        "affected_servers": [],
+                    },
+                    "$inc": {"occurrence_count": 1},
+                    "$push": {"evidence": {"$each": [evidence_entry], "$slice": -50}},
                 },
-                "$setOnInsert": {
-                    "id": f"mi_{uuid.uuid4().hex[:12]}",
+                upsert=True,
+            )
+
+            await db.mod_issues.update_one(
+                {"error_signature": finding["error_signature"], "affected_servers.server_id": server_id},
+                {"$set": {"affected_servers.$.last_seen": now}},
+            )
+            await db.mod_issues.update_one(
+                {
                     "error_signature": finding["error_signature"],
-                    "first_seen": now,
-                    "recommended_actions": [],
-                    "evidence": [],
-                    "affected_servers": [],
+                    "affected_servers": {"$not": {"$elemMatch": {"server_id": server_id}}},
                 },
-                "$inc": {"occurrence_count": 1},
-                "$push": {"evidence": {"$each": [evidence_entry], "$slice": -50}},
-            },
-            upsert=True,
-        )
+                {"$push": {"affected_servers": {"server_id": server_id, "last_seen": now}}},
+            )
 
-        await db.mod_issues.update_one(
-            {"error_signature": finding["error_signature"], "affected_servers.server_id": server_id},
-            {"$set": {"affected_servers.$.last_seen": now}},
-        )
-        await db.mod_issues.update_one(
-            {
-                "error_signature": finding["error_signature"],
-                "affected_servers": {"$not": {"$elemMatch": {"server_id": server_id}}},
-            },
-            {"$push": {"affected_servers": {"server_id": server_id, "last_seen": now}}},
-        )
-
-        issue = await db.mod_issues.find_one({"error_signature": finding["error_signature"]}, {"_id": 0})
-        if issue:
-            updated_issues.append(issue)
+            issue = await db.mod_issues.find_one({"error_signature": finding["error_signature"]}, {"_id": 0})
+            if issue:
+                updated_issues.append(issue)
+        except Exception as exc:
+            logger.warning("Failed to persist mod issue finding %s: %s", finding.get("error_signature", "?"), exc)
 
     return updated_issues
 

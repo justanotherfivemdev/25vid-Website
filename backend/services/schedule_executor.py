@@ -127,7 +127,10 @@ async def _run_due_schedules(now: datetime) -> None:
             "last_result": result,
         }
         if success and schedule.get("action_type") == "downtime_window":
-            update_fields["downtime_restore_at"] = datetime.fromisoformat(result["restore_at"])
+            try:
+                update_fields["downtime_restore_at"] = datetime.fromisoformat(result["restore_at"])
+            except (KeyError, TypeError, ValueError) as exc:
+                logger.warning("Invalid restore_at in downtime result for schedule %s: %s", schedule.get("id"), exc)
         await _record_schedule_result(schedule["id"], result, success, update_fields)
 
 

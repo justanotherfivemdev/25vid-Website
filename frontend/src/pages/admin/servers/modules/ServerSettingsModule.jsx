@@ -294,7 +294,7 @@ function ServerSettingsModule() {
             </CardHeader>
             <CardContent className="space-y-3">
               <ConfigField label="Password" value={rcon.password || ''} onChange={(value) => updateField('rcon.password', value)} type="password" />
-              <ConfigField label="Permission" value={rcon.permission ?? 1} onChange={(value) => updateNumber('rcon.permission', value, 1)} type="number" />
+              <ConfigField label="Permission" value={rcon.permission || 'admin'} onChange={(value) => updateField('rcon.permission', value)} />
               <ConfigField label="Max Clients" value={rcon.maxClients ?? 16} onChange={(value) => updateNumber('rcon.maxClients', value, 16)} type="number" />
               <ConfigField label="Assigned RCON Port" value={rcon.port ?? ''} onChange={() => {}} type="number" readOnly />
             </CardContent>

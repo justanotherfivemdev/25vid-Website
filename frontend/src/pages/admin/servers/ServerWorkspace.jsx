@@ -356,7 +356,7 @@ function ServerWorkspace() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <Outlet context={{ server, serverId: id, fetchServer, canManage }} />
+          <Outlet context={{ server, serverId: id, fetchServer, canManage, handleServerAction: handleAction, actionLoading }} />
         </div>
       </div>
 

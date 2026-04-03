@@ -65,14 +65,18 @@ function ModsModule() {
   const [manualEditOpen, setManualEditOpen] = useState(false);
   const [manualMod, setManualMod] = useState({ mod_id: '', name: '', author: '', description: '' });
 
-  // Init enabled mods from server
+  // Init enabled mods from server (skip if user has unsaved changes)
   useEffect(() => {
+    if (dirty) {
+      return;
+    }
+
     setEnabledMods((server?.mods || []).map((m, i) => ({
       ...m,
       _idx: i,
       enabled: m.enabled !== false,
     })));
-  }, [server?.mods]);
+  }, [server?.mods, dirty]);
 
   // Fetch workshop mods
   const searchWorkshop = useCallback(async (query) => {

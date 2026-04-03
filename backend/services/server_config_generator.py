@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import secrets
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -18,8 +19,16 @@ DEFAULT_MOD_NAME = "Server Admin Tools"
 
 
 def _default_rcon_password(server: Dict[str, Any]) -> str:
-    server_id = (server.get("id") or "server").replace("-", "")
-    return f"rcon{server_id[:12]}"
+    """Generate a cryptographically-random RCON password.
+
+    If the server already has an rcon_password persisted, return that so
+    the value stays stable across config regenerations.  Otherwise create a
+    new 24-character URL-safe random token.
+    """
+    existing = server.get("rcon_password")
+    if existing:
+        return existing
+    return secrets.token_urlsafe(18)  # 24 characters
 
 
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:

@@ -67,7 +67,13 @@ function PlayersModule() {
             <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
               <Users className="h-4 w-4 text-tropic-gold" /> ACTIVE PLAYERS
             </CardTitle>
-            <Button size="sm" variant="outline" className="h-7 border-zinc-800 text-xs text-gray-400">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 border-zinc-800 text-xs text-gray-400"
+              disabled
+              title="Refresh is unavailable until a live player source is implemented."
+            >
               <RefreshCw className="mr-1 h-3 w-3" /> Refresh
             </Button>
           </div>

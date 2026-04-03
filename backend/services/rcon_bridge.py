@@ -92,7 +92,7 @@ class BERConClient:
                     expected_parts = response_payload[1]
                     part_index = response_payload[2]
                     fragments[part_index] = response_payload[3:].decode("utf-8", errors="replace")
-                    if expected_parts and len(fragments) >= expected_parts:
+                    if expected_parts > 0 and len(fragments) >= expected_parts:
                         break
                     continue
 

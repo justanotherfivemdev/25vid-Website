@@ -379,6 +379,8 @@ async def update_server(
         raise HTTPException(status_code=400, detail="No fields to update")
 
     if "config" in updates:
+        if not isinstance(updates["config"], dict):
+            raise HTTPException(status_code=400, detail="config must be a JSON object")
         _validate_mission_header(updates["config"])
 
     before = {k: server.get(k) for k in updates}
