@@ -78,7 +78,9 @@ function OverviewModule() {
     const haystack = `${mod.name || ''} ${mod.mod_id || mod.modId || ''}`.toLowerCase();
     return haystack.includes('server admin tools');
   });
-  const startupParameters = Array.isArray(server?.config?.startupParameters) ? server.config.startupParameters : [];
+  const startupParameters = Array.isArray(server?.startup_parameters) ? server.startup_parameters : [];
+  const logStatsEnabled = server?.log_stats_enabled !== false;
+  const maxFps = server?.max_fps ?? 120;
   const [locking, setLocking] = useState(false);
 
   const handleLockdown = useCallback(async () => {
@@ -399,6 +401,8 @@ function OverviewModule() {
             <DetailRow label="Installed" value={serverAdminToolsInstalled ? 'Detected in mod list' : 'Not detected'} />
             <DetailRow label="Config Target" value={serverAdminToolsConfigTarget ? `${serverAdminToolsConfigTarget}/ServerAdminTools_Config.json` : '—'} mono />
             <DetailRow label="Bootstrap Status" value={serverAdminToolsInstalled ? 'Ready for admin troubleshooting' : 'Awaiting mod installation'} />
+            <DetailRow label="logStats" value={logStatsEnabled ? 'Enabled by runtime defaults' : 'Disabled'} />
+            <DetailRow label="Max FPS" value={String(maxFps)} mono />
             <div>
               <span className="text-xs font-medium text-gray-500">Startup Parameters</span>
               <div className="mt-2 flex flex-wrap gap-1.5">

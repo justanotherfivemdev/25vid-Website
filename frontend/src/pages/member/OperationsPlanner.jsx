@@ -62,7 +62,7 @@ import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 import { Translate } from 'ol/interaction';
 
 /* ── milsymbol ─────────────────────────────────────────────────────────────── */
-import ms from 'milsymbol';
+import { renderMilSymbolDataUrl } from '@/lib/milsymbol';
 
 import 'ol/ol.css';
 
@@ -113,12 +113,7 @@ const AFFILIATION_COLORS = {
 
 /* ── milsymbol helper ──────────────────────────────────────────────────────── */
 function renderSymbolDataURL(sidc, size = 40) {
-  try {
-    const sym = new ms.Symbol(sidc, { size });
-    return sym.toDataURL();
-  } catch {
-    return null;
-  }
+  return renderMilSymbolDataUrl(sidc, size);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════

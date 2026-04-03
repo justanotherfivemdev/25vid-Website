@@ -109,6 +109,10 @@ class ManagedServer(BaseModel):
     health_check_interval: int = 15
     auto_restart: bool = True
     max_restart_attempts: int = 3
+    log_stats_enabled: bool = True
+    max_fps: int = 120
+    startup_parameters: List[str] = Field(default_factory=list)
+    startup_grace_until: Optional[datetime] = None
     tags: List[str] = Field(default_factory=list)
     notes: List[Dict[str, Any]] = Field(default_factory=list)
 
@@ -121,6 +125,9 @@ class ServerCreate(BaseModel):
     tags: List[str] = Field(default_factory=list)
     auto_restart: bool = True
     max_restart_attempts: int = 3
+    log_stats_enabled: bool = True
+    max_fps: int = 120
+    startup_parameters: List[str] = Field(default_factory=list)
 
 
 class ServerUpdate(BaseModel):
@@ -133,6 +140,9 @@ class ServerUpdate(BaseModel):
     tags: Optional[List[str]] = None
     auto_restart: Optional[bool] = None
     max_restart_attempts: Optional[int] = None
+    log_stats_enabled: Optional[bool] = None
+    max_fps: Optional[int] = None
+    startup_parameters: Optional[List[str]] = None
 
 
 class WorkshopMod(BaseModel):
@@ -336,3 +346,29 @@ class ServerNote(BaseModel):
 
 class ServerNoteCreate(BaseModel):
     content: str = Field(min_length=1, max_length=5000)
+
+
+NOTIFICATION_STATUSES = ["active", "cleared"]
+NOTIFICATION_SEVERITIES = ["info", "warning", "error", "critical"]
+
+
+class ServerNotification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(default_factory=lambda: f"notif_{uuid.uuid4().hex[:12]}")
+    server_id: str
+    notification_type: str
+    severity: str = "warning"
+    title: str
+    message: str = ""
+    checklist: List[Dict[str, Any]] = Field(default_factory=list)
+    dedupe_key: str = ""
+    source: str = ""
+    status: str = "active"
+    acknowledged: bool = False
+    acknowledged_at: Optional[datetime] = None
+    acknowledged_by: str = ""
+    cleared_at: Optional[datetime] = None
+    cleared_by: str = ""
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)

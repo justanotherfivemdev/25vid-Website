@@ -2,13 +2,14 @@
 
 import logging
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict
 import uuid
 
 from database import db
 from models.server import SERVER_STATUSES  # noqa: F401 – used for validation reference
 from services.docker_agent import DockerAgent
+from services.server_notifications import sync_server_notifications
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,17 @@ _ACTIVE_STATUSES = [s for s in ("running", "starting") if s in SERVER_STATUSES]
 
 STABILITY_THRESHOLD_SECONDS = 300  # 5 minutes before restart counter resets
 _running_since: Dict[str, datetime] = {}
+
+
+def _parse_datetime(value):
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    return None
 
 
 async def server_health_loop(check_interval: int = 15):
@@ -78,6 +90,8 @@ async def _evaluate_server(server: dict, server_id: str, server_name: str,
                            status_info):
     """Evaluate a single server's container state and take action."""
 
+    now = datetime.now(timezone.utc)
+    startup_grace_until = _parse_datetime(server.get("startup_grace_until"))
     container_missing = status_info is None
     container_dead = (
         not container_missing
@@ -85,8 +99,25 @@ async def _evaluate_server(server: dict, server_id: str, server_name: str,
         and status_info.get("status") in ("exited", "dead")
     )
 
+    if (container_missing or container_dead) and current_status in {"starting", "initializing"}:
+        if startup_grace_until and now < startup_grace_until:
+            logger.info(
+                "Server %s is still within its startup grace window until %s",
+                server_name,
+                startup_grace_until.isoformat(),
+            )
+            return
+        await _handle_startup_failure(server, server_id, server_name)
+        return
+
     # --- Container crashed / disappeared while it should be running --------
     if (container_missing or container_dead) and current_status == "running":
+        if startup_grace_until and now < startup_grace_until:
+            logger.info(
+                "Container for %s exited inside the startup grace window, delaying crash classification",
+                server_name,
+            )
+            return
         # Before flagging as crash, check if the server is in an expected
         # restart cycle (mod download / content mounting).  Servers in the
         # "initializing" or "starting" provisioning states are expected to
@@ -124,13 +155,34 @@ async def _evaluate_server(server: dict, server_id: str, server_name: str,
     if (not container_missing
             and status_info.get("running")
             and current_status == "starting"):
+        updates = {
+            "status": "running",
+            "readiness_state": "ready",
+            "provisioning_state": "ready",
+            "startup_grace_until": None,
+            "updated_at": now,
+        }
         await db.managed_servers.update_one(
             {"id": server_id},
-            {"$set": {"status": "running"}},
+            {"$set": updates},
         )
-        _running_since[server_id] = datetime.now(timezone.utc)
+        await sync_server_notifications({**server, **updates})
+        _running_since[server_id] = now
         logger.info("Server %s transitioned from starting → running", server_name)
         return
+
+    if (not container_missing
+            and status_info.get("running")
+            and current_status == "running"
+            and server.get("readiness_state") in {"initializing", "degraded"}):
+        updates = {
+            "readiness_state": "ready",
+            "provisioning_state": "ready",
+            "startup_grace_until": None,
+            "updated_at": now,
+        }
+        await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
+        await sync_server_notifications({**server, **updates})
 
     # --- Stable-running reset: clear restart counter after 5 minutes ------
     if current_status == "running" and server_id in _restart_counts:
@@ -148,10 +200,17 @@ async def _handle_crash(server: dict, server_id: str, server_name: str,
     """React to a container that has crashed or gone missing."""
 
     # Move to error state
+    updates = {
+        "status": "error",
+        "readiness_state": "failed",
+        "startup_grace_until": None,
+        "updated_at": datetime.now(timezone.utc),
+    }
     await db.managed_servers.update_one(
         {"id": server_id},
-        {"$set": {"status": "error"}},
+        {"$set": updates},
     )
+    await sync_server_notifications({**server, **updates})
 
     # Record an auto-detected incident
     incident = _make_incident(
@@ -175,10 +234,17 @@ async def _handle_crash(server: dict, server_id: str, server_name: str,
 
         ok, err = await docker_agent.restart_container(container_name)
         if ok:
+            restart_updates = {
+                "status": "starting",
+                "readiness_state": "initializing",
+                "startup_grace_until": datetime.now(timezone.utc) + timedelta(minutes=5),
+                "updated_at": datetime.now(timezone.utc),
+            }
             await db.managed_servers.update_one(
                 {"id": server_id},
-                {"$set": {"status": "starting"}},
+                {"$set": restart_updates},
             )
+            await sync_server_notifications({**server, **restart_updates})
             _running_since.pop(server_id, None)
         else:
             logger.error("Restart failed for %s: %s", server_name, err)
@@ -189,6 +255,7 @@ async def _handle_crash(server: dict, server_id: str, server_name: str,
             {"id": server_id},
             {"$set": {"status": "crash_loop"}},
         )
+        await sync_server_notifications({**server, "status": "crash_loop"})
 
         critical_incident = _make_incident(
             server_id, server_name,
@@ -217,3 +284,28 @@ def _make_incident(server_id: str, server_name: str, *,
         "detected_at": datetime.now(timezone.utc).isoformat(),
         "auto_detected": True,
     }
+
+
+async def _handle_startup_failure(server: dict, server_id: str, server_name: str):
+    """Mark a server as failed when it never leaves the startup window."""
+    updates = {
+        "status": "error",
+        "readiness_state": "failed",
+        "startup_grace_until": None,
+        "last_docker_error": "Server did not become operational before the startup grace window expired.",
+        "updated_at": datetime.now(timezone.utc),
+    }
+    await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
+    incident = {
+        "id": f"inc_{uuid.uuid4().hex[:12]}",
+        "server_id": server_id,
+        "incident_type": "startup_failure",
+        "severity": "high",
+        "title": f"Startup timeout - {server_name}",
+        "description": updates["last_docker_error"],
+        "status": "open",
+        "detected_at": datetime.now(timezone.utc).isoformat(),
+        "auto_detected": True,
+    }
+    await db.server_incidents.insert_one(incident)
+    await sync_server_notifications({**server, **updates})

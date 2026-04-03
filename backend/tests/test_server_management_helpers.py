@@ -21,6 +21,7 @@ from services.server_config_generator import (
 )
 from services.docker_agent import _normalize_host_cpu_percent
 from services.reforger_orchestrator import ProvisioningResult, StageResult, extract_config_errors
+from services.sat_config_service import normalize_sat_config
 from services.server_metrics_collector import _PERIOD_DELTAS
 
 
@@ -197,11 +198,12 @@ def test_validate_mission_header_accepts_valid_dict():
 
 
 def test_format_mod_for_config_emits_only_valid_fields():
-    """Only modId, name, and (when set) version should appear."""
+    """Only valid Reforger mod fields should appear."""
     mod = {
         "modId": "59673B6FBB95459F",
         "name": "BetterTracers",
         "version": "1.0.5",
+        "required": False,
         "author": "SomeAuthor",
         "description": "A mod",
         "thumbnail_url": "https://example.com/img.jpg",
@@ -209,12 +211,11 @@ def test_format_mod_for_config_emits_only_valid_fields():
         "metadata_source": "workshop",
     }
     result = format_mod_for_config(mod)
-    assert result == {"modId": "59673B6FBB95459F", "name": "BetterTracers", "version": "1.0.5"}
+    assert result == {"modId": "59673B6FBB95459F", "name": "BetterTracers", "version": "1.0.5", "required": False}
     assert "author" not in result
     assert "description" not in result
     assert "thumbnail_url" not in result
     assert "tags" not in result
-    assert "required" not in result
 
 
 def test_format_mod_for_config_omits_empty_version():
@@ -238,21 +239,20 @@ def test_format_mod_for_config_empty_mod_returns_empty():
 
 
 def test_mods_for_config_strips_metadata():
-    """mods_for_config should produce a clean list with no metadata fields."""
+    """mods_for_config should preserve valid mod flags while stripping metadata."""
     mods = [
         {"modId": "59673B6FBB95459F", "name": "BetterTracers", "version": "1.0.5", "author": "Dev"},
-        {"modId": "591AF5BDA9F7CE8B", "name": "Capture & Hold", "version": "", "description": "PvP"},
+        {"modId": "591AF5BDA9F7CE8B", "name": "Capture & Hold", "version": "", "description": "PvP", "required": False},
         {"modId": "5AAAC70D754245DD", "name": "Server Admin Tools"},
     ]
     result = mods_for_config(mods)
     assert len(result) == 3
     assert result[0] == {"modId": "59673B6FBB95459F", "name": "BetterTracers", "version": "1.0.5"}
-    assert result[1] == {"modId": "591AF5BDA9F7CE8B", "name": "Capture & Hold"}  # no version
+    assert result[1] == {"modId": "591AF5BDA9F7CE8B", "name": "Capture & Hold", "required": False}  # no version
     assert result[2] == {"modId": "5AAAC70D754245DD", "name": "Server Admin Tools"}
     for entry in result:
         assert "author" not in entry
         assert "description" not in entry
-        assert "required" not in entry
 
 
 def test_mods_for_config_skips_empty_entries():
@@ -268,14 +268,14 @@ def test_mods_for_config_skips_empty_entries():
 
 
 def test_generate_reforger_config_mods_have_no_metadata():
-    """The full config generation path should produce clean mod entries."""
+    """The full config generation path should preserve valid mod flags and strip metadata."""
     server = {
         "id": "srv-mod-test",
         "name": "Test",
         "ports": {"game": 2001, "query": 17777, "rcon": 19999},
         "mods": [
             {"mod_id": "59673B6FBB95459F", "name": "BetterTracers", "version": "1.0.5", "author": "Dev"},
-            {"mod_id": "591AF5BDA9F7CE8B", "name": "Capture & Hold", "version": ""},
+            {"mod_id": "591AF5BDA9F7CE8B", "name": "Capture & Hold", "version": "", "required": False},
         ],
     }
     config = generate_reforger_config(server)
@@ -283,13 +283,13 @@ def test_generate_reforger_config_mods_have_no_metadata():
         assert "modId" in mod
         assert "name" in mod
         assert "author" not in mod
-        assert "required" not in mod
         assert "description" not in mod
     # Version should appear only for BetterTracers
     tracers = [m for m in config["game"]["mods"] if m["modId"] == "59673B6FBB95459F"][0]
     assert tracers["version"] == "1.0.5"
     capture = [m for m in config["game"]["mods"] if m["modId"] == "591AF5BDA9F7CE8B"][0]
     assert "version" not in capture
+    assert capture["required"] is False
 
 
 # ── disableNavmeshStreaming normalization tests ──────────────────────
@@ -448,7 +448,7 @@ def test_normalize_server_contract_upgrades_legacy_partial_status():
     normalized = _normalize_server_contract(server)
     assert normalized["status"] == "running"
     assert normalized["provisioning_state"] == "ready"
-    assert normalized["readiness_state"] == "degraded"
+    assert normalized["readiness_state"] == "ready"
     assert normalized["provisioning_warnings"][0]["stage"] == "sat_discovery"
 
 
@@ -531,3 +531,59 @@ def test_player_id_validation_rejects_whitespace_and_control_chars():
 
 def test_cpu_normalization_scales_multicore_usage_to_host_percent():
     assert _normalize_host_cpu_percent(250.0, 4) == 62.5
+
+
+def test_normalize_sat_config_dedupes_admins_bans_and_messages():
+    normalized = normalize_sat_config({
+        "admins": [
+            {"id": "d87d3925-7da4-4497-89bd-2b5b6e5aa770", "name": "Insane"},
+            {"playerId": "d87d3925-7da4-4497-89bd-2b5b6e5aa770", "label": "Insane Updated"},
+            {"guid": "e9c8eca4-40ca-4bea-895c-184b4e6fa320", "name": "LtLast"},
+        ],
+        "bans": [
+            {"playerId": "00000000-0000-0000-0000-000000000002", "reason": "First reason"},
+            {"id": "00000000-0000-0000-0000-000000000002", "reason": "Replacement reason"},
+            "00000000-0000-0000-0000-000000000003",
+        ],
+        "serverMessage": [
+            "Alpha",
+            "Alpha",
+            " Bravo ",
+            "",
+        ],
+        "eventsApiEventsEnabled": "event_a\nevent_b\nevent_a\n",
+    })
+
+    assert normalized["admins"] == {
+        "d87d3925-7da4-4497-89bd-2b5b6e5aa770": "Insane Updated",
+        "e9c8eca4-40ca-4bea-895c-184b4e6fa320": "LtLast",
+    }
+    assert normalized["bans"] == {
+        "00000000-0000-0000-0000-000000000002": "Replacement reason",
+        "00000000-0000-0000-0000-000000000003": "",
+    }
+    assert normalized["serverMessage"] == ["Alpha", "Bravo"]
+    assert normalized["eventsApiEventsEnabled"] == ["event_a", "event_b"]
+
+
+def test_normalize_sat_config_dedupes_message_objects_by_payload():
+    normalized = normalize_sat_config({
+        "repeatedChatMessages": [
+            {"message": " Status check ", "intervalMinutes": 15},
+            {"message": "Status check", "intervalMinutes": 15},
+            {"message": "", "intervalMinutes": 30},
+        ],
+        "scheduledChatMessages": [
+            {"message": "Server restart soon", "hour": 22, "minute": 0},
+            {"message": "Server restart soon", "hour": 22, "minute": 0},
+            {"message": "Other message", "hour": 23, "minute": 30},
+        ],
+    })
+
+    assert normalized["repeatedChatMessages"] == [
+        {"message": "Status check", "intervalMinutes": 15},
+    ]
+    assert normalized["scheduledChatMessages"] == [
+        {"message": "Server restart soon", "hour": 22, "minute": 0},
+        {"message": "Other message", "hour": 23, "minute": 30},
+    ]

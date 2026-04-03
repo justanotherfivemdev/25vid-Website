@@ -2,12 +2,11 @@ export function normalizeServer(server) {
   if (!server) return server;
 
   const next = { ...server };
-  const warnings = next.provisioning_warnings || [];
 
   if (next.status === 'provisioning_partial') {
     next.status = 'running';
     next.provisioning_state = 'ready';
-    next.readiness_state = next.readiness_state || 'degraded';
+    next.readiness_state = next.readiness_state || 'ready';
   }
 
   if (next.status === 'provisioning_failed') {
@@ -16,17 +15,13 @@ export function normalizeServer(server) {
     next.readiness_state = 'failed';
   }
 
-  if (next.status === 'running' && warnings.length > 0 && next.readiness_state === 'ready') {
-    next.readiness_state = 'degraded';
-  }
-
   return next;
 }
 
 export function isServerDegraded(server) {
   const normalized = normalizeServer(server);
   if (!normalized) return false;
-  return normalized.readiness_state === 'degraded' || (normalized.provisioning_warnings || []).length > 0;
+  return normalized.readiness_state === 'degraded';
 }
 
 export function getOperationalSummary(server) {

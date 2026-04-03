@@ -217,6 +217,31 @@ async def ensure_filesystem(server: Dict[str, Any]) -> ProvisioningLayout:
     return layout
 
 
+def build_startup_parameters(server: Dict[str, Any]) -> List[str]:
+    parameters: List[str] = []
+    seen: set[str] = set()
+
+    if server.get("log_stats_enabled", True):
+        parameters.append("-logstats")
+        seen.add("-logstats")
+
+    for raw_param in server.get("startup_parameters") or []:
+        if not isinstance(raw_param, str):
+            continue
+        param = raw_param.strip()
+        if not param:
+            continue
+        normalized = param.split(" ", 1)[0].lower()
+        if normalized in {"-logstats", "-maxfps"}:
+            continue
+        if normalized in seen:
+            continue
+        parameters.append(param)
+        seen.add(normalized)
+
+    return parameters
+
+
 def build_container_environment(server: Dict[str, Any]) -> Dict[str, str]:
     config = generate_reforger_config(server)
     rcon = config.get("rcon") or {}
@@ -224,6 +249,8 @@ def build_container_environment(server: Dict[str, Any]) -> Dict[str, str]:
         "ARMA_CONFIG": SERVER_CONFIG_FILENAME,
         "ARMA_PROFILE": "/home/profile",
         "ARMA_WORKSHOP_DIR": "/reforger/workshop",
+        "ARMA_MAX_FPS": str(server.get("max_fps") or 120),
+        "ARMA_PARAMS": " ".join(build_startup_parameters(server)),
         "RCON_PASSWORD": str(rcon.get("password") or ""),
         "RCON_PERMISSION": str(rcon.get("permission") or "admin"),
     }
@@ -745,10 +772,14 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as exc:
         logger.debug("Live container check failed for %s: %s", server["container_name"], exc)
 
-    if live_running and result.container_started:
-        effective_status = "running"
+    if result.container_started:
         effective_provisioning = "ready"
-        effective_readiness = "ready" if result.all_succeeded and readiness_stage.status == "success" else "degraded"
+        if live_running:
+            effective_status = "running"
+            effective_readiness = "ready"
+        else:
+            effective_status = "starting"
+            effective_readiness = "initializing"
     else:
         effective_status = result.overall_status
         effective_provisioning = result.provisioning_state
@@ -768,14 +799,15 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         "container_name": server["container_name"],
         "ports": server["ports"],
         "port_allocations": server["ports"],
-        "summary_message": result.summary_message,
+        "summary_message": (
+            "Server container created successfully and is still completing first-boot checks."
+            if result.container_started and not live_running
+            else result.summary_message
+        ),
     })
 
-    # If all stages succeeded, also set provisioning_step to ready.
-    # When the container is live-running but some stages failed, still mark
-    # the provisioning_step as ready so the UI treats the server as running.
-    if result.all_succeeded or (live_running and result.container_started):
-        result.updates["provisioning_step"] = "ready"
+    if result.container_started:
+        result.updates["provisioning_step"] = "ready" if live_running else "starting_container"
         failed = [
             s for s in result.failed_stages
             if s.name not in {"record_creation", "filesystem_preparation", "config_write", "container_creation", "initial_startup"}
@@ -826,7 +858,7 @@ async def start_server(server: Dict[str, Any]) -> Dict[str, Any]:
         "last_known_container_status": (details or {}).get("status", "running"),
         "sat_config_path": sat_path or "",
         "sat_status": sat_state,
-        "readiness_state": "ready" if sat_state == "discovered" else "degraded",
+        "readiness_state": "ready",
     }
 
 
@@ -852,7 +884,7 @@ async def restart_server(server: Dict[str, Any]) -> Dict[str, Any]:
         "last_known_container_status": (details or {}).get("status", "running"),
         "sat_config_path": sat_path or "",
         "sat_status": sat_state,
-        "readiness_state": "ready" if sat_state == "discovered" else "degraded",
+        "readiness_state": "ready",
     }
 
 

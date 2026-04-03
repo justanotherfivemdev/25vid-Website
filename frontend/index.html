@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="theme-color"
+      content="#000000"
+    />
+    <meta
+      name="description"
+      content="Official site of the 25th Infantry Division - Tropic Lightning. Ready to Strike, Anywhere, Anytime."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <title>25th Infantry Division</title>
+    <script>
+      window.addEventListener(
+        "error",
+        function (event) {
+          if (
+            event.error instanceof DOMException &&
+            event.error.name === "DataCloneError" &&
+            event.message &&
+            event.message.includes("PerformanceServerTiming")
+          ) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+          }
+        },
+        true,
+      );
+    </script>
+    <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/index.jsx"></script>
+    <script>
+      !(function (documentRef, posthogRef) {
+        var methods;
+        var index;
+        var script;
+        var firstScript;
+        posthogRef.__SV ||
+          ((window.posthog = posthogRef),
+          (posthogRef._i = []),
+          (posthogRef.init = function (token, config, namespace) {
+            function register(target, methodName) {
+              var segments = methodName.split(".");
+              if (segments.length === 2) {
+                target = target[segments[0]];
+                methodName = segments[1];
+              }
+              target[methodName] = function () {
+                target.push(
+                  [methodName].concat(
+                    Array.prototype.slice.call(arguments, 0),
+                  ),
+                );
+              };
+            }
+
+            script = documentRef.createElement("script");
+            script.type = "text/javascript";
+            script.crossOrigin = "anonymous";
+            script.async = true;
+            script.src =
+              config.api_host.replace(
+                ".i.posthog.com",
+                "-assets.i.posthog.com",
+              ) + "/static/array.js";
+            firstScript = documentRef.getElementsByTagName("script")[0];
+            firstScript.parentNode.insertBefore(script, firstScript);
+
+            var instance = posthogRef;
+            if (namespace !== undefined) {
+              instance = posthogRef[namespace] = [];
+            } else {
+              namespace = "posthog";
+            }
+
+            instance.people = instance.people || [];
+            instance.toString = function (stub) {
+              var name = "posthog";
+              if (namespace !== "posthog") {
+                name += "." + namespace;
+              }
+              if (!stub) {
+                name += " (stub)";
+              }
+              return name;
+            };
+            instance.people.toString = function () {
+              return instance.toString(1) + ".people (stub)";
+            };
+
+            methods =
+              "init me ws ys ps bs capture je Di ks register register_once register_for_session unregister unregister_for_session Ps getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey canRenderSurveyAsync identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty Es $s createPersonProfile Is opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing Ss debug xs getPageViewId captureTraceFeedback captureTraceMetric".split(
+                " ",
+              );
+
+            for (index = 0; index < methods.length; index += 1) {
+              register(instance, methods[index]);
+            }
+
+            posthogRef._i.push([token, config, namespace]);
+          }),
+          (posthogRef.__SV = 1));
+      })(document, window.posthog || []);
+
+      posthog.init("phc_xAvL2Iq4tFmANRE7kzbKwaSqp1HJjN7x48s3vr0CMjs", {
+        api_host: "https://us.i.posthog.com",
+        person_profiles: "identified_only",
+        session_recording: {
+          recordCrossOriginIframes: true,
+          capturePerformance: false,
+        },
+      });
+    </script>
+  </body>
+</html>

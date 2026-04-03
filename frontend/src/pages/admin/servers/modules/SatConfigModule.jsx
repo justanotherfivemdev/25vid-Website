@@ -44,6 +44,60 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function dedupeStringList(value) {
+  const values = Array.isArray(value) ? value : String(value || '').split(/\r?\n|,/);
+  const seen = new Set();
+  return values
+    .map((entry) => String(entry || '').trim())
+    .filter((entry) => {
+      if (!entry || seen.has(entry)) return false;
+      seen.add(entry);
+      return true;
+    });
+}
+
+function normalizeAdminMap(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .map(([id, name]) => [String(id || '').trim(), String(name || '').trim()])
+        .filter(([id]) => !!id),
+    );
+  }
+  if (Array.isArray(value)) {
+    return Object.fromEntries(
+      value
+        .filter((entry) => entry && typeof entry === 'object')
+        .map((entry) => [String(entry.id || entry.playerId || '').trim(), String(entry.name || entry.label || '').trim()])
+        .filter(([id]) => !!id),
+    );
+  }
+  return {};
+}
+
+function normalizeBanMap(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .map(([id, reason]) => [String(id || '').trim(), String(reason || '').trim()])
+        .filter(([id]) => !!id),
+    );
+  }
+  if (Array.isArray(value)) {
+    return Object.fromEntries(
+      value
+        .map((entry) => {
+          if (entry && typeof entry === 'object') {
+            return [String(entry.id || entry.playerId || entry.guid || '').trim(), String(entry.reason || '').trim()];
+          }
+          return [String(entry || '').trim(), ''];
+        })
+        .filter(([id]) => !!id),
+    );
+  }
+  return {};
+}
+
 function SatConfigModule() {
   const { serverId } = useOutletContext();
   const [configState, setConfigState] = useState({ available: false, status: 'pending', config: null });
@@ -56,6 +110,8 @@ function SatConfigModule() {
   const [saving, setSaving] = useState(false);
   const [newBanId, setNewBanId] = useState('');
   const [newBanReason, setNewBanReason] = useState('');
+  const [newAdminId, setNewAdminId] = useState('');
+  const [newAdminName, setNewAdminName] = useState('');
   const [workingAction, setWorkingAction] = useState('');
 
   const refreshAll = useCallback(async () => {
@@ -147,13 +203,20 @@ function SatConfigModule() {
       const nextConfig = Object.fromEntries(
         Object.entries(draft).filter(([key]) => KNOWN_KEYS.has(key)),
       );
+      const normalizedAdmins = normalizeAdminMap(draft.admins);
+      const normalizedBans = normalizeBanMap(draft.bans);
+      const normalizedServerMessage = dedupeStringList(draft.serverMessage);
+      const normalizedEvents = dedupeStringList(draft.eventsApiEventsEnabled);
 
       await axios.put(`${API}/servers/${serverId}/sat-config`, {
         config: {
           // Unknown keys come first so structured/KNOWN_KEYS values always win.
           ...advanced,
           ...nextConfig,
-          bans: draft.bans,
+          admins: normalizedAdmins,
+          bans: normalizedBans,
+          serverMessage: normalizedServerMessage,
+          eventsApiEventsEnabled: normalizedEvents,
         },
       });
       await refreshAll();
@@ -221,6 +284,42 @@ function SatConfigModule() {
     if (source && typeof source === 'object') return Object.entries(source).map(([id, name]) => ({ id, name: String(name || '') }));
     return [];
   }, [draft?.admins]);
+
+  const addAdmin = useCallback(() => {
+    const adminId = String(newAdminId || '').trim();
+    if (!adminId) return;
+    setDraft((current) => {
+      const next = clone(current || {});
+      next.admins = {
+        ...normalizeAdminMap(next.admins),
+        [adminId]: String(newAdminName || '').trim(),
+      };
+      return next;
+    });
+    setNewAdminId('');
+    setNewAdminName('');
+  }, [newAdminId, newAdminName]);
+
+  const updateAdminName = useCallback((adminId, name) => {
+    setDraft((current) => {
+      const next = clone(current || {});
+      next.admins = {
+        ...normalizeAdminMap(next.admins),
+        [adminId]: name,
+      };
+      return next;
+    });
+  }, []);
+
+  const removeAdmin = useCallback((adminId) => {
+    setDraft((current) => {
+      const next = clone(current || {});
+      const adminMap = normalizeAdminMap(next.admins);
+      delete adminMap[adminId];
+      next.admins = adminMap;
+      return next;
+    });
+  }, []);
 
   if (loading && !draft) {
     return (
@@ -324,14 +423,24 @@ function SatConfigModule() {
           <div className="space-y-3">
             <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-4">
               <div className="text-xs font-medium uppercase tracking-[0.18em] text-gray-500">Admins</div>
+              <div className="mt-3 grid gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
+                <Input value={newAdminId} onChange={(event) => setNewAdminId(event.target.value)} placeholder="Admin identity / GUID" className="h-8 border-zinc-800 bg-black/40 font-mono text-xs text-white" />
+                <Input value={newAdminName} onChange={(event) => setNewAdminName(event.target.value)} placeholder="Display name" className="h-8 border-zinc-800 bg-black/40 text-xs text-white" />
+                <Button size="sm" variant="outline" onClick={addAdmin} disabled={!newAdminId.trim()} className="h-8 border-zinc-700 text-gray-200">
+                  Add admin
+                </Button>
+              </div>
               <div className="mt-3 space-y-2">
                 {admins.length === 0 ? (
                   <p className="text-xs text-gray-500">No explicit SAT admins found in the current config.</p>
                 ) : (
                   admins.map((admin) => (
-                    <div key={admin.id} className="grid gap-2 md:grid-cols-[180px_minmax(0,1fr)]">
+                    <div key={admin.id} className="grid gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
                       <Input value={admin.id} readOnly className="h-8 border-zinc-800 bg-black/40 font-mono text-xs text-gray-300" />
-                      <Input value={admin.name} readOnly className="h-8 border-zinc-800 bg-black/40 text-xs text-gray-300" />
+                      <Input value={admin.name} onChange={(event) => updateAdminName(admin.id, event.target.value)} className="h-8 border-zinc-800 bg-black/40 text-xs text-white" />
+                      <Button size="sm" variant="ghost" onClick={() => removeAdmin(admin.id)} className="text-gray-500 hover:text-red-400">
+                        Remove
+                      </Button>
                     </div>
                   ))
                 )}
@@ -382,7 +491,12 @@ function SatConfigModule() {
 
       <SectionCard title="Welcome Message" icon={Copy}>
         <div className="grid gap-4 xl:grid-cols-2">
-          <Textarea value={draft?.serverMessage || ''} onChange={(event) => updateField('serverMessage', event.target.value)} rows={8} className="border-zinc-800 bg-black/40 text-sm text-white" />
+          <Textarea
+            value={Array.isArray(draft?.serverMessage) ? draft.serverMessage.join('\n') : String(draft?.serverMessage || '')}
+            onChange={(event) => updateField('serverMessage', dedupeStringList(event.target.value))}
+            rows={8}
+            className="border-zinc-800 bg-black/40 text-sm text-white"
+          />
           <div className="space-y-3">
             <LabeledInput label="Header Image" value={draft?.serverMessageHeaderImage || ''} onChange={(value) => updateField('serverMessageHeaderImage', value)} />
             <LabeledInput label="Discord Link" value={draft?.serverMessageDiscordLink || ''} onChange={(value) => updateField('serverMessageDiscordLink', value)} />
@@ -400,7 +514,7 @@ function SatConfigModule() {
             <div className="mb-1 text-xs font-medium text-gray-500">Enabled Events</div>
             <Textarea
               value={Array.isArray(draft?.eventsApiEventsEnabled) ? draft.eventsApiEventsEnabled.join(', ') : ''}
-              onChange={(event) => updateField('eventsApiEventsEnabled', event.target.value.split(',').map((value) => value.trim()).filter(Boolean))}
+              onChange={(event) => updateField('eventsApiEventsEnabled', dedupeStringList(event.target.value))}
               rows={4}
               className="border-zinc-800 bg-black/40 text-sm text-white"
             />
