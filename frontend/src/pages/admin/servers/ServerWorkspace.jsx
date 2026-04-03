@@ -305,9 +305,9 @@ function ServerWorkspace() {
                   ? 'Server started with partial provisioning — some stages failed'
                   : 'Provisioning failed'}
             </div>
-            {server.needs_manual_intervention && (
+            {server.needs_manual_intervention && server.auto_recovery_attempts > 0 && (
               <p className="mb-1 text-amber-300">
-                The system attempted {server.auto_recovery_attempts || 0} automatic fix(es) but could not resolve the config error.
+                The system attempted {server.auto_recovery_attempts} automatic fix(es) but could not resolve the config error.
                 Please review the server settings and correct the configuration manually.
               </p>
             )}

@@ -86,6 +86,7 @@ class ManagedServer(BaseModel):
     provisioning_stages: Dict[str, Any] = Field(default_factory=dict)
     provisioning_warnings: List[Dict[str, Any]] = Field(default_factory=list)
     auto_recovery_attempts: int = 0
+    auto_recovery_log: List[str] = Field(default_factory=list)
     data_root: str = ""
     config_path: str = ""
     profile_path: str = ""

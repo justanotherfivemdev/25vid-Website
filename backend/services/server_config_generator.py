@@ -561,10 +561,7 @@ def _fix_type_mismatch(server: Dict[str, Any], error_message: str) -> Tuple[bool
 
     # Apply type coercion based on the expected schema type
     if expected == "array":
-        if isinstance(old_value, bool):
-            parent[key] = [] if old_value else []
-        else:
-            parent[key] = []
+        parent[key] = []
     elif expected == "boolean":
         parent[key] = bool(old_value)
     elif expected == "integer":
