@@ -1,676 +1,558 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Puzzle,
-  Search,
-  Plus,
-  Trash2,
-  AlertTriangle,
-  CheckCircle,
-  RefreshCw,
-  Shield,
-  Loader2,
-  Save,
-  Eye,
-  ArrowUp,
   ArrowDown,
+  ArrowUp,
+  CheckCircle,
+  Download,
+  FileJson,
+  History,
+  Loader2,
   Package,
-  Info,
+  Plus,
+  Puzzle,
+  RefreshCw,
+  Save,
+  Search,
+  Shield,
+  Trash2,
+  Upload,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
-const STABILITY_COLORS = {
-  A: 'bg-green-600/20 text-green-400 border-green-600/30',
-  B: 'bg-blue-600/20 text-blue-400 border-blue-600/30',
-  C: 'bg-amber-600/20 text-amber-400 border-amber-600/30',
-  D: 'bg-orange-600/20 text-orange-400 border-orange-600/30',
-  F: 'bg-red-600/20 text-red-400 border-red-600/30',
+const WORKSHOP_CATEGORY_MAP = {
+  popularity: 'popular',
+  newest: 'newest',
+  subscribers: 'subscribers',
+  versionSize: 'versionSize',
 };
 
-const RISK_COLORS = {
-  low: 'text-green-400',
-  medium: 'text-amber-400',
-  high: 'text-orange-400',
-  critical: 'text-red-400',
-};
+function normalizeModEntry(mod) {
+  const modId = mod.mod_id || mod.modId || '';
+  return {
+    ...mod,
+    mod_id: modId,
+    modId: modId,
+    name: mod.name || modId,
+    enabled: mod.enabled !== false,
+  };
+}
+
+function parseImportPayload(raw) {
+  const parsed = JSON.parse(raw);
+  if (Array.isArray(parsed)) return parsed;
+  if (Array.isArray(parsed?.mods)) return parsed.mods;
+  return [];
+}
 
 function ModsModule() {
   const { server, serverId, fetchServer, canManage } = useOutletContext();
+  const [activeTab, setActiveTab] = useState('workshop');
   const [enabledMods, setEnabledMods] = useState([]);
-  const [workshopMods, setWorkshopMods] = useState([]);
-  const [workshopSearch, setWorkshopSearch] = useState('');
-  const [workshopLoading, setWorkshopLoading] = useState(false);
-  const [modIntel, setModIntel] = useState({});
-  const [selectedMod, setSelectedMod] = useState(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [addByIdOpen, setAddByIdOpen] = useState(false);
-  const [newModId, setNewModId] = useState('');
+  const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
   const [validationIssues, setValidationIssues] = useState([]);
-  const [manualEditOpen, setManualEditOpen] = useState(false);
-  const [manualMod, setManualMod] = useState({ mod_id: '', name: '', author: '', version: '', description: '' });
 
-  // Init enabled mods from server (skip if user has unsaved changes)
+  const [workshopMods, setWorkshopMods] = useState([]);
+  const [workshopSearch, setWorkshopSearch] = useState('');
+  const [workshopSort, setWorkshopSort] = useState('popularity');
+  const [workshopTags, setWorkshopTags] = useState('');
+  const [workshopLoading, setWorkshopLoading] = useState(false);
+
+  const [downloadHistory, setDownloadHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedMod, setSelectedMod] = useState(null);
+
+  const [importPayload, setImportPayload] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [exportPayload, setExportPayload] = useState('');
+  const [exporting, setExporting] = useState(false);
+
   useEffect(() => {
-    if (dirty) {
-      return;
+    if (!dirty) {
+      setEnabledMods((server?.mods || []).map(normalizeModEntry));
     }
-
-    setEnabledMods((server?.mods || []).map((m, i) => ({
-      ...m,
-      _idx: i,
-      enabled: m.enabled !== false,
-    })));
   }, [server?.mods, dirty]);
 
-  // Fetch workshop mods
-  const searchWorkshop = useCallback(async (query) => {
+  const fetchDownloadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await axios.get(`${API}/servers/mod-download-history`);
+      setDownloadHistory(res.data || []);
+    } catch {
+      setDownloadHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  const searchWorkshop = useCallback(async () => {
     setWorkshopLoading(true);
     try {
-      const res = await axios.get(`${API}/servers/workshop/search`, { params: { q: query || '', page: 1, per_page: 20 } });
-      setWorkshopMods(res.data?.mods || []);
+      const params = {
+        page: 1,
+        sort: workshopSort,
+      };
+      if (workshopTags.trim()) params.tags = workshopTags;
+
+      const response = workshopSearch.trim()
+        ? await axios.get(`${API}/workshop/search`, { params: { ...params, q: workshopSearch.trim() } })
+        : await axios.get(`${API}/workshop/browse`, {
+            params: {
+              category: WORKSHOP_CATEGORY_MAP[workshopSort] || 'popular',
+              page: 1,
+              tags: workshopTags.trim() || undefined,
+            },
+          });
+      setWorkshopMods(response.data?.mods || []);
     } catch {
       setWorkshopMods([]);
     } finally {
       setWorkshopLoading(false);
     }
-  }, []);
+  }, [workshopSearch, workshopSort, workshopTags]);
 
-  useEffect(() => { searchWorkshop(''); }, [searchWorkshop]);
-
-  // Fetch mod intelligence data
   useEffect(() => {
-    axios.get(`${API}/servers/mod-issues?status=active`)
-      .then(res => {
-        const issues = res.data?.issues || res.data || [];
-        const intel = {};
-        issues.forEach(issue => {
-          if (issue.mod_id) {
-            if (!intel[issue.mod_id]) intel[issue.mod_id] = { issues: [], errorCount: 0, confidence: 0 };
-            intel[issue.mod_id].issues.push(issue);
-            intel[issue.mod_id].errorCount += issue.occurrence_count || 1;
-            intel[issue.mod_id].confidence = Math.max(intel[issue.mod_id].confidence, issue.confidence_score || 0);
-          }
-        });
-        setModIntel(intel);
-      })
-      .catch(() => {});
-  }, []);
+    searchWorkshop();
+  }, [searchWorkshop]);
 
-  const getStabilityRating = (modId) => {
-    const intel = modIntel[modId];
-    if (!intel) return 'A';
-    if (intel.errorCount > 20 || intel.confidence > 0.8) return 'F';
-    if (intel.errorCount > 10 || intel.confidence > 0.6) return 'D';
-    if (intel.errorCount > 5 || intel.confidence > 0.4) return 'C';
-    if (intel.errorCount > 2) return 'B';
-    return 'A';
-  };
+  useEffect(() => {
+    fetchDownloadHistory();
+  }, [fetchDownloadHistory]);
 
-  const getRiskLevel = (modId) => {
-    const intel = modIntel[modId];
-    if (!intel) return 'low';
-    if (intel.errorCount > 20 || intel.confidence > 0.8) return 'critical';
-    if (intel.errorCount > 10 || intel.confidence > 0.6) return 'high';
-    if (intel.errorCount > 5) return 'medium';
-    return 'low';
-  };
-
-  // Move mod up/down
-  const moveMod = useCallback((idx, dir) => {
-    setEnabledMods(prev => {
-      const arr = [...prev];
-      const newIdx = idx + dir;
-      if (newIdx < 0 || newIdx >= arr.length) return prev;
-      [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-      return arr;
-    });
-    setDirty(true);
-  }, []);
-
-  // Toggle mod enabled
-  const toggleMod = useCallback((idx) => {
-    setEnabledMods(prev => prev.map((m, i) => i === idx ? { ...m, enabled: !m.enabled } : m));
-    setDirty(true);
-  }, []);
-
-  // Remove mod
-  const removeMod = useCallback((idx) => {
-    setEnabledMods(prev => prev.filter((_, i) => i !== idx));
-    setDirty(true);
-  }, []);
-
-  // Add mod from workshop
   const addMod = useCallback((mod) => {
-    const id = mod.mod_id || mod.modId;
-    setEnabledMods(prev => {
-      if (!id) return prev;
-      if (prev.some(m => (m.mod_id || m.modId) === id)) return prev;
-      const entry = { mod_id: id, modId: id, name: mod.name || id, enabled: true };
-      // Preserve version only if explicitly specified (not empty/"latest")
-      if (mod.version && mod.version.toLowerCase() !== 'latest') entry.version = mod.version;
-      // Preserve metadata for UI display
-      if (mod.author) entry.author = mod.author;
-      if (mod.description) entry.description = mod.description;
-      if (mod.thumbnail_url) entry.thumbnail_url = mod.thumbnail_url;
-      if (mod.metadata_source) entry.metadata_source = mod.metadata_source;
-      return [...prev, entry];
+    const normalized = normalizeModEntry(mod);
+    if (!normalized.mod_id) return;
+    setEnabledMods((prev) => (
+      prev.some((entry) => entry.mod_id === normalized.mod_id)
+        ? prev
+        : [...prev, normalized]
+    ));
+    setDirty(true);
+  }, []);
+
+  const moveMod = useCallback((index, delta) => {
+    setEnabledMods((prev) => {
+      const nextIndex = index + delta;
+      if (nextIndex < 0 || nextIndex >= prev.length) return prev;
+      const clone = [...prev];
+      [clone[index], clone[nextIndex]] = [clone[nextIndex], clone[index]];
+      return clone;
     });
     setDirty(true);
   }, []);
 
-  // Add mod by ID
-  const addModById = useCallback(async () => {
-    const id = newModId.trim();
-    if (!id) return;
-
-    // Try to fetch metadata
-    try {
-      await axios.post(`${API}/servers/workshop/mod/fetch`, { mod_id: id });
-    } catch {
-      // Proceed even if metadata fetch fails
-    }
-
-    setEnabledMods(prev => {
-      if (prev.some(m => (m.mod_id || m.modId) === id)) return prev;
-      return [...prev, { mod_id: id, modId: id, name: id, enabled: true }];
-    });
+  const toggleMod = useCallback((index) => {
+    setEnabledMods((prev) => prev.map((mod, current) => (
+      current === index ? { ...mod, enabled: !mod.enabled } : mod
+    )));
     setDirty(true);
-    setNewModId('');
-    setAddByIdOpen(false);
-  }, [newModId]);
+  }, []);
 
-  // Save mods
+  const removeMod = useCallback((index) => {
+    setEnabledMods((prev) => prev.filter((_, current) => current !== index));
+    setDirty(true);
+  }, []);
+
   const saveMods = useCallback(async () => {
     setSaving(true);
     try {
       await axios.put(`${API}/servers/${serverId}/mods`, {
-        mods: enabledMods.map(m => {
-          const entry = {
-            mod_id: m.mod_id || m.modId,
-            modId: m.mod_id || m.modId,
-            name: m.name,
-            enabled: m.enabled,
-          };
-          // Only include version when explicitly set (not empty/"latest")
-          if (m.version && m.version.toLowerCase() !== 'latest') {
-            entry.version = m.version;
-          }
-          // Pass through metadata for backend storage
-          if (m.author) entry.author = m.author;
-          if (m.description) entry.description = m.description;
-          if (m.thumbnail_url) entry.thumbnail_url = m.thumbnail_url;
-          if (m.tags) entry.tags = m.tags;
-          if (m.dependencies) entry.dependencies = m.dependencies;
-          if (m.scenario_ids) entry.scenario_ids = m.scenario_ids;
-          if (m.metadata_source) entry.metadata_source = m.metadata_source;
-          return entry;
-        }),
+        mods: enabledMods.map((mod) => ({
+          mod_id: mod.mod_id,
+          modId: mod.mod_id,
+          name: mod.name,
+          enabled: mod.enabled,
+          version: mod.version,
+          author: mod.author,
+          description: mod.description,
+          tags: mod.tags,
+          dependencies: mod.dependencies,
+          scenario_ids: mod.scenario_ids,
+          thumbnail_url: mod.thumbnail_url,
+          metadata_source: mod.metadata_source,
+        })),
       });
       setDirty(false);
       await fetchServer(true);
-    } catch {
-      // Error handling
+      await fetchDownloadHistory();
     } finally {
       setSaving(false);
     }
-  }, [enabledMods, serverId, fetchServer]);
+  }, [enabledMods, fetchDownloadHistory, fetchServer, serverId]);
 
-  // Validate mods
   const validateMods = useCallback(async () => {
     setValidating(true);
     try {
       const res = await axios.post(`${API}/servers/${serverId}/mods/validate`, {
-        mods: enabledMods.map(m => ({ mod_id: m.mod_id || m.modId, name: m.name })),
+        mods: enabledMods.map((mod) => ({ mod_id: mod.mod_id, name: mod.name })),
       });
       setValidationIssues(res.data?.issues || []);
     } catch {
-      setValidationIssues([{ type: 'error', message: 'Validation endpoint not available' }]);
+      setValidationIssues([{ message: 'Validation endpoint is unavailable.' }]);
     } finally {
       setValidating(false);
     }
   }, [enabledMods, serverId]);
 
-  // View mod detail
   const openModDetail = useCallback(async (mod) => {
-    setSelectedMod(mod);
+    setSelectedMod(normalizeModEntry(mod));
     setDetailOpen(true);
-    // Try to enrich with workshop data
     try {
-      const modId = mod.mod_id || mod.modId;
-      const res = await axios.get(`${API}/servers/workshop/mod/${modId}`);
-      setSelectedMod(prev => ({ ...prev, ...res.data }));
+      const res = await axios.get(`${API}/servers/workshop/mod/${mod.mod_id || mod.modId}`);
+      setSelectedMod((current) => ({ ...current, ...normalizeModEntry(res.data) }));
     } catch {
-      // Use existing data
+      // Keep current metadata when enrichment is unavailable.
     }
   }, []);
 
-  const enabledCount = enabledMods.filter(m => m.enabled).length;
+  const exportMods = useCallback(async () => {
+    setExporting(true);
+    try {
+      const res = await axios.get(`${API}/servers/${serverId}/mods/export-json`);
+      setExportPayload(JSON.stringify(res.data, null, 2));
+    } finally {
+      setExporting(false);
+    }
+  }, [serverId]);
+
+  const importMods = useCallback(async () => {
+    setImportError('');
+    setImporting(true);
+    try {
+      const mods = parseImportPayload(importPayload);
+      await axios.post(`${API}/servers/${serverId}/mods/import-json`, { mods });
+      setDirty(false);
+      await fetchServer(true);
+      await fetchDownloadHistory();
+    } catch (error) {
+      setImportError(error?.response?.data?.detail || 'Import failed. Use a JSON array or an object with a "mods" array.');
+    } finally {
+      setImporting(false);
+    }
+  }, [fetchDownloadHistory, fetchServer, importPayload, serverId]);
+
+  const enabledCount = useMemo(
+    () => enabledMods.filter((mod) => mod.enabled).length,
+    [enabledMods],
+  );
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-          MODS MANAGER
-        </h2>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold tracking-[0.24em] text-gray-200" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+            MODS WORKSPACE
+          </h2>
+          <p className="mt-1 text-xs text-gray-500">
+            Browse the live workshop, curate load order, and batch import or export server assignments without leaving the dashboard.
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           {dirty && (
-            <Badge variant="outline" className="border-amber-600/30 text-amber-400 text-xs">Unsaved changes</Badge>
+            <Badge variant="outline" className="border-amber-500/30 text-amber-300">
+              Unsaved load order changes
+            </Badge>
           )}
-          <Button size="sm" variant="outline" onClick={validateMods} disabled={validating}
-            className="h-7 border-zinc-800 text-xs text-gray-400">
-            {validating ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Shield className="mr-1 h-3 w-3" />}
+          <Button size="sm" variant="outline" onClick={validateMods} disabled={validating} className="h-8 border-zinc-800 text-xs text-gray-300">
+            {validating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Shield className="mr-1 h-3.5 w-3.5" />}
             Validate
           </Button>
-          <Button size="sm" onClick={saveMods} disabled={!dirty || saving || !canManage}
-            className="h-7 bg-tropic-gold text-black hover:bg-tropic-gold-light text-xs">
-            {saving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
-            Deploy
+          <Button
+            size="sm"
+            onClick={saveMods}
+            disabled={!dirty || saving || !canManage}
+            className="h-8 bg-tropic-gold text-black transition-all hover:bg-tropic-gold-light hover:shadow-[0_0_18px_rgba(201,162,39,0.24)]"
+          >
+            {saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1 h-3.5 w-3.5" />}
+            Deploy load order
           </Button>
         </div>
       </div>
 
-      {/* Validation issues */}
       {validationIssues.length > 0 && (
-        <div className="rounded border border-amber-600/30 bg-amber-600/5 p-3 space-y-1">
-          {validationIssues.map((issue, i) => (
-            <div key={i} className="flex items-center gap-2 text-xs text-amber-400">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              <span>{issue.message || issue}</span>
+        <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 p-3">
+          {validationIssues.map((issue, index) => (
+            <div key={`${issue.message || issue.type}-${index}`} className="text-xs text-amber-200">
+              {issue.message || issue.type}
             </div>
           ))}
         </div>
       )}
 
-      {/* Split view */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* LEFT: Enabled Mods */}
-        <Card className="border-zinc-800 bg-black/60">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
-                <Puzzle className="h-3.5 w-3.5 text-tropic-gold" />
-                ENABLED MODS
-                <Badge variant="outline" className="border-zinc-700 text-[10px] text-gray-500">{enabledCount}/{enabledMods.length}</Badge>
-              </CardTitle>
-              <div className="flex gap-1">
-                <Button size="sm" variant="outline" onClick={() => setAddByIdOpen(true)}
-                  className="h-6 border-zinc-800 text-[10px] text-gray-400">
-                  <Plus className="mr-1 h-3 w-3" /> Add by ID
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-1 max-h-[60vh] overflow-y-auto">
-            {enabledMods.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-                <Puzzle className="mb-2 h-8 w-8 text-gray-700" />
-                <p className="text-xs">No mods enabled</p>
-                <p className="mt-1 text-[10px]">Add mods from the workshop browser</p>
-              </div>
-            ) : (
-              enabledMods.map((mod, idx) => {
-                const modId = mod.mod_id || mod.modId;
-                const stability = getStabilityRating(modId);
-                const risk = getRiskLevel(modId);
-                const intel = modIntel[modId];
-                return (
-                  <div key={modId || idx}
-                    className={`group flex items-center gap-2 rounded border px-2 py-2 transition-colors ${
-                      mod.enabled ? 'border-zinc-800/50 bg-zinc-900/30' : 'border-zinc-800/30 bg-zinc-900/10 opacity-60'
-                    } hover:border-tropic-gold-dark/30`}
-                  >
-                    {/* Order */}
-                    <div className="flex flex-col gap-0.5">
-                      <button onClick={() => moveMod(idx, -1)} disabled={idx === 0}
-                        className="text-gray-600 hover:text-gray-300 disabled:opacity-30"><ArrowUp className="h-3 w-3" /></button>
-                      <button onClick={() => moveMod(idx, 1)} disabled={idx === enabledMods.length - 1}
-                        className="text-gray-600 hover:text-gray-300 disabled:opacity-30"><ArrowDown className="h-3 w-3" /></button>
-                    </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid h-auto grid-cols-3 rounded-xl border border-zinc-800 bg-black/60 p-1">
+          <TabsTrigger value="workshop" className="data-[state=active]:bg-tropic-gold data-[state=active]:text-black">Workshop</TabsTrigger>
+          <TabsTrigger value="load-order" className="data-[state=active]:bg-tropic-gold data-[state=active]:text-black">Load Order</TabsTrigger>
+          <TabsTrigger value="batch" className="data-[state=active]:bg-tropic-gold data-[state=active]:text-black">Batch</TabsTrigger>
+        </TabsList>
 
-                    {/* Order number */}
-                    <span className="w-5 text-center text-[10px] text-gray-600">{idx + 1}</span>
-
-                    {/* Mod info */}
-                    <button className="flex-1 text-left" onClick={() => openModDetail(mod)}>
-                      <div className="text-xs font-medium text-gray-200">{mod.name || modId}</div>
-                      <div className="flex items-center gap-2">
-                        {modId && mod.name && mod.name !== modId && (
-                          <span className="text-[10px] font-mono text-gray-600">{modId}</span>
-                        )}
-                        {mod.author && (
-                          <span className="text-[10px] text-gray-600">by {mod.author}</span>
-                        )}
-                        {mod.version && (
-                          <Badge variant="outline" className="border-zinc-700 text-[9px] px-1 py-0 text-gray-500">v{mod.version}</Badge>
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Badges */}
-                    <div className="flex items-center gap-1">
-                      {stability !== 'A' && (
-                        <Badge variant="outline" className={`${STABILITY_COLORS[stability]} text-[9px] px-1 py-0`}>{stability}</Badge>
-                      )}
-                      {intel && (
-                        <Badge variant="outline" className="border-red-600/30 text-red-400 text-[9px] px-1 py-0">
-                          {intel.errorCount} err
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Enable/disable */}
-                    <Switch checked={mod.enabled} onCheckedChange={() => toggleMod(idx)}
-                      className="h-4 w-7" />
-
-                    {/* Remove */}
-                    <button onClick={() => removeMod(idx)}
-                      className="text-gray-600 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+        <TabsContent value="workshop" className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <Card className="border-zinc-800 bg-black/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+                  <Package className="h-4 w-4 text-tropic-gold" /> LIVE WORKSHOP BROWSER
+                </CardTitle>
+                <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_160px_160px_auto]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
+                    <Input
+                      value={workshopSearch}
+                      onChange={(event) => setWorkshopSearch(event.target.value)}
+                      onKeyDown={(event) => event.key === 'Enter' && searchWorkshop()}
+                      placeholder="Search mods or paste a mod ID"
+                      className="h-9 border-zinc-800 bg-black/50 pl-9 text-sm text-white placeholder:text-gray-600"
+                    />
                   </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-
-        {/* RIGHT: Workshop Browser */}
-        <Card className="border-zinc-800 bg-black/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
-              <Package className="h-3.5 w-3.5 text-tropic-gold" /> WORKSHOP BROWSER
-            </CardTitle>
-            <div className="relative mt-2">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
-              <Input
-                value={workshopSearch}
-                onChange={(e) => setWorkshopSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && searchWorkshop(workshopSearch)}
-                placeholder="Search mods or paste mod ID..."
-                className="h-8 border-zinc-800 bg-black/60 pl-9 text-xs text-white placeholder:text-gray-600"
-              />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-1 max-h-[60vh] overflow-y-auto">
-            {workshopLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-5 w-5 animate-spin text-tropic-gold" />
-              </div>
-            ) : workshopMods.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-                <Search className="mb-2 h-8 w-8 text-gray-700" />
-                <p className="text-xs">Search the workshop</p>
-                <p className="mt-1 text-[10px]">Or paste a mod ID directly</p>
-                <Button size="sm" variant="outline" onClick={() => setManualEditOpen(true)}
-                  className="mt-3 h-7 border-zinc-800 text-[10px] text-gray-400">
-                  <Plus className="mr-1 h-3 w-3" /> Add Manually
-                </Button>
-              </div>
-            ) : (
-              workshopMods.map((mod) => {
-                const isAdded = enabledMods.some(m => (m.mod_id || m.modId) === mod.mod_id);
-                const stability = getStabilityRating(mod.mod_id);
-                return (
-                  <div key={mod.mod_id}
-                    className="flex items-center gap-3 rounded border border-zinc-800/50 bg-zinc-900/20 p-2 hover:border-tropic-gold-dark/30 transition-colors">
-                    {/* Thumbnail */}
-                    {mod.thumbnail_url ? (
-                      <img src={mod.thumbnail_url} alt="" className="h-10 w-10 rounded object-cover" />
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded bg-zinc-800">
-                        <Puzzle className="h-4 w-4 text-gray-600" />
-                      </div>
-                    )}
-
-                    {/* Info */}
-                    <button className="flex-1 text-left" onClick={() => openModDetail(mod)}>
-                      <div className="text-xs font-medium text-gray-200">{mod.name || mod.mod_id}</div>
-                      <div className="flex items-center gap-2 text-[10px] text-gray-500">
-                        {mod.author && <span>by {mod.author}</span>}
-                        <Badge variant="outline" className={`${
-                          mod.metadata_source === 'workshop' ? 'border-green-600/30 text-green-400' :
-                          mod.metadata_source === 'manual' ? 'border-blue-600/30 text-blue-400' :
-                          'border-zinc-600/30 text-gray-500'
-                        } text-[8px] px-1 py-0`}>
-                          {mod.metadata_source || 'cached'}
-                        </Badge>
-                        {stability !== 'A' && (
-                          <Badge variant="outline" className={`${STABILITY_COLORS[stability]} text-[8px] px-1 py-0`}>{stability}</Badge>
+                  <select
+                    value={workshopSort}
+                    onChange={(event) => setWorkshopSort(event.target.value)}
+                    className="h-9 rounded-md border border-zinc-800 bg-black/50 px-3 text-sm text-white"
+                  >
+                    <option value="popularity">Popularity</option>
+                    <option value="newest">Newest</option>
+                    <option value="subscribers">Subscribers</option>
+                    <option value="versionSize">Version size</option>
+                  </select>
+                  <Input
+                    value={workshopTags}
+                    onChange={(event) => setWorkshopTags(event.target.value)}
+                    placeholder="Tags (comma separated)"
+                    className="h-9 border-zinc-800 bg-black/50 text-sm text-white placeholder:text-gray-600"
+                  />
+                  <Button size="sm" onClick={searchWorkshop} className="h-9 bg-tropic-gold text-black hover:bg-tropic-gold-light">
+                    {workshopLoading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1 h-3.5 w-3.5" />}
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {workshopLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-5 w-5 animate-spin text-tropic-gold" />
+                  </div>
+                ) : workshopMods.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-600">
+                    <Package className="mb-3 h-8 w-8 text-gray-700" />
+                    <p className="text-sm">No workshop results yet.</p>
+                    <p className="mt-1 text-xs">Search by mod name, tag, or ID to pull live Workshop results into the dashboard.</p>
+                  </div>
+                ) : (
+                  workshopMods.map((mod) => {
+                    const isAdded = enabledMods.some((entry) => entry.mod_id === mod.mod_id);
+                    return (
+                      <div key={mod.mod_id} className="flex items-center gap-3 rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-3">
+                        {mod.thumbnail_url ? (
+                          <img src={mod.thumbnail_url} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                        ) : (
+                          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-zinc-900">
+                            <Puzzle className="h-5 w-5 text-gray-600" />
+                          </div>
                         )}
+                        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openModDetail(mod)}>
+                          <div className="truncate text-sm font-medium text-gray-100">{mod.name || mod.mod_id}</div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
+                            <span className="font-mono text-gray-600">{mod.mod_id}</span>
+                            {mod.author && <span>by {mod.author}</span>}
+                            {mod.tags?.slice(0, 2).map((tag) => (
+                              <Badge key={tag} variant="outline" className="border-zinc-700 text-[10px] text-gray-400">{tag}</Badge>
+                            ))}
+                          </div>
+                        </button>
+                        <Button
+                          size="sm"
+                          onClick={() => addMod(mod)}
+                          disabled={isAdded}
+                          className={isAdded ? 'h-8 border border-green-500/30 bg-transparent text-green-300' : 'h-8 bg-tropic-gold text-black hover:bg-tropic-gold-light'}
+                        >
+                          {isAdded ? <CheckCircle className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                        </Button>
                       </div>
-                    </button>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
 
-                    {/* Add button */}
-                    <Button size="sm" variant={isAdded ? 'outline' : 'default'} disabled={isAdded}
-                      onClick={() => addMod(mod)}
-                      className={`h-7 text-[10px] ${isAdded
-                        ? 'border-green-600/30 text-green-400'
-                        : 'bg-tropic-gold text-black hover:bg-tropic-gold-light'
-                      }`}>
-                      {isAdded ? <CheckCircle className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            <Card className="border-zinc-800 bg-black/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+                  <History className="h-4 w-4 text-tropic-gold" /> DOWNLOAD HISTORY
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {historyLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-5 w-5 animate-spin text-tropic-gold" />
+                  </div>
+                ) : downloadHistory.length === 0 ? (
+                  <p className="text-xs text-gray-500">No mod download history has been recorded yet.</p>
+                ) : (
+                  downloadHistory.slice(0, 12).map((entry) => (
+                    <div key={`${entry.mod_id}-${entry.server_id}-${entry.downloaded_at}`} className="rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-3">
+                      <div className="text-sm text-gray-100">{entry.mod_name || entry.mod_id}</div>
+                      <div className="mt-1 text-[11px] text-gray-500">
+                        {entry.server_id} • {entry.downloaded_by || 'Unknown operator'}
+                      </div>
+                      <div className="mt-1 text-[11px] text-gray-600">
+                        {entry.downloaded_at ? new Date(entry.downloaded_at).toLocaleString() : 'Unknown time'}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="load-order" className="space-y-4">
+          <Card className="border-zinc-800 bg-black/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+                <Puzzle className="h-4 w-4 text-tropic-gold" /> LOAD ORDER
+                <Badge variant="outline" className="ml-auto border-zinc-700 text-gray-400">{enabledCount}/{enabledMods.length} enabled</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {enabledMods.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-600">
+                  <Puzzle className="mb-3 h-8 w-8 text-gray-700" />
+                  <p className="text-sm">No mods are assigned to this server yet.</p>
+                  <p className="mt-1 text-xs">Use the Workshop tab to browse live results and add them to the deployment list.</p>
+                </div>
+              ) : (
+                enabledMods.map((mod, index) => (
+                  <div key={mod.mod_id || index} className="flex items-center gap-3 rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-3">
+                    <div className="flex flex-col gap-1">
+                      <button type="button" onClick={() => moveMod(index, -1)} disabled={index === 0} className="text-gray-500 hover:text-white disabled:opacity-30">
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button type="button" onClick={() => moveMod(index, 1)} disabled={index === enabledMods.length - 1} className="text-gray-500 hover:text-white disabled:opacity-30">
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="w-8 text-center text-xs text-gray-500">{index + 1}</div>
+                    <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openModDetail(mod)}>
+                      <div className="truncate text-sm font-medium text-gray-100">{mod.name}</div>
+                      <div className="mt-1 text-[11px] font-mono text-gray-600">{mod.mod_id}</div>
+                    </button>
+                    <Switch checked={mod.enabled} onCheckedChange={() => toggleMod(index)} className="h-5 w-9" />
+                    <Button size="icon" variant="ghost" onClick={() => removeMod(index)} className="h-8 w-8 text-gray-500 hover:text-red-400">
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Mod Detail Dialog */}
+        <TabsContent value="batch" className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Card className="border-zinc-800 bg-black/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+                  <Upload className="h-4 w-4 text-tropic-gold" /> IMPORT JSON
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Textarea
+                  value={importPayload}
+                  onChange={(event) => setImportPayload(event.target.value)}
+                  placeholder='Paste a JSON array of mods or an object with a "mods" array'
+                  rows={12}
+                  className="border-zinc-800 bg-black/50 font-mono text-xs text-white"
+                />
+                {importError && <p className="text-xs text-red-400">{importError}</p>}
+                <Button size="sm" onClick={importMods} disabled={!importPayload.trim() || importing} className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
+                  {importing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1 h-3.5 w-3.5" />}
+                  Replace server mod list
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-zinc-800 bg-black/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+                  <FileJson className="h-4 w-4 text-tropic-gold" /> EXPORT + REUSE
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={exportMods} disabled={exporting} className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
+                    {exporting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1 h-3.5 w-3.5" />}
+                    Refresh export
+                  </Button>
+                </div>
+                <Textarea
+                  value={exportPayload}
+                  onChange={(event) => setExportPayload(event.target.value)}
+                  placeholder="Exported mod payload will appear here"
+                  rows={12}
+                  className="border-zinc-800 bg-black/50 font-mono text-xs text-white"
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-lg border-zinc-800 bg-zinc-950 text-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-tropic-gold">
               <Puzzle className="h-5 w-5" />
-              {selectedMod?.name || selectedMod?.mod_id || 'Mod Details'}
+              {selectedMod?.name || selectedMod?.mod_id || 'Mod details'}
             </DialogTitle>
           </DialogHeader>
           {selectedMod && (
-            <div className="space-y-4 text-sm">
+            <div className="space-y-4">
               {selectedMod.thumbnail_url && (
-                <img src={selectedMod.thumbnail_url} alt="" className="h-32 w-full rounded object-cover" />
+                <img src={selectedMod.thumbnail_url} alt="" className="h-36 w-full rounded-xl object-cover" />
               )}
-              <div className="grid grid-cols-2 gap-3">
-                <DetailItem label="Mod ID" value={selectedMod.mod_id || selectedMod.modId} mono />
-                <DetailItem label="Author" value={selectedMod.author || '—'} />
-                <div>
-                  <span className="text-xs font-medium text-gray-500">Version</span>
-                  <select
-                    value={selectedMod.version || ''}
-                    onChange={(e) => {
-                      const newVersion = e.target.value;
-                      setSelectedMod(prev => ({ ...prev, version: newVersion }));
-                      // Also update in enabledMods if this mod is already added
-                      const modId = selectedMod.mod_id || selectedMod.modId;
-                      setEnabledMods(prev => prev.map(m => {
-                        if ((m.mod_id || m.modId) !== modId) return m;
-                        const updated = { ...m };
-                        if (newVersion) {
-                          updated.version = newVersion;
-                        } else {
-                          delete updated.version;
-                        }
-                        return updated;
-                      }));
-                      setDirty(true);
-                    }}
-                    className="mt-1 block w-full rounded border border-zinc-700 bg-black/60 px-2 py-1 text-xs text-white"
-                  >
-                    <option value="">Latest (unspecified)</option>
-                    {selectedMod.version && selectedMod.version.toLowerCase() !== 'latest' && (
-                      <option value={selectedMod.version}>{selectedMod.version}</option>
-                    )}
-                  </select>
-                </div>
-                <DetailItem label="Source" value={selectedMod.metadata_source || '—'} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <DetailItem label="Mod ID" value={selectedMod.mod_id} mono />
+                <DetailItem label="Author" value={selectedMod.author || 'Unknown'} />
+                <DetailItem label="Version" value={selectedMod.version || 'Latest'} />
+                <DetailItem label="Source" value={selectedMod.metadata_source || 'Unknown'} />
               </div>
               {selectedMod.description && (
                 <div>
-                  <span className="text-xs font-medium text-gray-500">Description</span>
-                  <p className="mt-1 text-xs text-gray-400">{selectedMod.description}</p>
+                  <div className="text-xs font-medium text-gray-500">Description</div>
+                  <p className="mt-1 text-sm text-gray-300">{selectedMod.description}</p>
                 </div>
               )}
-
-              {/* Intelligence Data */}
-              {modIntel[selectedMod.mod_id || selectedMod.modId] && (
-                <div className="rounded border border-red-600/20 bg-red-600/5 p-3 space-y-2">
-                  <div className="text-xs font-semibold text-red-400 flex items-center gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5" /> Intelligence Data
-                  </div>
-                  {modIntel[selectedMod.mod_id || selectedMod.modId].issues.map((issue, i) => (
-                    <div key={i} className="text-[10px] text-gray-400">
-                      <span className="text-gray-300">{issue.error_pattern}</span>
-                      <span className="ml-2 text-gray-600">×{issue.occurrence_count}</span>
-                      <span className="ml-2 text-gray-600">confidence: {(issue.confidence_score * 100).toFixed(0)}%</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Dependencies */}
-              {selectedMod.dependencies?.length > 0 && (
+              {!!selectedMod.dependencies?.length && (
                 <div>
-                  <span className="text-xs font-medium text-gray-500">Dependencies</span>
+                  <div className="text-xs font-medium text-gray-500">Dependencies</div>
                   <div className="mt-1 space-y-1">
-                    {selectedMod.dependencies.map((dep, i) => (
-                      <div key={i} className="text-xs text-gray-400 font-mono">{dep.mod_id || dep.name || JSON.stringify(dep)}</div>
+                    {selectedMod.dependencies.map((dependency, index) => (
+                      <div key={`${selectedMod.mod_id}-dep-${index}`} className="text-xs text-gray-400">
+                        {dependency.mod_id || dependency.modId || dependency.name || JSON.stringify(dependency)}
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
-
-              {/* Scenario IDs */}
-              {selectedMod.scenario_ids?.length > 0 && (
-                <div>
-                  <span className="text-xs font-medium text-gray-500">Scenario IDs</span>
-                  <div className="mt-1 space-y-1">
-                    {selectedMod.scenario_ids.map((sid, i) => (
-                      <div key={i} className="text-xs text-gray-400 font-mono">{sid}</div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2">
-                <Button size="sm" onClick={() => addMod(selectedMod)}
-                  className="bg-tropic-gold text-black hover:bg-tropic-gold-light text-xs">
-                  <Plus className="mr-1 h-3 w-3" /> Add to Server
-                </Button>
-                <Button size="sm" variant="outline"
-                  onClick={async () => {
-                    const modId = selectedMod.mod_id || selectedMod.modId;
-                    if (!modId) return;
-                    try { await axios.post(`${API}/servers/workshop/mod/${modId}/refresh`); }
-                    catch { /* ignore */ }
-                  }}
-                  className="border-zinc-800 text-xs text-gray-400">
-                  <RefreshCw className="mr-1 h-3 w-3" /> Refresh Metadata
-                </Button>
-              </div>
+              <Button size="sm" onClick={() => addMod(selectedMod)} className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
+                <Plus className="mr-1 h-3.5 w-3.5" /> Add to load order
+              </Button>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Add by ID Dialog */}
-      <Dialog open={addByIdOpen} onOpenChange={setAddByIdOpen}>
-        <DialogContent className="max-w-sm border-zinc-800 bg-zinc-950 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-tropic-gold">Add Mod by ID</DialogTitle>
-          </DialogHeader>
-          <p className="text-xs text-gray-400">Paste a 16-hex mod ID to add it to the server.</p>
-          <Input value={newModId} onChange={(e) => setNewModId(e.target.value)}
-            placeholder="e.g. 5965550B0AA3F466"
-            className="border-zinc-800 bg-black/60 font-mono text-sm text-white placeholder:text-gray-600" />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setAddByIdOpen(false)}
-              className="border-zinc-700 text-gray-400">Cancel</Button>
-            <Button size="sm" onClick={addModById} disabled={!newModId.trim()}
-              className="bg-tropic-gold text-black hover:bg-tropic-gold-light">Add Mod</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Manual Edit Dialog */}
-      <Dialog open={manualEditOpen} onOpenChange={setManualEditOpen}>
-        <DialogContent className="max-w-md border-zinc-800 bg-zinc-950 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-tropic-gold">Add Mod Manually</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-gray-400">Mod ID *</label>
-              <Input value={manualMod.mod_id} onChange={(e) => setManualMod(p => ({ ...p, mod_id: e.target.value }))}
-                placeholder="16-hex mod ID" className="mt-1 border-zinc-800 bg-black/60 font-mono text-sm text-white" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-400">Name</label>
-              <Input value={manualMod.name} onChange={(e) => setManualMod(p => ({ ...p, name: e.target.value }))}
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-400">Author</label>
-              <Input value={manualMod.author} onChange={(e) => setManualMod(p => ({ ...p, author: e.target.value }))}
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-400">Version</label>
-              <select
-                value={manualMod.version || ''}
-                onChange={(e) => setManualMod(p => ({ ...p, version: e.target.value }))}
-                className="mt-1 block w-full rounded border border-zinc-800 bg-black/60 px-2 py-1.5 text-sm text-white"
-              >
-                <option value="">Latest (unspecified)</option>
-              </select>
-              <p className="mt-0.5 text-[10px] text-gray-600">Leave as &quot;Latest&quot; to always use the newest version</p>
-            </div>
-            <div>
-              <label className="text-xs text-gray-400">Description</label>
-              <Textarea value={manualMod.description} onChange={(e) => setManualMod(p => ({ ...p, description: e.target.value }))}
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white" rows={3} />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setManualEditOpen(false)}
-              className="border-zinc-700 text-gray-400">Cancel</Button>
-            <Button size="sm" disabled={!manualMod.mod_id.trim()}
-              onClick={async () => {
-                try {
-                  await axios.post(`${API}/servers/workshop/mod`, manualMod);
-                  const modData = {
-                    mod_id: manualMod.mod_id,
-                    name: manualMod.name || manualMod.mod_id,
-                    author: manualMod.author,
-                  };
-                  // Only include version if explicitly specified
-                  if (manualMod.version && manualMod.version.toLowerCase() !== 'latest') {
-                    modData.version = manualMod.version;
-                  }
-                  addMod(modData);
-                  setManualEditOpen(false);
-                  setManualMod({ mod_id: '', name: '', author: '', version: '', description: '' });
-                } catch { /* ignore */ }
-              }}
-              className="bg-tropic-gold text-black hover:bg-tropic-gold-light">Save & Add</Button>
-          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -680,8 +562,8 @@ function ModsModule() {
 function DetailItem({ label, value, mono }) {
   return (
     <div>
-      <span className="text-[10px] font-medium text-gray-500">{label}</span>
-      <div className={`text-xs text-gray-300 ${mono ? 'font-mono' : ''}`}>{value}</div>
+      <div className="text-[11px] font-medium text-gray-500">{label}</div>
+      <div className={`text-sm text-gray-200 ${mono ? 'font-mono' : ''}`}>{value}</div>
     </div>
   );
 }

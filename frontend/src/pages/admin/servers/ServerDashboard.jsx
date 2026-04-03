@@ -22,6 +22,7 @@ import {
 import { API } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
+import { isServerDegraded, normalizeServer } from '@/utils/serverStatus';
 import ServerCard from '@/components/servers/ServerCard';
 
 const AUTO_REFRESH_MS = 15_000;
@@ -33,8 +34,8 @@ function normalizeMetricPoint(point) {
   return {
     ...point,
     player_count: point.player_count ?? point.max_player_count ?? point.avg_player_count ?? null,
-    fps: point.fps ?? null,
-    ping: point.ping ?? null,
+    fps: point.server_fps ?? point.avg_server_fps ?? point.fps ?? null,
+    ping: point.avg_player_ping_ms ?? point.ping ?? null,
   };
 }
 
@@ -123,7 +124,7 @@ function ServerDashboard() {
 
     try {
       const res = await axios.get(`${API}/servers`);
-      setServers(Array.isArray(res.data) ? res.data : []);
+      setServers(Array.isArray(res.data) ? res.data.map(normalizeServer) : []);
       setError(null);
     } catch (err) {
       console.error('Failed to fetch servers:', err);
@@ -255,7 +256,7 @@ function ServerDashboard() {
   const stats = useMemo(() => {
     const total   = servers.length;
     const running = servers.filter((s) => s.status === 'running').length;
-    const issues  = servers.filter((s) => ['error', 'crash_loop', 'provisioning_failed', 'provisioning_partial'].includes(s.status)).length;
+    const issues  = servers.filter((s) => ['error', 'crash_loop'].includes(s.status) || isServerDegraded(s)).length;
     return { total, running, issues };
   }, [servers]);
 

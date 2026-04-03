@@ -122,11 +122,9 @@ class ProvisioningResult:
 
     @property
     def overall_status(self) -> str:
-        if self.all_succeeded:
-            return "running"
         if self.container_started:
-            return "provisioning_partial"
-        return "provisioning_failed"
+            return "running"
+        return "error"
 
     @property
     def provisioning_state(self) -> str:
@@ -155,8 +153,8 @@ class ProvisioningResult:
         failed = self.failed_stages
         names = [s.name for s in failed]
         if self.container_started:
-            return f"Server started but the following stages failed: {', '.join(names)}"
-        return f"Provisioning failed at: {', '.join(names)}"
+            return f"Server created successfully, but follow-up stages need attention: {', '.join(names)}"
+        return f"Server creation failed before the container became operational: {', '.join(names)}"
 
 
 @dataclass
@@ -450,21 +448,87 @@ async def wait_for_profile_and_sat(server: Dict[str, Any]) -> Dict[str, Any]:
     )
 
 
+async def wait_for_profile_generation(server: Dict[str, Any]) -> Dict[str, Any]:
+    """Wait for the profile directory to populate after startup."""
+    profile_root = Path(server["profile_path"])
+    deadline = asyncio.get_running_loop().time() + SERVER_PROFILE_READY_TIMEOUT_SECONDS
+
+    while asyncio.get_running_loop().time() < deadline:
+        if profile_root.exists() and any(profile_root.iterdir()):
+            return {
+                "profile_ready": True,
+                "profile_path": str(profile_root),
+            }
+        await asyncio.sleep(SERVER_PROFILE_POLL_SECONDS)
+
+    return {
+        "profile_ready": False,
+        "error": "Server profile structure was not generated before the provisioning timeout",
+    }
+
+
+async def discover_sat_runtime(server: Dict[str, Any]) -> Dict[str, Any]:
+    """Discover SAT config after the profile has been generated."""
+    sat_path, sat_state = discover_sat_config(server["profile_path"])
+    if not sat_path:
+        return {
+            "sat_ready": False,
+            "sat_status": sat_state,
+            "error": "ServerAdminTools_Config.json was not discovered in the generated profile",
+        }
+
+    try:
+        baseline_applied = overlay_baseline_if_configured(sat_path)
+    except OSError as exc:
+        return {
+            "sat_ready": False,
+            "sat_status": "error",
+            "error": f"Failed to deploy ServerAdminTools_Config.json: {exc}",
+        }
+
+    if SERVER_SAT_BASELINE_PATH and not baseline_applied:
+        return {
+            "sat_ready": False,
+            "sat_status": "error",
+            "error": f"Configured SAT baseline file does not exist: {SERVER_SAT_BASELINE_PATH}",
+        }
+
+    return {
+        "sat_ready": True,
+        "sat_config_path": sat_path,
+        "sat_status": "configured" if baseline_applied else sat_state,
+    }
+
+
 async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     server = apply_runtime_defaults(server)
-    await ensure_filesystem(server)
-
     result = ProvisioningResult()
+    config_result = server["config_path"]
+
+    result.stages.append(
+        StageResult(name="record_creation", status="success", message="Server record created")
+    )
+
+    filesystem_stage = StageResult(name="filesystem_preparation")
+    result.stages.append(filesystem_stage)
+    try:
+        await ensure_filesystem(server)
+        filesystem_stage.status = "success"
+        filesystem_stage.message = f"Runtime directories prepared under {server['data_root']}"
+    except Exception as exc:
+        filesystem_stage.status = "failed"
+        filesystem_stage.error = str(exc)
+        raise ProvisioningError("filesystem_preparation", str(exc), result.stages_dict()) from exc
 
     # ── Stage: config_generation ──
-    config_stage = StageResult(name="config_generation")
+    config_stage = StageResult(name="config_write")
     result.stages.append(config_stage)
     try:
         ok, config_result = await write_config_file(server)
         if not ok:
             config_stage.status = "failed"
             config_stage.error = config_result
-            raise ProvisioningError("writing_config", config_result, result.stages_dict())
+            raise ProvisioningError("config_write", config_result, result.stages_dict())
         config_stage.status = "success"
         config_stage.message = f"Config written to {config_result}"
     except ProvisioningError:
@@ -472,7 +536,7 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as exc:
         config_stage.status = "failed"
         config_stage.error = str(exc)
-        raise ProvisioningError("writing_config", str(exc), result.stages_dict()) from exc
+        raise ProvisioningError("config_write", str(exc), result.stages_dict()) from exc
 
     # ── Stage: container_creation ──
     container_stage = StageResult(name="container_creation")
@@ -594,36 +658,80 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         result.updates["auto_recovery_log"] = recovery_descriptions
 
     # ── Stage: mod_injection (verify mods are in config) ──
-    mod_stage = StageResult(name="mod_injection")
+    mod_stage = StageResult(name="mod_sync")
     result.stages.append(mod_stage)
     try:
         config = generate_reforger_config(server)
         mods = config.get("game", {}).get("mods", [])
         mod_stage.status = "success"
-        mod_stage.message = f"{len(mods)} mod(s) configured"
+        mod_stage.message = f"{len(mods)} mod(s) declared in server config"
     except Exception as exc:
         mod_stage.status = "failed"
         mod_stage.error = str(exc)
         # mod_injection failure is not fatal — server is already running
-        logger.warning("Mod injection verification failed for %s: %s", server["id"], exc)
+        logger.warning("Mod sync verification failed for %s: %s", server["id"], exc)
 
     # ── Stage: post_start_validation (profile + SAT discovery) ──
-    validation_stage = StageResult(name="post_start_validation")
-    result.stages.append(validation_stage)
+    readiness_stage = StageResult(name="readiness_check")
+    result.stages.append(readiness_stage)
     try:
-        artifact_updates = await wait_for_profile_and_sat(server)
-        validation_stage.status = "success"
-        validation_stage.message = "Profile and SAT config discovered"
-        result.updates.update(artifact_updates)
-    except Exception as exc:
-        validation_stage.status = "failed"
-        validation_stage.error = exc.message if isinstance(exc, ProvisioningError) else str(exc)
-        # Post-start validation failure is NOT fatal if container started.
-        # The server is running, just degraded.
-        logger.warning(
-            "Post-start validation failed for %s: %s",
-            server["id"], validation_stage.error,
+        readiness = await wait_for_server_readiness(
+            server,
+            timeout=min(DEFAULT_READINESS_TIMEOUT, SERVER_PROFILE_READY_TIMEOUT_SECONDS),
         )
+        if readiness.get("server_ready"):
+            readiness_stage.status = "success"
+            readiness_stage.message = (
+                f"Server signalled readiness after {readiness.get('restart_cycles', 0)} restart cycle(s)"
+            )
+        else:
+            readiness_stage.status = "failed"
+            readiness_stage.error = readiness.get("error", "Server did not signal readiness before timeout")
+        result.updates["restart_cycles"] = readiness.get("restart_cycles", 0)
+    except Exception as exc:
+        readiness_stage.status = "failed"
+        readiness_stage.error = exc.message if isinstance(exc, ProvisioningError) else str(exc)
+        logger.warning(
+            "Readiness check failed for %s: %s",
+            server["id"], readiness_stage.error,
+        )
+
+    profile_stage = StageResult(name="profile_generation")
+    result.stages.append(profile_stage)
+    try:
+        profile_updates = await wait_for_profile_generation(server)
+        if profile_updates.get("profile_ready"):
+            profile_stage.status = "success"
+            profile_stage.message = "Server profile structure detected"
+        else:
+            profile_stage.status = "failed"
+            profile_stage.error = profile_updates.get("error", "Server profile structure was not generated")
+    except Exception as exc:
+        profile_stage.status = "failed"
+        profile_stage.error = str(exc)
+        logger.warning("Profile generation check failed for %s: %s", server["id"], exc)
+
+    sat_stage = StageResult(name="sat_discovery")
+    result.stages.append(sat_stage)
+    if profile_stage.status != "success":
+        sat_stage.status = "skipped"
+        sat_stage.message = "Skipped until the server profile is available"
+    else:
+        try:
+            sat_updates = await discover_sat_runtime(server)
+            if sat_updates.get("sat_ready"):
+                sat_stage.status = "success"
+                sat_stage.message = "Server Admin Tools config discovered"
+                result.updates.update(sat_updates)
+            else:
+                sat_stage.status = "failed"
+                sat_stage.error = sat_updates.get("error", "Server Admin Tools config was not discovered")
+                if sat_updates.get("sat_status"):
+                    result.updates["sat_status"] = sat_updates["sat_status"]
+        except Exception as exc:
+            sat_stage.status = "failed"
+            sat_stage.error = str(exc)
+            logger.warning("SAT discovery failed for %s: %s", server["id"], exc)
 
     # ── Build final updates ──
     # Perform a live container check: if the container is actually running,
@@ -640,7 +748,7 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     if live_running and result.container_started:
         effective_status = "running"
         effective_provisioning = "ready"
-        effective_readiness = "ready" if result.all_succeeded else "degraded"
+        effective_readiness = "ready" if result.all_succeeded and readiness_stage.status == "success" else "degraded"
     else:
         effective_status = result.overall_status
         effective_provisioning = result.provisioning_state
@@ -660,6 +768,7 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         "container_name": server["container_name"],
         "ports": server["ports"],
         "port_allocations": server["ports"],
+        "summary_message": result.summary_message,
     })
 
     # If all stages succeeded, also set provisioning_step to ready.
@@ -667,18 +776,18 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     # the provisioning_step as ready so the UI treats the server as running.
     if result.all_succeeded or (live_running and result.container_started):
         result.updates["provisioning_step"] = "ready"
-        if not result.all_succeeded:
-            # Store non-critical failures in a dedicated warnings field so
-            # running servers are not shown as errored in the UI.
-            failed = result.failed_stages
-            if failed:
-                result.updates["provisioning_warnings"] = [
-                    {
-                        "stage": s.name,
-                        "message": s.error or s.message or "Stage completed with warnings",
-                    }
-                    for s in failed
-                ]
+        failed = [
+            s for s in result.failed_stages
+            if s.name not in {"record_creation", "filesystem_preparation", "config_write", "container_creation", "initial_startup"}
+        ]
+        if failed:
+            result.updates["provisioning_warnings"] = [
+                {
+                    "stage": s.name,
+                    "message": s.error or s.message or "Stage completed with warnings",
+                }
+                for s in failed
+            ]
     else:
         failed = result.failed_stages
         result.updates["provisioning_step"] = failed[0].name if failed else "unknown"

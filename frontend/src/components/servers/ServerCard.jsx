@@ -4,10 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Play, Square, RotateCcw, Users, Gauge, Wifi } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-
-const STARTABLE = new Set(['stopped', 'created', 'error']);
-const STOPPABLE = new Set(['running']);
-const RESTARTABLE = new Set(['running']);
+import { canRestartServer, canStartServer, canStopServer, isServerDegraded, normalizeServer } from '@/utils/serverStatus';
 
 const PERIODS = ['1d', '7d', '30d'];
 
@@ -17,6 +14,11 @@ function getStatusVisuals(status) {
       return {
         glow: 'shadow-[0_0_15px_rgba(34,197,94,0.15)]',
         dotCls: 'h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse',
+      };
+    case 'degraded':
+      return {
+        glow: 'shadow-[0_0_18px_rgba(245,158,11,0.22)]',
+        dotCls: 'h-2.5 w-2.5 rounded-full bg-amber-300 animate-pulse',
       };
     case 'error':
     case 'crash_loop':
@@ -83,8 +85,10 @@ function StatBox({ icon: Icon, label, value }) {
 function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChange, period = '1d' }) {
   if (!server) return null;
 
-  const { id, name, description, status } = server;
-  const { glow, dotCls } = getStatusVisuals(status);
+  const normalized = normalizeServer(server);
+  const displayStatus = normalized.status === 'running' && isServerDegraded(normalized) ? 'degraded' : normalized.status;
+  const { id, name, description } = normalized;
+  const { glow, dotCls } = getStatusVisuals(displayStatus);
 
   const latest = metrics?.latest;
   const timeseries = metrics?.timeseries;
@@ -99,9 +103,9 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
       }))
     : [];
 
-  const canStart = STARTABLE.has(status);
-  const canStop = STOPPABLE.has(status);
-  const canRestart = RESTARTABLE.has(status);
+  const canStart = canStartServer(normalized);
+  const canStop = canStopServer(normalized);
+  const canRestart = canRestartServer(normalized);
   const showFooter = (canStart && onStart) || (canStop && onStop) || (canRestart && onRestart);
 
   return (
@@ -117,7 +121,7 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
             </h3>
           </Link>
           <span className={dotCls} role="img" aria-hidden="true" />
-          <span className="sr-only">Server status: {status}</span>
+          <span className="sr-only">Server status: {displayStatus}</span>
         </div>
         {description && (
           <p className="mt-1 text-xs text-gray-500 line-clamp-1">{description}</p>
@@ -127,9 +131,9 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
       <CardContent className="flex flex-1 flex-col gap-3 pb-3">
         {/* Metrics Row */}
         <div className="flex gap-2">
-          <StatBox icon={Users} label="Players" value={latest?.player_count} />
-          <StatBox icon={Gauge} label="FPS" value={latest?.fps} />
-          <StatBox icon={Wifi} label="Ping" value={latest?.ping != null ? `${latest.ping}ms` : undefined} />
+          <StatBox icon={Users} label="Players" value={latest?.player_count ?? 'Unavailable'} />
+          <StatBox icon={Gauge} label="FPS" value={latest?.server_fps ?? latest?.fps ?? 'Unavailable'} />
+          <StatBox icon={Wifi} label="Ping" value={latest?.avg_player_ping_ms != null ? `${latest.avg_player_ping_ms}ms` : 'Unavailable'} />
         </div>
 
         {/* Graph Area */}
@@ -217,7 +221,7 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
             <Button
               variant="outline"
               size="sm"
-              className="border-green-700/40 text-green-400 hover:bg-green-600/15 hover:text-green-300"
+              className="border-green-700/40 text-green-400 transition-all hover:bg-green-600/15 hover:text-green-300 hover:shadow-[0_0_14px_rgba(34,197,94,0.18)]"
               onClick={() => onStart(id)}
             >
               <Play className="mr-1 h-3.5 w-3.5" />
@@ -229,7 +233,7 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
             <Button
               variant="outline"
               size="sm"
-              className="border-red-700/40 text-red-400 hover:bg-red-600/15 hover:text-red-300"
+              className="border-red-700/40 text-red-400 transition-all hover:bg-red-600/15 hover:text-red-300 hover:shadow-[0_0_14px_rgba(239,68,68,0.18)]"
               onClick={() => onStop(id)}
             >
               <Square className="mr-1 h-3.5 w-3.5" />
@@ -241,7 +245,7 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
             <Button
               variant="outline"
               size="sm"
-              className="border-amber-700/40 text-amber-400 hover:bg-amber-600/15 hover:text-amber-300"
+              className="border-amber-700/40 text-amber-400 transition-all hover:bg-amber-600/15 hover:text-amber-300 hover:shadow-[0_0_14px_rgba(245,158,11,0.18)]"
               onClick={() => onRestart(id)}
             >
               <RotateCcw className="mr-1 h-3.5 w-3.5" />
