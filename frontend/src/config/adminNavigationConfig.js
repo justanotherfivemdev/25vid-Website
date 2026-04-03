@@ -26,7 +26,6 @@ import {
   AlertTriangle,
   Map,
   Server,
-  Package,
   Puzzle,
 } from 'lucide-react';
 
@@ -202,12 +201,6 @@ export const ADMIN_NAV_GROUPS = [
         label: 'Dashboard',
         icon: Server,
         exact: true,
-        show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
-      },
-      {
-        path: '/admin/servers/workshop',
-        label: 'Workshop',
-        icon: Package,
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
       },
       {

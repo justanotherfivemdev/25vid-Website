@@ -52,8 +52,6 @@ import LOAManager from '@/pages/admin/LOAManager';
 import PipelineManager from '@/pages/admin/PipelineManager';
 import DeploymentManager from '@/pages/admin/DeploymentManager';
 import ServerDashboard from '@/pages/admin/servers/ServerDashboard';
-import ServerDetail from '@/pages/admin/servers/ServerDetail';
-import WorkshopBrowser from '@/pages/admin/servers/WorkshopBrowser';
 import ModIssues from '@/pages/admin/servers/ModIssues';
 import ServerWorkspace from '@/pages/admin/servers/ServerWorkspace';
 import OverviewModule from '@/pages/admin/servers/modules/OverviewModule';
@@ -62,7 +60,9 @@ import RconModule from '@/pages/admin/servers/modules/RconModule';
 import PlayersModule from '@/pages/admin/servers/modules/PlayersModule';
 import MetricsModule from '@/pages/admin/servers/modules/MetricsModule';
 import ModsModule from '@/pages/admin/servers/modules/ModsModule';
+import SchedulesModule from '@/pages/admin/servers/modules/SchedulesModule';
 import ServerSettingsModule from '@/pages/admin/servers/modules/ServerSettingsModule';
+import SatConfigModule from '@/pages/admin/servers/modules/SatConfigModule';
 import SystemSettingsModule from '@/pages/admin/servers/modules/SystemSettingsModule';
 import NotesModule from '@/pages/admin/servers/modules/NotesModule';
 import NotificationsModule from '@/pages/admin/servers/modules/NotificationsModule';
@@ -1275,7 +1275,6 @@ function App() {
           <Route path="/admin/users/:id" element={<AdminMemberDetail />} />
           {/* ── Server Management routes (S4/S1 only) ────────────────────── */}
           <Route path="/admin/servers" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDashboard /></ProtectedRoute>} />
-          <Route path="/admin/servers/workshop" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><WorkshopBrowser /></ProtectedRoute>} />
           <Route path="/admin/servers/mod-issues" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ModIssues /></ProtectedRoute>} />
           {/* Per-server workspace with nested module routes */}
           <Route path="/admin/servers/:id" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerWorkspace /></ProtectedRoute>}>
@@ -1285,8 +1284,10 @@ function App() {
             <Route path="players" element={<PlayersModule />} />
             <Route path="metrics" element={<MetricsModule />} />
             <Route path="mods" element={<ModsModule />} />
+            <Route path="schedules" element={<SchedulesModule />} />
             <Route path="config/server" element={<ServerSettingsModule />} />
             <Route path="config/system" element={<SystemSettingsModule />} />
+            <Route path="config/admin-tools" element={<SatConfigModule />} />
             <Route path="tools/files" element={<FileManagerModule />} />
             <Route path="tools/exec" element={<TriggerExecModule />} />
             <Route path="tools/reports" element={<ReportsModule />} />
@@ -1297,7 +1298,7 @@ function App() {
             <Route path="admin/incidents" element={<IncidentsModule />} />
           </Route>
           {/* Legacy detail route redirect */}
-          <Route path="/admin/servers/:id/overview" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDetail /></ProtectedRoute>} />
+          <Route path="/admin/servers/:id/overview" element={<Navigate to=".." replace />} />
         </Route>
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         {/* ── Member routes with sidebar layout ─────────────────────────── */}

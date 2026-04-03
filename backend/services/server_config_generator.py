@@ -1,209 +1,236 @@
-"""
-Arma Reforger server configuration generator.
+"""Generate and persist Arma Reforger server configuration."""
 
-Converts a ``ManagedServer`` document dictionary into a complete Reforger
-server-configuration JSON file and writes it to disk.
-"""
+from __future__ import annotations
 
-import os
 import json
 import logging
 from pathlib import Path
-from typing import Tuple, List, Dict
+from typing import Any, Dict, List, Tuple
+
+from config import SERVER_CONFIG_FILENAME, SERVER_SAT_REQUIRED_MOD_ID
 
 logger = logging.getLogger(__name__)
 
-# ── Defaults ────────────────────────────────────────────────────────
-_DEFAULT_REGION = "US"
-_DEFAULT_BIND_ADDRESS = "0.0.0.0"
-_DEFAULT_GAME_PORT = 2001
-_DEFAULT_QUERY_PORT = 17777
-_DEFAULT_RCON_PORT = 19999
-_DEFAULT_PLAYER_LIMIT = 64
-_DEFAULT_SCENARIO = "{E3AEF550BDCA4B42}Missions/23_Campaign.conf"
-_DEFAULT_VISIBLE = True
-_DEFAULT_CROSSPLAY = True
-_DEFAULT_DISABLE_AI = False
-_DEFAULT_FAST_VALIDATION = True
-_DEFAULT_BATTLEYE = True
-_DEFAULT_VON_DISABLED = False
+DEFAULT_SCENARIO = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
+DEFAULT_SUPPORTED_PLATFORMS = ["PLATFORM_PC", "PLATFORM_XBL"]
+DEFAULT_MOD_NAME = "Server Admin Tools"
 
 
-# ── Config generation ───────────────────────────────────────────────
+def _default_rcon_password(server: Dict[str, Any]) -> str:
+    server_id = (server.get("id") or "server").replace("-", "")
+    return f"rcon{server_id[:12]}"
 
-def generate_reforger_config(server: dict) -> dict:
-    """Build a complete Arma Reforger server config from a ManagedServer doc.
 
-    The returned dictionary mirrors the JSON structure expected by the
-    Arma Reforger dedicated-server binary.
-    """
-    config = server.get("config", {})
-    ports = server.get("ports", {})
-    mods = server.get("mods", [])
-    env = server.get("environment", {})
+def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+    merged = dict(base)
+    for key, value in (override or {}).items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
 
-    game_port = ports.get("game", _DEFAULT_GAME_PORT)
-    query_port = ports.get("query", _DEFAULT_QUERY_PORT)
-    rcon_port = ports.get("rcon", _DEFAULT_RCON_PORT)
 
-    rcon_password = env.get("rcon_password", os.environ.get("RCON_PASSWORD", ""))
+def _normalize_bool(value: Any, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    return default
+
+
+def _normalize_int(value: Any, default: int) -> int:
+    try:
+        parsed = int(value)
+        return parsed if parsed > 0 else default
+    except (TypeError, ValueError):
+        return default
+
+
+def normalize_mod_entry(mod: Dict[str, Any]) -> Dict[str, Any]:
+    mod_id = mod.get("mod_id") or mod.get("modId") or mod.get("id") or ""
+    if not mod_id:
+        return {}
+
+    entry: Dict[str, Any] = {
+        "modId": mod_id,
+        "name": mod.get("name") or mod_id,
+        "required": mod.get("required", True),
+    }
+    if mod.get("version"):
+        entry["version"] = mod["version"]
+    return entry
+
+
+def ensure_required_mods(mods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    normalized: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for raw_mod in mods or []:
+        entry = normalize_mod_entry(raw_mod)
+        mod_id = entry.get("modId")
+        if not mod_id or mod_id in seen:
+            continue
+        if raw_mod.get("enabled", True) is False:
+            continue
+        normalized.append(entry)
+        seen.add(mod_id)
+
+    if SERVER_SAT_REQUIRED_MOD_ID not in seen:
+        normalized.append(
+            {
+                "modId": SERVER_SAT_REQUIRED_MOD_ID,
+                "name": DEFAULT_MOD_NAME,
+                "required": True,
+            }
+        )
+    return normalized
+
+
+def _legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Translate previously stored legacy keys to the current schema."""
+    if not config:
+        return {}
+
+    translated = dict(config)
+    if "gameHostBindAddress" in translated and "bindAddress" not in translated:
+        translated["bindAddress"] = translated["gameHostBindAddress"]
+    if "gameHostBindPort" in translated and "bindPort" not in translated:
+        translated["bindPort"] = translated["gameHostBindPort"]
+    if "gameHostRegisterBindAddress" in translated and "publicAddress" not in translated:
+        translated["publicAddress"] = translated["gameHostRegisterBindAddress"]
+    if "gameHostRegisterPort" in translated and "publicPort" not in translated:
+        translated["publicPort"] = translated["gameHostRegisterPort"]
+
+    game = dict(translated.get("game") or {})
+    if "playerCountLimit" in game and "maxPlayers" not in game:
+        game["maxPlayers"] = game["playerCountLimit"]
+    translated["game"] = game
+    return translated
+
+
+def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
+    ports = server.get("ports") or {}
+    config = server.get("config") or {}
+    game = config.get("game") or {}
+    operating = config.get("operating") or {}
+    game_props = game.get("gameProperties") or {}
+    rcon = config.get("rcon") or {}
+    a2s = config.get("a2s") or {}
 
     return {
-        "dedicatedServerId": config.get("dedicatedServerId", server.get("id", "")),
-        "region": config.get("region", _DEFAULT_REGION),
-        "gameHostBindAddress": config.get(
-            "gameHostBindAddress", _DEFAULT_BIND_ADDRESS
-        ),
-        "gameHostBindPort": game_port,
-        "gameHostRegisterBindAddress": config.get(
-            "gameHostRegisterBindAddress", ""
-        ),
-        "gameHostRegisterPort": game_port,
+        "bindAddress": config.get("bindAddress", "0.0.0.0"),
+        "bindPort": _normalize_int(ports.get("game"), 2001),
+        "publicAddress": config.get("publicAddress", ""),
+        "publicPort": _normalize_int(ports.get("game"), 2001),
         "a2s": {
-            "address": config.get("a2s_address", _DEFAULT_BIND_ADDRESS),
-            "port": query_port,
+            "address": a2s.get("address", "0.0.0.0"),
+            "port": _normalize_int(ports.get("query"), 17777),
         },
         "rcon": {
-            "address": config.get("rcon_address", _DEFAULT_BIND_ADDRESS),
-            "port": rcon_port,
-            "password": rcon_password,
-            "permission": config.get("rcon_permission", "admin"),
-            "maxClients": config.get("rcon_max_clients", 16),
+            "address": rcon.get("address", "0.0.0.0"),
+            "port": _normalize_int(ports.get("rcon"), 19999),
+            "password": rcon.get("password") or _default_rcon_password(server),
+            "permission": rcon.get("permission", "admin"),
+            "maxClients": _normalize_int(rcon.get("maxClients"), 16),
+            "blacklist": list(rcon.get("blacklist") or []),
+            "whitelist": list(rcon.get("whitelist") or []),
         },
         "game": {
-            "name": config.get("name", server.get("name", "Arma Reforger Server")),
-            "password": config.get("password", ""),
-            "passwordAdmin": config.get(
-                "passwordAdmin", env.get("admin_password", "")
-            ),
-            "scenarioId": config.get("scenarioId", _DEFAULT_SCENARIO),
-            "playerCountLimit": config.get(
-                "playerCountLimit", _DEFAULT_PLAYER_LIMIT
-            ),
-            "visible": config.get("visible", _DEFAULT_VISIBLE),
-            "crossPlatform": config.get("crossPlatform", _DEFAULT_CROSSPLAY),
-            "supportedPlatforms": config.get(
-                "supportedPlatforms", ["PLATFORM_PC", "PLATFORM_XBL"]
-            ),
+            "name": game.get("name", server.get("name", "Arma Reforger Server")),
+            "password": game.get("password", ""),
+            "passwordAdmin": game.get("passwordAdmin", ""),
+            "admins": list(game.get("admins") or []),
+            "scenarioId": game.get("scenarioId", DEFAULT_SCENARIO),
+            "maxPlayers": _normalize_int(game.get("maxPlayers"), 32),
+            "visible": _normalize_bool(game.get("visible"), True),
+            "crossPlatform": _normalize_bool(game.get("crossPlatform"), True),
+            "supportedPlatforms": list(game.get("supportedPlatforms") or DEFAULT_SUPPORTED_PLATFORMS),
+            "modsRequiredByDefault": _normalize_bool(game.get("modsRequiredByDefault"), True),
             "gameProperties": {
-                "serverMaxViewDistance": config.get(
-                    "serverMaxViewDistance", 2500
-                ),
-                "serverMinGrassDistance": config.get(
-                    "serverMinGrassDistance", 50
-                ),
-                "networkViewDistance": config.get("networkViewDistance", 1000),
-                "disableThirdPerson": config.get("disableThirdPerson", False),
-                "fastValidation": config.get(
-                    "fastValidation", _DEFAULT_FAST_VALIDATION
-                ),
-                "battlEye": config.get("battlEye", _DEFAULT_BATTLEYE),
-                "VONDisableUI": config.get("VONDisableUI", _DEFAULT_VON_DISABLED),
-                "VONDisableDirectSpeechUI": config.get(
-                    "VONDisableDirectSpeechUI", _DEFAULT_VON_DISABLED
-                ),
+                "serverMaxViewDistance": _normalize_int(game_props.get("serverMaxViewDistance"), 2500),
+                "serverMinGrassDistance": _normalize_int(game_props.get("serverMinGrassDistance"), 50),
+                "networkViewDistance": _normalize_int(game_props.get("networkViewDistance"), 1000),
+                "disableThirdPerson": _normalize_bool(game_props.get("disableThirdPerson"), False),
+                "fastValidation": _normalize_bool(game_props.get("fastValidation"), True),
+                "battlEye": _normalize_bool(game_props.get("battlEye"), True),
+                "VONDisableUI": _normalize_bool(game_props.get("VONDisableUI"), False),
+                "VONDisableDirectSpeechUI": _normalize_bool(game_props.get("VONDisableDirectSpeechUI"), False),
+                "VONCanTransmitCrossFaction": _normalize_bool(game_props.get("VONCanTransmitCrossFaction"), False),
             },
-            "mods": _build_mods_list(mods),
+            "mods": ensure_required_mods(server.get("mods") or []),
         },
         "operating": {
-            "lobbyPlayerSynchronise": config.get(
-                "lobbyPlayerSynchronise", True
-            ),
-            "disableNavmeshStreaming": config.get(
-                "disableNavmeshStreaming", False
-            ),
-            "disableServerShutdown": config.get(
-                "disableServerShutdown", False
-            ),
-            "disableAI": config.get("disableAI", _DEFAULT_DISABLE_AI),
-            "playerSaveTime": config.get("playerSaveTime", 120),
-            "aiLimit": config.get("aiLimit", -1),
+            "lobbyPlayerSynchronise": _normalize_bool(operating.get("lobbyPlayerSynchronise"), True),
+            "disableNavmeshStreaming": _normalize_bool(operating.get("disableNavmeshStreaming"), False),
+            "disableServerShutdown": _normalize_bool(operating.get("disableServerShutdown"), False),
+            "disableAI": _normalize_bool(operating.get("disableAI"), False),
+            "playerSaveTime": _normalize_int(operating.get("playerSaveTime"), 120),
+            "aiLimit": operating.get("aiLimit", -1),
         },
     }
 
 
-def _build_mods_list(mods: list) -> list:
-    """Convert the ``ManagedServer.mods`` list into Reforger mod entries."""
-    result = []
-    for mod in mods:
-        entry: Dict = {
-            "modId": mod.get("modId", mod.get("id", "")),
-            "name": mod.get("name", ""),
-        }
-        if mod.get("version"):
-            entry["version"] = mod["version"]
-        result.append(entry)
-    return result
+def generate_reforger_config(server: Dict[str, Any]) -> Dict[str, Any]:
+    current = _legacy_to_current(server.get("config") or {})
+    config = _deep_merge(build_default_config({**server, "config": current}), current)
+    config["bindPort"] = _normalize_int((server.get("ports") or {}).get("game"), config["bindPort"])
+    config["publicPort"] = config["bindPort"]
+    config.setdefault("a2s", {})
+    config["a2s"]["port"] = _normalize_int((server.get("ports") or {}).get("query"), config["a2s"].get("port", 17777))
+    config["a2s"]["address"] = config["a2s"].get("address") or "0.0.0.0"
+    config.setdefault("rcon", {})
+    config["rcon"]["port"] = _normalize_int((server.get("ports") or {}).get("rcon"), config["rcon"].get("port", 19999))
+    config["rcon"]["address"] = config["rcon"].get("address") or "0.0.0.0"
+    config["game"]["name"] = config["game"].get("name") or server.get("name", "Arma Reforger Server")
+    config["game"]["mods"] = ensure_required_mods(server.get("mods") or [])
+    return config
 
 
-# ── Validation ──────────────────────────────────────────────────────
-
-_REQUIRED_PATHS: List[Tuple[List[str], str]] = [
-    (["dedicatedServerId"], "dedicatedServerId is required"),
-    (["game", "name"], "game.name is required"),
-    (["game", "scenarioId"], "game.scenarioId is required"),
-    (["gameHostBindPort"], "gameHostBindPort is required"),
+REQUIRED_PATHS: List[Tuple[List[str], str]] = [
+    (["bindPort"], "bindPort is required"),
+    (["publicPort"], "publicPort is required"),
     (["a2s", "port"], "a2s.port is required"),
     (["rcon", "port"], "rcon.port is required"),
-    (["rcon", "password"], "rcon.password is required"),
+    (["rcon", "password"], "rcon.password is required to enable RCON"),
+    (["game", "name"], "game.name is required"),
+    (["game", "scenarioId"], "game.scenarioId is required"),
 ]
 
 
-def validate_config(config: dict) -> Tuple[bool, List[str]]:
-    """Validate that all required fields are present and non-empty.
-
-    Returns ``(valid, errors)`` where *errors* is an empty list on success.
-    """
+def validate_config(config: Dict[str, Any]) -> Tuple[bool, List[str]]:
     errors: List[str] = []
-
-    for path, message in _REQUIRED_PATHS:
-        value = config
+    for path, message in REQUIRED_PATHS:
+        value: Any = config
         for key in path:
             if not isinstance(value, dict):
                 value = None
                 break
             value = value.get(key)
-
         if value is None or (isinstance(value, str) and not value.strip()):
             errors.append(message)
+    return len(errors) == 0, errors
 
-    return (len(errors) == 0, errors)
 
-
-# ── File writing ────────────────────────────────────────────────────
-
-async def write_config_file(
-    server: dict,
-    config_dir: str = "/app/server-configs",
-) -> Tuple[bool, str]:
-    """Generate, validate, and persist a Reforger config JSON file.
-
-    Returns ``(success, file_path_or_error)``.
-    """
-    server_id = server.get("id", "")
-    if not server_id:
-        return False, "Server document missing 'id' field"
-
+async def write_config_file(server: Dict[str, Any], config_dir: str | None = None) -> Tuple[bool, str]:
     config = generate_reforger_config(server)
-
     valid, errors = validate_config(config)
     if not valid:
-        msg = f"Config validation failed: {'; '.join(errors)}"
-        logger.error(msg)
-        return False, msg
+        return False, "; ".join(errors)
 
-    target_dir = Path(config_dir) / server_id
-    target_file = target_dir / "config.json"
+    if config_dir:
+        target_dir = Path(config_dir)
+    elif server.get("config_path"):
+        target_dir = Path(server["config_path"]).parent
+    elif server.get("data_root"):
+        target_dir = Path(server["data_root"]) / "Configs"
+    else:
+        return False, "Server is missing config_path/data_root"
 
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_file = target_dir / SERVER_CONFIG_FILENAME
     try:
-        target_dir.mkdir(parents=True, exist_ok=True)
-        target_file.write_text(
-            json.dumps(config, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-        logger.info("Wrote server config to %s", target_file)
+        target_file.write_text(json.dumps(config, indent=2), encoding="utf-8")
+        logger.info("Wrote Reforger config to %s", target_file)
         return True, str(target_file)
     except OSError as exc:
-        msg = f"Failed to write config file: {exc}"
-        logger.error(msg)
-        return False, msg
+        logger.error("Failed to write server config: %s", exc)
+        return False, f"Failed to write config file: {exc}"

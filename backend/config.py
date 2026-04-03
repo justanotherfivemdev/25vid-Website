@@ -72,6 +72,26 @@ MAX_VALYU_QUERIES_PER_CYCLE = int(os.environ.get("MAX_VALYU_QUERIES_PER_CYCLE", 
 
 # Server Management / Docker configuration
 DOCKER_SOCKET_PATH = os.environ.get("DOCKER_SOCKET_PATH", "unix:///var/run/docker.sock")
+SERVER_DOCKER_IMAGE = os.environ.get(
+    "SERVER_DOCKER_IMAGE",
+    "ghcr.io/acemod/arma-reforger:latest",
+).strip()
+SERVER_DATA_ROOT = Path(
+    os.environ.get("SERVER_DATA_ROOT", str(ROOT_DIR / "server-data"))
+)
+SERVER_DATA_ROOT.mkdir(parents=True, exist_ok=True)
+SERVER_CONFIG_FILENAME = os.environ.get("SERVER_CONFIG_FILENAME", "server-config.json").strip() or "server-config.json"
+SERVER_PROFILE_READY_TIMEOUT_SECONDS = int(
+    os.environ.get("SERVER_PROFILE_READY_TIMEOUT_SECONDS", 120)
+)
+SERVER_PROFILE_POLL_SECONDS = int(
+    os.environ.get("SERVER_PROFILE_POLL_SECONDS", 5)
+)
+SERVER_SAT_REQUIRED_MOD_ID = os.environ.get(
+    "SERVER_SAT_REQUIRED_MOD_ID",
+    "5AAAC70D754245DD-ServerAdminTools",
+).strip()
+SERVER_SAT_BASELINE_PATH = os.environ.get("SERVER_SAT_BASELINE_PATH", "").strip()
 
 
 def _validate_port(env_name: str, value: int) -> int:

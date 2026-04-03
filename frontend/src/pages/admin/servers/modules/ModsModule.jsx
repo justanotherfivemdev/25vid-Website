@@ -369,7 +369,7 @@ function ModsModule() {
                 value={workshopSearch}
                 onChange={(e) => setWorkshopSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && searchWorkshop(workshopSearch)}
-                placeholder="Search mods or paste mod ID…"
+                placeholder="Search mods or paste mod ID..."
                 className="h-8 border-zinc-800 bg-black/60 pl-9 text-xs text-white placeholder:text-gray-600"
               />
             </div>

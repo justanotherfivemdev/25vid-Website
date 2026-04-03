@@ -466,7 +466,7 @@ function ServerDashboard() {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search servers by name\u2026"
+                placeholder="Search servers by name..."
                 className="border-tropic-gold-dark/20 bg-black/60 pl-10 text-white placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
               />
             </div>
@@ -562,7 +562,7 @@ function ServerDashboard() {
                 id="srv-desc"
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                placeholder="Optional server description\u2026"
+                placeholder="Optional server description..."
                 className="border-tropic-gold-dark/20 bg-black/60 text-white placeholder:text-gray-600"
                 rows={3}
               />
@@ -674,7 +674,7 @@ function ServerDashboard() {
               ) : (
                 <Save className="mr-1.5 h-4 w-4" />
               )}
-              {creating ? 'Creating\u2026' : 'Create Server'}
+              {creating ? 'Creating...' : 'Create Server'}
             </Button>
           </DialogFooter>
         </DialogContent>

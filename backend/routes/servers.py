@@ -9,6 +9,7 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 import logging
 import asyncio
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
@@ -27,8 +28,23 @@ from config import (
     SERVER_PORT_BLOCK_SIZE,
 )
 from services.docker_agent import DockerAgent
-from services.server_config_generator import generate_reforger_config, write_config_file
-from services.rcon_bridge import rcon_pool
+from services.reforger_orchestrator import (
+    ProvisioningError,
+    apply_runtime_defaults,
+    delete_server as orchestrator_delete_server,
+    get_diagnostics as orchestrator_get_diagnostics,
+    provision_server as orchestrator_provision_server,
+    restart_server as orchestrator_restart_server,
+    start_server as orchestrator_start_server,
+    stop_server as orchestrator_stop_server,
+)
+from services.server_config_generator import (
+    ensure_required_mods,
+    generate_reforger_config,
+    write_config_file,
+)
+from services.rcon_bridge import bercon_client
+from services.sat_config_service import discover_sat_config, load_sat_config, save_sat_config
 from models.server import (
     ManagedServer, ServerCreate, ServerUpdate,
     WorkshopMod, WorkshopModCreate,
@@ -36,7 +52,7 @@ from models.server import (
     ServerIncident, IncidentCreate,
     ModIssue,
     ServerBackup,
-    ScheduledAction, ScheduledActionCreate,
+    ScheduledAction, ScheduledActionCreate, ScheduledActionUpdate,
     WebhookConfig, WebhookConfigCreate,
     ServerNote, ServerNoteCreate,
     SERVER_STATUSES,
@@ -69,11 +85,21 @@ def _server_response(server: dict) -> dict:
     """Prepare a server document for API response (redact secrets)."""
     if not server:
         return server
-    doc = dict(server)
+    doc = _serialize_doc(dict(server))
     doc.pop("_id", None)
     if "environment" in doc:
         doc["environment"] = _redact_env(doc["environment"])
     return doc
+
+
+def _serialize_doc(value):
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, list):
+        return [_serialize_doc(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _serialize_doc(item) for key, item in value.items()}
+    return value
 
 
 # ── Server Lifecycle ─────────────────────────────────────────────────────────
@@ -131,70 +157,68 @@ async def create_server(
     body: ServerCreate,
     current_user: dict = Depends(get_current_admin),
 ):
-    """Create a new managed server definition. S1/Admin only.
-
-    Ports and Docker image are automatically assigned when not provided
-    by the client.  A retry loop handles the unlikely race where two
-    concurrent requests pick the same port block.
-    """
-    # Auto-allocate ports when the client sends default/empty values
-    ports = body.ports
-    is_default = (
-        not ports
-        or (
-            ports.get("game") == 2001
-            and ports.get("query") == 17777
-            and ports.get("rcon") == 19999
-        )
-    )
-
+    """Create and provision a Docker-backed Arma Reforger server."""
     max_retries = 3
-    for attempt in range(max_retries):
-        if is_default:
-            ports = await _allocate_ports()
+    doc = None
 
+    for attempt in range(max_retries):
+        ports = await _allocate_ports()
         server = ManagedServer(
             name=body.name,
             description=body.description,
-            docker_image=body.docker_image,
-            container_name=f"25vid-gs-{body.name.lower().replace(' ', '-')[:30]}",
             config=body.config,
-            mods=body.mods,
+            mods=ensure_required_mods(body.mods),
             ports=ports,
-            environment=sanitize_mongo_payload(body.environment),
+            port_allocations=ports,
             tags=body.tags,
             auto_restart=body.auto_restart,
             max_restart_attempts=body.max_restart_attempts,
             created_by=current_user["id"],
+            status="initializing",
+            provisioning_state="allocating",
+            provisioning_step="allocating",
+            readiness_state="initializing",
         )
-        doc = server.model_dump()
-        # Convert datetime fields to ISO strings for MongoDB
-        for key in ("created_at", "updated_at", "last_started", "last_stopped"):
-            val = doc.get(key)
-            if isinstance(val, datetime):
-                doc[key] = val.isoformat()
-            elif val is None:
-                doc[key] = None
-
+        doc = apply_runtime_defaults(server.model_dump())
+        doc["config"] = generate_reforger_config(doc)
         try:
             await db.managed_servers.insert_one(doc)
+            break
         except DuplicateKeyError:
-            # Retry on duplicate port collision when auto-allocating
-            if is_default and attempt < max_retries - 1:
-                logger.warning("Port allocation collision on attempt %d, retrying", attempt + 1)
+            if attempt < max_retries - 1:
+                logger.warning("Managed server create collided on attempt %d, retrying", attempt + 1)
                 continue
-            raise
-        except Exception:
-            raise
-        break
+            raise HTTPException(status_code=409, detail="Unable to reserve unique server resources")
+
+    if doc is None:
+        raise HTTPException(status_code=500, detail="Failed to create server definition")
+
+    try:
+        updates = await orchestrator_provision_server(doc)
+        updates["config"] = generate_reforger_config({**doc, **updates})
+        updates["updated_at"] = datetime.now(timezone.utc)
+        await db.managed_servers.update_one({"id": doc["id"]}, {"$set": updates})
+    except ProvisioningError as exc:
+        failure_updates = {
+            "status": "provisioning_failed",
+            "provisioning_state": "failed",
+            "provisioning_step": exc.step,
+            "readiness_state": "failed",
+            "last_docker_error": exc.message,
+            "updated_at": datetime.now(timezone.utc),
+        }
+        await db.managed_servers.update_one({"id": doc["id"]}, {"$set": failure_updates})
+        logger.error("Provisioning failed for %s at %s: %s", doc["id"], exc.step, exc.message)
+
     await log_audit(
         user_id=current_user["id"],
         action_type="server_create",
         resource_type="server",
-        resource_id=server.id,
-        after={"name": server.name, "docker_image": server.docker_image},
+        resource_id=doc["id"],
+        after={"name": doc["name"], "docker_image": doc["docker_image"]},
     )
-    return _server_response(doc)
+    created = await db.managed_servers.find_one({"id": doc["id"]}, {"_id": 0})
+    return _server_response(created)
 
 
 @router.get("/servers/{server_id}")
@@ -224,9 +248,6 @@ async def update_server(
     before = {k: server.get(k) for k in updates}
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
-    if "environment" in updates:
-        updates["environment"] = sanitize_mongo_payload(updates["environment"])
-
     # Store config history if config changed
     if "config" in updates and server.get("config") != updates["config"]:
         history_entry = {
@@ -239,6 +260,25 @@ async def update_server(
             {"id": server_id},
             {"$push": {"config_history": history_entry}},
         )
+
+    next_mods = updates.get("mods", server.get("mods", []))
+    if "mods" in updates:
+        updates["mods"] = ensure_required_mods(next_mods)
+        next_mods = updates["mods"]
+
+    if "config" in updates:
+        updates["config"] = generate_reforger_config({**server, **updates, "mods": next_mods})
+
+    if "config" in updates or "mods" in updates:
+        merged = {**server, **updates}
+        ok, result = await write_config_file(merged)
+        if ok:
+            updates["config_path"] = result
+            sat_path, sat_status = discover_sat_config(merged.get("profile_path", ""))
+            updates["sat_config_path"] = sat_path or server.get("sat_config_path", "")
+            updates["sat_status"] = sat_status
+        else:
+            raise HTTPException(status_code=400, detail=result)
 
     await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
     await log_audit(
@@ -260,10 +300,11 @@ async def delete_server(server_id: str, current_user: dict = Depends(get_current
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
-    # Attempt to remove the Docker container if it exists
-    container_name = server.get("container_name") or server.get("name", "")
-    if container_name:
-        await _docker.remove_container(container_name, force=True)
+    await db.managed_servers.update_one(
+        {"id": server_id},
+        {"$set": {"status": "deletion_pending", "provisioning_state": "deleting", "updated_at": datetime.now(timezone.utc)}},
+    )
+    await orchestrator_delete_server(server)
 
     await db.managed_servers.delete_one({"id": server_id})
     # Clean up related data
@@ -271,6 +312,7 @@ async def delete_server(server_id: str, current_user: dict = Depends(get_current
     await db.server_backups.delete_many({"server_id": server_id})
     await db.server_schedules.delete_many({"server_id": server_id})
     await db.server_metrics.delete_many({"server_id": server_id})
+    await db.mod_download_history.delete_many({"server_id": server_id})
 
     await log_audit(
         user_id=current_user["id"],
@@ -293,15 +335,15 @@ class ServerActionResponse(BaseModel):
 
 @router.post("/servers/{server_id}/start")
 async def start_server(server_id: str, current_user: dict = Depends(_require_servers)):
-    """Start a managed server container."""
+    """Start or resume a managed server container."""
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
     await db.managed_servers.update_one(
         {"id": server_id},
-        {"$set": {"status": "starting", "last_started": now, "updated_at": now}},
+        {"$set": {"status": "starting", "provisioning_step": "starting_container", "updated_at": now}},
     )
     await log_audit(
         user_id=current_user["id"],
@@ -310,28 +352,29 @@ async def start_server(server_id: str, current_user: dict = Depends(_require_ser
         resource_id=server_id,
     )
 
-    # Write server config to disk before starting
-    config_ok, config_result = await write_config_file(server)
-    if not config_ok:
-        logger.warning("Config generation failed for %s: %s", server_id, config_result)
-
-    # Attempt to start the Docker container
-    success, error = await _docker.start_container(server)
-    if success:
-        await db.managed_servers.update_one(
-            {"id": server_id},
-            {"$set": {"status": "running", "updated_at": datetime.now(timezone.utc).isoformat()}},
-        )
+    try:
+        updates = await orchestrator_start_server(server)
+        updates["last_started"] = now
+        updates["updated_at"] = datetime.now(timezone.utc)
+        await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
         return ServerActionResponse(
             server_id=server_id,
             action="start",
-            status="running",
+            status=str(updates.get("status") or "running"),
             message="Server started successfully.",
         )
-    else:
+    except ProvisioningError as exc:
+        error = exc.message
         await db.managed_servers.update_one(
             {"id": server_id},
-            {"$set": {"status": "error", "updated_at": datetime.now(timezone.utc).isoformat()}},
+            {"$set": {
+                "status": "error",
+                "provisioning_state": "failed",
+                "provisioning_step": exc.step,
+                "readiness_state": "failed",
+                "last_docker_error": exc.message,
+                "updated_at": datetime.now(timezone.utc),
+            }},
         )
         # Auto-create an incident for the failure
         incident = {
@@ -346,12 +389,7 @@ async def start_server(server_id: str, current_user: dict = Depends(_require_ser
             "auto_detected": True,
         }
         await db.server_incidents.insert_one(incident)
-        return ServerActionResponse(
-            server_id=server_id,
-            action="start",
-            status="error",
-            message=f"Server start failed: {error}",
-        )
+        raise HTTPException(status_code=500, detail=f"Server start failed: {error}")
 
 
 @router.post("/servers/{server_id}/stop")
@@ -361,7 +399,7 @@ async def stop_server(server_id: str, current_user: dict = Depends(_require_serv
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
     await db.managed_servers.update_one(
         {"id": server_id},
         {"$set": {"status": "stopping", "updated_at": now}},
@@ -373,33 +411,18 @@ async def stop_server(server_id: str, current_user: dict = Depends(_require_serv
         resource_id=server_id,
     )
 
-    container_name = server.get("container_name") or server.get("name", "")
-    success, error = await _docker.stop_container(container_name)
-    if success:
+    try:
+        updates = await orchestrator_stop_server(server)
+        updates["last_stopped"] = datetime.now(timezone.utc)
+        updates["updated_at"] = datetime.now(timezone.utc)
+        await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
+        return ServerActionResponse(server_id=server_id, action="stop", status="stopped", message="Server stopped successfully.")
+    except ProvisioningError as exc:
         await db.managed_servers.update_one(
             {"id": server_id},
-            {"$set": {"status": "stopped", "last_stopped": datetime.now(timezone.utc).isoformat(),
-                       "updated_at": datetime.now(timezone.utc).isoformat()}},
+            {"$set": {"status": "error", "last_docker_error": exc.message, "updated_at": datetime.now(timezone.utc)}},
         )
-        return ServerActionResponse(
-            server_id=server_id,
-            action="stop",
-            status="stopped",
-            message="Server stopped successfully.",
-        )
-    else:
-        # Even if Docker stop fails, mark as stopped (container may already be gone)
-        await db.managed_servers.update_one(
-            {"id": server_id},
-            {"$set": {"status": "stopped", "last_stopped": datetime.now(timezone.utc).isoformat(),
-                       "updated_at": datetime.now(timezone.utc).isoformat()}},
-        )
-        return ServerActionResponse(
-            server_id=server_id,
-            action="stop",
-            status="stopped",
-            message=f"Server marked as stopped. Docker note: {error}",
-        )
+        raise HTTPException(status_code=500, detail=exc.message)
 
 
 @router.post("/servers/{server_id}/restart")
@@ -409,7 +432,7 @@ async def restart_server(server_id: str, current_user: dict = Depends(_require_s
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
     await db.managed_servers.update_one(
         {"id": server_id},
         {"$set": {"status": "starting", "last_started": now, "updated_at": now}},
@@ -421,30 +444,23 @@ async def restart_server(server_id: str, current_user: dict = Depends(_require_s
         resource_id=server_id,
     )
 
-    container_name = server.get("container_name") or server.get("name", "")
-    success, error = await _docker.restart_container(container_name)
-    if success:
-        await db.managed_servers.update_one(
-            {"id": server_id},
-            {"$set": {"status": "running", "updated_at": datetime.now(timezone.utc).isoformat()}},
-        )
+    try:
+        updates = await orchestrator_restart_server(server)
+        updates["last_started"] = now
+        updates["updated_at"] = datetime.now(timezone.utc)
+        await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
         return ServerActionResponse(
             server_id=server_id,
             action="restart",
-            status="running",
+            status=str(updates.get("status") or "running"),
             message="Server restarted successfully.",
         )
-    else:
+    except ProvisioningError as exc:
         await db.managed_servers.update_one(
             {"id": server_id},
-            {"$set": {"status": "error", "updated_at": datetime.now(timezone.utc).isoformat()}},
+            {"$set": {"status": "error", "last_docker_error": exc.message, "updated_at": datetime.now(timezone.utc)}},
         )
-        return ServerActionResponse(
-            server_id=server_id,
-            action="restart",
-            status="error",
-            message=f"Server restart failed: {error}",
-        )
+        raise HTTPException(status_code=500, detail=exc.message)
 
 
 @router.get("/servers/{server_id}/status")
@@ -453,11 +469,22 @@ async def get_server_status(server_id: str, current_user: dict = Depends(_requir
     server = await db.managed_servers.find_one(
         {"id": server_id},
         {"_id": 0, "id": 1, "name": 1, "status": 1, "last_started": 1,
-         "last_stopped": 1, "auto_restart": 1},
+         "last_stopped": 1, "auto_restart": 1, "provisioning_state": 1,
+         "provisioning_step": 1, "readiness_state": 1, "last_docker_error": 1},
     )
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    return server
+    return _serialize_doc(server)
+
+
+@router.get("/servers/{server_id}/diagnostics")
+async def get_server_diagnostics(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Return container-aware diagnostics for a managed server."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    diagnostics = await orchestrator_get_diagnostics(server)
+    return _serialize_doc(diagnostics)
 
 
 # ── Server Config ────────────────────────────────────────────────────────────
@@ -484,7 +511,66 @@ async def get_config_history(server_id: str, current_user: dict = Depends(_requi
     )
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    return server.get("config_history", [])
+    return _serialize_doc(server.get("config_history", []))
+
+
+@router.get("/servers/{server_id}/sat-config")
+async def get_sat_config(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Return the discovered Server Admin Tools config for a server."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    sat_path = server.get("sat_config_path")
+    if not sat_path:
+        discovered_path, sat_status = discover_sat_config(server.get("profile_path", ""))
+        if discovered_path:
+            sat_path = discovered_path
+            await db.managed_servers.update_one(
+                {"id": server_id},
+                {"$set": {"sat_config_path": discovered_path, "sat_status": sat_status, "updated_at": datetime.now(timezone.utc)}},
+            )
+
+    if not sat_path:
+        return {"available": False, "status": server.get("sat_status", "missing"), "config": None}
+
+    try:
+        config = load_sat_config(sat_path)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to read SAT config: {exc}")
+
+    return {"available": True, "status": "discovered", "config_path": sat_path, "config": config}
+
+
+class SatConfigUpdate(BaseModel):
+    config: dict
+
+
+@router.put("/servers/{server_id}/sat-config")
+async def update_sat_config(
+    server_id: str,
+    body: SatConfigUpdate,
+    current_user: dict = Depends(_require_servers),
+):
+    """Persist a structured Server Admin Tools configuration update."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    sat_path = server.get("sat_config_path")
+    if not sat_path:
+        discovered_path, sat_status = discover_sat_config(server.get("profile_path", ""))
+        if not discovered_path:
+            raise HTTPException(status_code=409, detail=f"Server Admin Tools config is not available yet ({sat_status})")
+        sat_path = discovered_path
+    try:
+        save_sat_config(sat_path, body.config)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    await db.managed_servers.update_one(
+        {"id": server_id},
+        {"$set": {"sat_config_path": sat_path, "sat_status": "discovered", "updated_at": datetime.now(timezone.utc)}},
+    )
+    return {"message": "SAT config updated", "config_path": sat_path}
 
 
 # ── Mods Management ─────────────────────────────────────────────────────────
@@ -516,10 +602,15 @@ async def update_server_mods(
         raise HTTPException(status_code=404, detail="Server not found")
 
     before_mods = server.get("mods", [])
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
+    normalized_mods = ensure_required_mods(body.mods)
+    next_config = generate_reforger_config({**server, "mods": normalized_mods})
+    ok, result = await write_config_file({**server, "mods": normalized_mods, "config": next_config})
+    if not ok:
+        raise HTTPException(status_code=400, detail=result)
     await db.managed_servers.update_one(
         {"id": server_id},
-        {"$set": {"mods": body.mods, "updated_at": now}},
+        {"$set": {"mods": normalized_mods, "config": next_config, "config_path": result, "updated_at": now}},
     )
     await log_audit(
         user_id=current_user["id"],
@@ -527,9 +618,9 @@ async def update_server_mods(
         resource_type="server",
         resource_id=server_id,
         before={"mods": before_mods},
-        after={"mods": body.mods},
+        after={"mods": normalized_mods},
     )
-    return {"message": "Mods updated", "count": len(body.mods)}
+    return {"message": "Mods updated", "count": len(normalized_mods)}
 
 
 class ModRef(BaseModel):
@@ -1148,6 +1239,24 @@ class RconCommand(BaseModel):
     command: str
 
 
+@router.get("/servers/{server_id}/rcon/status")
+async def get_rcon_status(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Probe BattlEye RCON availability for a running server."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    if server.get("status") != "running":
+        return {"state": "offline", "detail": "Server is not running"}
+
+    rcon = (server.get("config") or {}).get("rcon") or {}
+    status = await bercon_client.probe(
+        host="127.0.0.1",
+        port=int((server.get("ports") or {}).get("rcon", 19999)),
+        password=str(rcon.get("password") or ""),
+    )
+    return status
+
+
 @router.post("/servers/{server_id}/rcon")
 async def execute_rcon(
     server_id: str,
@@ -1170,20 +1279,12 @@ async def execute_rcon(
         metadata={"command": body.command[:500]},
     )
 
-    # Extract RCON connection details from server config
     ports = server.get("ports", {})
-    rcon_port = ports.get("rcon", 19999)
-    rcon_password = server.get("environment", {}).get("rcon_password", "")
+    rcon_port = int(ports.get("rcon", 19999))
+    rcon_password = str(((server.get("config") or {}).get("rcon") or {}).get("password") or "")
 
-    # Resolve the container's IP on the Docker network instead of localhost
-    container_name = server.get("container_name") or server.get("name", "")
-    host = await _docker.get_container_ip(container_name) if container_name else None
-    if not host:
-        host = "127.0.0.1"  # fallback if container IP is unavailable
-
-    success, response = await rcon_pool.execute(
-        server_id=server_id,
-        host=host,
+    success, response = await bercon_client.execute(
+        host="127.0.0.1",
         port=rcon_port,
         password=rcon_password,
         command=body.command,
@@ -1205,7 +1306,7 @@ async def list_schedules(server_id: str, current_user: dict = Depends(_require_s
     schedules = await db.server_schedules.find(
         {"server_id": server_id}, {"_id": 0}
     ).to_list(100)
-    return schedules
+    return _serialize_doc(schedules)
 
 
 @router.post("/servers/{server_id}/schedules", status_code=201)
@@ -1218,38 +1319,71 @@ async def create_schedule(
     server = await db.managed_servers.find_one({"id": server_id})
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
+    if body.action_type not in {"restart", "start", "stop", "downtime_window"}:
+        raise HTTPException(status_code=400, detail="Unsupported action type")
+    if body.action_type == "downtime_window" and not body.downtime_minutes:
+        raise HTTPException(status_code=400, detail="Downtime schedules require downtime_minutes")
 
     action = ScheduledAction(
         server_id=server_id,
         action_type=body.action_type,
         schedule=body.schedule,
+        timezone=body.timezone,
         enabled=body.enabled,
+        downtime_minutes=body.downtime_minutes,
         created_by=current_user["id"],
     )
     doc = action.model_dump()
 
-    # Compute initial next_run so the schedule executor can find it.
     from services.schedule_executor import parse_next_run
-    initial_next = parse_next_run(body.schedule)
-    doc["next_run"] = initial_next  # datetime or None
-
-    # Ensure datetime fields are stored as BSON dates (not strings).
-    for key in ("last_run", "created_at"):
-        val = doc.get(key)
-        if isinstance(val, str):
-            try:
-                doc[key] = datetime.fromisoformat(val)
-            except (ValueError, TypeError):
-                pass
+    doc["next_run"] = parse_next_run(body.schedule, body.timezone)
 
     await db.server_schedules.insert_one(doc)
     doc.pop("_id", None)
-    # Serialise datetimes for JSON response
-    for key in ("last_run", "next_run", "created_at"):
-        val = doc.get(key)
-        if isinstance(val, datetime):
-            doc[key] = val.isoformat()
-    return doc
+    return _serialize_doc(doc)
+
+
+@router.put("/servers/{server_id}/schedules/{schedule_id}")
+async def update_schedule(
+    server_id: str,
+    schedule_id: str,
+    body: ScheduledActionUpdate,
+    current_user: dict = Depends(_require_servers),
+):
+    schedule = await db.server_schedules.find_one({"id": schedule_id, "server_id": server_id}, {"_id": 0})
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    updates = {k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No schedule changes provided")
+
+    from services.schedule_executor import parse_next_run
+    action_type = updates.get("action_type", schedule.get("action_type"))
+    if action_type not in {"restart", "start", "stop", "downtime_window"}:
+        raise HTTPException(status_code=400, detail="Unsupported action type")
+    if action_type == "downtime_window" and not updates.get("downtime_minutes", schedule.get("downtime_minutes")):
+        raise HTTPException(status_code=400, detail="Downtime schedules require downtime_minutes")
+
+    schedule_expr = updates.get("schedule", schedule.get("schedule"))
+    timezone_name = updates.get("timezone", schedule.get("timezone", "UTC"))
+    updates["next_run"] = parse_next_run(schedule_expr, timezone_name)
+    updates["updated_at"] = datetime.now(timezone.utc)
+    await db.server_schedules.update_one({"id": schedule_id, "server_id": server_id}, {"$set": updates})
+    updated = await db.server_schedules.find_one({"id": schedule_id, "server_id": server_id}, {"_id": 0})
+    return _serialize_doc(updated)
+
+
+@router.delete("/servers/{server_id}/schedules/{schedule_id}")
+async def delete_schedule(
+    server_id: str,
+    schedule_id: str,
+    current_user: dict = Depends(_require_servers),
+):
+    result = await db.server_schedules.delete_one({"id": schedule_id, "server_id": server_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return {"message": "Schedule deleted", "id": schedule_id}
 
 
 # ── Webhooks ─────────────────────────────────────────────────────────────────
@@ -1504,8 +1638,8 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
     await websocket.accept()
 
     ports = server.get("ports", {})
-    rcon_port = ports.get("rcon", 19999)
-    rcon_password = server.get("environment", {}).get("rcon_password", "")
+    rcon_port = int(ports.get("rcon", 19999))
+    rcon_password = str(((server.get("config") or {}).get("rcon") or {}).get("password") or "")
 
     try:
         while True:
@@ -1529,8 +1663,7 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
                 metadata={"command": command[:500], "via": "websocket"},
             )
 
-            success, response = await rcon_pool.execute(
-                server_id=server_id,
+            success, response = await bercon_client.execute(
                 host="127.0.0.1",
                 port=rcon_port,
                 password=rcon_password,
