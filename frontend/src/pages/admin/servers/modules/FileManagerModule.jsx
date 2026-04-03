@@ -1,75 +1,119 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { API } from '@/utils/api';
 import {
-  FileText,
-  Download,
-  Eye,
-  RefreshCw,
   Folder,
-  File,
-  ChevronRight,
+  Loader2,
+  RefreshCw,
+  Server,
+  Terminal,
+  Wrench,
 } from 'lucide-react';
 
-function FileManagerModule() {
-  const { server, serverId } = useOutletContext();
-  const [path, setPath] = useState('/');
+function TroubleshootRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded border border-zinc-800/50 bg-black/40 px-3 py-2">
+      <span className="text-xs text-gray-500">{label}</span>
+      <span className="break-all text-right font-mono text-xs text-gray-300">{value || '-'}</span>
+    </div>
+  );
+}
 
-  // File manager operates on server config files and generated assets
-  const configFiles = [
-    { name: 'server.json', type: 'file', size: '2.4 KB', modified: 'Generated from config' },
-    { name: 'mods.json', type: 'file', size: '1.1 KB', modified: 'Generated from mod list' },
-  ];
+function FileManagerModule() {
+  const { serverId } = useOutletContext();
+  const [diagnostics, setDiagnostics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDiagnostics = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API}/servers/${serverId}/diagnostics`);
+      setDiagnostics(res.data);
+    } finally {
+      setLoading(false);
+    }
+  }, [serverId]);
+
+  useEffect(() => {
+    fetchDiagnostics();
+  }, [fetchDiagnostics]);
+
+  if (loading && !diagnostics) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-tropic-gold" />
+      </div>
+    );
+  }
+
+  const paths = diagnostics?.paths || {};
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-          FILE MANAGER
+          TROUBLESHOOTING
         </h2>
-        <Button size="sm" variant="outline" className="h-7 border-zinc-800 text-xs text-gray-400">
+        <Button size="sm" variant="outline" onClick={fetchDiagnostics} className="h-7 border-zinc-800 text-xs text-gray-400">
           <RefreshCw className="mr-1 h-3 w-3" /> Refresh
         </Button>
       </div>
 
       <Card className="border-zinc-800 bg-black/60">
         <CardHeader className="pb-2">
-          <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
-            <Folder className="h-3.5 w-3.5 text-tropic-gold" />
-            <span>/server-configs/{server?.container_name || serverId}</span>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+            <Server className="h-3.5 w-3.5 text-tropic-gold" /> CONTAINER CONTEXT
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="divide-y divide-zinc-800/50">
-            {configFiles.map((file) => (
-              <div key={file.name} className="flex items-center gap-3 py-2.5 hover:bg-zinc-900/30 rounded px-2 transition-colors">
-                {file.type === 'folder' ? (
-                  <Folder className="h-4 w-4 text-tropic-gold" />
-                ) : (
-                  <FileText className="h-4 w-4 text-gray-500" />
-                )}
-                <span className="flex-1 text-xs text-gray-200 font-mono">{file.name}</span>
-                <span className="text-[10px] text-gray-600">{file.size}</span>
-                <span className="text-[10px] text-gray-600">{file.modified}</span>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-gray-500 hover:text-tropic-gold">
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-gray-500 hover:text-tropic-gold">
-                    <Download className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+        <CardContent className="space-y-2">
+          <TroubleshootRow label="Container" value={diagnostics?.container_name} />
+          <TroubleshootRow label="Image" value={diagnostics?.image} />
+          <TroubleshootRow label="Runtime Status" value={diagnostics?.docker?.status || diagnostics?.status} />
+          <TroubleshootRow label="Provisioning Step" value={diagnostics?.provisioning_step} />
         </CardContent>
       </Card>
 
-      <div className="text-xs text-gray-600">
-        <p>File manager provides safe read/write access to generated server configuration files.</p>
-        <p className="mt-1">Only server-managed assets within the safe scope are accessible.</p>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="border-zinc-800 bg-black/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+              <Folder className="h-3.5 w-3.5 text-tropic-gold" /> MANAGED DATA PATHS
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <TroubleshootRow label="Configs" value={paths.config_path} />
+            <TroubleshootRow label="Profile" value={paths.profile_path} />
+            <TroubleshootRow label="Workshop" value={paths.workshop_path} />
+            <TroubleshootRow label="SAT Config" value={paths.sat_config_path || 'Not discovered yet'} />
+          </CardContent>
+        </Card>
+
+        <Card className="border-zinc-800 bg-black/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+              <Terminal className="h-3.5 w-3.5 text-tropic-gold" /> WHAT TO CHECK
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs text-gray-400">
+            <div className="rounded border border-zinc-800/50 bg-black/40 px-3 py-2">
+              Confirm the container is running before using RCON or viewing live logs.
+            </div>
+            <div className="rounded border border-zinc-800/50 bg-black/40 px-3 py-2">
+              The mounted profile path is where Server Admin Tools files will appear after first boot.
+            </div>
+            <div className="rounded border border-zinc-800/50 bg-black/40 px-3 py-2">
+              Workshop and config paths are isolated per server and should never overlap.
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="rounded border border-zinc-800/70 bg-black/40 px-3 py-2 text-xs text-gray-500">
+        <Wrench className="mr-2 inline h-3.5 w-3.5 text-tropic-gold" />
+        This area is diagnostics-only. Infrastructure files and Docker mounts are owned by the backend service.
       </div>
     </div>
   );

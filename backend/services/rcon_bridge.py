@@ -1,249 +1,129 @@
-"""
-RCON bridge service for communicating with Arma Reforger game servers.
+"""BattlEye RCon bridge for Arma Reforger."""
 
-Implements the Source RCON protocol over async TCP using
-``asyncio.open_connection``.  Each connection is authenticated on first
-use and automatically re-established when it drops.
+from __future__ import annotations
 
-Packet format (little-endian):
-    4 bytes  – packet size  (int32, excludes this field itself)
-    4 bytes  – request id   (int32)
-    4 bytes  – type         (int32: 3=auth, 2=command, 0=response)
-    N bytes  – payload      (null-terminated ASCII string)
-    1 byte   – empty null terminator
-"""
-
-import struct
-import logging
 import asyncio
-from typing import Optional, Tuple, Dict
+import binascii
+import logging
+import socket
+import struct
+from typing import Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# ── Source RCON packet types ────────────────────────────────────────
-SERVERDATA_AUTH = 3
-SERVERDATA_AUTH_RESPONSE = 2
-SERVERDATA_EXECCOMMAND = 2
-SERVERDATA_RESPONSE_VALUE = 0
-
-_DEFAULT_TIMEOUT = 10  # seconds
+BATTLEYE_PREFIX = b"BE"
+RCON_TIMEOUT_SECONDS = 8
 
 
-# ── Packet helpers ──────────────────────────────────────────────────
-
-def _build_packet(request_id: int, packet_type: int, payload: str) -> bytes:
-    """Build a Source RCON packet ready to send over TCP."""
-    payload_bytes = payload.encode("utf-8") + b"\x00\x00"
-    size = 4 + 4 + len(payload_bytes)  # id + type + body
-    return struct.pack("<iii", size, request_id, packet_type) + payload_bytes
+def _wrap_payload(payload: bytes) -> bytes:
+    checksum = struct.pack("<I", binascii.crc32(payload) & 0xFFFFFFFF)
+    return BATTLEYE_PREFIX + checksum + b"\xFF" + payload
 
 
-async def _read_packet(
-    reader: asyncio.StreamReader,
-    timeout: float = _DEFAULT_TIMEOUT,
-) -> Tuple[int, int, str]:
-    """Read a single Source RCON response packet.
-
-    Returns ``(request_id, packet_type, payload)``.
-    """
-    size_data = await asyncio.wait_for(reader.readexactly(4), timeout=timeout)
-    (size,) = struct.unpack("<i", size_data)
-
-    body = await asyncio.wait_for(reader.readexactly(size), timeout=timeout)
-
-    request_id, packet_type = struct.unpack("<ii", body[:8])
-    # Payload sits between the two header ints and the trailing two nulls.
-    payload = body[8:-2].decode("utf-8", errors="replace")
-    return request_id, packet_type, payload
+def _parse_packet(data: bytes) -> Optional[bytes]:
+    if len(data) < 8 or not data.startswith(BATTLEYE_PREFIX) or data[6] != 0xFF:
+        return None
+    payload = data[7:]
+    expected = struct.unpack("<I", data[2:6])[0]
+    actual = binascii.crc32(payload) & 0xFFFFFFFF
+    if expected != actual:
+        return None
+    return payload
 
 
-# ── RCONClient ──────────────────────────────────────────────────────
-
-class RCONClient:
-    """Async Source RCON client for a single game-server connection."""
-
-    def __init__(self, host: str, port: int, password: str) -> None:
-        self.host = host
-        self.port = port
-        self._password = password
-        self._reader: Optional[asyncio.StreamReader] = None
-        self._writer: Optional[asyncio.StreamWriter] = None
-        self._authenticated = False
-        self._request_id = 0
-        self._lock = asyncio.Lock()
-
-    # ── lifecycle ────────────────────────────────────────────────
-
-    async def connect(self) -> bool:
-        """Establish TCP connection and authenticate with the server."""
-        try:
-            self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(self.host, self.port),
-                timeout=_DEFAULT_TIMEOUT,
-            )
-            logger.info("TCP connected to %s:%s", self.host, self.port)
-            return await self._authenticate()
-        except asyncio.TimeoutError:
-            logger.error("Connection to %s:%s timed out", self.host, self.port)
-            return False
-        except OSError as exc:
-            logger.error("Connection to %s:%s failed: %s", self.host, self.port, exc)
-            return False
-
-    async def disconnect(self) -> None:
-        """Gracefully close the underlying TCP connection."""
-        self._authenticated = False
-        if self._writer is not None:
-            try:
-                self._writer.close()
-                await self._writer.wait_closed()
-            except OSError:
-                pass
-            finally:
-                self._writer = None
-                self._reader = None
-        logger.info("Disconnected from %s:%s", self.host, self.port)
-
-    @property
-    def is_connected(self) -> bool:
-        return self._writer is not None and self._authenticated
-
-    # ── commands ─────────────────────────────────────────────────
-
-    async def send_command(self, command: str) -> str:
-        """Send an RCON command and return the server's response string.
-
-        Automatically reconnects once if the connection has been dropped.
-        """
-        async with self._lock:
-            if not self.is_connected:
-                if not await self.connect():
-                    raise ConnectionError(
-                        f"Cannot connect to RCON at {self.host}:{self.port}"
-                    )
-
-            try:
-                return await self._send(command)
-            except (OSError, asyncio.TimeoutError, asyncio.IncompleteReadError):
-                logger.warning(
-                    "RCON connection lost to %s:%s – attempting reconnect",
-                    self.host,
-                    self.port,
-                )
-                await self.disconnect()
-                if not await self.connect():
-                    raise ConnectionError(
-                        f"Reconnect to RCON at {self.host}:{self.port} failed"
-                    )
-                return await self._send(command)
-
-    # ── internals ────────────────────────────────────────────────
-
-    def _next_id(self) -> int:
-        self._request_id += 1
-        return self._request_id
-
-    async def _authenticate(self) -> bool:
-        """Perform the RCON authentication handshake."""
-        req_id = self._next_id()
-        packet = _build_packet(req_id, SERVERDATA_AUTH, self._password)
-        assert self._writer is not None and self._reader is not None
-
-        self._writer.write(packet)
-        await self._writer.drain()
-
-        resp_id, _, _ = await _read_packet(self._reader)
-        if resp_id == -1:
-            logger.error("RCON authentication failed for %s:%s", self.host, self.port)
-            self._authenticated = False
-            return False
-
-        logger.info("RCON authenticated with %s:%s", self.host, self.port)
-        self._authenticated = True
-        return True
-
-    async def _send(self, command: str) -> str:
-        """Send a command packet and return the response payload."""
-        assert self._writer is not None and self._reader is not None
-
-        req_id = self._next_id()
-        packet = _build_packet(req_id, SERVERDATA_EXECCOMMAND, command)
-        self._writer.write(packet)
-        await self._writer.drain()
-
-        resp_id, _, payload = await _read_packet(self._reader)
-        if resp_id != req_id:
-            logger.warning(
-                "RCON response id mismatch (expected %d, got %d)", req_id, resp_id
-            )
-        return payload
-
-
-# ── RCONPool ────────────────────────────────────────────────────────
-
-class RCONPool:
-    """Maintains a pool of :class:`RCONClient` instances keyed by server id."""
-
+class BERConClient:
     def __init__(self) -> None:
-        self._pool: Dict[str, RCONClient] = {}
+        self._sequence = 0
 
-    async def get_connection(
-        self,
-        server_id: str,
-        host: str,
-        port: int,
-        password: str,
-    ) -> RCONClient:
-        """Return an existing connection or create a new one for *server_id*."""
-        client = self._pool.get(server_id)
-        if client is not None and client.is_connected:
-            return client
+    def _next_sequence(self) -> int:
+        self._sequence = (self._sequence + 1) % 256
+        return self._sequence
 
-        # Replace stale / missing entry
-        if client is not None:
-            await client.disconnect()
+    async def _recv_payload(self, loop: asyncio.AbstractEventLoop, sock: socket.socket) -> Optional[bytes]:
+        data, _ = await asyncio.wait_for(loop.sock_recvfrom(sock, 65535), timeout=RCON_TIMEOUT_SECONDS)
+        return _parse_packet(data)
 
-        client = RCONClient(host, port, password)
-        if not await client.connect():
-            raise ConnectionError(
-                f"Failed to establish RCON connection for server {server_id}"
-            )
+    async def execute(self, host: str, port: int, password: str, command: str) -> Tuple[bool, str]:
+        if not password:
+            return False, "RCON is disabled because no password is configured"
 
-        self._pool[server_id] = client
-        return client
+        loop = asyncio.get_running_loop()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setblocking(False)
 
-    async def execute(
-        self,
-        server_id: str,
-        host: str,
-        port: int,
-        password: str,
-        command: str,
-    ) -> Tuple[bool, str]:
-        """Execute an RCON command on the given server.
-
-        Returns ``(success, response_or_error)``.
-        """
         try:
-            client = await self.get_connection(server_id, host, port, password)
-            response = await client.send_command(command)
-            return True, response
-        except Exception as exc:
-            logger.error("RCON execute failed for server %s: %s", server_id, exc)
+            login_packet = _wrap_payload(b"\x00" + password.encode("ascii", errors="ignore"))
+            await loop.sock_sendto(sock, login_packet, (host, port))
+            login_response = await self._recv_payload(loop, sock)
+            if not login_response or len(login_response) < 2 or login_response[0] != 0x00:
+                return False, "No valid BattlEye login response received"
+            if login_response[1] != 0x01:
+                return False, "BattlEye authentication failed"
+
+            sequence = self._next_sequence()
+            command_packet = _wrap_payload(
+                b"\x01" + bytes([sequence]) + command.encode("ascii", errors="ignore")
+            )
+            await loop.sock_sendto(sock, command_packet, (host, port))
+
+            fragments: Dict[int, str] = {}
+            expected_parts: Optional[int] = None
+            single_response: Optional[str] = None
+
+            while True:
+                payload = await self._recv_payload(loop, sock)
+                if payload is None or len(payload) < 2:
+                    continue
+
+                packet_type = payload[0]
+                packet_sequence = payload[1]
+
+                if packet_type == 0x02:
+                    # Server console message; acknowledge and continue waiting.
+                    ack = _wrap_payload(b"\x02" + bytes([packet_sequence]))
+                    await loop.sock_sendto(sock, ack, (host, port))
+                    continue
+
+                if packet_type != 0x01 or packet_sequence != sequence:
+                    continue
+
+                response_payload = payload[2:]
+                if len(response_payload) >= 3 and response_payload[0] == 0x00:
+                    expected_parts = response_payload[1]
+                    part_index = response_payload[2]
+                    fragments[part_index] = response_payload[3:].decode("utf-8", errors="replace")
+                    if expected_parts > 0 and len(fragments) >= expected_parts:
+                        break
+                    continue
+
+                single_response = response_payload.decode("utf-8", errors="replace")
+                break
+
+            if single_response is not None:
+                return True, single_response
+            if expected_parts:
+                return True, "".join(fragments.get(i, "") for i in range(expected_parts))
+            return True, ""
+        except asyncio.TimeoutError:
+            return False, "BattlEye RCON timed out"
+        except OSError as exc:
+            logger.error("BattlEye RCON socket error: %s", exc)
             return False, str(exc)
+        finally:
+            sock.close()
 
-    async def close_all(self) -> None:
-        """Disconnect every client in the pool."""
-        for server_id, client in list(self._pool.items()):
-            try:
-                await client.disconnect()
-            except Exception as exc:
-                logger.warning(
-                    "Error closing RCON connection for %s: %s", server_id, exc
-                )
-        self._pool.clear()
-        logger.info("All RCON connections closed")
+    async def probe(self, host: str, port: int, password: str) -> Dict[str, str]:
+        if not password:
+            return {"state": "disabled", "detail": "RCON password is not configured"}
+
+        ok, response = await self.execute(host, port, password, "help")
+        if ok:
+            return {"state": "connected", "detail": "BattlEye RCON is reachable"}
+        if "authentication failed" in response.lower():
+            return {"state": "auth_failed", "detail": response}
+        if "timed out" in response.lower():
+            return {"state": "unavailable", "detail": response}
+        return {"state": "error", "detail": response}
 
 
-# ── Module-level singleton ──────────────────────────────────────────
-rcon_pool = RCONPool()
+bercon_client = BERConClient()
