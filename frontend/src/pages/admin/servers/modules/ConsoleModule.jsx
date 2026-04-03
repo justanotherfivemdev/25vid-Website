@@ -197,12 +197,19 @@ function ConsoleModule() {
     reconnecting: 'Reconnecting to live stream',
   }[connectionState] || 'Waiting to connect';
 
-  const connectionColor = {
-    offline: 'bg-zinc-600 text-zinc-500',
-    connecting: 'bg-amber-400 text-amber-300',
-    live: 'bg-green-400 text-green-400',
-    reconnecting: 'bg-amber-300 text-amber-300',
-  }[connectionState] || 'bg-zinc-600 text-zinc-500';
+  const dotColor = {
+    offline: 'bg-zinc-600',
+    connecting: 'bg-amber-400',
+    live: 'bg-green-400',
+    reconnecting: 'bg-amber-300',
+  }[connectionState] || 'bg-zinc-600';
+
+  const textColor = {
+    offline: 'text-zinc-500',
+    connecting: 'text-amber-300',
+    live: 'text-green-400',
+    reconnecting: 'text-amber-300',
+  }[connectionState] || 'text-zinc-500';
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -237,8 +244,8 @@ function ConsoleModule() {
       </div>
 
       <div className="flex items-center gap-2 text-xs">
-        <span className={`h-2 w-2 rounded-full ${connectionColor.split(' ')[0]}`} />
-        <span className={connectionColor.split(' ')[1]}>{connectionLabel}</span>
+        <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+        <span className={textColor}>{connectionLabel}</span>
         {paused && (
           <Badge variant="outline" className="ml-2 border-amber-500/30 text-[10px] text-amber-300">
             AUTO-SCROLL PAUSED

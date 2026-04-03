@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import {
   Copy,
   Loader2,
@@ -52,6 +51,7 @@ function SatConfigModule() {
   const [satStatus, setSatStatus] = useState(null);
   const [bans, setBans] = useState([]);
   const [advancedRaw, setAdvancedRaw] = useState('{}');
+  const [advancedJsonError, setAdvancedJsonError] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [newBanId, setNewBanId] = useState('');
@@ -120,21 +120,39 @@ function SatConfigModule() {
 
   const saveConfig = useCallback(async () => {
     if (!draft) return;
+
+    // Validate the Advanced JSON textarea before attempting a save.
+    let advanced = {};
+    if (advancedRaw.trim()) {
+      try {
+        const parsed = JSON.parse(advancedRaw);
+        if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+          setAdvancedJsonError('Advanced JSON must be an object (e.g. { "key": "value" }).');
+          return;
+        }
+        // Strip keys that are managed by the structured UI so they cannot
+        // silently override the form values the operator just set.
+        Object.keys(parsed).forEach((key) => {
+          if (!KNOWN_KEYS.has(key)) advanced[key] = parsed[key];
+        });
+        setAdvancedJsonError('');
+      } catch {
+        setAdvancedJsonError('Advanced JSON is not valid — fix the syntax before saving.');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      let advanced = {};
-      if (advancedRaw.trim()) {
-        advanced = JSON.parse(advancedRaw);
-      }
-
       const nextConfig = Object.fromEntries(
         Object.entries(draft).filter(([key]) => KNOWN_KEYS.has(key)),
       );
 
       await axios.put(`${API}/servers/${serverId}/sat-config`, {
         config: {
-          ...nextConfig,
+          // Unknown keys come first so structured/KNOWN_KEYS values always win.
           ...advanced,
+          ...nextConfig,
           bans: draft.bans,
         },
       });
@@ -414,8 +432,20 @@ function SatConfigModule() {
       <SectionCard title="Advanced" icon={ShieldAlert}>
         <p className="mb-3 text-xs text-gray-500">
           Unknown SAT keys stay editable here so structured coverage can improve without blocking uncommon fields.
+          Known keys entered here are ignored — use the structured fields above.
         </p>
-        <Textarea value={advancedRaw} onChange={(event) => setAdvancedRaw(event.target.value)} rows={12} className="border-zinc-800 bg-black/40 font-mono text-xs text-white" />
+        <Textarea
+          value={advancedRaw}
+          onChange={(event) => {
+            setAdvancedRaw(event.target.value);
+            if (advancedJsonError) setAdvancedJsonError('');
+          }}
+          rows={12}
+          className={`border-zinc-800 bg-black/40 font-mono text-xs text-white ${advancedJsonError ? 'border-red-500/50' : ''}`}
+        />
+        {advancedJsonError && (
+          <p className="mt-1.5 text-xs text-red-400">{advancedJsonError}</p>
+        )}
       </SectionCard>
     </div>
   );

@@ -32,7 +32,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { API } from '@/utils/api';
-import { canRestartServer, canStartServer, canStopServer, getOperationalSummary, isServerDegraded, normalizeServer } from '@/utils/serverStatus';
+import { canRestartServer, canStartServer, canStopServer, isServerDegraded, normalizeServer } from '@/utils/serverStatus';
 
 function OverviewModule() {
   const { server: rawServer, serverId, fetchServer, handleServerAction, actionLoading } = useOutletContext();
@@ -66,7 +66,6 @@ function OverviewModule() {
   const latest = metricsSummary?.latest || {};
   const trend = metricsSummary?.trend_24h || {};
   const status = server?.status || 'stopped';
-  const summary = getOperationalSummary(server);
   const isRunning = status === 'running';
   const canStart = canStartServer(server);
   const canStop = canStopServer(server);

@@ -6,6 +6,7 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 (S4 Logistics and S1/Admin).
 """
 
+import hashlib
 import json
 import logging
 import asyncio
@@ -15,7 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from pymongo.errors import DuplicateKeyError
 
 from database import db
@@ -856,23 +857,59 @@ async def _sync_workshop_mod_metadata(server_id: str, mods: list[dict], current_
             upsert=True,
         )
 
-    active_server_mods = await db.managed_servers.find({}, {"mods": 1, "_id": 0}).to_list(None)
-    globally_active_ids: set[str] = set()
-    for active_server in active_server_mods:
-        for mod in active_server.get("mods", []):
-            mod_id = (mod.get("mod_id") or mod.get("modId") or "").strip()
-            if mod_id:
-                globally_active_ids.add(mod_id)
+    # Purge workshop_mods entries that are no longer active on any server.
+    # This is deferred to a background task so it does not block the HTTP
+    # response — the scan touches all servers and can be slow at scale.
+    asyncio.create_task(_purge_stale_workshop_mods())
 
-    await db.workshop_mods.delete_many({
-        "mod_id": {"$nin": list(globally_active_ids)},
-        "manually_entered": {"$ne": True},
-    })
+
+async def _purge_stale_workshop_mods() -> None:
+    """Background task: remove workshop_mods entries not assigned to any server."""
+    try:
+        active_server_mods = await db.managed_servers.find({}, {"mods": 1, "_id": 0}).to_list(None)
+        globally_active_ids: set[str] = set()
+        for active_server in active_server_mods:
+            for mod in active_server.get("mods", []):
+                mod_id = (mod.get("mod_id") or mod.get("modId") or "").strip()
+                if mod_id:
+                    globally_active_ids.add(mod_id)
+
+        result = await db.workshop_mods.delete_many({
+            "mod_id": {"$nin": list(globally_active_ids)},
+            "manually_entered": {"$ne": True},
+        })
+        if result.deleted_count:
+            logger.info("Purged %d stale workshop_mods entries", result.deleted_count)
+    except Exception as exc:
+        logger.warning("_purge_stale_workshop_mods failed: %s", exc)
+
+
+# Arma Reforger / BattlEye player IDs are alphanumeric identifiers (Steam IDs,
+# UIDs, etc.).  They must never contain whitespace or ASCII control characters
+# that could break or hijack the RCON command protocol.
+_PLAYER_ID_RE = re.compile(r'^\S{1,128}$')
+
+
+def _validate_player_id(player_id: str) -> str:
+    """Raise ValueError if player_id contains disallowed characters."""
+    if not _PLAYER_ID_RE.match(player_id):
+        raise ValueError(
+            "player_id must be 1–128 non-whitespace characters"
+        )
+    # Reject any ASCII control characters (0x00-0x1F, 0x7F)
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in player_id):
+        raise ValueError("player_id must not contain control characters")
+    return player_id
 
 
 class SatBanCreate(BaseModel):
     player_id: str
     reason: str = ""
+
+    @field_validator("player_id")
+    @classmethod
+    def player_id_must_be_safe(cls, value: str) -> str:
+        return _validate_player_id(value)
 
 
 @router.get("/servers/{server_id}/sat/status")
@@ -946,6 +983,10 @@ async def add_sat_ban(
 
 @router.delete("/servers/{server_id}/sat/bans/{player_id}")
 async def remove_sat_ban(server_id: str, player_id: str, current_user: dict = Depends(_require_servers)):
+    try:
+        _validate_player_id(player_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
@@ -969,13 +1010,19 @@ async def sync_sat_bans(server_id: str, current_user: dict = Depends(_require_se
 
     responses = []
     for entry in bans:
+        player_id = entry["id"]
+        try:
+            _validate_player_id(player_id)
+        except ValueError:
+            responses.append({"player_id": player_id, "executed": False, "response": "Skipped: invalid player_id format"})
+            continue
         success, response = await bercon_client.execute(
             host="127.0.0.1",
             port=int((server.get("ports") or {}).get("rcon", 19999)),
             password=str(((server.get("config") or {}).get("rcon") or {}).get("password") or ""),
-            command=f"#ban {entry['id']}",
+            command=f"#ban {player_id}",
         )
-        responses.append({"player_id": entry["id"], "executed": success, "response": response})
+        responses.append({"player_id": player_id, "executed": success, "response": response})
     return {"executed": True, "count": len(responses), "responses": responses}
 
 
@@ -1974,6 +2021,16 @@ _ISO_TS_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')
 _NANO_FRAC_RE = re.compile(r'(\.\d{6})\d+')
 
 
+def _stable_hash(text: str) -> str:
+    """Return a short, stable hex digest for use in log cursors.
+
+    Python's built-in hash() is PYTHONHASHSEED-salted and changes across
+    process restarts, which would invalidate client-side cursor sets on every
+    backend restart.  sha256 is stable and deterministic.
+    """
+    return hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest()[:8]
+
+
 def _parse_log_line(raw_line: str, fallback_index: int) -> dict:
     timestamp = None
     line = raw_line
@@ -1983,7 +2040,7 @@ def _parse_log_line(raw_line: str, fallback_index: int) -> dict:
             timestamp = possible_ts
             line = possible_line
     timestamp = timestamp or datetime.now(timezone.utc).isoformat()
-    cursor = f"{timestamp}|{fallback_index}|{abs(hash(raw_line)) % 100000000}"
+    cursor = f"{timestamp}|{fallback_index}|{_stable_hash(raw_line)}"
     return {
         "cursor": cursor,
         "timestamp": timestamp,

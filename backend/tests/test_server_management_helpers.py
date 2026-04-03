@@ -9,7 +9,7 @@ os.environ.setdefault("DB_NAME", "test_db")
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
-from routes.servers import _build_log_entries, _derive_troubleshooting, _normalize_server_contract, _parse_log_since
+from routes.servers import _build_log_entries, _derive_troubleshooting, _normalize_server_contract, _parse_log_line, _parse_log_since, _stable_hash, _validate_player_id
 from services.server_config_generator import (
     _normalize_navmesh_streaming,
     _sanitize_operating,
@@ -496,6 +496,37 @@ def test_parse_log_line_accepts_docker_iso_timestamp():
     entry = _parse_log_line("2026-04-03T10:00:00.000000000Z Engine started", 0)
     assert entry["timestamp"] == "2026-04-03T10:00:00.000000000Z"
     assert entry["line"] == "Engine started"
+
+
+def test_log_cursor_is_stable_across_calls():
+    """Log cursors must not change between calls (no process-salted hash)."""
+    entry_a = _parse_log_line("2026-04-03T10:00:00Z Engine ready", 0)
+    entry_b = _parse_log_line("2026-04-03T10:00:00Z Engine ready", 0)
+    assert entry_a["cursor"] == entry_b["cursor"], "cursor changed between calls"
+    # Stable hash is an 8-char hex string
+    raw_hash = _stable_hash("hello")
+    assert len(raw_hash) == 8
+    assert all(ch in "0123456789abcdef" for ch in raw_hash)
+
+
+def test_player_id_validation_rejects_whitespace_and_control_chars():
+    import pytest
+    # Valid IDs
+    _validate_player_id("76561198012345678")
+    _validate_player_id("ABCDEF1234567890")
+    _validate_player_id("player-abc.123_xyz")
+    # Invalid IDs
+    with pytest.raises(ValueError):
+        _validate_player_id("")
+    with pytest.raises(ValueError):
+        _validate_player_id("player id with spaces")
+    with pytest.raises(ValueError):
+        _validate_player_id("player\nid")
+    with pytest.raises(ValueError):
+        _validate_player_id("player\x00id")
+    with pytest.raises(ValueError):
+        # Too long (> 128 chars)
+        _validate_player_id("A" * 129)
 
 
 def test_cpu_normalization_scales_multicore_usage_to_host_percent():
