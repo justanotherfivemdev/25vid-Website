@@ -87,6 +87,36 @@ async def _evaluate_server(server: dict, server_id: str, server_name: str,
 
     # --- Container crashed / disappeared while it should be running --------
     if (container_missing or container_dead) and current_status == "running":
+        # Before flagging as crash, check if the server is in an expected
+        # restart cycle (mod download / content mounting).  Servers in the
+        # "initializing" or "starting" provisioning states are expected to
+        # restart during first boot.
+        provisioning_state = server.get("provisioning_state", "ready")
+        if provisioning_state in ("allocating", "preparing_filesystem",
+                                   "writing_config", "creating_container",
+                                   "starting_container", "waiting_for_profile",
+                                   "discovering_sat"):
+            logger.info(
+                "Container for %s exited during provisioning (state=%s) — "
+                "expected restart cycle, not flagging as crash",
+                server_name, provisioning_state,
+            )
+            return
+
+        # Also check recent logs for mod download activity
+        try:
+            from services.reforger_orchestrator import is_in_mod_cycle
+            logs = await docker_agent.get_container_logs(container_name, tail=100)
+            if is_in_mod_cycle(logs):
+                logger.info(
+                    "Container for %s exited during mod download cycle — "
+                    "not flagging as crash",
+                    server_name,
+                )
+                return
+        except Exception:
+            pass
+
         await _handle_crash(server, server_id, server_name, container_name)
         return
 
