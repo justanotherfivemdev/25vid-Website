@@ -315,18 +315,14 @@ def _parse_mod_list_from_html(soup: BeautifulSoup) -> Tuple[List[Dict], int]:
 
         # ── mod_id & URL
         # Workshop URLs: /workshop/{HEX_ID}-{slug-name}
-        # The mod_id is the leading hex identifier (typically 16 chars).
+        # Arma Reforger mod IDs are exactly 16 hex characters.
         mod_id = ""
         parts = href.strip("/").split("/")
         if len(parts) >= 2:
             slug = parts[-1]
-            # Extract the hex ID prefix before the first dash that follows
-            # a hex sequence.  Arma workshop IDs are 16 hex characters.
-            hex_match = re.match(r"^([0-9A-Fa-f]+)", slug)
+            hex_match = re.match(r"^([0-9A-Fa-f]{16})", slug)
             if hex_match:
                 mod_id = hex_match.group(1)
-            else:
-                mod_id = slug.split("-")[0]
         mod_url = f"{WORKSHOP_BASE}{href}" if href.startswith("/") else href
 
         # ── name

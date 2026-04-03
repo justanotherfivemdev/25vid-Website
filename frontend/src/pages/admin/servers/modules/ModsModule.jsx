@@ -213,6 +213,12 @@ function ModsModule() {
           }
           // Pass through metadata for backend storage
           if (m.author) entry.author = m.author;
+          if (m.description) entry.description = m.description;
+          if (m.thumbnail_url) entry.thumbnail_url = m.thumbnail_url;
+          if (m.tags) entry.tags = m.tags;
+          if (m.dependencies) entry.dependencies = m.dependencies;
+          if (m.scenario_ids) entry.scenario_ids = m.scenario_ids;
+          if (m.metadata_source) entry.metadata_source = m.metadata_source;
           return entry;
         }),
       });

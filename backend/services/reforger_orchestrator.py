@@ -31,15 +31,6 @@ docker_agent = DockerAgent()
 
 # ── Provisioning stage tracking ─────────────────────────────────────────────
 
-PROVISIONING_STAGE_NAMES = [
-    "container_creation",
-    "initial_startup",
-    "config_generation",
-    "mod_injection",
-    "post_start_validation",
-]
-
-
 @dataclass
 class StageResult:
     """Result of a single provisioning stage."""
@@ -128,10 +119,11 @@ class ProvisioningLayout:
 
 
 class ProvisioningError(RuntimeError):
-    def __init__(self, step: str, message: str):
+    def __init__(self, step: str, message: str, stages: Dict[str, Any] | None = None):
         super().__init__(message)
         self.step = step
         self.message = message
+        self.stages = stages or {}
 
 
 def build_container_name(server_id: str) -> str:
@@ -279,7 +271,7 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         if not ok:
             config_stage.status = "failed"
             config_stage.error = config_result
-            raise ProvisioningError("writing_config", config_result)
+            raise ProvisioningError("writing_config", config_result, result.stages_dict())
         config_stage.status = "success"
         config_stage.message = f"Config written to {config_result}"
     except ProvisioningError:
@@ -287,7 +279,7 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as exc:
         config_stage.status = "failed"
         config_stage.error = str(exc)
-        raise ProvisioningError("writing_config", str(exc)) from exc
+        raise ProvisioningError("writing_config", str(exc), result.stages_dict()) from exc
 
     # ── Stage: container_creation ──
     container_stage = StageResult(name="container_creation")
@@ -300,11 +292,11 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     except ProvisioningError as exc:
         container_stage.status = "failed"
         container_stage.error = exc.message
-        raise
+        raise ProvisioningError(exc.step, exc.message, result.stages_dict()) from exc
     except Exception as exc:
         container_stage.status = "failed"
         container_stage.error = str(exc)
-        raise ProvisioningError("creating_container", str(exc)) from exc
+        raise ProvisioningError("creating_container", str(exc), result.stages_dict()) from exc
 
     # ── Stage: initial_startup ──
     startup_stage = StageResult(name="initial_startup")
@@ -314,7 +306,7 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         if not ok:
             startup_stage.status = "failed"
             startup_stage.error = error or "Failed to start container"
-            raise ProvisioningError("starting_container", error or "Failed to start container")
+            raise ProvisioningError("starting_container", error or "Failed to start container", result.stages_dict())
         startup_stage.status = "success"
         startup_stage.message = "Container started"
     except ProvisioningError:
@@ -322,7 +314,7 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as exc:
         startup_stage.status = "failed"
         startup_stage.error = str(exc)
-        raise ProvisioningError("starting_container", str(exc)) from exc
+        raise ProvisioningError("starting_container", str(exc), result.stages_dict()) from exc
 
     # ── Stage: mod_injection (verify mods are in config) ──
     mod_stage = StageResult(name="mod_injection")
@@ -346,14 +338,15 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         validation_stage.status = "success"
         validation_stage.message = "Profile and SAT config discovered"
         result.updates.update(artifact_updates)
-    except ProvisioningError as exc:
+    except Exception as exc:
+        prov_exc = exc if isinstance(exc, ProvisioningError) else None
         validation_stage.status = "failed"
-        validation_stage.error = exc.message
+        validation_stage.error = prov_exc.message if prov_exc else str(exc)
         # Post-start validation failure is NOT fatal if container started.
         # The server is running, just degraded.
         logger.warning(
-            "Post-start validation failed for %s at %s: %s",
-            server["id"], exc.step, exc.message,
+            "Post-start validation failed for %s: %s",
+            server["id"], validation_stage.error,
         )
 
     # ── Build final updates ──

@@ -135,7 +135,7 @@ def mods_for_config(mods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
     Strips internal metadata and only emits valid Reforger fields.
     """
-    return [format_mod_for_config(m) for m in mods if format_mod_for_config(m)]
+    return [formatted_mod for m in mods if (formatted_mod := format_mod_for_config(m))]
 
 
 def _legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:

@@ -347,7 +347,7 @@ async def create_server(
             "provisioning_step": exc.step,
             "readiness_state": "failed",
             "last_docker_error": exc.message,
-            "provisioning_stages": {},
+            "provisioning_stages": exc.stages,
             "updated_at": datetime.now(timezone.utc),
         }
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": failure_updates})
