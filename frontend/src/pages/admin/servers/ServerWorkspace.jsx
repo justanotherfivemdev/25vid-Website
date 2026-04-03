@@ -299,10 +299,18 @@ function ServerWorkspace() {
           }`}>
             <div className="flex items-center gap-2 font-semibold mb-1">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              {status === 'provisioning_partial'
-                ? 'Server started with partial provisioning — some stages failed'
-                : 'Provisioning failed'}
+              {server.needs_manual_intervention
+                ? 'Auto-recovery exhausted — manual config correction required'
+                : status === 'provisioning_partial'
+                  ? 'Server started with partial provisioning — some stages failed'
+                  : 'Provisioning failed'}
             </div>
+            {server.needs_manual_intervention && (
+              <p className="mb-1 text-amber-300">
+                The system attempted {server.auto_recovery_attempts || 0} automatic fix(es) but could not resolve the config error.
+                Please review the server settings and correct the configuration manually.
+              </p>
+            )}
             {server.last_docker_error && (
               <p className="mb-1 text-gray-400">{server.last_docker_error}</p>
             )}
@@ -314,6 +322,8 @@ function ServerWorkspace() {
                       <CheckCircle className="h-3 w-3 text-green-400" />
                     ) : stage.status === 'failed' ? (
                       <AlertTriangle className="h-3 w-3 text-red-400" />
+                    ) : stage.status === 'skipped' ? (
+                      <Circle className="h-3 w-3 text-gray-600" />
                     ) : (
                       <Circle className="h-3 w-3 text-gray-600" />
                     )}
@@ -331,6 +341,23 @@ function ServerWorkspace() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Non-critical provisioning warnings for running servers */}
+        {status === 'running' && server.provisioning_warnings?.length > 0 && (
+          <div className="mt-2 rounded border border-amber-600/20 bg-amber-600/5 px-3 py-2 text-xs text-amber-400/80">
+            <div className="flex items-center gap-2 font-semibold mb-1">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Server is running with non-critical provisioning warnings
+            </div>
+            <div className="space-y-0.5">
+              {server.provisioning_warnings.map((w, i) => (
+                <p key={i} className="text-gray-400">
+                  <span className="text-amber-400/60">{w.stage?.replace(/_/g, ' ')}:</span> {w.message}
+                </p>
+              ))}
+            </div>
           </div>
         )}
       </div>

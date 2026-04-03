@@ -84,6 +84,8 @@ class ManagedServer(BaseModel):
     last_docker_error: str = ""
     last_known_container_status: str = ""
     provisioning_stages: Dict[str, Any] = Field(default_factory=dict)
+    provisioning_warnings: List[Dict[str, Any]] = Field(default_factory=list)
+    auto_recovery_attempts: int = 0
     data_root: str = ""
     config_path: str = ""
     profile_path: str = ""

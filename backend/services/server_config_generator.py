@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import secrets
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -227,6 +228,15 @@ def _sanitize_operating(operating: Dict[str, Any]) -> Dict[str, Any]:
             converted = _normalize_navmesh_streaming(value)
             if converted is not None:
                 sanitized[key] = converted
+            continue
+        # In Python, bool is a subclass of int.  We must reject booleans
+        # for integer-typed fields so they don't leak into the JSON config
+        # (the Reforger engine expects a real integer, not true/false).
+        if expected_type is int and isinstance(value, bool):
+            logger.debug(
+                "Dropping operating key %r: got bool, expected int",
+                key,
+            )
             continue
         if not isinstance(value, expected_type):
             logger.debug(
@@ -500,3 +510,139 @@ async def write_config_file(server: Dict[str, Any], config_dir: str | None = Non
     except OSError as exc:
         logger.error("Failed to write server config: %s", exc)
         return False, f"Failed to write config file: {exc}"
+
+
+# ── Auto-recovery: known error patterns and fixers ──────────────────────────
+# Each entry maps a regex matched against a provisioning/engine error message
+# to a callable that mutates the server dict (specifically its ``config``) to
+# attempt an automatic correction.  The provisioning loop applies matching
+# fixers and retries up to ``MAX_AUTO_RECOVERY_ATTEMPTS``.
+
+MAX_AUTO_RECOVERY_ATTEMPTS = 3
+
+# Pattern → (human description, fixer callable)
+_ERROR_TYPE_PATTERN = re.compile(
+    r'Param "(?P<path>#/[^"]+)" has an incorrect type\.\s*Expected "(?P<expected>\w+)"',
+    re.IGNORECASE,
+)
+_ERROR_INVALID_JSON = re.compile(r"JSON is invalid", re.IGNORECASE)
+_ERROR_ADDITIONAL_PROPS = re.compile(
+    r'additional\s*properties.*"(?P<key>[^"]+)"',
+    re.IGNORECASE,
+)
+
+
+def _fix_type_mismatch(server: Dict[str, Any], error_message: str) -> Tuple[bool, str]:
+    """Attempt to fix a JSON-schema type-mismatch error by coercing the value.
+
+    Returns ``(fixed, description)`` where *fixed* is True if a repair was
+    applied and *description* explains what changed.
+    """
+    m = _ERROR_TYPE_PATTERN.search(error_message)
+    if not m:
+        return False, ""
+
+    json_path = m.group("path")         # e.g. "#/operating/disableNavmeshStreaming"
+    expected = m.group("expected")       # e.g. "array"
+
+    # Navigate the config to the offending key
+    parts = [p for p in json_path.lstrip("#/").split("/") if p]
+    config = server.get("config") or {}
+    parent = config
+    for part in parts[:-1]:
+        parent = parent.get(part, {})
+        if not isinstance(parent, dict):
+            return False, f"Cannot navigate to {json_path}"
+    key = parts[-1] if parts else ""
+    if not key or key not in parent:
+        return False, f"Key {json_path} not found in config"
+
+    old_value = parent[key]
+
+    # Apply type coercion based on the expected schema type
+    if expected == "array":
+        if isinstance(old_value, bool):
+            parent[key] = [] if old_value else []
+        else:
+            parent[key] = []
+    elif expected == "boolean":
+        parent[key] = bool(old_value)
+    elif expected == "integer":
+        try:
+            parent[key] = int(old_value)
+        except (TypeError, ValueError):
+            del parent[key]
+    elif expected == "string":
+        parent[key] = str(old_value)
+    elif expected == "object":
+        parent[key] = {}
+    else:
+        # Unknown expected type — remove the offending key as a safe default
+        del parent[key]
+
+    server["config"] = config
+    desc = f"Auto-fixed {json_path}: coerced {type(old_value).__name__} to {expected}"
+    logger.info(desc)
+    return True, desc
+
+
+def _fix_additional_property(server: Dict[str, Any], error_message: str) -> Tuple[bool, str]:
+    """Remove an unrecognised additional property flagged by the engine."""
+    m = _ERROR_ADDITIONAL_PROPS.search(error_message)
+    if not m:
+        return False, ""
+
+    bad_key = m.group("key")
+    config = server.get("config") or {}
+
+    # Walk the entire config tree and remove the key wherever it appears
+    removed = _remove_key_recursive(config, bad_key)
+    if removed:
+        server["config"] = config
+        desc = f"Auto-fixed: removed unrecognised property '{bad_key}'"
+        logger.info(desc)
+        return True, desc
+    return False, ""
+
+
+def _remove_key_recursive(obj: Dict[str, Any], key: str) -> bool:
+    """Recursively remove *key* from all nested dicts.  Returns True if any removal occurred."""
+    removed = False
+    if key in obj:
+        del obj[key]
+        removed = True
+    for v in obj.values():
+        if isinstance(v, dict):
+            if _remove_key_recursive(v, key):
+                removed = True
+    return removed
+
+
+def attempt_auto_recovery(
+    server: Dict[str, Any],
+    error_message: str,
+) -> Tuple[bool, List[str]]:
+    """Try to automatically repair a server config based on an error message.
+
+    Applies all matching fixers and then regenerates + rewrites the config.
+
+    Returns ``(recovered, descriptions)`` where *recovered* is True if at
+    least one fix was applied and *descriptions* lists what was changed.
+    """
+    fixers = [
+        _fix_type_mismatch,
+        _fix_additional_property,
+    ]
+
+    descriptions: List[str] = []
+    for fixer in fixers:
+        fixed, desc = fixer(server, error_message)
+        if fixed:
+            descriptions.append(desc)
+
+    if not descriptions:
+        return False, []
+
+    # Regenerate the config after applying fixes to ensure consistency
+    server["config"] = generate_reforger_config(server)
+    return True, descriptions

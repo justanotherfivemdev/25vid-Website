@@ -23,7 +23,12 @@ from services.sat_config_service import (
     discover_sat_config,
     overlay_baseline_if_configured,
 )
-from services.server_config_generator import generate_reforger_config, write_config_file
+from services.server_config_generator import (
+    MAX_AUTO_RECOVERY_ATTEMPTS,
+    attempt_auto_recovery,
+    generate_reforger_config,
+    write_config_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +55,14 @@ _MOD_CYCLE_LOG_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"Mounting content", re.IGNORECASE),
     re.compile(r"Workshop.*download", re.IGNORECASE),
     re.compile(r"Addon.*loaded", re.IGNORECASE),
+]
+
+# Patterns that indicate a config / schema error that may be auto-recoverable.
+_CONFIG_ERROR_LOG_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r'has an incorrect type\.\s*Expected\s+"', re.IGNORECASE),
+    re.compile(r"JSON is invalid", re.IGNORECASE),
+    re.compile(r"errors? in server config", re.IGNORECASE),
+    re.compile(r"additional\s*properties", re.IGNORECASE),
 ]
 
 # Maximum restart cycles tolerated during initial provisioning before declaring
@@ -120,7 +133,11 @@ class ProvisioningResult:
         if self.all_succeeded:
             return "ready"
         if self.container_started:
-            return "partial"
+            # "partial" is not a recognised provisioning_state in the model.
+            # When the container is running but non-critical stages failed,
+            # report "ready" here and rely on readiness_state="degraded" to
+            # communicate the degraded condition.
+            return "ready"
         return "failed"
 
     @property
@@ -275,6 +292,26 @@ def is_in_mod_cycle(logs: str) -> bool:
         if pattern.search(logs):
             return True
     return False
+
+
+def extract_config_errors(logs: str) -> List[str]:
+    """Extract config-related error messages from container logs.
+
+    Returns a list of log lines that contain config/schema error patterns.
+    These are used to drive automatic recovery attempts.
+    """
+    if not logs:
+        return []
+    errors: List[str] = []
+    for line in logs.splitlines():
+        for pattern in _CONFIG_ERROR_LOG_PATTERNS:
+            if pattern.search(line):
+                # Strip timestamps from the log line for cleaner matching
+                cleaned = re.sub(r"^\d{4}-\d{2}-\d{2}T[\d:.]+Z?\s*", "", line).strip()
+                if cleaned:
+                    errors.append(cleaned)
+                break
+    return errors
 
 
 async def wait_for_server_readiness(
@@ -472,6 +509,90 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         startup_stage.error = str(exc)
         raise ProvisioningError("starting_container", str(exc), result.stages_dict()) from exc
 
+    # ── Stage: auto_recovery (detect config errors → fix → restart) ──
+    recovery_stage = StageResult(name="auto_recovery")
+    result.stages.append(recovery_stage)
+    recovery_descriptions: List[str] = []
+    recovery_attempts = 0
+
+    for attempt in range(1, MAX_AUTO_RECOVERY_ATTEMPTS + 1):
+        # Give the server a few seconds to either start successfully or crash
+        await asyncio.sleep(5)
+
+        status_info = await docker_agent.get_container_status(server["container_name"])
+        container_running = status_info is not None and status_info.get("running", False)
+
+        if container_running:
+            # Server is running — no recovery needed
+            break
+
+        # Container stopped — check logs for config errors
+        try:
+            logs = await docker_agent.get_container_logs(
+                server["container_name"], tail=READINESS_LOG_TAIL_LINES,
+            )
+        except Exception:
+            logs = ""
+
+        config_errors = extract_config_errors(logs)
+        if not config_errors:
+            # Not a config error — could be a mod cycle or other issue
+            break
+
+        recovery_attempts = attempt
+        error_text = " | ".join(config_errors)
+        logger.warning(
+            "Server %s config error detected (attempt %d/%d): %s",
+            server["container_name"], attempt, MAX_AUTO_RECOVERY_ATTEMPTS, error_text,
+        )
+
+        recovered, descriptions = attempt_auto_recovery(server, error_text)
+        if not recovered:
+            logger.warning(
+                "Auto-recovery could not fix config errors for %s",
+                server["container_name"],
+            )
+            break
+
+        recovery_descriptions.extend(descriptions)
+
+        # Rewrite the config and restart the container
+        ok, config_result = await write_config_file(server)
+        if not ok:
+            logger.error("Failed to write recovered config: %s", config_result)
+            break
+
+        ok, error = await docker_agent.start_existing_container(server["container_name"])
+        if not ok:
+            logger.error("Failed to restart container after recovery: %s", error)
+            break
+
+        logger.info(
+            "Auto-recovery attempt %d applied for %s: %s",
+            attempt, server["container_name"], "; ".join(descriptions),
+        )
+
+    if recovery_descriptions:
+        recovery_stage.status = "success"
+        recovery_stage.message = (
+            f"Applied {len(recovery_descriptions)} auto-fix(es) in "
+            f"{recovery_attempts} attempt(s): {'; '.join(recovery_descriptions)}"
+        )
+    elif recovery_attempts > 0:
+        # We tried to recover but couldn't fix the issue
+        recovery_stage.status = "failed"
+        recovery_stage.error = (
+            f"Config errors detected but auto-recovery failed after "
+            f"{recovery_attempts} attempt(s). Manual intervention required."
+        )
+    else:
+        recovery_stage.status = "skipped"
+        recovery_stage.message = "No config errors detected"
+
+    result.updates["auto_recovery_attempts"] = recovery_attempts
+    if recovery_descriptions:
+        result.updates["auto_recovery_log"] = recovery_descriptions
+
     # ── Stage: mod_injection (verify mods are in config) ──
     mod_stage = StageResult(name="mod_injection")
     result.stages.append(mod_stage)
@@ -547,17 +668,29 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     if result.all_succeeded or (live_running and result.container_started):
         result.updates["provisioning_step"] = "ready"
         if not result.all_succeeded:
-            # Preserve warnings for non-critical failures (e.g. SAT not yet found)
+            # Store non-critical failures in a dedicated warnings field so
+            # running servers are not shown as errored in the UI.
             failed = result.failed_stages
             if failed:
-                result.updates["last_docker_error"] = (
-                    f"Server is running. Non-critical stage warnings: "
-                    f"{', '.join(s.name for s in failed)}"
-                )
+                result.updates["provisioning_warnings"] = [
+                    {
+                        "stage": s.name,
+                        "message": s.error or s.message or "Stage completed with warnings",
+                    }
+                    for s in failed
+                ]
     else:
         failed = result.failed_stages
         result.updates["provisioning_step"] = failed[0].name if failed else "unknown"
         result.updates["last_docker_error"] = result.summary_message
+        # If auto-recovery was attempted but couldn't fix the issue, flag
+        # the server so the UI can prompt the user for manual intervention.
+        if recovery_attempts >= MAX_AUTO_RECOVERY_ATTEMPTS:
+            result.updates["needs_manual_intervention"] = True
+            result.updates["last_docker_error"] = (
+                f"Auto-recovery exhausted ({recovery_attempts} attempts). "
+                f"{result.summary_message}  Manual config correction required."
+            )
 
     return result.updates
 
@@ -632,6 +765,7 @@ async def get_diagnostics(server: Dict[str, Any]) -> Dict[str, Any]:
         "readiness_state": server.get("readiness_state", "pending"),
         "last_docker_error": server.get("last_docker_error", ""),
         "provisioning_stages": server.get("provisioning_stages", {}),
+        "provisioning_warnings": server.get("provisioning_warnings", []),
         "ports": server.get("ports", {}),
         "paths": {
             "data_root": server.get("data_root", ""),
