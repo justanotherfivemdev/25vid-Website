@@ -129,13 +129,9 @@ class ProvisioningResult:
     @property
     def provisioning_state(self) -> str:
         if self.all_succeeded:
-            return "ready"
+            return "completed"
         if self.container_started:
-            # "partial" is not a recognised provisioning_state in the model.
-            # When the container is running but non-critical stages failed,
-            # report "ready" here and rely on readiness_state="degraded" to
-            # communicate the degraded condition.
-            return "ready"
+            return "warning"
         return "failed"
 
     @property
@@ -153,7 +149,7 @@ class ProvisioningResult:
         failed = self.failed_stages
         names = [s.name for s in failed]
         if self.container_started:
-            return f"Server created successfully, but follow-up stages need attention: {', '.join(names)}"
+            return f"Server is operational, but follow-up stages need attention: {', '.join(names)}"
         return f"Server creation failed before the container became operational: {', '.join(names)}"
 
 
@@ -459,7 +455,7 @@ async def wait_for_profile_and_sat(server: Dict[str, Any]) -> Dict[str, Any]:
                     "sat_config_path": sat_path,
                     "sat_status": "configured" if baseline_applied else "discovered",
                     "readiness_state": "ready" if server_became_ready else "degraded",
-                    "provisioning_state": "ready",
+                    "provisioning_state": "completed",
                     "provisioning_step": "ready",
                 }
         await asyncio.sleep(SERVER_PROFILE_POLL_SECONDS)
@@ -524,6 +520,78 @@ async def discover_sat_runtime(server: Dict[str, Any]) -> Dict[str, Any]:
         "sat_ready": True,
         "sat_config_path": sat_path,
         "sat_status": "configured" if baseline_applied else sat_state,
+    }
+
+
+def _initial_stage_dicts(server: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "record_creation": StageResult(
+            name="record_creation",
+            status="success",
+            message="Server record created",
+        ).to_dict(),
+        "filesystem_preparation": StageResult(
+            name="filesystem_preparation",
+            status="success",
+            message=f"Runtime directories prepared under {server['data_root']}",
+        ).to_dict(),
+        "config_write": StageResult(
+            name="config_write",
+            status="success",
+            message=f"Config written to {server['config_path']}",
+        ).to_dict(),
+        "container_creation": StageResult(
+            name="container_creation",
+            status="success",
+            message=f"Container {server['container_name']} created",
+        ).to_dict(),
+    }
+
+
+async def prepare_server_deployment(server: Dict[str, Any]) -> Dict[str, Any]:
+    """Create the runtime directories, write config, and create the container."""
+    server = apply_runtime_defaults(server)
+
+    try:
+        await ensure_filesystem(server)
+    except Exception as exc:
+        raise ProvisioningError("filesystem_preparation", str(exc)) from exc
+
+    try:
+        ok, config_result = await write_config_file(server)
+    except Exception as exc:
+        raise ProvisioningError("config_write", str(exc)) from exc
+    if not ok:
+        raise ProvisioningError("config_write", config_result)
+
+    try:
+        runtime_updates = await ensure_container(server)
+    except ProvisioningError:
+        raise
+    except Exception as exc:
+        raise ProvisioningError("creating_container", str(exc)) from exc
+
+    return {
+        **runtime_updates,
+        "deployment_state": "created",
+        "status": "created",
+        "provisioning_state": "queued",
+        "provisioning_step": "queued",
+        "readiness_state": "pending",
+        "config_path": config_result,
+        "data_root": server["data_root"],
+        "profile_path": server["profile_path"],
+        "workshop_path": server["workshop_path"],
+        "diagnostics_path": server["diagnostics_path"],
+        "docker_image": server["docker_image"],
+        "container_name": server["container_name"],
+        "ports": server["ports"],
+        "port_allocations": server["ports"],
+        "provisioning_stages": _initial_stage_dicts(server),
+        "summary_message": "Server container created successfully. Follow-up provisioning continues in the server workspace.",
+        "last_docker_error": "",
+        "provisioning_warnings": [],
+        "needs_manual_intervention": False,
     }
 
 
@@ -773,19 +841,21 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         logger.debug("Live container check failed for %s: %s", server["container_name"], exc)
 
     if result.container_started:
-        effective_provisioning = "ready"
+        effective_provisioning = "completed"
         if live_running:
             effective_status = "running"
             effective_readiness = "ready"
         else:
             effective_status = "starting"
             effective_readiness = "initializing"
+            effective_provisioning = "running"
     else:
         effective_status = result.overall_status
         effective_provisioning = result.provisioning_state
         effective_readiness = result.readiness_state
 
     result.updates.update({
+        "deployment_state": server.get("deployment_state", "created"),
         "status": effective_status,
         "provisioning_state": effective_provisioning,
         "readiness_state": effective_readiness,
@@ -807,7 +877,7 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
     })
 
     if result.container_started:
-        result.updates["provisioning_step"] = "ready" if live_running else "starting_container"
+        result.updates["provisioning_step"] = "ready" if live_running else "running"
         failed = [
             s for s in result.failed_stages
             if s.name not in {"record_creation", "filesystem_preparation", "config_write", "container_creation", "initial_startup"}
@@ -820,6 +890,9 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
                 }
                 for s in failed
             ]
+            result.updates["provisioning_state"] = "warning"
+            if live_running:
+                result.updates["readiness_state"] = "degraded"
     else:
         failed = result.failed_stages
         result.updates["provisioning_step"] = failed[0].name if failed else "unknown"
@@ -853,7 +926,10 @@ async def start_server(server: Dict[str, Any]) -> Dict[str, Any]:
     sat_path, sat_state = discover_sat_config(server["profile_path"])
     return {
         **runtime_updates,
+        "deployment_state": server.get("deployment_state", "created"),
         "status": "running",
+        "provisioning_state": "completed",
+        "provisioning_step": "ready",
         "config_path": config_result,
         "last_known_container_status": (details or {}).get("status", "running"),
         "sat_config_path": sat_path or "",
@@ -867,7 +943,9 @@ async def stop_server(server: Dict[str, Any]) -> Dict[str, Any]:
     if not ok:
         raise ProvisioningError("stopping_container", error or "Failed to stop container")
     return {
+        "deployment_state": server.get("deployment_state", "created"),
         "status": "stopped",
+        "provisioning_state": server.get("provisioning_state", "completed"),
         "last_known_container_status": "exited",
         "readiness_state": "pending",
     }
@@ -880,7 +958,10 @@ async def restart_server(server: Dict[str, Any]) -> Dict[str, Any]:
     details = await docker_agent.inspect_container(server["container_name"])
     sat_path, sat_state = discover_sat_config(server["profile_path"])
     return {
+        "deployment_state": server.get("deployment_state", "created"),
         "status": "running",
+        "provisioning_state": "completed",
+        "provisioning_step": "ready",
         "last_known_container_status": (details or {}).get("status", "running"),
         "sat_config_path": sat_path or "",
         "sat_status": sat_state,
@@ -901,6 +982,7 @@ async def get_diagnostics(server: Dict[str, Any]) -> Dict[str, Any]:
         "container_id": server.get("container_id", "") or (details or {}).get("id", ""),
         "image": server.get("docker_image", ""),
         "status": server.get("status", "created"),
+        "deployment_state": server.get("deployment_state", "created"),
         "provisioning_state": server.get("provisioning_state", "pending"),
         "provisioning_step": server.get("provisioning_step", "pending"),
         "readiness_state": server.get("readiness_state", "pending"),

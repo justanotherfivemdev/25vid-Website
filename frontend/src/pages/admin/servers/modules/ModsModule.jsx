@@ -54,6 +54,24 @@ function parseImportPayload(raw) {
   return [];
 }
 
+function toModPayload(mod) {
+  return {
+    mod_id: mod.mod_id,
+    modId: mod.mod_id,
+    name: mod.name,
+    enabled: mod.enabled,
+    version: mod.version,
+    author: mod.author,
+    description: mod.description,
+    tags: mod.tags,
+    dependencies: mod.dependencies,
+    scenario_ids: mod.scenario_ids,
+    thumbnail_url: mod.thumbnail_url,
+    metadata_source: mod.metadata_source,
+    system_managed: mod.system_managed === true,
+  };
+}
+
 function ModsModule() {
   const { server, serverId, fetchServer, canManage } = useOutletContext();
   const [activeTab, setActiveTab] = useState('workshop');
@@ -80,10 +98,14 @@ function ModsModule() {
   const [importError, setImportError] = useState('');
   const [exportPayload, setExportPayload] = useState('');
   const [exporting, setExporting] = useState(false);
+  const systemManagedMods = useMemo(
+    () => (server?.mods || []).map(normalizeModEntry).filter((mod) => mod.system_managed),
+    [server?.mods],
+  );
 
   useEffect(() => {
     if (!dirty) {
-      setEnabledMods((server?.mods || []).map(normalizeModEntry));
+      setEnabledMods((server?.mods || []).map(normalizeModEntry).filter((mod) => !mod.system_managed));
     }
   }, [server?.mods, dirty]);
 
@@ -137,12 +159,12 @@ function ModsModule() {
     const normalized = normalizeModEntry(mod);
     if (!normalized.mod_id) return;
     setEnabledMods((prev) => (
-      prev.some((entry) => entry.mod_id === normalized.mod_id)
+      [...systemManagedMods, ...prev].some((entry) => entry.mod_id === normalized.mod_id)
         ? prev
         : [...prev, normalized]
     ));
     setDirty(true);
-  }, []);
+  }, [systemManagedMods]);
 
   const moveMod = useCallback((index, delta) => {
     setEnabledMods((prev) => {
@@ -171,20 +193,7 @@ function ModsModule() {
     setSaving(true);
     try {
       await axios.put(`${API}/servers/${serverId}/mods`, {
-        mods: enabledMods.map((mod) => ({
-          mod_id: mod.mod_id,
-          modId: mod.mod_id,
-          name: mod.name,
-          enabled: mod.enabled,
-          version: mod.version,
-          author: mod.author,
-          description: mod.description,
-          tags: mod.tags,
-          dependencies: mod.dependencies,
-          scenario_ids: mod.scenario_ids,
-          thumbnail_url: mod.thumbnail_url,
-          metadata_source: mod.metadata_source,
-        })),
+        mods: [...systemManagedMods, ...enabledMods].map(toModPayload),
       });
       setDirty(false);
       await fetchServer(true);
@@ -192,7 +201,7 @@ function ModsModule() {
     } finally {
       setSaving(false);
     }
-  }, [enabledMods, fetchDownloadHistory, fetchServer, serverId]);
+  }, [enabledMods, fetchDownloadHistory, fetchServer, serverId, systemManagedMods]);
 
   const validateMods = useCallback(async () => {
     setValidating(true);
@@ -262,6 +271,11 @@ function ModsModule() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {systemManagedMods.length > 0 && (
+            <Badge variant="outline" className="border-blue-600/30 text-blue-300">
+              {systemManagedMods.length} system-managed admin tool mod{systemManagedMods.length > 1 ? 's' : ''}
+            </Badge>
+          )}
           {dirty && (
             <Badge variant="outline" className="border-amber-500/30 text-amber-300">
               Unsaved load order changes
@@ -290,6 +304,12 @@ function ModsModule() {
               {issue.message || issue.type}
             </div>
           ))}
+        </div>
+      )}
+
+      {systemManagedMods.length > 0 && (
+        <div className="rounded-lg border border-blue-600/20 bg-blue-600/5 p-3 text-xs text-blue-200">
+          Admin tool dependencies such as Server Admin Tools are system-managed. They stay in the deployed config, but they are hidden from the editable load order here so users do not accidentally break dashboard features.
         </div>
       )}
 
@@ -353,7 +373,7 @@ function ModsModule() {
                   </div>
                 ) : (
                   workshopMods.map((mod) => {
-                    const isAdded = enabledMods.some((entry) => entry.mod_id === mod.mod_id);
+                    const isAdded = [...systemManagedMods, ...enabledMods].some((entry) => entry.mod_id === mod.mod_id);
                     return (
                       <div key={mod.mod_id} className="flex items-center gap-3 rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-3">
                         {mod.thumbnail_url ? (

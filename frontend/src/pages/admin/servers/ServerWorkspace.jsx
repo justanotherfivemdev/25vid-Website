@@ -36,9 +36,16 @@ import {
 import { API } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
-import { canRestartServer, canStartServer, canStopServer, getOperationalSummary, isServerDegraded, normalizeServer } from '@/utils/serverStatus';
+import {
+  canRestartServer,
+  canStartServer,
+  canStopServer,
+  getOperationalSummary,
+  isServerDegraded,
+  normalizeServer,
+} from '@/utils/serverStatus';
 
-const AUTO_REFRESH_MS = 10_000;
+const SUMMARY_REFRESH_MS = 15_000;
 
 const STATUS_CONFIG = {
   running: { label: 'RUNNING', cls: 'bg-green-600/20 text-green-400 border-green-600/30', dot: 'bg-green-400', icon: CheckCircle },
@@ -94,6 +101,13 @@ const NAV_SECTIONS = [
   },
 ];
 
+function mergeServerSummary(existing, summary) {
+  return normalizeServer({
+    ...(existing || {}),
+    ...(summary || {}),
+  });
+}
+
 function ServerWorkspace() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -124,14 +138,26 @@ function ServerWorkspace() {
     }
   }, [id]);
 
+  const fetchServerSummary = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/servers/${id}/summary`);
+      setServer((current) => mergeServerSummary(current, res.data));
+      setError(null);
+    } catch (err) {
+      if (!server) {
+        setError(err.response?.data?.detail || 'Failed to load server summary.');
+      }
+    }
+  }, [id, server]);
+
   useEffect(() => {
     fetchServer();
   }, [fetchServer]);
 
   useEffect(() => {
-    const intervalId = setInterval(() => fetchServer(true), AUTO_REFRESH_MS);
+    const intervalId = setInterval(fetchServerSummary, SUMMARY_REFRESH_MS);
     return () => clearInterval(intervalId);
-  }, [fetchServer]);
+  }, [fetchServerSummary]);
 
   const handleAction = useCallback(async (action) => {
     setActionLoading(action);
@@ -167,6 +193,7 @@ function ServerWorkspace() {
   const canStart = canStartServer(server);
   const canStop = canStopServer(server);
   const canRestart = canRestartServer(server);
+  const showProvisioningBanner = summary.state === 'created' || summary.state === 'degraded' || status === 'error';
 
   if (loading) {
     return (
@@ -287,25 +314,30 @@ function ServerWorkspace() {
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>{actionError}</span>
             <button type="button" onClick={() => setActionError(null)} className="ml-auto text-red-400 hover:text-red-300">
-              x
+              close
             </button>
           </div>
         )}
 
-        {/* Provisioning stages detail banner */}
-        {(summary.state === 'degraded' || status === 'error') && (
+        {showProvisioningBanner && (
           <div className={`mt-2 rounded border px-3 py-2 text-xs ${
-            summary.state === 'degraded'
-              ? 'border-amber-600/30 bg-amber-600/10 text-amber-300'
-              : 'border-red-600/30 bg-red-600/10 text-red-400'
+            summary.state === 'created'
+              ? 'border-blue-600/30 bg-blue-600/10 text-blue-300'
+              : summary.state === 'degraded'
+                ? 'border-amber-600/30 bg-amber-600/10 text-amber-300'
+                : 'border-red-600/30 bg-red-600/10 text-red-400'
           }`}>
-            <div className="flex items-center gap-2 font-semibold mb-1">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <div className="mb-1 flex items-center gap-2 font-semibold">
+              {summary.state === 'created'
+                ? <Info className="h-3.5 w-3.5 shrink-0" />
+                : <AlertTriangle className="h-3.5 w-3.5 shrink-0" />}
               {server.needs_manual_intervention
-                ? 'Auto-recovery exhausted — manual config correction required'
-                : summary.state === 'degraded'
-                  ? 'Server created successfully, but follow-up stages need attention'
-                  : 'Server creation failed before the container became operational'}
+                ? 'Auto-recovery exhausted - manual config correction required'
+                : summary.state === 'created'
+                  ? 'Server deployed successfully. Follow-up provisioning is continuing here.'
+                  : summary.state === 'degraded'
+                    ? 'Server created successfully, but follow-up stages need attention'
+                    : 'Server creation failed before the container became operational'}
             </div>
             {server.needs_manual_intervention && server.auto_recovery_attempts > 0 && (
               <p className="mb-1 text-amber-300">
@@ -324,8 +356,6 @@ function ServerWorkspace() {
                       <CheckCircle className="h-3 w-3 text-green-400" />
                     ) : stage.status === 'failed' ? (
                       <AlertTriangle className="h-3 w-3 text-red-400" />
-                    ) : stage.status === 'skipped' ? (
-                      <Circle className="h-3 w-3 text-gray-600" />
                     ) : (
                       <Circle className="h-3 w-3 text-gray-600" />
                     )}
@@ -337,7 +367,7 @@ function ServerWorkspace() {
                       {stage.name.replace(/_/g, ' ')}
                     </span>
                     {stage.error && (
-                      <span className="text-gray-500 ml-1">— {stage.error}</span>
+                      <span className="ml-1 text-gray-500">- {stage.error}</span>
                     )}
                   </div>
                 ))}
@@ -346,17 +376,16 @@ function ServerWorkspace() {
           </div>
         )}
 
-        {/* Non-critical provisioning warnings for running servers */}
         {status === 'running' && server.provisioning_warnings?.length > 0 && (
           <div className="mt-2 rounded border border-amber-600/20 bg-amber-600/5 px-3 py-2 text-xs text-amber-400/80">
-            <div className="flex items-center gap-2 font-semibold mb-1">
+            <div className="mb-1 flex items-center gap-2 font-semibold">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               Server is running with non-critical provisioning warnings
             </div>
             <div className="space-y-0.5">
-              {server.provisioning_warnings.map((w, i) => (
-                <p key={i} className="text-gray-400">
-                  <span className="text-amber-400/60">{w.stage?.replace(/_/g, ' ')}:</span> {w.message}
+              {server.provisioning_warnings.map((warning, index) => (
+                <p key={index} className="text-gray-400">
+                  <span className="text-amber-400/60">{warning.stage?.replace(/_/g, ' ')}:</span> {warning.message}
                 </p>
               ))}
             </div>

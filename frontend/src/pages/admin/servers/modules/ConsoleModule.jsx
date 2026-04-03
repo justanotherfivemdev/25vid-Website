@@ -28,7 +28,33 @@ function normalizeEntry(entry, fallbackId) {
     cursor: entry.cursor || String(fallbackId),
     text: entry.line || entry.raw || '',
     ts: entry.timestamp || new Date().toISOString(),
+    source: entry.source || entry.stream || 'docker',
+    path: entry.path || '',
   };
+}
+
+function formatConsoleLine(log) {
+  return `[${log.ts}] [${log.source}] ${log.text}`;
+}
+
+function formatTimestamp(value) {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function sourceTone(source) {
+  const base = String(source || 'docker').split(':')[0];
+  if (base === 'docker') return 'border-zinc-700 text-zinc-300';
+  if (base === 'console' || base === 'profile') return 'border-blue-600/30 text-blue-300';
+  if (base === 'engine' || base === 'backend') return 'border-purple-600/30 text-purple-300';
+  if (base === 'rcon') return 'border-amber-600/30 text-amber-300';
+  return 'border-zinc-700 text-zinc-300';
 }
 
 function ConsoleModule() {
@@ -161,17 +187,17 @@ function ConsoleModule() {
 
   const filteredLogs = useMemo(() => (
     filter
-      ? logs.filter((log) => log.text.toLowerCase().includes(filter.toLowerCase()))
+      ? logs.filter((log) => `${log.source} ${log.path} ${log.text}`.toLowerCase().includes(filter.toLowerCase()))
       : logs
   ), [filter, logs]);
 
   const handleCopy = async () => {
-    const text = filteredLogs.map((log) => log.text).join('\n');
+    const text = filteredLogs.map((log) => formatConsoleLine(log)).join('\n');
     await navigator.clipboard?.writeText(text);
   };
 
   const handleDownload = () => {
-    const text = filteredLogs.map((log) => log.text).join('\n');
+    const text = filteredLogs.map((log) => formatConsoleLine(log)).join('\n');
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -251,7 +277,7 @@ function ConsoleModule() {
             AUTO-SCROLL PAUSED
           </Badge>
         )}
-        <span className="ml-auto text-gray-600">{filteredLogs.length} lines in view</span>
+        <span className="ml-auto text-gray-600">{filteredLogs.length} entries in view</span>
       </div>
 
       <Card className="flex-1 border-zinc-800 bg-black/80">
@@ -268,13 +294,21 @@ function ConsoleModule() {
             ) : filteredLogs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-600">
                 <Terminal className="mb-2 h-8 w-8 text-gray-700" />
-                <p>{filter ? 'No matching log lines' : 'No logs available yet'}</p>
+                <p>{filter ? 'No matching log lines' : 'No merged logs available yet'}</p>
               </div>
             ) : (
               <div className="p-3">
                 {filteredLogs.map((log) => (
-                  <div key={log.id} className={`py-0.5 ${getLineClass(log.text)} hover:bg-zinc-900/50`}>
-                    {log.text}
+                  <div key={log.id} className="grid grid-cols-[72px_132px_1fr] gap-3 py-1 hover:bg-zinc-900/50">
+                    <span className="pt-0.5 text-[10px] text-zinc-600">{formatTimestamp(log.ts)}</span>
+                    <div className="pt-0.5">
+                      <Badge variant="outline" className={`text-[10px] uppercase ${sourceTone(log.source)}`}>
+                        {String(log.source || 'docker').replace(/_/g, ' ')}
+                      </Badge>
+                    </div>
+                    <div className={`whitespace-pre-wrap break-words ${getLineClass(log.text)}`}>
+                      {log.text}
+                    </div>
                   </div>
                 ))}
               </div>

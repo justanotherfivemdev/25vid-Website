@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,6 +80,7 @@ const EMPTY_FORM = {
 
 function ServerDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   /* ── server state ──────────────────────────────────────────────────── */
   const [servers, setServers] = useState([]);
@@ -224,7 +226,7 @@ function ServerDashboard() {
     setCreating(true);
     setCreateError(null);
     try {
-      await axios.post(`${API}/servers`, {
+      const res = await axios.post(`${API}/servers`, {
         name: form.name.trim(),
         description: form.description.trim(),
         tags: form.tags,
@@ -237,17 +239,28 @@ function ServerDashboard() {
           .map((value) => value.trim())
           .filter(Boolean),
       });
+      const createdServer = normalizeServer(res.data);
+      if (createdServer.deployment_state !== 'created') {
+        setCreateError(
+          createdServer.summary_message
+          || createdServer.last_docker_error
+          || 'Server creation failed before the container was created.'
+        );
+        await fetchServers({ silent: true });
+        return;
+      }
       setShowCreateModal(false);
       setForm(EMPTY_FORM);
       setTagInput('');
       await fetchServers({ silent: true });
+      navigate(`/admin/servers/${createdServer.id}`);
     } catch (err) {
       console.error('Failed to create server:', err);
       setCreateError(err.response?.data?.detail || 'Failed to create server.');
     } finally {
       setCreating(false);
     }
-  }, [form, fetchServers]);
+  }, [fetchServers, form, navigate]);
 
   const addTag = useCallback(() => {
     const tag = tagInput.trim();
@@ -571,7 +584,7 @@ function ServerDashboard() {
               NEW SERVER
             </DialogTitle>
             <DialogDescription className="text-sm text-gray-400">
-              Configure a new game server instance.
+              Create the dashboard record and container now. First-boot provisioning continues inside the server workspace after deployment succeeds.
             </DialogDescription>
           </DialogHeader>
 
@@ -680,7 +693,7 @@ function ServerDashboard() {
                 rows={3}
               />
               <p className="text-xs text-gray-500">
-                One parameter per line. <code>-logstats</code> is managed separately so telemetry stays on by default.
+                One parameter per line. <code>-logstats</code> and the default telemetry flags are managed separately so the dashboard stays ready by default.
               </p>
             </div>
 
@@ -755,7 +768,7 @@ function ServerDashboard() {
               ) : (
                 <Save className="mr-1.5 h-4 w-4" />
               )}
-              {creating ? 'Creating...' : 'Create Server'}
+              {creating ? 'Creating...' : 'Create And Open'}
             </Button>
           </DialogFooter>
         </DialogContent>

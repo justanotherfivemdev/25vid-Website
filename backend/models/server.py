@@ -23,16 +23,17 @@ SERVER_STATUSES = [
     "deletion_pending",
 ]
 
+SERVER_DEPLOYMENT_STATES = [
+    "creating",
+    "created",
+    "failed",
+]
+
 SERVER_PROVISIONING_STATES = [
-    "pending",
-    "allocating",
-    "preparing_filesystem",
-    "writing_config",
-    "creating_container",
-    "starting_container",
-    "waiting_for_profile",
-    "discovering_sat",
-    "ready",
+    "queued",
+    "running",
+    "completed",
+    "warning",
     "failed",
     "deleting",
 ]
@@ -78,15 +79,19 @@ class ManagedServer(BaseModel):
     container_name: str = ""
     container_id: str = ""
     status: str = "created"
-    provisioning_state: str = "pending"
-    provisioning_step: str = "pending"
+    deployment_state: str = "creating"
+    provisioning_state: str = "queued"
+    provisioning_step: str = "queued"
     readiness_state: str = "pending"
+    summary_message: str = ""
     last_docker_error: str = ""
     last_known_container_status: str = ""
     provisioning_stages: Dict[str, Any] = Field(default_factory=dict)
     provisioning_warnings: List[Dict[str, Any]] = Field(default_factory=list)
     auto_recovery_attempts: int = 0
     auto_recovery_log: List[str] = Field(default_factory=list)
+    restart_cycles: int = 0
+    needs_manual_intervention: bool = False
     data_root: str = ""
     config_path: str = ""
     profile_path: str = ""
@@ -251,11 +256,14 @@ class ModIssue(BaseModel):
     error_pattern: str = ""
     occurrence_count: int = 0
     severity: str = "low"
+    source_category: str = "runtime-script"
+    issue_type: str = "mod-runtime"
     impact_summary: str = ""
     first_seen: datetime = Field(default_factory=_utc_now)
     last_seen: datetime = Field(default_factory=_utc_now)
     confidence_score: float = 0.0
     attribution_method: str = "manual"
+    source_streams: List[str] = Field(default_factory=list)
     affected_servers: List[Dict[str, Any]] = Field(default_factory=list)
     evidence: List[Dict[str, Any]] = Field(default_factory=list)
     recommended_actions: List[str] = Field(default_factory=list)
@@ -277,6 +285,75 @@ class ServerBackup(BaseModel):
     mods_snapshot: List[Dict[str, Any]] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=_utc_now)
     created_by: str = ""
+
+
+WATCHER_TYPES = ["health", "log", "threshold"]
+WATCHER_VERDICTS = ["active", "monitoring", "resolved", "false_positive"]
+
+
+class ServerWatcher(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(default_factory=lambda: f"watch_{uuid.uuid4().hex[:12]}")
+    server_id: str
+    name: str
+    type: str = "health"
+    enabled: bool = True
+    notify: bool = True
+    pattern: str = ""
+    metric: str = "cpu_percent"
+    threshold: float = 90.0
+    severity: str = "medium"
+    created_by: str = ""
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
+    trigger_count: int = 0
+    last_triggered_at: Optional[datetime] = None
+
+
+class ServerWatcherCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    type: str = "health"
+    enabled: bool = True
+    notify: bool = True
+    pattern: str = ""
+    metric: str = "cpu_percent"
+    threshold: float = 90.0
+    severity: str = "medium"
+
+
+class ServerWatcherUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[str] = None
+    enabled: Optional[bool] = None
+    notify: Optional[bool] = None
+    pattern: Optional[str] = None
+    metric: Optional[str] = None
+    threshold: Optional[float] = None
+    severity: Optional[str] = None
+
+
+class WatcherDetection(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(default_factory=lambda: f"detect_{uuid.uuid4().hex[:12]}")
+    server_id: str
+    watcher_id: str = ""
+    detection_key: str = ""
+    title: str
+    summary: str = ""
+    severity: str = "medium"
+    status: str = "active"
+    source_category: str = "runtime-script"
+    source_streams: List[str] = Field(default_factory=list)
+    occurrence_count: int = 0
+    confidence_score: float = 0.0
+    first_seen: datetime = Field(default_factory=_utc_now)
+    last_seen: datetime = Field(default_factory=_utc_now)
+    evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    recommended_actions: List[str] = Field(default_factory=list)
+    verdict_notes: str = ""
+    updated_at: datetime = Field(default_factory=_utc_now)
 
 
 class ScheduledAction(BaseModel):

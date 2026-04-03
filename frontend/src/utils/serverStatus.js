@@ -5,14 +5,24 @@ export function normalizeServer(server) {
 
   if (next.status === 'provisioning_partial') {
     next.status = 'running';
-    next.provisioning_state = 'ready';
+    next.deployment_state = next.deployment_state || 'created';
+    next.provisioning_state = 'warning';
     next.readiness_state = next.readiness_state || 'ready';
   }
 
   if (next.status === 'provisioning_failed') {
     next.status = 'error';
+    next.deployment_state = 'failed';
     next.provisioning_state = 'failed';
     next.readiness_state = 'failed';
+  }
+
+  if (!next.deployment_state) {
+    next.deployment_state = next.status === 'error' ? 'failed' : 'created';
+  }
+
+  if (next.status === 'running' && next.provisioning_state === 'warning' && !next.readiness_state) {
+    next.readiness_state = 'degraded';
   }
 
   return next;
@@ -21,7 +31,7 @@ export function normalizeServer(server) {
 export function isServerDegraded(server) {
   const normalized = normalizeServer(server);
   if (!normalized) return false;
-  return normalized.readiness_state === 'degraded';
+  return normalized.readiness_state === 'degraded' || normalized.provisioning_state === 'warning';
 }
 
 export function getOperationalSummary(server) {
@@ -38,7 +48,15 @@ export function getOperationalSummary(server) {
     return {
       state: 'degraded',
       label: 'RUNNING WITH ATTENTION',
-      detail: normalized.summary_message || 'Server creation succeeded, but one or more follow-up stages need attention.',
+      detail: normalized.summary_message || 'Server deployment succeeded, but one or more follow-up stages need attention.',
+    };
+  }
+
+  if (normalized.deployment_state === 'created' && ['queued', 'running'].includes(normalized.provisioning_state)) {
+    return {
+      state: 'created',
+      label: 'DEPLOYED',
+      detail: normalized.summary_message || 'Server deployment succeeded and first-boot provisioning is still running.',
     };
   }
 

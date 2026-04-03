@@ -1,13 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  AlertTriangle,
   CheckCircle2,
   Clock,
   Eye,
@@ -18,13 +17,15 @@ import {
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
-const confidenceColor = (score) => {
+const VERDICT_OPTIONS = ['active', 'monitoring', 'resolved', 'false_positive'];
+
+function confidenceColor(score) {
   if (score >= 0.8) return 'bg-red-600 text-white';
   if (score >= 0.5) return 'bg-yellow-600 text-black';
   return 'bg-gray-600 text-white';
-};
+}
 
-const severityColor = (severity) => {
+function severityColor(severity) {
   const map = {
     critical: 'border-red-700/50 bg-red-900/40 text-red-200',
     high: 'border-orange-700/50 bg-orange-900/40 text-orange-200',
@@ -32,9 +33,9 @@ const severityColor = (severity) => {
     low: 'border-blue-700/50 bg-blue-900/40 text-blue-200',
   };
   return map[severity] || 'border-zinc-700 bg-zinc-900/50 text-zinc-300';
-};
+}
 
-const statusColor = (status) => {
+function statusColor(status) {
   const map = {
     active: 'bg-red-900/40 text-red-300 border-red-700/50',
     monitoring: 'bg-yellow-900/40 text-yellow-300 border-yellow-700/50',
@@ -42,7 +43,21 @@ const statusColor = (status) => {
     false_positive: 'bg-gray-800 text-gray-400 border-gray-700',
   };
   return map[status] || 'bg-gray-800 text-gray-400 border-gray-700';
-};
+}
+
+function sourceTone(category) {
+  const map = {
+    engine: 'border-blue-600/30 text-blue-300',
+    config: 'border-amber-600/30 text-amber-300',
+    'workshop-download': 'border-cyan-600/30 text-cyan-300',
+    'mod-load': 'border-purple-600/30 text-purple-300',
+    'runtime-script': 'border-indigo-600/30 text-indigo-300',
+    'battleye-rcon': 'border-orange-600/30 text-orange-300',
+    network: 'border-sky-600/30 text-sky-300',
+    performance: 'border-red-600/30 text-red-300',
+  };
+  return map[category] || 'border-zinc-700 text-zinc-300';
+}
 
 function ModIssues() {
   const [issues, setIssues] = useState([]);
@@ -51,7 +66,7 @@ function ModIssues() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedIssue, setSelectedIssue] = useState(null);
-  const [resolveNotes, setResolveNotes] = useState('');
+  const [resolutionNotes, setResolutionNotes] = useState('');
 
   const fetchIssues = useCallback(async () => {
     setLoading(true);
@@ -71,18 +86,22 @@ function ModIssues() {
     fetchIssues();
   }, [fetchIssues]);
 
-  const handleResolve = useCallback(async (issueId) => {
+  const updateIssueStatus = useCallback(async (issueId, status, notes = '') => {
     try {
-      await axios.post(`${API}/servers/mod-issues/${issueId}/resolve`, { resolution_notes: resolveNotes });
-      setSelectedIssue(null);
-      setResolveNotes('');
+      await axios.post(`${API}/servers/mod-issues/${issueId}/resolve`, {
+        status,
+        resolution_notes: notes,
+      });
+      if (selectedIssue?.id === issueId) {
+        setSelectedIssue((current) => current ? { ...current, status, resolution_notes: notes } : current);
+      }
       await fetchIssues();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to resolve issue.');
+      setError(err.response?.data?.detail || 'Failed to update issue verdict.');
     }
-  }, [fetchIssues, resolveNotes]);
+  }, [fetchIssues, selectedIssue?.id]);
 
-  const filteredIssues = issues.filter((issue) => {
+  const filteredIssues = useMemo(() => issues.filter((issue) => {
     if (!search) return true;
     const haystack = [
       issue.mod_name,
@@ -90,9 +109,12 @@ function ModIssues() {
       issue.impact_summary,
       issue.error_pattern,
       issue.error_signature,
+      issue.source_category,
+      issue.issue_type,
+      ...(issue.source_streams || []),
     ].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(search.toLowerCase());
-  });
+  }), [issues, search]);
 
   return (
     <div className="space-y-6">
@@ -102,7 +124,7 @@ function ModIssues() {
             MOD ISSUES
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Interpreted mod failures and performance warnings derived from managed server logs.
+            Structured issue analysis across engine, config, workshop, runtime, BattlEye/RCON, network, and performance sources.
           </p>
         </div>
         <Button onClick={fetchIssues} variant="outline" size="sm" className="border-gray-700 text-gray-400 hover:text-white">
@@ -122,7 +144,7 @@ function ModIssues() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by mod, issue summary, or signature..."
+            placeholder="Search by mod, category, stream, summary, or signature..."
             className="border-gray-700 bg-gray-900 pl-10 text-white"
           />
         </div>
@@ -151,7 +173,7 @@ function ModIssues() {
             <CheckCircle2 className="mb-4 h-12 w-12 opacity-30" />
             <p className="text-lg font-medium">No mod issues detected</p>
             <p className="mt-1 text-sm">
-              The analyzer will populate this page as issues are observed in container logs and persisted server output.
+              The analyzer will populate this page as merged console, profile, backend, and runtime evidence is classified.
             </p>
           </CardContent>
         </Card>
@@ -175,6 +197,16 @@ function ModIssues() {
                       <Badge variant="outline" className={`text-xs ${statusColor(issue.status)}`}>
                         {issue.status}
                       </Badge>
+                      {issue.source_category && (
+                        <Badge variant="outline" className={`text-xs ${sourceTone(issue.source_category)}`}>
+                          {issue.source_category}
+                        </Badge>
+                      )}
+                      {issue.issue_type && (
+                        <Badge variant="outline" className="border-zinc-700 text-xs text-gray-300">
+                          {issue.issue_type}
+                        </Badge>
+                      )}
                     </div>
 
                     <p className="mt-2 text-sm text-gray-200">
@@ -184,6 +216,7 @@ function ModIssues() {
                     <div className="mt-2 flex flex-wrap gap-4 text-xs text-gray-400">
                       <span>{issue.occurrence_count || 0} occurrences</span>
                       <span>{(issue.affected_servers || []).length} servers affected</span>
+                      {(issue.source_streams || []).length > 0 && <span>Streams: {(issue.source_streams || []).join(', ')}</span>}
                       {issue.last_seen && <span>Last seen: {new Date(issue.last_seen).toLocaleString()}</span>}
                     </div>
                   </div>
@@ -192,20 +225,21 @@ function ModIssues() {
                     <Button onClick={() => setSelectedIssue(issue)} variant="outline" size="sm" className="border-gray-700 text-gray-400 hover:text-white">
                       <Eye className="mr-1 h-3 w-3" /> Details
                     </Button>
-                    {issue.status === 'active' && (
-                      <Button
-                        onClick={() => {
-                          setSelectedIssue(issue);
-                          setResolveNotes('');
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="border-green-800/50 text-green-400 hover:text-green-300"
-                      >
-                        <CheckCircle2 className="mr-1 h-3 w-3" /> Resolve
-                      </Button>
-                    )}
                   </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {VERDICT_OPTIONS.map((status) => (
+                    <Button
+                      key={status}
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateIssueStatus(issue.id, status)}
+                      className={`h-7 text-[11px] ${issue.status === status ? 'border-tropic-gold/40 text-tropic-gold' : 'border-zinc-700 text-gray-400'}`}
+                    >
+                      {status.replace(/_/g, ' ')}
+                    </Button>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -229,9 +263,24 @@ function ModIssues() {
                   <div><span className="text-gray-500">Status:</span> <Badge variant="outline" className="ml-1 text-xs">{selectedIssue.status}</Badge></div>
                   <div><span className="text-gray-500">Severity:</span> <span className="text-gray-300">{selectedIssue.severity || 'unknown'}</span></div>
                   <div><span className="text-gray-500">Method:</span> <span className="text-gray-300">{selectedIssue.attribution_method || 'unknown'}</span></div>
+                  <div><span className="text-gray-500">Source category:</span> <span className="text-gray-300">{selectedIssue.source_category || 'unknown'}</span></div>
+                  <div><span className="text-gray-500">Issue type:</span> <span className="text-gray-300">{selectedIssue.issue_type || 'unknown'}</span></div>
                   <div><span className="text-gray-500">Confidence:</span> <Badge className={`ml-1 text-xs ${confidenceColor(selectedIssue.confidence_score || 0)}`}>{Math.round((selectedIssue.confidence_score || 0) * 100)}%</Badge></div>
                   <div><span className="text-gray-500">Occurrences:</span> <span className="text-gray-300">{selectedIssue.occurrence_count || 0}</span></div>
                 </div>
+
+                {(selectedIssue.source_streams || []).length > 0 && (
+                  <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
+                    <p className="mb-2 text-xs text-gray-500">Source Streams</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(selectedIssue.source_streams || []).map((stream) => (
+                        <Badge key={stream} variant="outline" className="border-zinc-700 text-gray-300">
+                          {stream}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
                   <p className="mb-2 text-xs text-gray-500">Impact Summary</p>
@@ -272,10 +321,10 @@ function ModIssues() {
                       <Server className="h-3 w-3" /> Affected Servers
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {selectedIssue.affected_servers.map((srv, index) => (
+                      {selectedIssue.affected_servers.map((server, index) => (
                         <Badge key={index} variant="outline" className="border-red-600/30 text-xs text-red-400">
                           <Server className="mr-1 h-2.5 w-2.5" />
-                          {srv.server_name || srv.server_id || `Server ${index + 1}`}
+                          {server.server_name || server.server_id || `Server ${index + 1}`}
                         </Badge>
                       ))}
                     </div>
@@ -306,7 +355,7 @@ function ModIssues() {
                   <div>
                     <p className="mb-1 text-sm text-gray-500">Evidence ({selectedIssue.evidence.length})</p>
                     <div className="max-h-48 space-y-2 overflow-y-auto">
-                      {selectedIssue.evidence.slice(0, 5).map((evidence, index) => (
+                      {selectedIssue.evidence.slice(0, 8).map((evidence, index) => (
                         <pre key={index} className="rounded bg-gray-900 p-2 text-xs text-gray-400">
                           {evidence.log_excerpt || JSON.stringify(evidence, null, 2)}
                         </pre>
@@ -315,21 +364,29 @@ function ModIssues() {
                   </div>
                 )}
 
-                {selectedIssue.status === 'active' && (
-                  <div className="border-t border-gray-800 pt-4">
-                    <p className="mb-2 text-sm text-gray-400">Resolve this issue</p>
-                    <Textarea
-                      value={resolveNotes}
-                      onChange={(e) => setResolveNotes(e.target.value)}
-                      className="border-gray-700 bg-gray-900 text-white"
-                      rows={3}
-                      placeholder="Resolution notes..."
-                    />
-                    <Button onClick={() => handleResolve(selectedIssue.id)} className="mt-2 bg-green-700 text-white hover:bg-green-600" size="sm">
-                      <CheckCircle2 className="mr-1 h-3 w-3" /> Mark Resolved
-                    </Button>
+                <div className="border-t border-gray-800 pt-4">
+                  <p className="mb-2 text-sm text-gray-400">Operator verdict</p>
+                  <div className="flex flex-wrap gap-2">
+                    {VERDICT_OPTIONS.map((status) => (
+                      <Button
+                        key={status}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateIssueStatus(selectedIssue.id, status, resolutionNotes)}
+                        className={`text-xs ${selectedIssue.status === status ? 'border-tropic-gold/40 text-tropic-gold' : 'border-zinc-700 text-gray-400'}`}
+                      >
+                        {status.replace(/_/g, ' ')}
+                      </Button>
+                    ))}
                   </div>
-                )}
+                  <Textarea
+                    value={resolutionNotes}
+                    onChange={(e) => setResolutionNotes(e.target.value)}
+                    className="mt-3 border-gray-700 bg-gray-900 text-white"
+                    rows={3}
+                    placeholder="Resolution or operator notes..."
+                  />
+                </div>
               </div>
             </>
           )}

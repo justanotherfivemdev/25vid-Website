@@ -74,7 +74,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'game.maxPlayers',
     label: 'Max Players',
     type: 'number',
-    defaultValue: '64',
+    defaultValue: '32',
     description: 'Maximum concurrent player slots.',
   },
   {
@@ -92,7 +92,7 @@ export const SERVER_CONFIG_REFERENCE = [
     type: 'boolean',
     defaultValue: 'true',
     description: 'Allows all supported platforms when enabled.',
-    notes: 'The dashboard/backend default is true, although Bohemia documentation may describe a false engine-doc default. Bohemia recommends using this switch instead of hand-editing platform lists in most cases.',
+    notes: 'The dashboard starts new servers cross-platform so they are immediately browser-ready, while still allowing you to narrow the supported platform list later.',
   },
   {
     section: 'Game',
@@ -124,7 +124,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'game.gameProperties.serverMaxViewDistance',
     label: 'Server Max View Distance',
     type: 'number',
-    defaultValue: '1600',
+    defaultValue: 'unset',
     description: 'Upper view-distance clamp applied to clients.',
   },
   {
@@ -132,7 +132,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'game.gameProperties.serverMinGrassDistance',
     label: 'Server Min Grass Distance',
     type: 'number',
-    defaultValue: '0',
+    defaultValue: 'unset',
     description: 'Minimum grass distance forced on clients. Zero disables the override.',
   },
   {
@@ -140,7 +140,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'game.gameProperties.networkViewDistance',
     label: 'Network View Distance',
     type: 'number',
-    defaultValue: '1500',
+    defaultValue: 'unset',
     description: 'Maximum network streaming range for replicated entities.',
   },
   {
@@ -148,7 +148,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'game.gameProperties.fastValidation',
     label: 'Fast Validation',
     type: 'boolean',
-    defaultValue: 'true',
+    defaultValue: 'unset',
     description: 'Validates client state on join using the minimal public-server-safe data path.',
     notes: 'Bohemia explicitly recommends keeping this true for public servers.',
   },
@@ -157,7 +157,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'game.gameProperties.battlEye',
     label: 'BattlEye',
     type: 'boolean',
-    defaultValue: 'true',
+    defaultValue: 'unset',
     description: 'Enables or disables BattlEye.',
   },
   {
@@ -205,7 +205,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'game.persistence.autoSaveInterval',
     label: 'Auto Save Interval',
     type: 'number',
-    defaultValue: '10',
+    defaultValue: 'unset',
     description: 'Minutes between automatic persistence saves. Zero disables autosave.',
   },
   {
@@ -213,7 +213,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'game.persistence.hiveId',
     label: 'Hive ID',
     type: 'number',
-    defaultValue: '0',
+    defaultValue: 'unset',
     description: 'Separates save-game UUID space when multiple servers share the same persistence database.',
   },
   {
@@ -279,7 +279,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'operating.lobbyPlayerSynchronise',
     label: 'Lobby Player Synchronise',
     type: 'boolean',
-    defaultValue: 'true',
+    defaultValue: 'unset',
     description: 'Keeps GameAPI player counts aligned with who is actually present on the server.',
   },
   {
@@ -287,7 +287,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'operating.disableCrashReporter',
     label: 'Disable Crash Reporter',
     type: 'boolean',
-    defaultValue: 'false',
+    defaultValue: 'unset',
     description: 'Disables automatic server-side crash reporting.',
   },
   {
@@ -295,7 +295,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'operating.disableNavmeshStreaming',
     label: 'Disable Navmesh Streaming',
     type: 'array',
-    defaultValue: 'undefined',
+    defaultValue: 'unset',
     description: 'Loads full navmesh data into memory for selected projects, trading memory for AI responsiveness.',
     notes: 'Empty array disables streaming for all navmeshes.',
   },
@@ -304,7 +304,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'operating.disableServerShutdown',
     label: 'Disable Server Shutdown',
     type: 'boolean',
-    defaultValue: 'false',
+    defaultValue: 'unset',
     description: 'Prevents automatic shutdown after backend connection loss.',
   },
   {
@@ -312,7 +312,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'operating.disableAI',
     label: 'Disable AI',
     type: 'boolean',
-    defaultValue: 'false',
+    defaultValue: 'unset',
     description: 'Stops AIWorld initialization and ticking completely.',
   },
   {
@@ -320,7 +320,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'operating.playerSaveTime',
     label: 'Player Save Time',
     type: 'number',
-    defaultValue: '120',
+    defaultValue: 'unset',
     description: 'Seconds between player save operations for online and local storage.',
   },
   {
@@ -328,7 +328,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'operating.aiLimit',
     label: 'AI Limit',
     type: 'number',
-    defaultValue: '-1',
+    defaultValue: 'unset',
     description: 'Hard AI spawn ceiling. Negative values leave the limit disabled.',
   },
   {
@@ -336,7 +336,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'operating.slotReservationTimeout',
     label: 'Slot Reservation Timeout',
     type: 'number',
-    defaultValue: '60',
+    defaultValue: 'unset',
     description: 'Seconds a kicked player keeps a reserved slot before timing out.',
   },
   {
@@ -344,7 +344,7 @@ export const SERVER_CONFIG_REFERENCE = [
     path: 'operating.joinQueue.maxSize',
     label: 'Join Queue Size',
     type: 'number',
-    defaultValue: '0',
+    defaultValue: 'unset',
     description: 'Maximum number of players allowed in the join queue. Zero disables the queue.',
   },
   {

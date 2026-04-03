@@ -6,7 +6,6 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 (S4 Logistics and S1/Admin).
 """
 
-import hashlib
 import json
 import logging
 import asyncio
@@ -36,6 +35,7 @@ from services.reforger_orchestrator import (
     apply_runtime_defaults,
     delete_server as orchestrator_delete_server,
     get_diagnostics as orchestrator_get_diagnostics,
+    prepare_server_deployment as orchestrator_prepare_server,
     provision_server as orchestrator_provision_server,
     restart_server as orchestrator_restart_server,
     start_server as orchestrator_start_server,
@@ -51,6 +51,15 @@ from services.server_notifications import (
     list_server_notifications,
     sync_server_notifications,
 )
+from services.server_logs import (
+    build_log_entries,
+    build_log_entry,
+    get_recent_server_log_entries,
+    parse_log_since,
+    record_server_log_event,
+    stable_hash,
+    stream_server_log_entries,
+)
 from services.rcon_bridge import bercon_client
 from services.sat_config_service import discover_sat_config, load_sat_config, overlay_baseline_if_configured, save_sat_config
 from models.server import (
@@ -59,6 +68,8 @@ from models.server import (
     ModPreset, ModPresetCreate, ModPresetUpdate,
     ServerIncident, IncidentCreate,
     ModIssue,
+    ServerWatcher, ServerWatcherCreate, ServerWatcherUpdate,
+    WatcherDetection,
     ServerBackup,
     ScheduledAction, ScheduledActionCreate, ScheduledActionUpdate,
     WebhookConfig, WebhookConfigCreate,
@@ -93,10 +104,12 @@ def _normalize_server_contract(server: dict) -> dict:
     """Normalize legacy provisioning statuses into operational/readiness fields."""
     doc = dict(server or {})
     status = doc.get("status")
+    deployment_state = doc.get("deployment_state")
 
     if status == "provisioning_partial":
         doc["status"] = "running"
-        doc["provisioning_state"] = "ready"
+        doc["deployment_state"] = deployment_state or "created"
+        doc["provisioning_state"] = "warning"
         doc["readiness_state"] = doc.get("readiness_state") or "degraded"
         if not (doc.get("provisioning_warnings") or []):
             failed = [
@@ -114,8 +127,15 @@ def _normalize_server_contract(server: dict) -> dict:
 
     if status == "provisioning_failed":
         doc["status"] = "error"
+        doc["deployment_state"] = "failed"
         doc["provisioning_state"] = "failed"
         doc["readiness_state"] = "failed"
+
+    if not doc.get("deployment_state"):
+        doc["deployment_state"] = "created" if doc.get("status") not in {"error", "deletion_pending"} else "failed"
+
+    if doc.get("status") == "running" and doc.get("provisioning_state") == "warning":
+        doc["readiness_state"] = doc.get("readiness_state") or "degraded"
 
     return doc
 
@@ -293,6 +313,84 @@ def _notification_actor(user: dict) -> str:
     return str(user.get("username") or user.get("name") or user.get("id") or "")
 
 
+def _server_summary_response(server: dict) -> dict:
+    doc = _server_response(server)
+    return {
+        "id": doc.get("id"),
+        "name": doc.get("name"),
+        "status": doc.get("status"),
+        "deployment_state": doc.get("deployment_state", "created"),
+        "provisioning_state": doc.get("provisioning_state"),
+        "provisioning_step": doc.get("provisioning_step"),
+        "readiness_state": doc.get("readiness_state"),
+        "summary_message": doc.get("summary_message", ""),
+        "needs_manual_intervention": doc.get("needs_manual_intervention", False),
+        "provisioning_warnings": doc.get("provisioning_warnings", []),
+        "container_name": doc.get("container_name", ""),
+        "docker_image": doc.get("docker_image", ""),
+    }
+
+
+async def _run_follow_up_provisioning(server_id: str) -> None:
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        return
+
+    now = datetime.now(timezone.utc)
+    await db.managed_servers.update_one(
+        {"id": server_id},
+        {
+            "$set": {
+                "provisioning_state": "running",
+                "provisioning_step": "running",
+                "summary_message": "Server deployment succeeded. Follow-up provisioning is running.",
+                "updated_at": now,
+            }
+        },
+    )
+    server["provisioning_state"] = "running"
+    server["provisioning_step"] = "running"
+
+    try:
+        updates = await orchestrator_provision_server(server)
+        updates["config"] = generate_reforger_config({**server, **updates})
+        updates["updated_at"] = datetime.now(timezone.utc)
+        await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
+        await sync_server_notifications({**server, **updates})
+    except ProvisioningError as exc:
+        failure_updates = {
+            "deployment_state": server.get("deployment_state", "created"),
+            "status": "error",
+            "provisioning_state": "failed",
+            "provisioning_step": exc.step,
+            "readiness_state": "failed",
+            "last_docker_error": exc.message,
+            "provisioning_stages": {
+                **(server.get("provisioning_stages") or {}),
+                **(exc.stages or {}),
+            },
+            "summary_message": f"Server deployment succeeded, but follow-up provisioning failed: {exc.message}",
+            "startup_grace_until": None,
+            "updated_at": datetime.now(timezone.utc),
+        }
+        await db.managed_servers.update_one({"id": server_id}, {"$set": failure_updates})
+        await sync_server_notifications({**server, **failure_updates})
+        logger.error("Follow-up provisioning failed for %s at %s: %s", server_id, exc.step, exc.message)
+    except Exception as exc:
+        failure_updates = {
+            "deployment_state": server.get("deployment_state", "created"),
+            "status": "error",
+            "provisioning_state": "failed",
+            "provisioning_step": "unexpected_error",
+            "readiness_state": "failed",
+            "last_docker_error": str(exc),
+            "summary_message": f"Server deployment succeeded, but follow-up provisioning failed: {exc}",
+            "updated_at": datetime.now(timezone.utc),
+        }
+        await db.managed_servers.update_one({"id": server_id}, {"$set": failure_updates})
+        logger.error("Unexpected follow-up provisioning failure for %s: %s", server_id, exc)
+
+
 # ── Server Lifecycle ─────────────────────────────────────────────────────────
 
 
@@ -369,10 +467,12 @@ async def create_server(
             startup_parameters=body.startup_parameters,
             startup_grace_until=_startup_grace_until(),
             created_by=current_user["id"],
-            status="initializing",
-            provisioning_state="allocating",
-            provisioning_step="allocating",
-            readiness_state="initializing",
+            deployment_state="creating",
+            status="created",
+            provisioning_state="queued",
+            provisioning_step="queued",
+            readiness_state="pending",
+            summary_message="Reserving deployment resources.",
         )
         doc = apply_runtime_defaults(server.model_dump())
         doc["config"] = generate_reforger_config(doc)
@@ -388,14 +488,18 @@ async def create_server(
     if doc is None:
         raise HTTPException(status_code=500, detail="Failed to create server definition")
 
+    deployment_error = None
+
     try:
-        updates = await orchestrator_provision_server(doc)
+        updates = await orchestrator_prepare_server(doc)
         updates["config"] = generate_reforger_config({**doc, **updates})
         updates["updated_at"] = datetime.now(timezone.utc)
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": updates})
         await sync_server_notifications({**doc, **updates})
+        asyncio.create_task(_run_follow_up_provisioning(doc["id"]))
     except ProvisioningError as exc:
         failure_updates = {
+            "deployment_state": "failed",
             "status": "error",
             "provisioning_state": "failed",
             "provisioning_step": exc.step,
@@ -409,6 +513,7 @@ async def create_server(
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": failure_updates})
         await sync_server_notifications({**doc, **failure_updates})
         logger.error("Provisioning failed for %s at %s: %s", doc["id"], exc.step, exc.message)
+        deployment_error = failure_updates["summary_message"]
 
     await log_audit(
         user_id=current_user["id"],
@@ -418,6 +523,11 @@ async def create_server(
         after={"name": doc["name"], "docker_image": doc["docker_image"]},
     )
     created = await db.managed_servers.find_one({"id": doc["id"]}, {"_id": 0})
+    if deployment_error or created.get("deployment_state") != "created":
+        raise HTTPException(
+            status_code=500,
+            detail=deployment_error or created.get("summary_message") or "Server deployment failed before the container was created.",
+        )
     return _server_response(created)
 
 
@@ -428,6 +538,15 @@ async def get_server(server_id: str, current_user: dict = Depends(_require_serve
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
     return _server_response(server)
+
+
+@router.get("/servers/{server_id}/summary")
+async def get_server_summary(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Get the lightweight server summary used by workspace header polling."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    return _server_summary_response(server)
 
 
 @router.put("/servers/{server_id}")
@@ -1769,6 +1888,7 @@ async def get_mod_issue(issue_id: str, current_user: dict = Depends(_require_ser
 
 
 class ModIssueResolve(BaseModel):
+    status: str = "resolved"
     resolution_notes: str = ""
 
 
@@ -1778,22 +1898,166 @@ async def resolve_mod_issue(
     body: ModIssueResolve,
     current_user: dict = Depends(_require_servers),
 ):
-    """Mark a mod issue as resolved."""
+    """Update the operator verdict for a mod issue."""
     issue = await db.mod_issues.find_one({"id": issue_id})
     if not issue:
         raise HTTPException(status_code=404, detail="Mod issue not found")
+
+    status = body.status or "resolved"
+    if status not in {"active", "monitoring", "resolved", "false_positive"}:
+        raise HTTPException(status_code=400, detail="Unsupported issue status")
 
     now = datetime.now(timezone.utc).isoformat()
     await db.mod_issues.update_one(
         {"id": issue_id},
         {"$set": {
-            "status": "resolved",
+            "status": status,
             "resolved_by": current_user["id"],
             "resolved_at": now,
             "resolution_notes": body.resolution_notes,
         }},
     )
-    return {"message": "Issue resolved", "id": issue_id}
+    return {"message": "Issue updated", "id": issue_id, "status": status}
+
+
+# Watchers
+
+@router.get("/servers/{server_id}/watchers")
+async def list_watchers(server_id: str, current_user: dict = Depends(_require_servers)):
+    watchers = await db.server_watchers.find({"server_id": server_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return _serialize_doc(watchers)
+
+
+@router.post("/servers/{server_id}/watchers", status_code=201)
+async def create_watcher(
+    server_id: str,
+    body: ServerWatcherCreate,
+    current_user: dict = Depends(_require_servers),
+):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    watcher = ServerWatcher(
+        server_id=server_id,
+        name=body.name,
+        type=body.type,
+        enabled=body.enabled,
+        notify=body.notify,
+        pattern=body.pattern,
+        metric=body.metric,
+        threshold=body.threshold,
+        severity=body.severity,
+        created_by=current_user["id"],
+    )
+    doc = _serialize_doc(watcher.model_dump())
+    await db.server_watchers.insert_one(doc)
+    return doc
+
+
+@router.put("/servers/{server_id}/watchers/{watcher_id}")
+async def update_watcher(
+    server_id: str,
+    watcher_id: str,
+    body: ServerWatcherUpdate,
+    current_user: dict = Depends(_require_servers),
+):
+    updates = {k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No watcher changes provided")
+    updates["updated_at"] = datetime.now(timezone.utc)
+    result = await db.server_watchers.update_one({"id": watcher_id, "server_id": server_id}, {"$set": updates})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Watcher not found")
+    watcher = await db.server_watchers.find_one({"id": watcher_id, "server_id": server_id}, {"_id": 0})
+    return _serialize_doc(watcher)
+
+
+@router.delete("/servers/{server_id}/watchers/{watcher_id}")
+async def delete_watcher(server_id: str, watcher_id: str, current_user: dict = Depends(_require_servers)):
+    result = await db.server_watchers.delete_one({"id": watcher_id, "server_id": server_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Watcher not found")
+    return {"message": "Watcher deleted", "id": watcher_id}
+
+
+@router.get("/servers/{server_id}/detections")
+async def list_server_detections(
+    server_id: str,
+    status: Optional[str] = Query(None),
+    current_user: dict = Depends(_require_servers),
+):
+    query = {"server_id": server_id}
+    if status:
+        query["status"] = status
+    detections = await db.server_detections.find(query, {"_id": 0}).sort("last_seen", -1).to_list(200)
+    return _serialize_doc(detections)
+
+
+class DetectionVerdictUpdate(BaseModel):
+    status: str
+    verdict_notes: str = ""
+
+
+@router.post("/servers/detections/{detection_id}/verdict")
+async def update_detection_verdict(
+    detection_id: str,
+    body: DetectionVerdictUpdate,
+    current_user: dict = Depends(_require_servers),
+):
+    if body.status not in {"active", "monitoring", "resolved", "false_positive"}:
+        raise HTTPException(status_code=400, detail="Unsupported detection status")
+    result = await db.server_detections.update_one(
+        {"id": detection_id},
+        {"$set": {
+            "status": body.status,
+            "verdict_notes": body.verdict_notes,
+            "updated_at": datetime.now(timezone.utc),
+        }},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Detection not found")
+    detection = await db.server_detections.find_one({"id": detection_id}, {"_id": 0})
+    return _serialize_doc(detection)
+
+
+@router.get("/servers/{server_id}/reports/summary")
+async def get_server_report_summary(server_id: str, current_user: dict = Depends(_require_servers)):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    detections = await db.server_detections.find({"server_id": server_id}, {"_id": 0}).sort("last_seen", -1).to_list(100)
+    incidents = await db.server_incidents.find({"server_id": server_id}, {"_id": 0}).sort("detected_at", -1).to_list(100)
+    backups = await db.server_backups.find({"server_id": server_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    relevant_mod_issues = await db.mod_issues.find({"affected_servers.server_id": server_id}, {"_id": 0}).sort("last_seen", -1).to_list(100)
+
+    detection_summary = {
+        "total": len(detections),
+        "active": len([d for d in detections if d.get("status") == "active"]),
+        "false_positive": len([d for d in detections if d.get("status") == "false_positive"]),
+    }
+    categories: dict[str, int] = {}
+    for issue in relevant_mod_issues:
+        categories[issue.get("source_category", "unknown")] = categories.get(issue.get("source_category", "unknown"), 0) + 1
+
+    return _serialize_doc({
+        "server_id": server_id,
+        "server": _server_summary_response(server),
+        "detections": detections[:25],
+        "mod_issues": relevant_mod_issues[:25],
+        "incidents": incidents[:25],
+        "backups": backups[:25],
+        "summary": {
+            "detections": detection_summary,
+            "incidents": {
+                "total": len(incidents),
+                "open": len([i for i in incidents if i.get("status") == "open"]),
+            },
+            "mod_issue_categories": categories,
+            "backups": len(backups),
+        },
+    })
 
 
 # ── Backups ──────────────────────────────────────────────────────────────────
@@ -1937,6 +2201,21 @@ async def execute_rcon(
         password=rcon_password,
         command=body.command,
     )
+
+    await record_server_log_event(
+        server_id,
+        source="rcon:command",
+        line=f"> {body.command}",
+        metadata={"success": success},
+    )
+    if response:
+        await record_server_log_event(
+            server_id,
+            source="rcon:response",
+            line=response[:4000],
+            raw=response[:4000],
+            metadata={"success": success, "command": body.command[:500]},
+        )
 
     return {
         "server_id": server_id,
@@ -2150,14 +2429,13 @@ async def get_server_logs(
     since: Optional[str] = Query(None),
     current_user: dict = Depends(_require_servers),
 ):
-    """Get recent container logs for a server."""
+    """Get recent merged logs for a server."""
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
-    container_name = server.get("container_name") or server.get("name", "")
-    logs = await _docker.get_container_logs(container_name, tail=tail, since=_parse_log_since(since))
-    entries = _build_log_entries(logs)
+    entries = await get_recent_server_log_entries(server, tail=tail, since=_parse_log_since(since))
+    logs = "\n".join(entry.get("raw") or entry.get("line") or "" for entry in entries)
     return {
         "server_id": server_id,
         "logs": logs,
@@ -2194,61 +2472,24 @@ _NANO_FRAC_RE = re.compile(r'(\.\d{6})\d+')
 
 
 def _stable_hash(text: str) -> str:
-    """Return a short, stable hex digest for use in log cursors.
-
-    Python's built-in hash() is PYTHONHASHSEED-salted and changes across
-    process restarts, which would invalidate client-side cursor sets on every
-    backend restart.  sha256 is stable and deterministic.
-    """
-    return hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest()[:8]
+    return stable_hash(text)
 
 
 def _parse_log_line(raw_line: str, fallback_index: int) -> dict:
-    timestamp = None
-    line = raw_line
-    if " " in raw_line:
-        possible_ts, possible_line = raw_line.split(" ", 1)
-        if _ISO_TS_RE.match(possible_ts):
-            timestamp = possible_ts
-            line = possible_line
-    timestamp = timestamp or datetime.now(timezone.utc).isoformat()
-    cursor = f"{timestamp}|{fallback_index}|{_stable_hash(raw_line)}"
-    return {
-        "cursor": cursor,
-        "timestamp": timestamp,
-        "line": line,
-        "raw": raw_line,
-    }
+    return build_log_entry(raw_line, fallback_index)
 
 
 def _build_log_entries(logs: str) -> list[dict]:
-    return [
-        _parse_log_line(raw_line, index)
-        for index, raw_line in enumerate((logs or "").splitlines())
-        if raw_line.strip()
-    ]
+    return build_log_entries(logs)
 
 
 def _parse_log_since(value: Optional[str]) -> Optional[int]:
-    if not value:
-        return None
-    try:
-        return int(value)
-    except ValueError:
-        pass
-    try:
-        # Docker uses RFC 3339 Nano (9 fractional digits); fromisoformat handles
-        # at most 6, so truncate any extra sub-second precision before parsing.
-        normalized = _NANO_FRAC_RE.sub(r'\1', value).replace("Z", "+00:00")
-        parsed = datetime.fromisoformat(normalized)
-        return int(parsed.timestamp())
-    except ValueError:
-        return None
+    return parse_log_since(value)
 
 
 @router.websocket("/ws/servers/{server_id}/logs")
 async def ws_server_logs(websocket: WebSocket, server_id: str):
-    """Stream container logs in real-time via WebSocket.
+    """Stream merged logs in real-time via WebSocket.
 
     Query params:
       - token: JWT auth token
@@ -2273,7 +2514,6 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
 
     await websocket.accept()
 
-    container_name = server.get("container_name") or server.get("name", "")
     tail = int(websocket.query_params.get("tail", "100"))
     since = _parse_log_since(websocket.query_params.get("since"))
     seen_cursors: set[str] = set()
@@ -2285,8 +2525,8 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
             "server_id": server_id,
         })
 
-        initial_logs = await _docker.get_container_logs(container_name, tail=tail, since=since)
-        for entry in _build_log_entries(initial_logs):
+        initial_entries = await get_recent_server_log_entries(server, tail=tail, since=since)
+        for entry in initial_entries:
             seen_cursors.add(entry["cursor"])
             await websocket.send_json({
                 "type": "log",
@@ -2294,27 +2534,28 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
                 "timestamp": entry["timestamp"],
                 "line": entry["line"],
                 "raw": entry["raw"],
-                "stream": "stdout",
+                "source": entry.get("source", "docker"),
+                "stream": entry.get("stream", entry.get("source", "docker")),
             })
             since = max(since or 0, _parse_log_since(entry["timestamp"]) or 0)
 
-        async for chunk in _docker.stream_container_logs(container_name, tail=0, since=since):
-            for entry in _build_log_entries(chunk):
-                if entry["cursor"] in seen_cursors:
-                    continue
+        async for entry in stream_server_log_entries(server, tail=0, since=since):
+            if entry["cursor"] in seen_cursors:
+                continue
+            seen_cursors.add(entry["cursor"])
+            if len(seen_cursors) > 4000:
+                seen_cursors.clear()
                 seen_cursors.add(entry["cursor"])
-                if len(seen_cursors) > 4000:
-                    seen_cursors.clear()
-                    seen_cursors.add(entry["cursor"])
-                await websocket.send_json({
-                    "type": "log",
-                    "cursor": entry["cursor"],
-                    "timestamp": entry["timestamp"],
-                    "line": entry["line"],
-                    "raw": entry["raw"],
-                    "stream": "stdout",
-                })
-                since = max(since or 0, _parse_log_since(entry["timestamp"]) or 0)
+            await websocket.send_json({
+                "type": "log",
+                "cursor": entry["cursor"],
+                "timestamp": entry["timestamp"],
+                "line": entry["line"],
+                "raw": entry["raw"],
+                "source": entry.get("source", "docker"),
+                "stream": entry.get("stream", entry.get("source", "docker")),
+            })
+            since = max(since or 0, _parse_log_since(entry["timestamp"]) or 0)
 
     except WebSocketDisconnect:
         logger.debug("Log stream disconnected for server %s", server_id)
@@ -2390,6 +2631,21 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
                 password=rcon_password,
                 command=command,
             )
+
+            await record_server_log_event(
+                server_id,
+                source="rcon:command",
+                line=f"> {command}",
+                metadata={"success": success, "via": "websocket"},
+            )
+            if response:
+                await record_server_log_event(
+                    server_id,
+                    source="rcon:response",
+                    line=response[:4000],
+                    raw=response[:4000],
+                    metadata={"success": success, "command": command[:500], "via": "websocket"},
+                )
 
             await websocket.send_json({
                 "type": "response",

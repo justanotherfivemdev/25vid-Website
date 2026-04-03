@@ -222,6 +222,7 @@ _server_health_task = None
 _metrics_collector_task = None
 _mod_issue_analysis_task = None
 _schedule_executor_task = None
+_watcher_executor_task = None
 _workshop_refresh_task = None
 
 _OPENAI_THREAT_QUERIES = [
@@ -489,7 +490,7 @@ async def _expire_loa_requests():
 async def startup_event():
     global _background_ingestion_task, _loa_expiration_task
     global _server_health_task, _metrics_collector_task
-    global _mod_issue_analysis_task, _schedule_executor_task, _workshop_refresh_task
+    global _mod_issue_analysis_task, _schedule_executor_task, _watcher_executor_task, _workshop_refresh_task
     vlog = logging.getLogger("valyu")
 
     # Backfill map_events from existing entities
@@ -579,6 +580,11 @@ async def startup_event():
             "timestamp",
             expireAfterSeconds=SERVER_METRICS_RETENTION_DAYS * 86400,
         )
+        await db.server_log_events.create_index([("server_id", 1), ("timestamp", -1)])
+        await db.server_watchers.create_index([("server_id", 1), ("enabled", 1)])
+        await db.server_watchers.create_index("id", unique=True)
+        await db.server_detections.create_index([("server_id", 1), ("last_seen", -1)])
+        await db.server_detections.create_index([("server_id", 1), ("detection_key", 1)], unique=True)
     except Exception as e:
         vlog.warning(f"Index creation note: {e}")
 
@@ -603,6 +609,7 @@ async def startup_event():
     from services.server_metrics_collector import metrics_collection_loop
     from services.mod_issue_engine import mod_issue_analysis_loop
     from services.schedule_executor import schedule_execution_loop
+    from services.server_watchers import watchers_loop
     from services.workshop_ingest import workshop_refresh_loop
 
     _server_health_task = asyncio.create_task(
@@ -616,6 +623,9 @@ async def startup_event():
     )
     _schedule_executor_task = asyncio.create_task(
         schedule_execution_loop(check_interval=60)
+    )
+    _watcher_executor_task = asyncio.create_task(
+        watchers_loop(interval=30)
     )
     _workshop_refresh_task = asyncio.create_task(
         workshop_refresh_loop(interval_hours=WORKSHOP_REFRESH_INTERVAL_HOURS)
@@ -632,6 +642,7 @@ async def shutdown_db_client():
         _metrics_collector_task,
         _mod_issue_analysis_task,
         _schedule_executor_task,
+        _watcher_executor_task,
         _workshop_refresh_task,
     ):
         if task and not task.done():

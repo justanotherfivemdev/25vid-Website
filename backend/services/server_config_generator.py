@@ -206,6 +206,7 @@ def ensure_required_mods(mods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             {
                 "modId": SERVER_SAT_REQUIRED_MOD_ID,
                 "name": DEFAULT_MOD_NAME,
+                "system_managed": True,
             }
         )
     return normalized
@@ -308,28 +309,7 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
     rcon = config.get("rcon") or {}
     a2s = config.get("a2s") or {}
 
-    # disableNavmeshStreaming is only emitted when explicitly requested
-    # (engine default = streaming enabled; the field is an array since 1.2).
-    navmesh_streaming = _normalize_navmesh_streaming(
-        operating.get("disableNavmeshStreaming"),
-    )
-    operating_section: Dict[str, Any] = {
-        "lobbyPlayerSynchronise": _normalize_bool(operating.get("lobbyPlayerSynchronise"), True),
-        "disableCrashReporter": _normalize_bool(operating.get("disableCrashReporter"), False),
-        "disableServerShutdown": _normalize_bool(operating.get("disableServerShutdown"), False),
-        "disableAI": _normalize_bool(operating.get("disableAI"), False),
-        "playerSaveTime": _normalize_any_int(operating.get("playerSaveTime"), 120),
-        "aiLimit": _normalize_any_int(operating.get("aiLimit"), -1),
-        "slotReservationTimeout": max(5, _normalize_any_int(operating.get("slotReservationTimeout"), 60)),
-    }
-    if navmesh_streaming is not None:
-        operating_section["disableNavmeshStreaming"] = navmesh_streaming
-    join_queue = _sanitize_join_queue(operating.get("joinQueue"))
-    if join_queue is not None:
-        operating_section["joinQueue"] = join_queue
-
-    persistence_section = _sanitize_persistence(persistence)
-    result = {
+    result: Dict[str, Any] = {
         "bindAddress": config.get("bindAddress", "0.0.0.0"),
         "bindPort": _normalize_int(ports.get("game"), 2001),
         "publicAddress": config.get("publicAddress", ""),
@@ -344,39 +324,88 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
             "password": rcon.get("password") or _default_rcon_password(server),
             "permission": rcon.get("permission", "admin"),
             "maxClients": _normalize_int(rcon.get("maxClients"), 16),
-            "blacklist": list(rcon.get("blacklist") or []),
-            "whitelist": list(rcon.get("whitelist") or []),
         },
         "game": {
             "name": game.get("name", server.get("name", "Arma Reforger Server")),
-            "password": game.get("password", ""),
-            "passwordAdmin": game.get("passwordAdmin", ""),
-            "admins": _normalize_string_list(game.get("admins")),
             "scenarioId": game.get("scenarioId", DEFAULT_SCENARIO),
             "maxPlayers": _normalize_int(game.get("maxPlayers"), 32),
             "visible": _normalize_bool(game.get("visible"), True),
             "crossPlatform": _normalize_bool(game.get("crossPlatform"), True),
-            "supportedPlatforms": _normalize_string_list(game.get("supportedPlatforms")) or list(DEFAULT_SUPPORTED_PLATFORMS),
-            "modsRequiredByDefault": _normalize_bool(game.get("modsRequiredByDefault"), True),
-            "gameProperties": {
-                "serverMaxViewDistance": _normalize_int(game_props.get("serverMaxViewDistance"), 2500),
-                "serverMinGrassDistance": _normalize_int(game_props.get("serverMinGrassDistance"), 50),
-                "networkViewDistance": _normalize_int(game_props.get("networkViewDistance"), 1000),
-                "disableThirdPerson": _normalize_bool(game_props.get("disableThirdPerson"), False),
-                "fastValidation": _normalize_bool(game_props.get("fastValidation"), True),
-                "battlEye": _normalize_bool(game_props.get("battlEye"), True),
-                "VONDisableUI": _normalize_bool(game_props.get("VONDisableUI"), False),
-                "VONDisableDirectSpeechUI": _normalize_bool(game_props.get("VONDisableDirectSpeechUI"), False),
-                "VONCanTransmitCrossFaction": _normalize_bool(game_props.get("VONCanTransmitCrossFaction"), False),
-                "missionHeader": game_props.get("missionHeader") if isinstance(game_props.get("missionHeader"), dict) else {},
-            },
             "mods": mods_for_config(ensure_required_mods(server.get("mods") or [])),
         },
-        "operating": _sanitize_operating(operating_section),
     }
+    if "password" in game:
+        result["game"]["password"] = game.get("password", "")
+    if "passwordAdmin" in game:
+        result["game"]["passwordAdmin"] = game.get("passwordAdmin", "")
 
+    admins = _normalize_string_list(game.get("admins"))
+    if admins:
+        result["game"]["admins"] = admins
+
+    supported_platforms = _normalize_string_list(game.get("supportedPlatforms"))
+    if supported_platforms:
+        result["game"]["supportedPlatforms"] = supported_platforms
+    elif not result["game"]["crossPlatform"]:
+        result["game"]["supportedPlatforms"] = list(DEFAULT_SUPPORTED_PLATFORMS)
+
+    if "modsRequiredByDefault" in game:
+        result["game"]["modsRequiredByDefault"] = _normalize_bool(game.get("modsRequiredByDefault"), True)
+
+    if rcon.get("blacklist"):
+        result["rcon"]["blacklist"] = list(rcon.get("blacklist") or [])
+    if rcon.get("whitelist"):
+        result["rcon"]["whitelist"] = list(rcon.get("whitelist") or [])
+
+    game_properties: Dict[str, Any] = {}
+    if "serverMaxViewDistance" in game_props:
+        game_properties["serverMaxViewDistance"] = _normalize_int(game_props.get("serverMaxViewDistance"), 1600)
+    if "serverMinGrassDistance" in game_props:
+        game_properties["serverMinGrassDistance"] = _normalize_int(game_props.get("serverMinGrassDistance"), 0)
+    if "networkViewDistance" in game_props:
+        game_properties["networkViewDistance"] = _normalize_int(game_props.get("networkViewDistance"), 1500)
+    for key, default in (
+        ("disableThirdPerson", False),
+        ("fastValidation", True),
+        ("battlEye", True),
+        ("VONDisableUI", False),
+        ("VONDisableDirectSpeechUI", False),
+        ("VONCanTransmitCrossFaction", False),
+    ):
+        if key in game_props:
+            game_properties[key] = _normalize_bool(game_props.get(key), default)
+    if isinstance(game_props.get("missionHeader"), dict) and game_props.get("missionHeader"):
+        game_properties["missionHeader"] = game_props["missionHeader"]
+    if game_properties:
+        result["game"]["gameProperties"] = game_properties
+
+    persistence_section = _sanitize_persistence(persistence)
     if persistence_section:
         result["game"]["persistence"] = persistence_section
+
+    navmesh_streaming = _normalize_navmesh_streaming(operating.get("disableNavmeshStreaming"))
+    operating_section: Dict[str, Any] = {}
+    for key, default in (
+        ("lobbyPlayerSynchronise", True),
+        ("disableCrashReporter", False),
+        ("disableServerShutdown", False),
+        ("disableAI", False),
+    ):
+        if key in operating:
+            operating_section[key] = _normalize_bool(operating.get(key), default)
+    if "playerSaveTime" in operating:
+        operating_section["playerSaveTime"] = _normalize_any_int(operating.get("playerSaveTime"), 120)
+    if "aiLimit" in operating:
+        operating_section["aiLimit"] = _normalize_any_int(operating.get("aiLimit"), -1)
+    if "slotReservationTimeout" in operating:
+        operating_section["slotReservationTimeout"] = max(5, _normalize_any_int(operating.get("slotReservationTimeout"), 60))
+    if navmesh_streaming is not None:
+        operating_section["disableNavmeshStreaming"] = navmesh_streaming
+    join_queue = _sanitize_join_queue(operating.get("joinQueue"))
+    if join_queue is not None:
+        operating_section["joinQueue"] = join_queue
+    if operating_section:
+        result["operating"] = _sanitize_operating(operating_section)
 
     return result
 
@@ -495,20 +524,21 @@ def normalize_server_config(raw_config: Dict[str, Any] | None, server: Dict[str,
     elif "missionHeader" in game:
         game.pop("missionHeader")
 
-    if not isinstance(game_props.get("missionHeader"), dict):
-        game_props["missionHeader"] = {}
-
     if "VONTransmitCrossFaction" in game_props and "VONCanTransmitCrossFaction" not in game_props:
         game_props["VONCanTransmitCrossFaction"] = game_props["VONTransmitCrossFaction"]
 
-    if not isinstance(game.get("persistence"), dict):
-        game["persistence"] = {}
-    else:
+    if isinstance(game.get("persistence"), dict):
         game["persistence"] = _sanitize_persistence(game.get("persistence"))
+        if not game["persistence"]:
+            game.pop("persistence", None)
 
     # Sanitise the operating section: coerce types and strip unknown keys so
     # the Reforger engine's JSON-schema validator does not reject the config.
     normalized["operating"] = _sanitize_operating(normalized.get("operating") or {})
+    if not normalized["operating"]:
+        normalized.pop("operating", None)
+    if not game_props:
+        game.pop("gameProperties", None)
 
     return normalized
 
@@ -525,6 +555,14 @@ def generate_reforger_config(server: Dict[str, Any]) -> Dict[str, Any]:
     config["rcon"]["address"] = config["rcon"].get("address") or "0.0.0.0"
     config["game"]["name"] = config["game"].get("name") or server.get("name", "Arma Reforger Server")
     config["game"]["mods"] = mods_for_config(ensure_required_mods(server.get("mods") or []))
+    if not config["game"]["mods"]:
+        config["game"].pop("mods", None)
+    if not config.get("operating"):
+        config.pop("operating", None)
+    if not config["game"].get("gameProperties"):
+        config["game"].pop("gameProperties", None)
+    if not config["game"].get("persistence"):
+        config["game"].pop("persistence", None)
     return config
 
 
