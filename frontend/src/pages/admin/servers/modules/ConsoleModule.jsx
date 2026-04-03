@@ -126,7 +126,7 @@ function ConsoleModule() {
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter logs…"
+            placeholder="Filter logs..."
             className="h-8 border-zinc-800 bg-black/60 pl-9 text-xs text-white placeholder:text-gray-600"
           />
         </div>
@@ -150,7 +150,7 @@ function ConsoleModule() {
       <div className="flex items-center gap-2 text-xs">
         <span className={`h-2 w-2 rounded-full ${wsConnected ? 'bg-green-400' : 'bg-zinc-600'}`} />
         <span className={wsConnected ? 'text-green-400' : 'text-gray-600'}>
-          {wsConnected ? 'Live streaming' : server?.status === 'running' ? 'Connecting…' : 'Server offline'}
+          {wsConnected ? 'Live streaming' : server?.status === 'running' ? 'Connecting...' : 'Server offline'}
         </span>
         {paused && <Badge variant="outline" className="ml-2 border-amber-600/30 text-amber-400 text-[10px]">PAUSED</Badge>}
         <span className="ml-auto text-gray-600">{filteredLogs.length} lines</span>
@@ -166,7 +166,7 @@ function ConsoleModule() {
           >
             {loading ? (
               <div className="flex items-center justify-center py-12 text-gray-600">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading logs…
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading logs...
               </div>
             ) : filteredLogs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-600">

@@ -1,92 +1,138 @@
-"""Data models for the Server Management Portal.
+"""Data models for the Arma Reforger server management domain."""
 
-Covers managed game servers, workshop mods, mod presets, incidents,
-mod issue tracking, backups, scheduled actions, webhooks, and admin notes.
-"""
-
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Dict
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 import uuid
 
+from pydantic import BaseModel, ConfigDict, Field
 
-# ── Managed Server ───────────────────────────────────────────────────────────
+from config import SERVER_DOCKER_IMAGE
+
 
 SERVER_STATUSES = [
-    "created", "starting", "running", "stopping",
-    "stopped", "error", "crash_loop",
+    "created",
+    "initializing",
+    "starting",
+    "running",
+    "stopping",
+    "stopped",
+    "error",
+    "crash_loop",
+    "provisioning_failed",
+    "deletion_pending",
 ]
+
+SERVER_PROVISIONING_STATES = [
+    "pending",
+    "allocating",
+    "preparing_filesystem",
+    "writing_config",
+    "creating_container",
+    "starting_container",
+    "waiting_for_profile",
+    "discovering_sat",
+    "ready",
+    "failed",
+    "deleting",
+]
+
+SERVER_READINESS_STATES = [
+    "pending",
+    "initializing",
+    "ready",
+    "degraded",
+    "failed",
+]
+
+SAT_DISCOVERY_STATES = [
+    "pending",
+    "discovered",
+    "missing",
+    "not_applicable",
+    "error",
+]
+
+SCHEDULE_ACTION_TYPES = ["restart", "start", "stop", "downtime_window"]
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _default_ports() -> Dict[str, int]:
+    return {
+        "game": 2001,
+        "query": 17777,
+        "rcon": 19999,
+    }
 
 
 class ManagedServer(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: str = ""
-    docker_image: str = "rouhim/arma-reforger-server"
+    docker_image: str = SERVER_DOCKER_IMAGE
     container_name: str = ""
+    container_id: str = ""
     status: str = "created"
-    config: Dict = Field(default_factory=dict)
-    baseline_config: Dict = Field(default_factory=dict)
-    config_history: List[Dict] = Field(default_factory=list)
-    mods: List[Dict] = Field(default_factory=list)
-    ports: Dict = Field(default_factory=lambda: {
-        "game": 2001,
-        "query": 17777,
-        "rcon": 19999,
-    })
-    environment: Dict = Field(default_factory=dict)
-    volumes: Dict = Field(default_factory=dict)
+    provisioning_state: str = "pending"
+    provisioning_step: str = "pending"
+    readiness_state: str = "pending"
+    last_docker_error: str = ""
+    last_known_container_status: str = ""
+    data_root: str = ""
+    config_path: str = ""
+    profile_path: str = ""
+    workshop_path: str = ""
+    diagnostics_path: str = ""
+    sat_config_path: str = ""
+    sat_status: str = "pending"
+    ports: Dict[str, int] = Field(default_factory=_default_ports)
+    port_allocations: Dict[str, int] = Field(default_factory=_default_ports)
+    config: Dict[str, Any] = Field(default_factory=dict)
+    config_history: List[Dict[str, Any]] = Field(default_factory=list)
+    mods: List[Dict[str, Any]] = Field(default_factory=list)
+    environment: Dict[str, str] = Field(default_factory=dict)
+    volumes: Dict[str, str] = Field(default_factory=dict)
     created_by: str = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
     last_started: Optional[datetime] = None
     last_stopped: Optional[datetime] = None
-    auto_restart: bool = True
     health_check_interval: int = 15
+    auto_restart: bool = True
     max_restart_attempts: int = 3
     tags: List[str] = Field(default_factory=list)
-    notes: List[Dict] = Field(default_factory=list)
+    notes: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class ServerCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str = ""
-    docker_image: str = "rouhim/arma-reforger-server"
-    config: Dict = Field(default_factory=dict)
-    mods: List[Dict] = Field(default_factory=list)
-    ports: Dict = Field(default_factory=lambda: {
-        "game": 2001,
-        "query": 17777,
-        "rcon": 19999,
-    })
-    environment: Dict = Field(default_factory=dict)
-    volumes: Dict = Field(default_factory=dict)
+    config: Dict[str, Any] = Field(default_factory=dict)
+    mods: List[Dict[str, Any]] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
     auto_restart: bool = True
-    health_check_interval: int = 15
     max_restart_attempts: int = 3
 
 
 class ServerUpdate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     name: Optional[str] = None
     description: Optional[str] = None
-    docker_image: Optional[str] = None
-    config: Optional[Dict] = None
-    mods: Optional[List[Dict]] = None
-    ports: Optional[Dict] = None
-    environment: Optional[Dict] = None
-    volumes: Optional[Dict] = None
+    config: Optional[Dict[str, Any]] = None
+    mods: Optional[List[Dict[str, Any]]] = None
     tags: Optional[List[str]] = None
     auto_restart: Optional[bool] = None
-    health_check_interval: Optional[int] = None
     max_restart_attempts: Optional[int] = None
 
 
-# ── Workshop Mod ─────────────────────────────────────────────────────────────
-
 class WorkshopMod(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     mod_id: str
     name: str
     author: str = ""
@@ -94,11 +140,11 @@ class WorkshopMod(BaseModel):
     description: str = ""
     license: str = ""
     tags: List[str] = Field(default_factory=list)
-    dependencies: List[Dict] = Field(default_factory=list)
+    dependencies: List[Dict[str, Any]] = Field(default_factory=list)
     scenario_ids: List[str] = Field(default_factory=list)
     thumbnail_url: str = ""
     workshop_url: str = ""
-    last_fetched: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_fetched: datetime = Field(default_factory=_utc_now)
     manually_entered: bool = False
     metadata_source: str = "manual"
 
@@ -111,43 +157,44 @@ class WorkshopModCreate(BaseModel):
     description: str = ""
     license: str = ""
     tags: List[str] = Field(default_factory=list)
-    dependencies: List[Dict] = Field(default_factory=list)
+    dependencies: List[Dict[str, Any]] = Field(default_factory=list)
     scenario_ids: List[str] = Field(default_factory=list)
 
 
-# ── Mod Preset ───────────────────────────────────────────────────────────────
-
 class ModPreset(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: str = ""
-    mods: List[Dict] = Field(default_factory=list)
+    mods: List[Dict[str, Any]] = Field(default_factory=list)
     scenario_id: str = ""
     created_by: str = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
 
 
 class ModPresetCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str = ""
-    mods: List[Dict] = Field(default_factory=list)
+    mods: List[Dict[str, Any]] = Field(default_factory=list)
     scenario_id: str = ""
 
 
 class ModPresetUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    mods: Optional[List[Dict]] = None
+    mods: Optional[List[Dict[str, Any]]] = None
     scenario_id: Optional[str] = None
 
 
-# ── Server Incident ──────────────────────────────────────────────────────────
-
 INCIDENT_TYPES = [
-    "crash", "config_error", "startup_failure",
-    "performance", "mod_error",
+    "crash",
+    "config_error",
+    "startup_failure",
+    "performance",
+    "mod_error",
+    "scheduled_action_failure",
 ]
 
 INCIDENT_STATUSES = ["open", "investigating", "resolved"]
@@ -155,6 +202,7 @@ INCIDENT_STATUSES = ["open", "investigating", "resolved"]
 
 class ServerIncident(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str = Field(default_factory=lambda: f"inc_{uuid.uuid4().hex[:12]}")
     server_id: str
     incident_type: str = "crash"
@@ -162,7 +210,7 @@ class ServerIncident(BaseModel):
     title: str = ""
     description: str = ""
     status: str = "open"
-    detected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    detected_at: datetime = Field(default_factory=_utc_now)
     resolved_at: Optional[datetime] = None
     resolution_notes: str = ""
     related_mod_issues: List[str] = Field(default_factory=list)
@@ -178,22 +226,23 @@ class IncidentCreate(BaseModel):
     description: str = ""
 
 
-# ── Mod Issue ────────────────────────────────────────────────────────────────
-
 class ModIssue(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str = Field(default_factory=lambda: f"mi_{uuid.uuid4().hex[:12]}")
     mod_id: str
     mod_name: str
     error_signature: str = ""
     error_pattern: str = ""
     occurrence_count: int = 0
-    first_seen: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_seen: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    severity: str = "low"
+    impact_summary: str = ""
+    first_seen: datetime = Field(default_factory=_utc_now)
+    last_seen: datetime = Field(default_factory=_utc_now)
     confidence_score: float = 0.0
     attribution_method: str = "manual"
-    affected_servers: List[Dict] = Field(default_factory=list)
-    evidence: List[Dict] = Field(default_factory=list)
+    affected_servers: List[Dict[str, Any]] = Field(default_factory=list)
+    evidence: List[Dict[str, Any]] = Field(default_factory=list)
     recommended_actions: List[str] = Field(default_factory=list)
     status: str = "active"
     resolved_by: Optional[str] = None
@@ -201,53 +250,66 @@ class ModIssue(BaseModel):
     resolution_notes: str = ""
 
 
-# ── Server Backup ────────────────────────────────────────────────────────────
-
 class ServerBackup(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str = Field(default_factory=lambda: f"bk_{uuid.uuid4().hex[:12]}")
     server_id: str
     backup_type: str = "manual"
     file_path: str = ""
     size_bytes: int = 0
-    config_snapshot: Dict = Field(default_factory=dict)
-    mods_snapshot: List[Dict] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    config_snapshot: Dict[str, Any] = Field(default_factory=dict)
+    mods_snapshot: List[Dict[str, Any]] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=_utc_now)
     created_by: str = ""
 
 
-# ── Scheduled Action ─────────────────────────────────────────────────────────
-
 class ScheduledAction(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str = Field(default_factory=lambda: f"sched_{uuid.uuid4().hex[:12]}")
     server_id: str
     action_type: str = "restart"
     schedule: str = ""
+    timezone: str = "UTC"
     enabled: bool = True
+    downtime_minutes: Optional[int] = None
+    downtime_restore_at: Optional[datetime] = None
     last_run: Optional[datetime] = None
     next_run: Optional[datetime] = None
+    last_result: Optional[Dict[str, Any]] = None
+    execution_history: List[Dict[str, Any]] = Field(default_factory=list)
     created_by: str = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
 
 
 class ScheduledActionCreate(BaseModel):
     action_type: str = "restart"
     schedule: str = Field(min_length=1)
+    timezone: str = "UTC"
     enabled: bool = True
+    downtime_minutes: Optional[int] = None
 
 
-# ── Webhook Config ───────────────────────────────────────────────────────────
+class ScheduledActionUpdate(BaseModel):
+    action_type: Optional[str] = None
+    schedule: Optional[str] = None
+    timezone: Optional[str] = None
+    enabled: Optional[bool] = None
+    downtime_minutes: Optional[int] = None
+
 
 class WebhookConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str = Field(default_factory=lambda: f"wh_{uuid.uuid4().hex[:12]}")
     name: str
     url: str
     events: List[str] = Field(default_factory=list)
     enabled: bool = True
     created_by: str = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=_utc_now)
 
 
 class WebhookConfigCreate(BaseModel):
@@ -257,14 +319,14 @@ class WebhookConfigCreate(BaseModel):
     enabled: bool = True
 
 
-# ── Admin Note ───────────────────────────────────────────────────────────────
-
 class ServerNote(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     id: str = Field(default_factory=lambda: f"note_{uuid.uuid4().hex[:12]}")
     author_id: str = ""
     author_name: str = ""
     content: str = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=_utc_now)
 
 
 class ServerNoteCreate(BaseModel):

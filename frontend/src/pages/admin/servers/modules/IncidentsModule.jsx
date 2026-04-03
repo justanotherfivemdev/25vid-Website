@@ -78,7 +78,7 @@ function IncidentsModule() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
           <Input value={filter} onChange={(e) => setFilter(e.target.value)}
-            placeholder="Search incidents…"
+            placeholder="Search incidents..."
             className="h-8 border-zinc-800 bg-black/60 pl-9 text-xs text-white placeholder:text-gray-600" />
         </div>
         {['all', 'open', 'investigating', 'resolved'].map((s) => (
