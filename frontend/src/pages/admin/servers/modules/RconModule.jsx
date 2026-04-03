@@ -88,7 +88,10 @@ function RconModule() {
     if (!trimmed || !canExecute) return;
     setLoading(true);
     const entry = { id: Date.now(), command: trimmed, response: null, error: null, ts: new Date() };
-    setHistory((prev) => [...prev, entry].slice(-500));
+    setHistory((prev) => {
+      const next = [...prev, entry];
+      return next.length > 500 ? next.slice(-500) : next;
+    });
 
     try {
       const res = await axios.post(`${API}/servers/${serverId}/rcon`, { command: trimmed });

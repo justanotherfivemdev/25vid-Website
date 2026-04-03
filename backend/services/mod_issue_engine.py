@@ -10,6 +10,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
+from pymongo.errors import PyMongoError
+
 from database import db
 from services.docker_agent import DockerAgent
 
@@ -140,8 +142,8 @@ async def analyze_server_logs(server_id: str, container_name: str, server_mods: 
             issue = await db.mod_issues.find_one({"error_signature": finding["error_signature"]}, {"_id": 0})
             if issue:
                 updated_issues.append(issue)
-        except Exception as exc:
-            logger.warning("Failed to persist mod issue finding %s: %s", finding.get("error_signature", "?"), exc)
+        except PyMongoError as exc:
+            logger.error("Failed to persist mod issue finding %s: %s", finding.get("error_signature", "?"), exc)
 
     return updated_issues
 

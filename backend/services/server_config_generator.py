@@ -28,7 +28,7 @@ def _default_rcon_password(server: Dict[str, Any]) -> str:
     existing = server.get("rcon_password")
     if existing:
         return existing
-    return secrets.token_urlsafe(18)  # 24 characters
+    return secrets.token_urlsafe(18)  # ~24 characters (18 bytes base64url-encoded)
 
 
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
