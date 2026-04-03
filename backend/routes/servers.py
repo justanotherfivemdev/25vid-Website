@@ -9,6 +9,7 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 import json
 import logging
 import asyncio
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -1969,12 +1970,16 @@ async def _authenticate_ws(websocket: WebSocket) -> Optional[dict]:
         return None
 
 
+_ISO_TS_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')
+_NANO_FRAC_RE = re.compile(r'(\.\d{6})\d+')
+
+
 def _parse_log_line(raw_line: str, fallback_index: int) -> dict:
     timestamp = None
     line = raw_line
     if " " in raw_line:
         possible_ts, possible_line = raw_line.split(" ", 1)
-        if "T" in possible_ts:
+        if _ISO_TS_RE.match(possible_ts):
             timestamp = possible_ts
             line = possible_line
     timestamp = timestamp or datetime.now(timezone.utc).isoformat()
@@ -2003,7 +2008,10 @@ def _parse_log_since(value: Optional[str]) -> Optional[int]:
     except ValueError:
         pass
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        # Docker uses RFC 3339 Nano (9 fractional digits); fromisoformat handles
+        # at most 6, so truncate any extra sub-second precision before parsing.
+        normalized = _NANO_FRAC_RE.sub(r'\1', value).replace("Z", "+00:00")
+        parsed = datetime.fromisoformat(normalized)
         return int(parsed.timestamp())
     except ValueError:
         return None
@@ -2063,7 +2071,7 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
 
         while True:
             await asyncio.sleep(1)
-            new_logs = await _docker.get_container_logs(container_name, tail=0, since=since)
+            new_logs = await _docker.get_container_logs(container_name, since=since)
             for entry in _build_log_entries(new_logs):
                 if entry["cursor"] in seen_cursors:
                     continue

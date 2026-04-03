@@ -476,5 +476,27 @@ def test_log_helpers_build_structured_entries_and_parse_since():
     assert _parse_log_since("1775210405") == 1775210405
 
 
+def test_parse_log_since_handles_docker_nanosecond_timestamps():
+    """Docker returns RFC 3339 Nano (9 frac digits); fromisoformat only handles 6."""
+    nano_ts = "2026-04-03T10:00:05.123456789Z"
+    result = _parse_log_since(nano_ts)
+    assert result == 1775210405, f"Expected 1775210405, got {result}"
+
+
+def test_parse_log_line_rejects_non_iso_first_token():
+    """Lines whose first word is not an ISO timestamp must NOT be split."""
+    entry = _parse_log_line("Traceback (most recent call last)", 0)
+    # The full raw line should be in 'line', not just the suffix
+    assert entry["line"] == "Traceback (most recent call last)"
+    assert entry["raw"] == "Traceback (most recent call last)"
+
+
+def test_parse_log_line_accepts_docker_iso_timestamp():
+    """Lines prefixed with an ISO timestamp should be split correctly."""
+    entry = _parse_log_line("2026-04-03T10:00:00.000000000Z Engine started", 0)
+    assert entry["timestamp"] == "2026-04-03T10:00:00.000000000Z"
+    assert entry["line"] == "Engine started"
+
+
 def test_cpu_normalization_scales_multicore_usage_to_host_percent():
     assert _normalize_host_cpu_percent(250.0, 4) == 62.5
