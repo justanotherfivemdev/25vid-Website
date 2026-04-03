@@ -639,7 +639,7 @@ async def get_server_status(server_id: str, current_user: dict = Depends(_requir
         {"_id": 0, "id": 1, "name": 1, "status": 1, "last_started": 1,
          "last_stopped": 1, "auto_restart": 1, "provisioning_state": 1,
          "provisioning_step": 1, "readiness_state": 1, "last_docker_error": 1,
-         "provisioning_stages": 1},
+         "provisioning_stages": 1, "provisioning_warnings": 1},
     )
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")

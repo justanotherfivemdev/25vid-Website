@@ -306,7 +306,7 @@ function ServerSettingsModule() {
             </CardHeader>
             <CardContent className="space-y-3">
               <ConfigToggle label="Lobby Player Sync" checked={operating.lobbyPlayerSynchronise !== false} onChange={(value) => updateField('operating.lobbyPlayerSynchronise', value)} />
-              <ConfigToggle label="Disable Navmesh Streaming" checked={!!operating.disableNavmeshStreaming} onChange={(value) => updateField('operating.disableNavmeshStreaming', value)} />
+              <ConfigToggle label="Disable Navmesh Streaming" checked={Array.isArray(operating.disableNavmeshStreaming) || operating.disableNavmeshStreaming === true} onChange={(value) => updateField('operating.disableNavmeshStreaming', value ? [] : undefined)} />
               <ConfigToggle label="Disable Server Shutdown" checked={!!operating.disableServerShutdown} onChange={(value) => updateField('operating.disableServerShutdown', value)} />
               <ConfigToggle label="Disable AI" checked={!!operating.disableAI} onChange={(value) => updateField('operating.disableAI', value)} />
               <ConfigField label="Player Save Time" value={operating.playerSaveTime ?? 120} onChange={(value) => updateNumber('operating.playerSaveTime', value, 120)} type="number" />

@@ -11,11 +11,15 @@ os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
 from routes.servers import _derive_troubleshooting
 from services.server_config_generator import (
+    _normalize_navmesh_streaming,
+    _sanitize_operating,
+    attempt_auto_recovery,
     format_mod_for_config,
     generate_reforger_config,
     mods_for_config,
     normalize_server_config,
 )
+from services.reforger_orchestrator import extract_config_errors
 from services.server_metrics_collector import _PERIOD_DELTAS
 
 
@@ -285,3 +289,148 @@ def test_generate_reforger_config_mods_have_no_metadata():
     assert tracers["version"] == "1.0.5"
     capture = [m for m in config["game"]["mods"] if m["modId"] == "591AF5BDA9F7CE8B"][0]
     assert "version" not in capture
+
+
+# ── disableNavmeshStreaming normalization tests ──────────────────────
+
+
+def test_normalize_navmesh_streaming_legacy_true_becomes_empty_array():
+    """Legacy ``True`` must be converted to ``[]`` (disable all streaming)."""
+    assert _normalize_navmesh_streaming(True) == []
+
+
+def test_normalize_navmesh_streaming_legacy_false_becomes_none():
+    """Legacy ``False`` must be omitted (None = streaming stays enabled)."""
+    assert _normalize_navmesh_streaming(False) is None
+    assert _normalize_navmesh_streaming(None) is None
+
+
+def test_normalize_navmesh_streaming_preserves_array():
+    """An array value should be kept as-is."""
+    assert _normalize_navmesh_streaming([]) == []
+    assert _normalize_navmesh_streaming(["Soldier"]) == ["Soldier"]
+
+
+def test_normalize_navmesh_streaming_tuple_converts_to_list():
+    """Tuples should be normalised to lists."""
+    assert _normalize_navmesh_streaming(("Soldier",)) == ["Soldier"]
+
+
+def test_generated_config_omits_navmesh_by_default():
+    """Default config should NOT contain disableNavmeshStreaming."""
+    server = {"id": "srv-nm", "name": "NM", "ports": {"game": 2001, "query": 17777, "rcon": 19999}}
+    config = generate_reforger_config(server)
+    assert "disableNavmeshStreaming" not in config.get("operating", {})
+
+
+def test_generated_config_legacy_true_produces_array():
+    """A legacy boolean True in the config should produce an array in output."""
+    server = {
+        "id": "srv-nm2", "name": "NM2",
+        "ports": {"game": 2001, "query": 17777, "rcon": 19999},
+        "config": {"operating": {"disableNavmeshStreaming": True}},
+    }
+    config = generate_reforger_config(server)
+    assert config["operating"]["disableNavmeshStreaming"] == []
+
+
+def test_normalize_config_navmesh_is_idempotent():
+    """Normalizing with disableNavmeshStreaming=True twice should be stable."""
+    server = {"id": "srv-nm3", "name": "NM3", "ports": {"game": 2001, "query": 17777, "rcon": 19999}}
+    first = normalize_server_config({"operating": {"disableNavmeshStreaming": True}}, server)
+    second = normalize_server_config(first, server)
+    assert first == second
+
+
+# ── _sanitize_operating tests ────────────────────────────────────────
+
+
+def test_sanitize_operating_drops_unknown_keys():
+    """Unknown keys must be stripped."""
+    result = _sanitize_operating({"unknownField": True, "lobbyPlayerSynchronise": True})
+    assert "unknownField" not in result
+    assert result["lobbyPlayerSynchronise"] is True
+
+
+def test_sanitize_operating_drops_wrong_types():
+    """Values with incorrect types must be stripped."""
+    result = _sanitize_operating({"lobbyPlayerSynchronise": "yes", "playerSaveTime": "fast"})
+    assert "lobbyPlayerSynchronise" not in result
+    assert "playerSaveTime" not in result
+
+
+def test_sanitize_operating_rejects_bool_for_int_fields():
+    """Booleans must be rejected for integer-typed keys (bool is subclass of int)."""
+    result = _sanitize_operating({"playerSaveTime": True, "aiLimit": False})
+    assert "playerSaveTime" not in result
+    assert "aiLimit" not in result
+
+
+def test_sanitize_operating_accepts_valid_int_fields():
+    """Proper int values must be accepted."""
+    result = _sanitize_operating({"playerSaveTime": 120, "aiLimit": -1})
+    assert result["playerSaveTime"] == 120
+    assert result["aiLimit"] == -1
+
+
+def test_sanitize_operating_coerces_legacy_navmesh_bool():
+    """Legacy boolean disableNavmeshStreaming must be coerced to array."""
+    result = _sanitize_operating({"disableNavmeshStreaming": True})
+    assert result["disableNavmeshStreaming"] == []
+    # False → omit
+    result2 = _sanitize_operating({"disableNavmeshStreaming": False})
+    assert "disableNavmeshStreaming" not in result2
+
+
+# ── auto-recovery tests ──────────────────────────────────────────────
+
+
+def test_auto_recovery_fixes_type_mismatch():
+    """Auto-recovery should fix a type-mismatch error in the config."""
+    server = {
+        "id": "srv-ar", "name": "AR",
+        "ports": {"game": 2001, "query": 17777, "rcon": 19999},
+        "config": {"operating": {"disableNavmeshStreaming": True}},
+    }
+    error_msg = 'Param "#/operating/disableNavmeshStreaming" has an incorrect type. Expected "array", but the value is "boolean"'
+    recovered, descs = attempt_auto_recovery(server, error_msg)
+    assert recovered is True
+    assert len(descs) >= 1
+    # After recovery, the config should have an array
+    assert isinstance(server["config"]["operating"]["disableNavmeshStreaming"], list)
+
+
+def test_auto_recovery_returns_false_for_unknown_errors():
+    """Auto-recovery should return False for errors it can't fix."""
+    server = {
+        "id": "srv-ar2", "name": "AR2",
+        "ports": {"game": 2001, "query": 17777, "rcon": 19999},
+        "config": {},
+    }
+    recovered, descs = attempt_auto_recovery(server, "Some random engine error")
+    assert recovered is False
+    assert descs == []
+
+
+# ── extract_config_errors tests ──────────────────────────────────────
+
+
+def test_extract_config_errors_finds_type_errors():
+    """Should detect type-mismatch error lines in container logs."""
+    logs = (
+        '2026-04-03T08:04:25.647Z BACKEND (E): Param "#/operating/disableNavmeshStreaming" has an incorrect type. Expected "array", but the value is "boolean"\n'
+        '2026-04-03T08:04:25.647Z BACKEND (E): JSON is invalid!\n'
+        '2026-04-03T08:04:25.647Z BACKEND (E): There are errors in server config!\n'
+        '2026-04-03T08:04:25.647Z ENGINE : Normal log line\n'
+    )
+    errors = extract_config_errors(logs)
+    assert len(errors) == 3
+    assert any("incorrect type" in e for e in errors)
+    assert any("JSON is invalid" in e for e in errors)
+    assert any("errors in server config" in e for e in errors)
+
+
+def test_extract_config_errors_returns_empty_for_clean_logs():
+    """Clean logs should produce no config errors."""
+    assert extract_config_errors("") == []
+    assert extract_config_errors("Game started\nScenario loaded\n") == []

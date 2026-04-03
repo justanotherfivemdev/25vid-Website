@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import secrets
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -16,6 +17,24 @@ logger = logging.getLogger(__name__)
 DEFAULT_SCENARIO = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
 DEFAULT_SUPPORTED_PLATFORMS = ["PLATFORM_PC", "PLATFORM_XBL"]
 DEFAULT_MOD_NAME = "Server Admin Tools"
+
+# ── Arma Reforger config schema whitelist ────────────────────────────────
+# Only keys listed here are emitted in the written server config.  Any
+# unknown / unsupported key is silently dropped so we never send a value
+# the Reforger engine rejects during JSON-schema validation.
+#
+# Types:  bool, int, str, list, dict   (Python built-in types)
+VALID_OPERATING_KEYS: dict[str, type] = {
+    "lobbyPlayerSynchronise": bool,
+    "disableNavmeshStreaming": list,        # Changed from bool → array in 1.2
+    "disableServerShutdown": bool,
+    "disableAI": bool,
+    "disableCrashReporter": bool,
+    "playerSaveTime": int,
+    "aiLimit": int,
+    "slotReservationTimeout": int,
+    "joinQueue": dict,
+}
 
 
 def _default_rcon_password(server: Dict[str, Any]) -> str:
@@ -53,6 +72,23 @@ def _normalize_int(value: Any, default: int) -> int:
         return parsed if parsed > 0 else default
     except (TypeError, ValueError):
         return default
+
+
+def _normalize_navmesh_streaming(value: Any) -> list | None:
+    """Normalise ``disableNavmeshStreaming`` to the array type required since
+    Arma Reforger 1.2.
+
+    * ``list``/``tuple`` → kept as-is (already correct type).
+    * ``True`` (legacy boolean) → ``[]``  (disable streaming for all projects).
+    * ``False`` / ``None`` / missing → ``None`` (omit the key — streaming
+      stays enabled, which is the engine default).
+    """
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    if value is True:
+        return []
+    # False, None, or any other non-truthy value → omit from config
+    return None
 
 
 def normalize_mod_entry(mod: Dict[str, Any]) -> Dict[str, Any]:
@@ -168,6 +204,50 @@ def _legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
     return translated
 
 
+def _sanitize_operating(operating: Dict[str, Any]) -> Dict[str, Any]:
+    """Strip unknown or incorrectly-typed keys from the ``operating`` section.
+
+    Only keys present in :data:`VALID_OPERATING_KEYS` are retained.  Values
+    whose type does not match the expected schema type are silently dropped
+    to prevent Reforger engine JSON-schema validation errors.
+
+    ``disableNavmeshStreaming`` receives special treatment: boolean values
+    (legacy pre-1.2 configs) are migrated to the required array type via
+    :func:`_normalize_navmesh_streaming`.
+
+    Returns a new dict containing only valid, correctly-typed keys.
+    """
+    sanitized: Dict[str, Any] = {}
+    for key, value in operating.items():
+        expected_type = VALID_OPERATING_KEYS.get(key)
+        if expected_type is None:
+            logger.debug("Dropping unknown operating key %r", key)
+            continue
+        # Special handling: disableNavmeshStreaming must be an array.
+        if key == "disableNavmeshStreaming":
+            converted = _normalize_navmesh_streaming(value)
+            if converted is not None:
+                sanitized[key] = converted
+            continue
+        # In Python, bool is a subclass of int.  We must reject booleans
+        # for integer-typed fields so they don't leak into the JSON config
+        # (the Reforger engine expects a real integer, not true/false).
+        if expected_type is int and isinstance(value, bool):
+            logger.debug(
+                "Dropping operating key %r: got bool, expected int",
+                key,
+            )
+            continue
+        if not isinstance(value, expected_type):
+            logger.debug(
+                "Dropping operating key %r with wrong type %s (expected %s)",
+                key, type(value).__name__, expected_type.__name__,
+            )
+            continue
+        sanitized[key] = value
+    return sanitized
+
+
 def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
     ports = server.get("ports") or {}
     config = server.get("config") or {}
@@ -176,6 +256,21 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
     game_props = game.get("gameProperties") or {}
     rcon = config.get("rcon") or {}
     a2s = config.get("a2s") or {}
+
+    # disableNavmeshStreaming is only emitted when explicitly requested
+    # (engine default = streaming enabled; the field is an array since 1.2).
+    navmesh_streaming = _normalize_navmesh_streaming(
+        operating.get("disableNavmeshStreaming"),
+    )
+    operating_section: Dict[str, Any] = {
+        "lobbyPlayerSynchronise": _normalize_bool(operating.get("lobbyPlayerSynchronise"), True),
+        "disableServerShutdown": _normalize_bool(operating.get("disableServerShutdown"), False),
+        "disableAI": _normalize_bool(operating.get("disableAI"), False),
+        "playerSaveTime": _normalize_int(operating.get("playerSaveTime"), 120),
+        "aiLimit": operating.get("aiLimit", -1),
+    }
+    if navmesh_streaming is not None:
+        operating_section["disableNavmeshStreaming"] = navmesh_streaming
 
     return {
         "bindAddress": config.get("bindAddress", "0.0.0.0"),
@@ -220,14 +315,7 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
             },
             "mods": mods_for_config(ensure_required_mods(server.get("mods") or [])),
         },
-        "operating": {
-            "lobbyPlayerSynchronise": _normalize_bool(operating.get("lobbyPlayerSynchronise"), True),
-            "disableNavmeshStreaming": _normalize_bool(operating.get("disableNavmeshStreaming"), False),
-            "disableServerShutdown": _normalize_bool(operating.get("disableServerShutdown"), False),
-            "disableAI": _normalize_bool(operating.get("disableAI"), False),
-            "playerSaveTime": _normalize_int(operating.get("playerSaveTime"), 120),
-            "aiLimit": operating.get("aiLimit", -1),
-        },
+        "operating": _sanitize_operating(operating_section),
     }
 
 
@@ -347,6 +435,11 @@ def normalize_server_config(raw_config: Dict[str, Any] | None, server: Dict[str,
 
     if "VONTransmitCrossFaction" in game_props and "VONCanTransmitCrossFaction" not in game_props:
         game_props["VONCanTransmitCrossFaction"] = game_props["VONTransmitCrossFaction"]
+
+    # Sanitise the operating section: coerce types and strip unknown keys so
+    # the Reforger engine's JSON-schema validator does not reject the config.
+    normalized["operating"] = _sanitize_operating(normalized.get("operating") or {})
+
     return normalized
 
 
@@ -417,3 +510,136 @@ async def write_config_file(server: Dict[str, Any], config_dir: str | None = Non
     except OSError as exc:
         logger.error("Failed to write server config: %s", exc)
         return False, f"Failed to write config file: {exc}"
+
+
+# ── Auto-recovery: known error patterns and fixers ──────────────────────────
+# Each entry maps a regex matched against a provisioning/engine error message
+# to a callable that mutates the server dict (specifically its ``config``) to
+# attempt an automatic correction.  The provisioning loop applies matching
+# fixers and retries up to ``MAX_AUTO_RECOVERY_ATTEMPTS``.
+
+MAX_AUTO_RECOVERY_ATTEMPTS = 3
+
+# Pattern → (human description, fixer callable)
+_ERROR_TYPE_PATTERN = re.compile(
+    r'Param "(?P<path>#/[^"]+)" has an incorrect type\.\s*Expected "(?P<expected>\w+)"',
+    re.IGNORECASE,
+)
+_ERROR_INVALID_JSON = re.compile(r"JSON is invalid", re.IGNORECASE)
+_ERROR_ADDITIONAL_PROPS = re.compile(
+    r'additional\s*properties.*"(?P<key>[^"]+)"',
+    re.IGNORECASE,
+)
+
+
+def _fix_type_mismatch(server: Dict[str, Any], error_message: str) -> Tuple[bool, str]:
+    """Attempt to fix a JSON-schema type-mismatch error by coercing the value.
+
+    Returns ``(fixed, description)`` where *fixed* is True if a repair was
+    applied and *description* explains what changed.
+    """
+    m = _ERROR_TYPE_PATTERN.search(error_message)
+    if not m:
+        return False, ""
+
+    json_path = m.group("path")         # e.g. "#/operating/disableNavmeshStreaming"
+    expected = m.group("expected")       # e.g. "array"
+
+    # Navigate the config to the offending key
+    parts = [p for p in json_path.lstrip("#/").split("/") if p]
+    config = server.get("config") or {}
+    parent = config
+    for part in parts[:-1]:
+        parent = parent.get(part, {})
+        if not isinstance(parent, dict):
+            return False, f"Cannot navigate to {json_path}"
+    key = parts[-1] if parts else ""
+    if not key or key not in parent:
+        return False, f"Key {json_path} not found in config"
+
+    old_value = parent[key]
+
+    # Apply type coercion based on the expected schema type
+    if expected == "array":
+        parent[key] = []
+    elif expected == "boolean":
+        parent[key] = bool(old_value)
+    elif expected == "integer":
+        try:
+            parent[key] = int(old_value)
+        except (TypeError, ValueError):
+            del parent[key]
+    elif expected == "string":
+        parent[key] = str(old_value)
+    elif expected == "object":
+        parent[key] = {}
+    else:
+        # Unknown expected type — remove the offending key as a safe default
+        del parent[key]
+
+    server["config"] = config
+    desc = f"Auto-fixed {json_path}: coerced {type(old_value).__name__} to {expected}"
+    logger.info(desc)
+    return True, desc
+
+
+def _fix_additional_property(server: Dict[str, Any], error_message: str) -> Tuple[bool, str]:
+    """Remove an unrecognised additional property flagged by the engine."""
+    m = _ERROR_ADDITIONAL_PROPS.search(error_message)
+    if not m:
+        return False, ""
+
+    bad_key = m.group("key")
+    config = server.get("config") or {}
+
+    # Walk the entire config tree and remove the key wherever it appears
+    removed = _remove_key_recursive(config, bad_key)
+    if removed:
+        server["config"] = config
+        desc = f"Auto-fixed: removed unrecognised property '{bad_key}'"
+        logger.info(desc)
+        return True, desc
+    return False, ""
+
+
+def _remove_key_recursive(obj: Dict[str, Any], key: str) -> bool:
+    """Recursively remove *key* from all nested dicts.  Returns True if any removal occurred."""
+    removed = False
+    if key in obj:
+        del obj[key]
+        removed = True
+    for v in obj.values():
+        if isinstance(v, dict):
+            if _remove_key_recursive(v, key):
+                removed = True
+    return removed
+
+
+def attempt_auto_recovery(
+    server: Dict[str, Any],
+    error_message: str,
+) -> Tuple[bool, List[str]]:
+    """Try to automatically repair a server config based on an error message.
+
+    Applies all matching fixers and then regenerates + rewrites the config.
+
+    Returns ``(recovered, descriptions)`` where *recovered* is True if at
+    least one fix was applied and *descriptions* lists what was changed.
+    """
+    fixers = [
+        _fix_type_mismatch,
+        _fix_additional_property,
+    ]
+
+    descriptions: List[str] = []
+    for fixer in fixers:
+        fixed, desc = fixer(server, error_message)
+        if fixed:
+            descriptions.append(desc)
+
+    if not descriptions:
+        return False, []
+
+    # Regenerate the config after applying fixes to ensure consistency
+    server["config"] = generate_reforger_config(server)
+    return True, descriptions
