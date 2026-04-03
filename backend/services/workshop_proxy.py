@@ -61,7 +61,7 @@ _BROWSER_HEADERS = {
 }
 
 # Sort values recognised by the Workshop site
-VALID_SORTS = {"popularity", "newest", "updated", "name"}
+VALID_SORTS = {"popularity", "newest", "subscribers", "versionSize"}
 
 # Cache TTL for browse/search results (seconds)
 _BROWSE_CACHE_TTL = 300  # 5 minutes
@@ -439,16 +439,16 @@ async def browse_workshop(
     """Browse the workshop by category with pagination.
 
     ``category`` maps to the Workshop ``sort`` parameter:
-      popular  → popularity
-      newest   → newest
-      updated  → updated
-      name     → name
+      popular      → popularity
+      newest       → newest
+      subscribers  → subscribers
+      versionSize  → versionSize
     """
     sort_map = {
         "popular": "popularity",
         "newest": "newest",
-        "updated": "updated",
-        "name": "name",
+        "subscribers": "subscribers",
+        "versionSize": "versionSize",
     }
     sort_value = sort_map.get(category, "popularity")
     normalized_tags = _normalize_tags(tags)

@@ -993,7 +993,7 @@ async def get_mod_download_history(
 
 @router.get("/workshop/browse")
 async def browse_workshop_live(
-    category: str = Query("popular", description="Category: popular, newest, updated, name"),
+    category: str = Query("popular", description="Category: popular, newest, subscribers, versionSize"),
     page: int = Query(1, ge=1),
     tags: Optional[str] = Query(None, description="Comma-separated tags"),
     current_user: dict = Depends(_require_servers),
@@ -1010,7 +1010,7 @@ async def browse_workshop_live(
 async def search_workshop_live(
     q: str = Query("", description="Search query"),
     page: int = Query(1, ge=1),
-    sort: str = Query("popularity", description="Sort: popularity, newest, updated, name"),
+    sort: str = Query("popularity", description="Sort: popularity, newest, subscribers, versionSize"),
     tags: Optional[str] = Query(None, description="Comma-separated tags to filter by"),
     current_user: dict = Depends(_require_servers),
 ):

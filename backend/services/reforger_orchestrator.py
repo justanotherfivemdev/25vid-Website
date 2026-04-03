@@ -339,9 +339,8 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         validation_stage.message = "Profile and SAT config discovered"
         result.updates.update(artifact_updates)
     except Exception as exc:
-        prov_exc = exc if isinstance(exc, ProvisioningError) else None
         validation_stage.status = "failed"
-        validation_stage.error = prov_exc.message if prov_exc else str(exc)
+        validation_stage.error = exc.message if isinstance(exc, ProvisioningError) else str(exc)
         # Post-start validation failure is NOT fatal if container started.
         # The server is running, just degraded.
         logger.warning(
