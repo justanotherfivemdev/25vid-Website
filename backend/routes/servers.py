@@ -894,11 +894,11 @@ def _validate_player_id(player_id: str) -> str:
     """Raise ValueError if player_id contains disallowed characters."""
     if not _PLAYER_ID_RE.match(player_id):
         raise ValueError(
-            "player_id must be 1–128 non-whitespace characters"
+            "player_id must be 1 to 128 non-whitespace characters"
         )
     # Reject any ASCII control characters (0x00-0x1F, 0x7F)
     if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in player_id):
-        raise ValueError("player_id must not contain control characters")
+        raise ValueError("player_id must not contain control characters (0x00-0x1F, 0x7F)")
     return player_id
 
 
@@ -1013,8 +1013,8 @@ async def sync_sat_bans(server_id: str, current_user: dict = Depends(_require_se
         player_id = entry["id"]
         try:
             _validate_player_id(player_id)
-        except ValueError:
-            responses.append({"player_id": player_id, "executed": False, "response": "Skipped: invalid player_id format"})
+        except ValueError as exc:
+            responses.append({"player_id": player_id, "executed": False, "response": f"Skipped: {exc}"})
             continue
         success, response = await bercon_client.execute(
             host="127.0.0.1",

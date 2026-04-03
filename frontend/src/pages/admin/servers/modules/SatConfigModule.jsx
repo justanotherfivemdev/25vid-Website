@@ -127,7 +127,7 @@ function SatConfigModule() {
       try {
         const parsed = JSON.parse(advancedRaw);
         if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
-          setAdvancedJsonError('Advanced JSON must be an object (e.g. { "key": "value" }).');
+          setAdvancedJsonError('Advanced JSON must be a plain object (e.g. {"key": "value"}).');
           return;
         }
         // Strip keys that are managed by the structured UI so they cannot
