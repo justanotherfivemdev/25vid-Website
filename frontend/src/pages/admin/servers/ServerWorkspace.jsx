@@ -48,6 +48,7 @@ const STATUS_CONFIG = {
   created: { label: 'CREATED', cls: 'bg-blue-600/20 text-blue-400 border-blue-600/30', dot: 'bg-blue-400', icon: Info },
   error: { label: 'ERROR', cls: 'bg-red-600/20 text-red-400 border-red-600/30', dot: 'bg-red-400', icon: AlertTriangle },
   provisioning_failed: { label: 'PROVISION FAILED', cls: 'bg-red-600/20 text-red-400 border-red-600/30', dot: 'bg-red-400', icon: AlertTriangle },
+  provisioning_partial: { label: 'PARTIAL', cls: 'bg-amber-600/20 text-amber-400 border-amber-600/30', dot: 'bg-amber-400', icon: AlertTriangle },
   deletion_pending: { label: 'DELETING', cls: 'bg-amber-600/20 text-amber-400 border-amber-600/30', dot: 'bg-amber-400', icon: Loader2, spin: true },
   crash_loop: { label: 'CRASH LOOP', cls: 'bg-red-600/20 text-red-400 border-red-600/30', dot: 'bg-red-400', icon: AlertOctagon },
 };
@@ -162,8 +163,8 @@ function ServerWorkspace() {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.created;
   const StatusIcon = cfg.icon;
   const canStart = ['stopped', 'created', 'error', 'provisioning_failed'].includes(status);
-  const canStop = ['running', 'starting', 'initializing'].includes(status);
-  const canRestart = status === 'running';
+  const canStop = ['running', 'starting', 'initializing', 'provisioning_partial'].includes(status);
+  const canRestart = ['running', 'provisioning_partial'].includes(status);
 
   if (loading) {
     return (
@@ -286,6 +287,50 @@ function ServerWorkspace() {
             <button type="button" onClick={() => setActionError(null)} className="ml-auto text-red-400 hover:text-red-300">
               x
             </button>
+          </div>
+        )}
+
+        {/* Provisioning stages detail banner */}
+        {(status === 'provisioning_partial' || status === 'provisioning_failed') && (
+          <div className={`mt-2 rounded border px-3 py-2 text-xs ${
+            status === 'provisioning_partial'
+              ? 'border-amber-600/30 bg-amber-600/10 text-amber-400'
+              : 'border-red-600/30 bg-red-600/10 text-red-400'
+          }`}>
+            <div className="flex items-center gap-2 font-semibold mb-1">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              {status === 'provisioning_partial'
+                ? 'Server started with partial provisioning — some stages failed'
+                : 'Provisioning failed'}
+            </div>
+            {server.last_docker_error && (
+              <p className="mb-1 text-gray-400">{server.last_docker_error}</p>
+            )}
+            {server.provisioning_stages && Object.keys(server.provisioning_stages).length > 0 && (
+              <div className="mt-1 space-y-0.5">
+                {Object.values(server.provisioning_stages).map((stage) => (
+                  <div key={stage.name} className="flex items-center gap-2">
+                    {stage.status === 'success' ? (
+                      <CheckCircle className="h-3 w-3 text-green-400" />
+                    ) : stage.status === 'failed' ? (
+                      <AlertTriangle className="h-3 w-3 text-red-400" />
+                    ) : (
+                      <Circle className="h-3 w-3 text-gray-600" />
+                    )}
+                    <span className={
+                      stage.status === 'success' ? 'text-green-400' :
+                      stage.status === 'failed' ? 'text-red-400' :
+                      'text-gray-500'
+                    }>
+                      {stage.name.replace(/_/g, ' ')}
+                    </span>
+                    {stage.error && (
+                      <span className="text-gray-500 ml-1">— {stage.error}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -168,6 +168,66 @@ function OverviewModule() {
         })}
       </div>
 
+      {/* Provisioning Stages */}
+      {(server?.status === 'provisioning_partial' || server?.status === 'provisioning_failed') &&
+        server?.provisioning_stages && Object.keys(server.provisioning_stages).length > 0 && (
+        <Card className={`border ${
+          server.status === 'provisioning_partial'
+            ? 'border-amber-600/30 bg-amber-600/5'
+            : 'border-red-600/30 bg-red-600/5'
+        }`}>
+          <CardContent className="p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+              <AlertTriangle className={`h-4 w-4 ${
+                server.status === 'provisioning_partial' ? 'text-amber-400' : 'text-red-400'
+              }`} />
+              <span className={server.status === 'provisioning_partial' ? 'text-amber-400' : 'text-red-400'}>
+                {server.status === 'provisioning_partial'
+                  ? 'Provisioning Stages — Partial Success'
+                  : 'Provisioning Stages — Failed'}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {Object.values(server.provisioning_stages).map((stage) => (
+                <div key={stage.name} className="flex items-center gap-3 text-xs">
+                  <div className={`flex h-5 w-5 items-center justify-center rounded-full ${
+                    stage.status === 'success' ? 'bg-green-600/20' :
+                    stage.status === 'failed' ? 'bg-red-600/20' :
+                    'bg-zinc-600/20'
+                  }`}>
+                    {stage.status === 'success' ? (
+                      <CheckCircle className="h-3 w-3 text-green-400" />
+                    ) : stage.status === 'failed' ? (
+                      <AlertTriangle className="h-3 w-3 text-red-400" />
+                    ) : (
+                      <Activity className="h-3 w-3 text-gray-600" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <span className={`font-medium capitalize ${
+                      stage.status === 'success' ? 'text-green-400' :
+                      stage.status === 'failed' ? 'text-red-400' :
+                      'text-gray-500'
+                    }`}>
+                      {stage.name.replace(/_/g, ' ')}
+                    </span>
+                    {stage.message && (
+                      <span className="ml-2 text-gray-600">{stage.message}</span>
+                    )}
+                  </div>
+                  {stage.error && (
+                    <span className="text-red-400/80">{stage.error}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+            {server.last_docker_error && (
+              <p className="mt-3 text-xs text-gray-500 border-t border-zinc-800 pt-2">{server.last_docker_error}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Open Incidents Alert */}
       {incidents.length > 0 && (
         <div className="rounded-lg border border-red-600/30 bg-red-600/5 p-4">

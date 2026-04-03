@@ -19,6 +19,7 @@ SERVER_STATUSES = [
     "error",
     "crash_loop",
     "provisioning_failed",
+    "provisioning_partial",
     "deletion_pending",
 ]
 
@@ -82,6 +83,7 @@ class ManagedServer(BaseModel):
     readiness_state: str = "pending"
     last_docker_error: str = ""
     last_known_container_status: str = ""
+    provisioning_stages: Dict[str, Any] = Field(default_factory=dict)
     data_root: str = ""
     config_path: str = ""
     profile_path: str = ""

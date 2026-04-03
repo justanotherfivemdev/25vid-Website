@@ -63,7 +63,7 @@ function ModsModule() {
   const [validating, setValidating] = useState(false);
   const [validationIssues, setValidationIssues] = useState([]);
   const [manualEditOpen, setManualEditOpen] = useState(false);
-  const [manualMod, setManualMod] = useState({ mod_id: '', name: '', author: '', description: '' });
+  const [manualMod, setManualMod] = useState({ mod_id: '', name: '', author: '', version: '', description: '' });
 
   // Init enabled mods from server (skip if user has unsaved changes)
   useEffect(() => {
@@ -161,7 +161,15 @@ function ModsModule() {
     setEnabledMods(prev => {
       if (!id) return prev;
       if (prev.some(m => (m.mod_id || m.modId) === id)) return prev;
-      return [...prev, { mod_id: id, modId: id, name: mod.name || id, version: mod.version || '', enabled: true }];
+      const entry = { mod_id: id, modId: id, name: mod.name || id, enabled: true };
+      // Preserve version only if explicitly specified (not empty/"latest")
+      if (mod.version && mod.version.toLowerCase() !== 'latest') entry.version = mod.version;
+      // Preserve metadata for UI display
+      if (mod.author) entry.author = mod.author;
+      if (mod.description) entry.description = mod.description;
+      if (mod.thumbnail_url) entry.thumbnail_url = mod.thumbnail_url;
+      if (mod.metadata_source) entry.metadata_source = mod.metadata_source;
+      return [...prev, entry];
     });
     setDirty(true);
   }, []);
@@ -180,7 +188,7 @@ function ModsModule() {
 
     setEnabledMods(prev => {
       if (prev.some(m => (m.mod_id || m.modId) === id)) return prev;
-      return [...prev, { mod_id: id, modId: id, name: id, version: '', enabled: true }];
+      return [...prev, { mod_id: id, modId: id, name: id, enabled: true }];
     });
     setDirty(true);
     setNewModId('');
@@ -192,13 +200,27 @@ function ModsModule() {
     setSaving(true);
     try {
       await axios.put(`${API}/servers/${serverId}/mods`, {
-        mods: enabledMods.map(m => ({
-          mod_id: m.mod_id || m.modId,
-          modId: m.mod_id || m.modId,
-          name: m.name,
-          version: m.version || '',
-          enabled: m.enabled,
-        })),
+        mods: enabledMods.map(m => {
+          const entry = {
+            mod_id: m.mod_id || m.modId,
+            modId: m.mod_id || m.modId,
+            name: m.name,
+            enabled: m.enabled,
+          };
+          // Only include version when explicitly set (not empty/"latest")
+          if (m.version && m.version.toLowerCase() !== 'latest') {
+            entry.version = m.version;
+          }
+          // Pass through metadata for backend storage
+          if (m.author) entry.author = m.author;
+          if (m.description) entry.description = m.description;
+          if (m.thumbnail_url) entry.thumbnail_url = m.thumbnail_url;
+          if (m.tags) entry.tags = m.tags;
+          if (m.dependencies) entry.dependencies = m.dependencies;
+          if (m.scenario_ids) entry.scenario_ids = m.scenario_ids;
+          if (m.metadata_source) entry.metadata_source = m.metadata_source;
+          return entry;
+        }),
       });
       setDirty(false);
       await fetchServer(true);
@@ -328,9 +350,17 @@ function ModsModule() {
                     {/* Mod info */}
                     <button className="flex-1 text-left" onClick={() => openModDetail(mod)}>
                       <div className="text-xs font-medium text-gray-200">{mod.name || modId}</div>
-                      {modId && mod.name && mod.name !== modId && (
-                        <div className="text-[10px] font-mono text-gray-600">{modId}</div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {modId && mod.name && mod.name !== modId && (
+                          <span className="text-[10px] font-mono text-gray-600">{modId}</span>
+                        )}
+                        {mod.author && (
+                          <span className="text-[10px] text-gray-600">by {mod.author}</span>
+                        )}
+                        {mod.version && (
+                          <Badge variant="outline" className="border-zinc-700 text-[9px] px-1 py-0 text-gray-500">v{mod.version}</Badge>
+                        )}
+                      </div>
                     </button>
 
                     {/* Badges */}
@@ -461,7 +491,35 @@ function ModsModule() {
               <div className="grid grid-cols-2 gap-3">
                 <DetailItem label="Mod ID" value={selectedMod.mod_id || selectedMod.modId} mono />
                 <DetailItem label="Author" value={selectedMod.author || '—'} />
-                <DetailItem label="Version" value={selectedMod.version || '—'} />
+                <div>
+                  <span className="text-xs font-medium text-gray-500">Version</span>
+                  <select
+                    value={selectedMod.version || ''}
+                    onChange={(e) => {
+                      const newVersion = e.target.value;
+                      setSelectedMod(prev => ({ ...prev, version: newVersion }));
+                      // Also update in enabledMods if this mod is already added
+                      const modId = selectedMod.mod_id || selectedMod.modId;
+                      setEnabledMods(prev => prev.map(m => {
+                        if ((m.mod_id || m.modId) !== modId) return m;
+                        const updated = { ...m };
+                        if (newVersion) {
+                          updated.version = newVersion;
+                        } else {
+                          delete updated.version;
+                        }
+                        return updated;
+                      }));
+                      setDirty(true);
+                    }}
+                    className="mt-1 block w-full rounded border border-zinc-700 bg-black/60 px-2 py-1 text-xs text-white"
+                  >
+                    <option value="">Latest (unspecified)</option>
+                    {selectedMod.version && selectedMod.version.toLowerCase() !== 'latest' && (
+                      <option value={selectedMod.version}>{selectedMod.version}</option>
+                    )}
+                  </select>
+                </div>
                 <DetailItem label="Source" value={selectedMod.metadata_source || '—'} />
               </div>
               {selectedMod.description && (
@@ -574,6 +632,17 @@ function ModsModule() {
                 className="mt-1 border-zinc-800 bg-black/60 text-sm text-white" />
             </div>
             <div>
+              <label className="text-xs text-gray-400">Version</label>
+              <select
+                value={manualMod.version || ''}
+                onChange={(e) => setManualMod(p => ({ ...p, version: e.target.value }))}
+                className="mt-1 block w-full rounded border border-zinc-800 bg-black/60 px-2 py-1.5 text-sm text-white"
+              >
+                <option value="">Latest (unspecified)</option>
+              </select>
+              <p className="mt-0.5 text-[10px] text-gray-600">Leave as &quot;Latest&quot; to always use the newest version</p>
+            </div>
+            <div>
               <label className="text-xs text-gray-400">Description</label>
               <Textarea value={manualMod.description} onChange={(e) => setManualMod(p => ({ ...p, description: e.target.value }))}
                 className="mt-1 border-zinc-800 bg-black/60 text-sm text-white" rows={3} />
@@ -586,9 +655,18 @@ function ModsModule() {
               onClick={async () => {
                 try {
                   await axios.post(`${API}/servers/workshop/mod`, manualMod);
-                  addMod({ mod_id: manualMod.mod_id, name: manualMod.name || manualMod.mod_id });
+                  const modData = {
+                    mod_id: manualMod.mod_id,
+                    name: manualMod.name || manualMod.mod_id,
+                    author: manualMod.author,
+                  };
+                  // Only include version if explicitly specified
+                  if (manualMod.version && manualMod.version.toLowerCase() !== 'latest') {
+                    modData.version = manualMod.version;
+                  }
+                  addMod(modData);
                   setManualEditOpen(false);
-                  setManualMod({ mod_id: '', name: '', author: '', description: '' });
+                  setManualMod({ mod_id: '', name: '', author: '', version: '', description: '' });
                 } catch { /* ignore */ }
               }}
               className="bg-tropic-gold text-black hover:bg-tropic-gold-light">Save & Add</Button>

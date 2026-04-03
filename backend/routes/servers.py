@@ -331,6 +331,15 @@ async def create_server(
         updates["config"] = generate_reforger_config({**doc, **updates})
         updates["updated_at"] = datetime.now(timezone.utc)
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": updates})
+        # Partial success: container is running but later stages (e.g. SAT
+        # config discovery, mod validation) may have failed.  The server is
+        # operational with degraded capabilities rather than fully failed.
+        status = updates.get("status", "")
+        if status == "provisioning_partial":
+            logger.warning(
+                "Provisioning partially succeeded for %s: %s",
+                doc["id"], updates.get("last_docker_error", ""),
+            )
     except ProvisioningError as exc:
         failure_updates = {
             "status": "provisioning_failed",
@@ -338,6 +347,7 @@ async def create_server(
             "provisioning_step": exc.step,
             "readiness_state": "failed",
             "last_docker_error": exc.message,
+            "provisioning_stages": exc.stages,
             "updated_at": datetime.now(timezone.utc),
         }
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": failure_updates})
@@ -615,7 +625,8 @@ async def get_server_status(server_id: str, current_user: dict = Depends(_requir
         {"id": server_id},
         {"_id": 0, "id": 1, "name": 1, "status": 1, "last_started": 1,
          "last_stopped": 1, "auto_restart": 1, "provisioning_state": 1,
-         "provisioning_step": 1, "readiness_state": 1, "last_docker_error": 1},
+         "provisioning_step": 1, "readiness_state": 1, "last_docker_error": 1,
+         "provisioning_stages": 1},
     )
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
@@ -982,7 +993,7 @@ async def get_mod_download_history(
 
 @router.get("/workshop/browse")
 async def browse_workshop_live(
-    category: str = Query("popular", description="Category: popular, newest, updated, name"),
+    category: str = Query("popular", description="Category: popular, newest, subscribers, versionSize"),
     page: int = Query(1, ge=1),
     tags: Optional[str] = Query(None, description="Comma-separated tags"),
     current_user: dict = Depends(_require_servers),
@@ -999,7 +1010,7 @@ async def browse_workshop_live(
 async def search_workshop_live(
     q: str = Query("", description="Search query"),
     page: int = Query(1, ge=1),
-    sort: str = Query("popularity", description="Sort: popularity, newest, updated, name"),
+    sort: str = Query("popularity", description="Sort: popularity, newest, subscribers, versionSize"),
     tags: Optional[str] = Query(None, description="Comma-separated tags to filter by"),
     current_user: dict = Depends(_require_servers),
 ):

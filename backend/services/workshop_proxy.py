@@ -61,7 +61,7 @@ _BROWSER_HEADERS = {
 }
 
 # Sort values recognised by the Workshop site
-VALID_SORTS = {"popularity", "newest", "updated", "name"}
+VALID_SORTS = {"popularity", "newest", "subscribers", "versionSize"}
 
 # Cache TTL for browse/search results (seconds)
 _BROWSE_CACHE_TTL = 300  # 5 minutes
@@ -314,11 +314,15 @@ def _parse_mod_list_from_html(soup: BeautifulSoup) -> Tuple[List[Dict], int]:
         href = card.get("href", "")
 
         # ── mod_id & URL
+        # Workshop URLs: /workshop/{HEX_ID}-{slug-name}
+        # Arma Reforger mod IDs are exactly 16 hex characters.
         mod_id = ""
         parts = href.strip("/").split("/")
         if len(parts) >= 2:
             slug = parts[-1]
-            mod_id = slug.split("-")[0]
+            hex_match = re.match(r"^([0-9A-Fa-f]{16})", slug)
+            if hex_match:
+                mod_id = hex_match.group(1)
         mod_url = f"{WORKSHOP_BASE}{href}" if href.startswith("/") else href
 
         # ── name
@@ -435,16 +439,16 @@ async def browse_workshop(
     """Browse the workshop by category with pagination.
 
     ``category`` maps to the Workshop ``sort`` parameter:
-      popular  → popularity
-      newest   → newest
-      updated  → updated
-      name     → name
+      popular      → popularity
+      newest       → newest
+      subscribers  → subscribers
+      versionSize  → versionSize
     """
     sort_map = {
         "popular": "popularity",
         "newest": "newest",
-        "updated": "updated",
-        "name": "name",
+        "subscribers": "subscribers",
+        "versionSize": "versionSize",
     }
     sort_value = sort_map.get(category, "popularity")
     normalized_tags = _normalize_tags(tags)

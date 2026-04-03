@@ -56,6 +56,11 @@ def _normalize_int(value: Any, default: int) -> int:
 
 
 def normalize_mod_entry(mod: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize a mod entry for internal storage.
+
+    Preserves rich metadata (author, description, etc.) alongside the
+    identifiers needed by the Reforger server config.
+    """
     mod_id = mod.get("mod_id") or mod.get("modId") or mod.get("id") or ""
     if not mod_id:
         return {}
@@ -63,11 +68,42 @@ def normalize_mod_entry(mod: Dict[str, Any]) -> Dict[str, Any]:
     entry: Dict[str, Any] = {
         "modId": mod_id,
         "name": mod.get("name") or mod_id,
-        "required": mod.get("required", True),
     }
-    if mod.get("version"):
-        entry["version"] = mod["version"]
+    # Only store version when a non-empty value is provided.
+    version = (mod.get("version") or "").strip()
+    if version and version.lower() != "latest":
+        entry["version"] = version
+
+    # Preserve optional metadata for UI display (not written to config JSON).
+    for meta_key in ("author", "description", "thumbnail_url", "tags",
+                     "dependencies", "scenario_ids", "metadata_source"):
+        if mod.get(meta_key):
+            entry[meta_key] = mod[meta_key]
+
     return entry
+
+
+def format_mod_for_config(mod: Dict[str, Any]) -> Dict[str, Any]:
+    """Format a mod entry strictly for the Arma Reforger server config JSON.
+
+    Only includes fields that are valid in the Reforger server configuration:
+    ``modId``, ``name``, and optionally ``version``.  No additional metadata,
+    no ``required`` flag, no author/description fields.
+    """
+    mod_id = mod.get("modId") or mod.get("mod_id") or ""
+    if not mod_id:
+        return {}
+
+    config_entry: Dict[str, Any] = {
+        "modId": mod_id,
+        "name": mod.get("name") or mod_id,
+    }
+    # Only include version when explicitly set to a non-empty, non-"latest" value.
+    version = (mod.get("version") or "").strip()
+    if version and version.lower() != "latest":
+        config_entry["version"] = version
+
+    return config_entry
 
 
 def ensure_required_mods(mods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -89,10 +125,17 @@ def ensure_required_mods(mods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             {
                 "modId": SERVER_SAT_REQUIRED_MOD_ID,
                 "name": DEFAULT_MOD_NAME,
-                "required": True,
             }
         )
     return normalized
+
+
+def mods_for_config(mods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Return the ``game.mods`` array suitable for the Reforger server config.
+
+    Strips internal metadata and only emits valid Reforger fields.
+    """
+    return [formatted_mod for m in mods if (formatted_mod := format_mod_for_config(m))]
 
 
 def _legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -174,7 +217,7 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
                 "VONDisableDirectSpeechUI": _normalize_bool(game_props.get("VONDisableDirectSpeechUI"), False),
                 "VONCanTransmitCrossFaction": _normalize_bool(game_props.get("VONCanTransmitCrossFaction"), False),
             },
-            "mods": ensure_required_mods(server.get("mods") or []),
+            "mods": mods_for_config(ensure_required_mods(server.get("mods") or [])),
         },
         "operating": {
             "lobbyPlayerSynchronise": _normalize_bool(operating.get("lobbyPlayerSynchronise"), True),
@@ -303,7 +346,7 @@ def generate_reforger_config(server: Dict[str, Any]) -> Dict[str, Any]:
     config["rcon"]["port"] = _normalize_int((server.get("ports") or {}).get("rcon"), config["rcon"].get("port", 19999))
     config["rcon"]["address"] = config["rcon"].get("address") or "0.0.0.0"
     config["game"]["name"] = config["game"].get("name") or server.get("name", "Arma Reforger Server")
-    config["game"]["mods"] = ensure_required_mods(server.get("mods") or [])
+    config["game"]["mods"] = mods_for_config(ensure_required_mods(server.get("mods") or []))
     return config
 
 
