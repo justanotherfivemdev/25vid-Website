@@ -11,7 +11,7 @@ import json
 import logging
 import asyncio
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -46,6 +46,10 @@ from services.server_config_generator import (
     generate_reforger_config,
     normalize_server_config,
     write_config_file,
+)
+from services.server_notifications import (
+    list_server_notifications,
+    sync_server_notifications,
 )
 from services.rcon_bridge import bercon_client
 from services.sat_config_service import discover_sat_config, load_sat_config, overlay_baseline_if_configured, save_sat_config
@@ -112,10 +116,6 @@ def _normalize_server_contract(server: dict) -> dict:
         doc["status"] = "error"
         doc["provisioning_state"] = "failed"
         doc["readiness_state"] = "failed"
-
-    warnings = doc.get("provisioning_warnings") or []
-    if doc.get("status") == "running" and warnings and doc.get("readiness_state") == "ready":
-        doc["readiness_state"] = "degraded"
 
     return doc
 
@@ -285,6 +285,14 @@ def _serialize_doc(value):
     return value
 
 
+def _startup_grace_until(minutes: int = 6) -> datetime:
+    return datetime.now(timezone.utc) + timedelta(minutes=minutes)
+
+
+def _notification_actor(user: dict) -> str:
+    return str(user.get("username") or user.get("name") or user.get("id") or "")
+
+
 # ── Server Lifecycle ─────────────────────────────────────────────────────────
 
 
@@ -356,6 +364,10 @@ async def create_server(
             tags=body.tags,
             auto_restart=body.auto_restart,
             max_restart_attempts=body.max_restart_attempts,
+            log_stats_enabled=body.log_stats_enabled,
+            max_fps=body.max_fps,
+            startup_parameters=body.startup_parameters,
+            startup_grace_until=_startup_grace_until(),
             created_by=current_user["id"],
             status="initializing",
             provisioning_state="allocating",
@@ -381,6 +393,7 @@ async def create_server(
         updates["config"] = generate_reforger_config({**doc, **updates})
         updates["updated_at"] = datetime.now(timezone.utc)
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": updates})
+        await sync_server_notifications({**doc, **updates})
     except ProvisioningError as exc:
         failure_updates = {
             "status": "error",
@@ -390,9 +403,11 @@ async def create_server(
             "last_docker_error": exc.message,
             "provisioning_stages": exc.stages,
             "summary_message": exc.message,
+            "startup_grace_until": None,
             "updated_at": datetime.now(timezone.utc),
         }
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": failure_updates})
+        await sync_server_notifications({**doc, **failure_updates})
         logger.error("Provisioning failed for %s at %s: %s", doc["id"], exc.step, exc.message)
 
     await log_audit(
@@ -429,6 +444,20 @@ async def update_server(
     updates = {k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
+
+    if "startup_parameters" in updates:
+        updates["startup_parameters"] = [
+            str(param).strip()
+            for param in (updates.get("startup_parameters") or [])
+            if str(param).strip()
+        ]
+    if "max_fps" in updates:
+        try:
+            updates["max_fps"] = max(30, int(updates["max_fps"]))
+        except (TypeError, ValueError):
+            updates["max_fps"] = max(30, int(server.get("max_fps") or 120))
+    if "log_stats_enabled" in updates:
+        updates["log_stats_enabled"] = bool(updates["log_stats_enabled"])
 
     if "config" in updates:
         if not isinstance(updates["config"], dict):
@@ -487,6 +516,7 @@ async def update_server(
         after=updates,
     )
     updated = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    await sync_server_notifications(updated or {})
     return _server_response(updated)
 
 
@@ -509,6 +539,7 @@ async def delete_server(server_id: str, current_user: dict = Depends(get_current
     await db.server_backups.delete_many({"server_id": server_id})
     await db.server_schedules.delete_many({"server_id": server_id})
     await db.server_metrics.delete_many({"server_id": server_id})
+    await db.server_notifications.delete_many({"server_id": server_id})
     await db.mod_download_history.delete_many({"server_id": server_id})
 
     await log_audit(
@@ -540,7 +571,13 @@ async def start_server(server_id: str, current_user: dict = Depends(_require_ser
     now = datetime.now(timezone.utc)
     await db.managed_servers.update_one(
         {"id": server_id},
-        {"$set": {"status": "starting", "provisioning_step": "starting_container", "updated_at": now}},
+        {"$set": {
+            "status": "starting",
+            "provisioning_step": "starting_container",
+            "readiness_state": "initializing",
+            "startup_grace_until": _startup_grace_until(),
+            "updated_at": now,
+        }},
     )
     await log_audit(
         user_id=current_user["id"],
@@ -552,13 +589,19 @@ async def start_server(server_id: str, current_user: dict = Depends(_require_ser
     try:
         updates = await orchestrator_start_server(server)
         updates["last_started"] = now
+        updates["status"] = "starting"
+        updates["provisioning_state"] = "starting_container"
+        updates["provisioning_step"] = "starting_container"
+        updates["readiness_state"] = "initializing"
+        updates["startup_grace_until"] = _startup_grace_until()
         updates["updated_at"] = datetime.now(timezone.utc)
         await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
+        await sync_server_notifications({**server, **updates})
         return ServerActionResponse(
             server_id=server_id,
             action="start",
-            status=str(updates.get("status") or "running"),
-            message="Server started successfully.",
+            status=str(updates.get("status") or "starting"),
+            message="Server start requested. Runtime readiness checks are still in progress.",
         )
     except ProvisioningError as exc:
         error = exc.message
@@ -570,9 +613,11 @@ async def start_server(server_id: str, current_user: dict = Depends(_require_ser
                 "provisioning_step": exc.step,
                 "readiness_state": "failed",
                 "last_docker_error": exc.message,
+                "startup_grace_until": None,
                 "updated_at": datetime.now(timezone.utc),
             }},
         )
+        await sync_server_notifications({**server, "status": "error", "readiness_state": "failed", "last_docker_error": exc.message, "startup_grace_until": None})
         # Auto-create an incident for the failure
         incident = {
             "id": f"inc_{__import__('uuid').uuid4().hex[:12]}",
@@ -599,7 +644,7 @@ async def stop_server(server_id: str, current_user: dict = Depends(_require_serv
     now = datetime.now(timezone.utc)
     await db.managed_servers.update_one(
         {"id": server_id},
-        {"$set": {"status": "stopping", "updated_at": now}},
+        {"$set": {"status": "stopping", "startup_grace_until": None, "updated_at": now}},
     )
     await log_audit(
         user_id=current_user["id"],
@@ -613,12 +658,14 @@ async def stop_server(server_id: str, current_user: dict = Depends(_require_serv
         updates["last_stopped"] = datetime.now(timezone.utc)
         updates["updated_at"] = datetime.now(timezone.utc)
         await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
+        await sync_server_notifications({**server, **updates})
         return ServerActionResponse(server_id=server_id, action="stop", status="stopped", message="Server stopped successfully.")
     except ProvisioningError as exc:
         await db.managed_servers.update_one(
             {"id": server_id},
             {"$set": {"status": "error", "last_docker_error": exc.message, "updated_at": datetime.now(timezone.utc)}},
         )
+        await sync_server_notifications({**server, "status": "error", "last_docker_error": exc.message})
         raise HTTPException(status_code=500, detail=exc.message)
 
 
@@ -632,7 +679,13 @@ async def restart_server(server_id: str, current_user: dict = Depends(_require_s
     now = datetime.now(timezone.utc)
     await db.managed_servers.update_one(
         {"id": server_id},
-        {"$set": {"status": "starting", "last_started": now, "updated_at": now}},
+        {"$set": {
+            "status": "starting",
+            "readiness_state": "initializing",
+            "startup_grace_until": _startup_grace_until(),
+            "last_started": now,
+            "updated_at": now,
+        }},
     )
     await log_audit(
         user_id=current_user["id"],
@@ -644,19 +697,26 @@ async def restart_server(server_id: str, current_user: dict = Depends(_require_s
     try:
         updates = await orchestrator_restart_server(server)
         updates["last_started"] = now
+        updates["status"] = "starting"
+        updates["provisioning_state"] = "starting_container"
+        updates["provisioning_step"] = "starting_container"
+        updates["readiness_state"] = "initializing"
+        updates["startup_grace_until"] = _startup_grace_until()
         updates["updated_at"] = datetime.now(timezone.utc)
         await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
+        await sync_server_notifications({**server, **updates})
         return ServerActionResponse(
             server_id=server_id,
             action="restart",
-            status=str(updates.get("status") or "running"),
-            message="Server restarted successfully.",
+            status=str(updates.get("status") or "starting"),
+            message="Server restart requested. Runtime readiness checks are still in progress.",
         )
     except ProvisioningError as exc:
         await db.managed_servers.update_one(
             {"id": server_id},
-            {"$set": {"status": "error", "last_docker_error": exc.message, "updated_at": datetime.now(timezone.utc)}},
+            {"$set": {"status": "error", "last_docker_error": exc.message, "startup_grace_until": None, "updated_at": datetime.now(timezone.utc)}},
         )
+        await sync_server_notifications({**server, "status": "error", "last_docker_error": exc.message, "startup_grace_until": None})
         raise HTTPException(status_code=500, detail=exc.message)
 
 
@@ -710,6 +770,118 @@ async def get_config_history(server_id: str, current_user: dict = Depends(_requi
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
     return _serialize_doc(server.get("config_history", []))
+
+
+@router.get("/servers/{server_id}/notifications")
+async def get_server_notifications(
+    server_id: str,
+    include_cleared: bool = Query(False),
+    current_user: dict = Depends(_require_servers),
+):
+    """List operational notifications for a server."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0, "id": 1})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    notifications = await list_server_notifications(server_id, include_cleared=include_cleared)
+    return {
+        "server_id": server_id,
+        "notifications": notifications,
+        "count": len(notifications),
+    }
+
+
+@router.post("/servers/{server_id}/notifications/{notification_id}/acknowledge")
+async def acknowledge_server_notification(
+    server_id: str,
+    notification_id: str,
+    current_user: dict = Depends(_require_servers),
+):
+    """Acknowledge a server notification without clearing it."""
+    notification = await db.server_notifications.find_one(
+        {"server_id": server_id, "id": notification_id},
+        {"_id": 0},
+    )
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+
+    now = datetime.now(timezone.utc)
+    await db.server_notifications.update_one(
+        {"server_id": server_id, "id": notification_id},
+        {"$set": {
+            "acknowledged": True,
+            "acknowledged_at": now,
+            "acknowledged_by": _notification_actor(current_user),
+            "updated_at": now,
+        }},
+    )
+
+    updated = await db.server_notifications.find_one(
+        {"server_id": server_id, "id": notification_id},
+        {"_id": 0},
+    )
+    return {
+        "server_id": server_id,
+        "notification": _serialize_doc(updated),
+    }
+
+
+@router.post("/servers/{server_id}/notifications/{notification_id}/clear")
+async def clear_server_notification(
+    server_id: str,
+    notification_id: str,
+    current_user: dict = Depends(_require_servers),
+):
+    """Clear an operational notification and resolve follow-up warnings when possible."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    notification = await db.server_notifications.find_one(
+        {"server_id": server_id, "id": notification_id},
+        {"_id": 0},
+    )
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+
+    now = datetime.now(timezone.utc)
+    actor = _notification_actor(current_user)
+
+    await db.server_notifications.update_one(
+        {"server_id": server_id, "id": notification_id},
+        {"$set": {
+            "status": "cleared",
+            "cleared_at": now,
+            "cleared_by": actor,
+            "updated_at": now,
+        }},
+    )
+
+    server_updates = {}
+    if notification.get("notification_type") == "provisioning.followup":
+        server_updates = {
+            "provisioning_warnings": [],
+            "updated_at": now,
+        }
+        if server.get("status") == "running":
+            server_updates["readiness_state"] = "ready"
+            server_updates["provisioning_state"] = "ready"
+            server_updates["summary_message"] = (
+                "Server is operational. Provisioning follow-up items were acknowledged and cleared."
+            )
+        await db.managed_servers.update_one({"id": server_id}, {"$set": server_updates})
+        server = {**server, **server_updates}
+        await sync_server_notifications(server)
+
+    updated = await db.server_notifications.find_one(
+        {"server_id": server_id, "id": notification_id},
+        {"_id": 0},
+    )
+    return {
+        "server_id": server_id,
+        "notification": _serialize_doc(updated),
+        "server": _server_response(server),
+    }
 
 
 @router.get("/servers/{server_id}/sat-config")
@@ -966,7 +1138,7 @@ async def add_sat_ban(
     bans = _get_sat_bans(config)
     if not any(entry["id"] == body.player_id for entry in bans):
         bans.append({"id": body.player_id, "reason": body.reason})
-    config["bans"] = [{"playerId": entry["id"], "reason": entry.get("reason", "")} for entry in bans]
+    config["bans"] = {entry["id"]: entry.get("reason", "") for entry in bans}
     save_sat_config(sat_path, config)
 
     live_sync = {"executed": False, "response": "Server is offline"}
@@ -993,7 +1165,7 @@ async def remove_sat_ban(server_id: str, player_id: str, current_user: dict = De
     sat_path, config = await _load_sat_state(server)
 
     bans = [entry for entry in _get_sat_bans(config) if entry["id"] != player_id]
-    config["bans"] = [{"playerId": entry["id"], "reason": entry.get("reason", "")} for entry in bans]
+    config["bans"] = {entry["id"]: entry.get("reason", "") for entry in bans}
     save_sat_config(sat_path, config)
     return {"message": "Ban removed", "bans": _get_sat_bans(config)}
 
@@ -2126,10 +2298,8 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
             })
             since = max(since or 0, _parse_log_since(entry["timestamp"]) or 0)
 
-        while True:
-            await asyncio.sleep(1)
-            new_logs = await _docker.get_container_logs(container_name, since=since)
-            for entry in _build_log_entries(new_logs):
+        async for chunk in _docker.stream_container_logs(container_name, tail=0, since=since):
+            for entry in _build_log_entries(chunk):
                 if entry["cursor"] in seen_cursors:
                     continue
                 seen_cursors.add(entry["cursor"])

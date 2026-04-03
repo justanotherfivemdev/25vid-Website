@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 from database import db
+from services.a2s_query import query_a2s_info
 from services.docker_agent import DockerAgent
 from services.rcon_bridge import bercon_client
 
@@ -99,13 +100,31 @@ async def _collect_rcon_metrics(server: dict) -> dict:
     }
 
 
+async def _collect_a2s_metrics(server: dict) -> dict:
+    ports = server.get("ports") or {}
+    response = await query_a2s_info("127.0.0.1", int(ports.get("query", 17777)))
+    if not response:
+        return {}
+    return {
+        "player_count": response.get("player_count"),
+        "max_players": response.get("max_players"),
+        "server_name": response.get("name"),
+        "current_map": response.get("map"),
+        "version": response.get("version"),
+    }
+
+
 def _log_stats_enabled(server: dict) -> bool:
-    config = server.get("config") or {}
-    startup_parameters = config.get("startupParameters")
-    if not isinstance(startup_parameters, list):
+    explicit = server.get("log_stats_enabled")
+    if explicit is True:
+        return True
+    if explicit is False:
         return False
-    for param in startup_parameters:
-        if isinstance(param, str) and "logStats" in param:
+    startup_parameters = server.get("startup_parameters")
+    if not isinstance(startup_parameters, list):
+        startup_parameters = ((server.get("config") or {}).get("startupParameters") or [])
+    for param in startup_parameters or []:
+        if isinstance(param, str) and "logstats" in param.lower():
             return True
     return False
 
@@ -147,16 +166,25 @@ async def collect_server_metrics(server: dict) -> Optional[dict]:
     game_config = (server.get("config") or {}).get("game") or {}
 
     rcon_metrics: dict = {}
+    a2s_metrics: dict = {}
     fps_metrics: dict = {}
     try:
         rcon_metrics = await _collect_rcon_metrics(server)
     except Exception as exc:
         logger.debug("RCON metrics collection failed for %s: %s", server_id, exc)
     try:
+        a2s_metrics = await _collect_a2s_metrics(server)
+    except Exception as exc:
+        logger.debug("A2S metrics collection failed for %s: %s", server_id, exc)
+    try:
         fps_metrics = await _collect_fps_metric(server, container_name)
     except Exception as exc:
         logger.debug("FPS metrics collection failed for %s: %s", server_id, exc)
 
+    player_count = rcon_metrics.get("player_count")
+    if player_count is None:
+        player_count = a2s_metrics.get("player_count")
+    max_players = game_config.get("maxPlayers") or a2s_metrics.get("max_players")
     avg_player_ping_ms = rcon_metrics.get("avg_player_ping_ms")
     server_fps = fps_metrics.get("server_fps")
 
@@ -172,21 +200,26 @@ async def collect_server_metrics(server: dict) -> Optional[dict]:
         "memory_limit_mb": stats["memory_limit_mb"],
         "network_rx_bytes": stats["network_rx"],
         "network_tx_bytes": stats["network_tx"],
-        "player_count": rcon_metrics.get("player_count"),
-        "max_players": game_config.get("maxPlayers"),
+        "player_count": player_count,
+        "max_players": max_players,
         "uptime_seconds": uptime_seconds,
         "server_fps": server_fps,
         "avg_player_ping_ms": avg_player_ping_ms,
         "fps": server_fps,
         "ping": avg_player_ping_ms,
+        "server_name": a2s_metrics.get("server_name") or server.get("name"),
+        "current_map": a2s_metrics.get("current_map"),
+        "version": a2s_metrics.get("version"),
         "metric_sources": {
             "cpu": "docker",
             "memory": "docker",
             "network_rx_bytes": "docker",
             "network_tx_bytes": "docker",
-            "player_count": "rcon" if rcon_metrics.get("player_count") is not None else None,
+            "player_count": "rcon" if rcon_metrics.get("player_count") is not None else ("a2s" if a2s_metrics.get("player_count") is not None else None),
             "avg_player_ping_ms": "rcon" if avg_player_ping_ms is not None else None,
             "server_fps": "logStats" if server_fps is not None else None,
+            "server_name": "a2s" if a2s_metrics.get("server_name") else None,
+            "current_map": "a2s" if a2s_metrics.get("current_map") else None,
         },
     }
 

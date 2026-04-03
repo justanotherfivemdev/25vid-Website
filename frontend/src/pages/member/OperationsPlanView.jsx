@@ -45,7 +45,7 @@ import CircleGeom from 'ol/geom/Circle';
 import { Icon, Style, Stroke, Fill, Circle as CircleStyle, Text as OlText } from 'ol/style';
 
 /* ── milsymbol ─────────────────────────────────────────────────────────────── */
-import ms from 'milsymbol';
+import { renderMilSymbolDataUrl } from '@/lib/milsymbol';
 import 'ol/ol.css';
 
 import { createDrawingStyle, createPathStyle } from '@/hooks/useOlDrawing';
@@ -65,12 +65,7 @@ const AFFILIATION_COLORS = {
 };
 
 function renderSymbolDataURL(sidc, size = 40) {
-  try {
-    const sym = new ms.Symbol(sidc, { size });
-    return sym.toDataURL();
-  } catch {
-    return null;
-  }
+  return renderMilSymbolDataUrl(sidc, size);
 }
 
 export default function OperationsPlanView() {

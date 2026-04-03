@@ -28,6 +28,9 @@ const QUICK_COMMANDS = [
 ];
 
 const SAVED_SNIPPETS_KEY = 'rcon_saved_snippets';
+const WS_BASE = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '')
+  .replace(/^http/, 'ws')
+  .replace(/\/$/, '');
 
 const STATUS_TEXT = {
   offline: 'Server is offline.',
@@ -56,6 +59,10 @@ function RconModule() {
   const historyRef = useRef(null);
   const inputRef = useRef(null);
   const historyIdx = useRef(-1);
+  const wsRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
+  const pendingEntryIdRef = useRef(null);
+  const [wsState, setWsState] = useState('idle');
 
   const fetchStatus = useCallback(async () => {
     if (server?.status !== 'running') {
@@ -81,11 +88,100 @@ function RconModule() {
     fetchStatus();
   }, [fetchStatus]);
 
+  useEffect(() => () => {
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+    if (wsRef.current) wsRef.current.close();
+  }, []);
+
+  useEffect(() => {
+    if (server?.status !== 'running' || rconStatus?.state !== 'connected') {
+      setWsState(server?.status !== 'running' ? 'offline' : 'idle');
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (wsRef.current) wsRef.current.close();
+      return undefined;
+    }
+
+    let disposed = false;
+
+    const connect = () => {
+      if (disposed) return;
+      const token = document.cookie.split(';').find((cookie) => cookie.trim().startsWith('session='))?.split('=')?.[1] || '';
+      const url = `${WS_BASE}/api/ws/servers/${serverId}/rcon?token=${encodeURIComponent(token)}`;
+      setWsState((current) => (current === 'live' ? current : 'connecting'));
+
+      try {
+        const ws = new WebSocket(url);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          setWsState('live');
+        };
+
+        ws.onmessage = (event) => {
+          let payload = null;
+          try {
+            payload = JSON.parse(event.data);
+          } catch {
+            payload = null;
+          }
+
+          if (!payload || payload.type !== 'response') return;
+
+          const pendingId = pendingEntryIdRef.current;
+          if (pendingId != null) {
+            setHistory((prev) => prev.map((item) => (
+              item.id === pendingId
+                ? {
+                    ...item,
+                    response: payload.response || 'OK',
+                    error: payload.success ? null : (payload.response || 'RCON command failed'),
+                  }
+                : item
+            )));
+            pendingEntryIdRef.current = null;
+            setLoading(false);
+            setTimeout(() => {
+              if (historyRef.current) historyRef.current.scrollTop = historyRef.current.scrollHeight;
+            }, 50);
+          }
+        };
+
+        ws.onclose = () => {
+          if (pendingEntryIdRef.current != null) {
+            const pendingId = pendingEntryIdRef.current;
+            setHistory((prev) => prev.map((item) => (
+              item.id === pendingId ? { ...item, error: 'Live RCON socket disconnected before the command completed.' } : item
+            )));
+            pendingEntryIdRef.current = null;
+            setLoading(false);
+          }
+          if (disposed || server?.status !== 'running' || rconStatus?.state !== 'connected') return;
+          setWsState('reconnecting');
+          reconnectTimerRef.current = setTimeout(connect, 1500);
+        };
+
+        ws.onerror = () => {
+          setWsState('reconnecting');
+        };
+      } catch {
+        setWsState('reconnecting');
+      }
+    };
+
+    connect();
+
+    return () => {
+      disposed = true;
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, [rconStatus?.state, server?.status, serverId]);
+
   const canExecute = server?.status === 'running' && rconStatus?.state === 'connected';
 
   const sendCommand = useCallback(async (cmd) => {
     const trimmed = (cmd || command).trim();
-    if (!trimmed || !canExecute) return;
+    if (!trimmed || !canExecute || loading) return;
     setLoading(true);
     const entry = { id: Date.now(), command: trimmed, response: null, error: null, ts: new Date() };
     setHistory((prev) => {
@@ -94,18 +190,25 @@ function RconModule() {
     });
 
     try {
-      const res = await axios.post(`${API}/servers/${serverId}/rcon`, { command: trimmed });
-      setHistory((prev) => prev.map((item) => (
-        item.id === entry.id ? { ...item, response: res.data?.response || 'OK' } : item
-      )));
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        pendingEntryIdRef.current = entry.id;
+        wsRef.current.send(JSON.stringify({ command: trimmed }));
+      } else {
+        const res = await axios.post(`${API}/servers/${serverId}/rcon`, { command: trimmed });
+        setHistory((prev) => prev.map((item) => (
+          item.id === entry.id ? { ...item, response: res.data?.response || 'OK' } : item
+        )));
+        setLoading(false);
+      }
     } catch (err) {
       setHistory((prev) => prev.map((item) => (
         item.id === entry.id
           ? { ...item, error: err.response?.data?.detail || 'RCON command failed' }
           : item
       )));
-    } finally {
+      pendingEntryIdRef.current = null;
       setLoading(false);
+    } finally {
       setCommand('');
       historyIdx.current = -1;
       setTimeout(() => {
@@ -153,6 +256,13 @@ function RconModule() {
   }, [savedSnippets]);
 
   const statusDetail = rconStatus?.detail || STATUS_TEXT[rconStatus?.state] || 'Unknown RCON state.';
+  const socketDetail = {
+    idle: 'Socket idle.',
+    offline: 'Socket offline.',
+    connecting: 'Opening live console socket...',
+    live: 'Live console socket connected.',
+    reconnecting: 'Reconnecting live console socket...',
+  }[wsState];
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -160,7 +270,7 @@ function RconModule() {
         canExecute ? 'border-green-600/30 bg-green-600/10 text-green-400' : 'border-amber-600/30 bg-amber-600/10 text-amber-400'
       }`}>
         {statusLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
-        <span>{statusLoading ? 'Checking RCON availability...' : statusDetail}</span>
+        <span>{statusLoading ? 'Checking RCON availability...' : `${statusDetail} ${socketDetail || ''}`.trim()}</span>
         <Button size="sm" variant="ghost" onClick={fetchStatus} className="ml-auto h-6 px-2 text-[10px] text-inherit hover:bg-white/5">
           <RefreshCw className="mr-1 h-3 w-3" /> Retry
         </Button>
@@ -260,7 +370,7 @@ function RconModule() {
                   <div key={index} className="flex items-center gap-2">
                     <button
                       onClick={() => sendCommand(snippet.command)}
-                      disabled={!canExecute}
+                      disabled={!canExecute || loading}
                       className="flex-1 rounded border border-zinc-800 px-2 py-1 text-left text-xs text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold disabled:opacity-50"
                     >
                       <span className="font-medium">{snippet.name}</span>

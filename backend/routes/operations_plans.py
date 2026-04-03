@@ -14,7 +14,6 @@ Permissions:
 
 import os
 import uuid
-import imghdr
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -79,9 +78,8 @@ async def upload_map(
         )
 
     # --- Validate actual image content ---
-    # imghdr may detect JPEG as "jpeg" and certain SGI images as "rgb"
-    detected_type = imghdr.what(None, h=data)
-    if detected_type not in ("jpeg", "png", "webp", "rgb"):
+    detected_type = _detect_image_type(data)
+    if detected_type not in {"jpeg", "png", "webp"}:
         raise HTTPException(status_code=400, detail="File does not appear to be a valid image.")
 
     # --- Determine dimensions ---
@@ -429,3 +427,21 @@ def _get_image_dimensions(data: bytes) -> tuple[int, int]:
             return int(w), int(h)
 
     return 0, 0
+
+
+def _detect_image_type(data: bytes) -> Optional[str]:
+    """Detect the supported image type from raw bytes.
+
+    Python 3.13+ removed ``imghdr``, so we keep a minimal signature-based
+    detector for the image types this route already accepts.
+    """
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "png"
+
+    if data[:2] == b"\xff\xd8":
+        return "jpeg"
+
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+
+    return None

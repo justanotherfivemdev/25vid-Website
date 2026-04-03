@@ -1,28 +1,37 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
+  Activity,
   BarChart3,
+  Clock,
   Cpu,
   HardDrive,
-  Network,
-  Users,
-  Clock,
-  RefreshCw,
   Loader2,
-  TrendingUp,
-  TrendingDown,
-  Activity,
+  Network,
+  RefreshCw,
+  Users,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
 const PERIODS = [
   { value: '1h', label: '1 Hour' },
   { value: '6h', label: '6 Hours' },
-  { value: '24h', label: '24 Hours' },
+  { value: '24h', label: '1 Day' },
   { value: '7d', label: '7 Days' },
   { value: '30d', label: '30 Days' },
 ];
@@ -45,45 +54,141 @@ function normalizeMetricPoint(point) {
     player_count: point.player_count ?? point.max_player_count ?? point.avg_player_count ?? 0,
     server_fps: point.server_fps ?? point.avg_server_fps ?? point.fps ?? null,
     avg_player_ping_ms: point.avg_player_ping_ms ?? point.ping ?? null,
+    network_rx_bytes: point.network_rx_bytes ?? point.max_network_rx_bytes ?? 0,
+    network_tx_bytes: point.network_tx_bytes ?? point.max_network_tx_bytes ?? 0,
   };
 }
 
+function formatBytes(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let idx = 0;
+  let value = bytes;
+  while (value >= 1024 && idx < units.length - 1) {
+    value /= 1024;
+    idx += 1;
+  }
+  return `${value.toFixed(value >= 100 ? 0 : 1)} ${units[idx]}`;
+}
+
+function formatUptime(seconds) {
+  if (!seconds) return 'N/A';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+  return `${hours}h ${minutes}m`;
+}
+
+function formatTick(timestamp, period) {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  if (period === '7d' || period === '30d') {
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  }
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded border border-zinc-800 bg-black/95 px-3 py-2 text-xs shadow-xl">
+      <div className="mb-2 text-gray-400">{label}</div>
+      {payload.map((entry) => (
+        <div key={entry.dataKey} className="flex items-center justify-between gap-4">
+          <span style={{ color: entry.color }}>{entry.name}</span>
+          <span className="text-gray-200">
+            {entry.value == null ? 'N/A' : entry.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChartShell({ title, subtitle, icon: Icon, children }) {
+  return (
+    <Card className="border-zinc-800 bg-black/60">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+          <Icon className="h-4 w-4 text-tropic-gold" />
+          {title}
+        </CardTitle>
+        {subtitle ? <p className="text-xs text-gray-600">{subtitle}</p> : null}
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function EmptyChartState({ loading }) {
+  return (
+    <div className="flex h-[280px] flex-col items-center justify-center text-gray-600">
+      {loading ? <Loader2 className="mb-3 h-6 w-6 animate-spin text-tropic-gold" /> : <BarChart3 className="mb-3 h-8 w-8 text-gray-700" />}
+      <p className="text-sm">{loading ? 'Loading metrics...' : 'No metrics available yet'}</p>
+      <p className="mt-1 text-xs">Metrics are collected while the server is running.</p>
+    </div>
+  );
+}
+
 function MetricsModule() {
-  const { server, serverId } = useOutletContext();
+  const { serverId } = useOutletContext();
   const [metrics, setMetrics] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [period, setPeriod] = useState('1h');
+  const [period, setPeriod] = useState('24h');
   const [loading, setLoading] = useState(true);
 
   const fetchMetrics = useCallback(async () => {
     setLoading(true);
     try {
       const [metricsRes, summaryRes] = await Promise.allSettled([
-        axios.get(`${API}/servers/${serverId}/metrics?period=${period}&resolution=${RESOLUTION_MAP[period] || '1m'}`),
+        axios.get(`${API}/servers/${serverId}/metrics`, {
+          params: { period, resolution: RESOLUTION_MAP[period] || '5m' },
+        }),
         axios.get(`${API}/servers/${serverId}/metrics/summary`),
       ]);
-      if (metricsRes.status === 'fulfilled') setMetrics((metricsRes.value.data?.metrics || []).map(normalizeMetricPoint));
-      if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value.data);
+
+      if (metricsRes.status === 'fulfilled') {
+        setMetrics((metricsRes.value.data?.metrics || []).map(normalizeMetricPoint));
+      } else {
+        setMetrics([]);
+      }
+
+      if (summaryRes.status === 'fulfilled') {
+        setSummary(summaryRes.value.data);
+      } else {
+        setSummary(null);
+      }
     } finally {
       setLoading(false);
     }
-  }, [serverId, period]);
-
-  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
+  }, [period, serverId]);
 
   useEffect(() => {
-    const iv = setInterval(fetchMetrics, 30_000);
-    return () => clearInterval(iv);
+    fetchMetrics();
+  }, [fetchMetrics]);
+
+  useEffect(() => {
+    const intervalId = setInterval(fetchMetrics, 30_000);
+    return () => clearInterval(intervalId);
   }, [fetchMetrics]);
 
   const latest = summary?.latest || {};
   const trend = summary?.trend_24h || {};
 
+  const chartData = useMemo(() => metrics.map((point) => ({
+    ...point,
+    tick: formatTick(point.timestamp, period),
+    rx_mb: Number((point.network_rx_bytes / (1024 * 1024)).toFixed(2)),
+    tx_mb: Number((point.network_tx_bytes / (1024 * 1024)).toFixed(2)),
+    ping_ms: point.avg_player_ping_ms != null ? Number(point.avg_player_ping_ms.toFixed(1)) : null,
+    fps: point.server_fps != null ? Number(point.server_fps.toFixed(1)) : null,
+  })), [metrics, period]);
+
   const summaryCards = [
     {
       label: 'CPU',
       value: latest.cpu_host_percent != null || latest.cpu_percent != null ? `${(latest.cpu_host_percent ?? latest.cpu_percent).toFixed(1)}%` : 'Unavailable',
-      avg: trend.avg_cpu != null ? `${trend.avg_cpu.toFixed(1)}%` : 'Container metric',
+      avg: trend.avg_cpu != null ? `${trend.avg_cpu.toFixed(1)}% avg` : 'Container metric',
       icon: Cpu,
       color: 'text-blue-400',
       border: 'border-blue-600/20',
@@ -91,8 +196,8 @@ function MetricsModule() {
     },
     {
       label: 'Memory',
-      value: latest.memory_mb != null ? `${latest.memory_mb.toFixed(0)} MB` : '—',
-      avg: trend.avg_memory != null ? `${trend.avg_memory.toFixed(0)} MB` : null,
+      value: latest.memory_mb != null ? `${latest.memory_mb.toFixed(0)} MB` : 'Unavailable',
+      avg: trend.avg_memory != null ? `${trend.avg_memory.toFixed(0)} MB avg` : 'Container metric',
       icon: HardDrive,
       color: 'text-purple-400',
       border: 'border-purple-600/20',
@@ -101,16 +206,25 @@ function MetricsModule() {
     {
       label: 'Server FPS',
       value: latest.server_fps != null ? `${latest.server_fps.toFixed(1)}` : 'Unavailable',
-      avg: trend.avg_server_fps != null ? `${trend.avg_server_fps.toFixed(1)} avg` : 'Awaiting logStats signal',
+      avg: trend.avg_server_fps != null ? `${trend.avg_server_fps.toFixed(1)} avg` : 'Requires logStats',
       icon: Activity,
       color: 'text-emerald-400',
       border: 'border-emerald-600/20',
       bg: 'bg-emerald-600/5',
     },
     {
+      label: 'Players',
+      value: latest.player_count != null ? `${latest.player_count}/${latest.max_players || '?'}` : 'Unavailable',
+      avg: trend.max_player_count != null ? `Peak ${trend.max_player_count}` : 'A2S / RCON metric',
+      icon: Users,
+      color: 'text-green-400',
+      border: 'border-green-600/20',
+      bg: 'bg-green-600/5',
+    },
+    {
       label: 'Avg Ping',
       value: latest.avg_player_ping_ms != null ? `${latest.avg_player_ping_ms.toFixed(0)} ms` : 'Unavailable',
-      avg: trend.avg_player_ping_ms != null ? `${trend.avg_player_ping_ms.toFixed(0)} ms avg` : 'Awaiting live RCON data',
+      avg: trend.avg_player_ping_ms != null ? `${trend.avg_player_ping_ms.toFixed(0)} ms avg` : 'Requires live players',
       icon: Users,
       color: 'text-amber-300',
       border: 'border-amber-500/20',
@@ -118,7 +232,8 @@ function MetricsModule() {
     },
     {
       label: 'Network RX',
-      value: latest.network_rx_bytes != null ? formatBytes(latest.network_rx_bytes) : '—',
+      value: latest.network_rx_bytes != null ? formatBytes(latest.network_rx_bytes) : 'Unavailable',
+      avg: null,
       icon: Network,
       color: 'text-cyan-400',
       border: 'border-cyan-600/20',
@@ -126,24 +241,17 @@ function MetricsModule() {
     },
     {
       label: 'Network TX',
-      value: latest.network_tx_bytes != null ? formatBytes(latest.network_tx_bytes) : '—',
+      value: latest.network_tx_bytes != null ? formatBytes(latest.network_tx_bytes) : 'Unavailable',
+      avg: null,
       icon: Network,
       color: 'text-teal-400',
       border: 'border-teal-600/20',
       bg: 'bg-teal-600/5',
     },
     {
-      label: 'Players',
-      value: latest.player_count != null ? `${latest.player_count}` : 'Unavailable',
-      avg: trend.max_player_count != null ? `Peak: ${trend.max_player_count}` : 'Awaiting live RCON data',
-      icon: Users,
-      color: 'text-green-400',
-      border: 'border-green-600/20',
-      bg: 'bg-green-600/5',
-    },
-    {
       label: 'Uptime',
-      value: latest.uptime_seconds != null ? formatUptime(latest.uptime_seconds) : '—',
+      value: latest.uptime_seconds != null ? formatUptime(latest.uptime_seconds) : 'Unavailable',
+      avg: null,
       icon: Clock,
       color: 'text-tropic-gold',
       border: 'border-tropic-gold-dark/20',
@@ -153,30 +261,32 @@ function MetricsModule() {
 
   return (
     <div className="space-y-6">
-      {/* Period selector */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
           PERFORMANCE METRICS
         </h2>
         <div className="flex items-center gap-2">
-          {PERIODS.map((p) => (
-            <Button key={p.value} size="sm" variant={period === p.value ? 'default' : 'outline'}
-              onClick={() => setPeriod(p.value)}
-              className={`h-7 text-xs ${period === p.value
-                ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light'
-                : 'border-zinc-800 text-gray-400 hover:text-white'
-              }`}>
-              {p.label}
+          {PERIODS.map((option) => (
+            <Button
+              key={option.value}
+              size="sm"
+              variant={period === option.value ? 'default' : 'outline'}
+              onClick={() => setPeriod(option.value)}
+              className={`h-7 text-xs ${
+                period === option.value
+                  ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light'
+                  : 'border-zinc-800 text-gray-400 hover:text-white'
+              }`}
+            >
+              {option.label}
             </Button>
           ))}
-          <Button size="sm" variant="outline" onClick={fetchMetrics}
-            className="h-7 border-zinc-800 text-xs text-gray-400">
+          <Button size="sm" variant="outline" onClick={fetchMetrics} className="h-7 border-zinc-800 text-xs text-gray-400">
             <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
         {summaryCards.map((card) => {
           const Icon = card.icon;
@@ -190,135 +300,121 @@ function MetricsModule() {
                 <div className="mt-1.5 text-xl font-bold text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                   {loading ? <div className="h-6 w-12 animate-pulse rounded bg-zinc-800" /> : card.value}
                 </div>
-                {card.avg && <div className="mt-0.5 text-[10px] text-gray-600">{card.avg}</div>}
+                {card.avg ? <div className="mt-0.5 text-[10px] text-gray-600">{card.avg}</div> : null}
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {/* Metrics timeline - simplified chart using CSS */}
-      <Card className="border-zinc-800 bg-black/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
-            <Activity className="h-4 w-4 text-tropic-gold" /> RESOURCE USAGE TIMELINE
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-tropic-gold" />
-            </div>
-          ) : metrics.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-600">
-              <BarChart3 className="mb-3 h-8 w-8 text-gray-700" />
-              <p className="text-sm">No metrics data available</p>
-              <p className="mt-1 text-xs">Metrics are collected every 15 seconds for running servers</p>
-            </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <ChartShell title="CPU & Memory" subtitle="Container load over time." icon={Cpu}>
+          {chartData.length === 0 ? (
+            <EmptyChartState loading={loading} />
           ) : (
-            <div className="space-y-6">
-              {/* CPU Chart */}
-              <MetricBar
-                label="CPU Usage"
-                data={metrics}
-                dataKey="cpu_host_percent"
-                unit="%"
-                maxVal={100}
-                color="bg-blue-500"
-                trackColor="bg-blue-500/10"
-              />
-              {/* Memory Chart */}
-              <MetricBar
-                label="Memory"
-                data={metrics}
-                dataKey="memory_mb"
-                unit=" MB"
-                maxVal={Math.max(...metrics.map(m => m.memory_limit_mb || m.memory_mb || 1), 1)}
-                color="bg-purple-500"
-                trackColor="bg-purple-500/10"
-              />
-              {/* Player Count Chart */}
-              <MetricBar
-                label="Players"
-                data={metrics}
-                dataKey="player_count"
-                unit=""
-                maxVal={Math.max(...metrics.map(m => m.max_players || 64), 1)}
-                color="bg-green-500"
-                trackColor="bg-green-500/10"
-              />
-              <MetricBar
-                label="Server FPS"
-                data={metrics.filter((point) => point.server_fps != null)}
-                dataKey="server_fps"
-                unit=""
-                maxVal={Math.max(...metrics.map(m => m.server_fps || 1), 1)}
-                color="bg-emerald-500"
-                trackColor="bg-emerald-500/10"
-              />
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="cpuFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.02} />
+                    </linearGradient>
+                    <linearGradient id="memoryFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="#27272a" vertical={false} />
+                  <XAxis dataKey="tick" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} minTickGap={24} />
+                  <YAxis yAxisId="cpu" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={36} />
+                  <YAxis yAxisId="memory" orientation="right" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={42} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Area yAxisId="cpu" type="monotone" dataKey="cpu_host_percent" name="CPU %" stroke="#60a5fa" fill="url(#cpuFill)" strokeWidth={2} />
+                  <Area yAxisId="memory" type="monotone" dataKey="memory_mb" name="Memory MB" stroke="#a855f7" fill="url(#memoryFill)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </ChartShell>
 
-      {/* Data point count */}
-      <div className="flex items-center justify-end text-xs text-gray-600">
-        {metrics.length} data points • {period} window
-      </div>
-    </div>
-  );
-}
-
-function MetricBar({ label, data, dataKey, unit, maxVal, color, trackColor }) {
-  if (!data.length) return null;
-  const values = data.map(d => d[dataKey] ?? 0);
-  const latest = values[values.length - 1];
-  const avg = values.reduce((a, b) => a + b, 0) / values.length;
-  const maxV = Math.max(...values);
-
-  // Show last ~60 data points as a mini bar chart
-  const displayData = data.slice(-60);
-
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-gray-400">{label}</span>
-        <div className="flex items-center gap-3 text-[10px] text-gray-500">
-          <span>Current: <strong className="text-gray-300">{typeof latest === 'number' ? latest.toFixed(1) : latest}{unit}</strong></span>
-          <span>Avg: <strong className="text-gray-400">{avg.toFixed(1)}{unit}</strong></span>
-          <span>Max: <strong className="text-gray-400">{maxV.toFixed(1)}{unit}</strong></span>
-        </div>
-      </div>
-      <div className={`flex h-10 items-end gap-px overflow-hidden rounded ${trackColor}`}>
-        {displayData.map((d, i) => {
-          const val = d[dataKey] ?? 0;
-          const pct = maxVal > 0 ? Math.min(100, (val / maxVal) * 100) : 0;
-          return (
-            <div key={i} className="flex-1" title={`${val.toFixed?.(1) ?? val}${unit}`}>
-              <div className={`${color} rounded-t transition-all`} style={{ height: `${Math.max(1, pct)}%` }} />
+        <ChartShell title="Players & Ping" subtitle="Population and latency, with A2S and RCON fallbacks." icon={Users}>
+          {chartData.length === 0 ? (
+            <EmptyChartState loading={loading} />
+          ) : (
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                  <CartesianGrid stroke="#27272a" vertical={false} />
+                  <XAxis dataKey="tick" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} minTickGap={24} />
+                  <YAxis yAxisId="players" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={36} />
+                  <YAxis yAxisId="ping" orientation="right" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={42} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Line yAxisId="players" type="monotone" dataKey="player_count" name="Players" stroke="#22c55e" strokeWidth={2} dot={false} connectNulls />
+                  <Line yAxisId="ping" type="monotone" dataKey="ping_ms" name="Ping ms" stroke="#f59e0b" strokeWidth={2} dot={false} connectNulls />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
-          );
-        })}
+          )}
+        </ChartShell>
+
+        <ChartShell title="Server FPS" subtitle="Derived from logStats. Provisioning now enables it by default." icon={Activity}>
+          {chartData.length === 0 || !chartData.some((point) => point.fps != null) ? (
+            <EmptyChartState loading={loading} />
+          ) : (
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                  <CartesianGrid stroke="#27272a" vertical={false} />
+                  <XAxis dataKey="tick" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} minTickGap={24} />
+                  <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={36} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Line type="monotone" dataKey="fps" name="Server FPS" stroke="#10b981" strokeWidth={2.5} dot={false} connectNulls />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartShell>
+
+        <ChartShell title="Network Throughput" subtitle="RX and TX volume captured from Docker stats." icon={Network}>
+          {chartData.length === 0 ? (
+            <EmptyChartState loading={loading} />
+          ) : (
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="rxFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.02} />
+                    </linearGradient>
+                    <linearGradient id="txFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#14b8a6" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="#27272a" vertical={false} />
+                  <XAxis dataKey="tick" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} minTickGap={24} />
+                  <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={44} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Area type="monotone" dataKey="rx_mb" name="RX MB" stroke="#06b6d4" fill="url(#rxFill)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="tx_mb" name="TX MB" stroke="#14b8a6" fill="url(#txFill)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartShell>
+      </div>
+
+      <div className="flex items-center justify-end text-xs text-gray-600">
+        {chartData.length} data points - {PERIODS.find((option) => option.value === period)?.label || period}
       </div>
     </div>
   );
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let idx = 0;
-  let val = bytes;
-  while (val >= 1024 && idx < units.length - 1) { val /= 1024; idx++; }
-  return `${val.toFixed(1)} ${units[idx]}`;
-}
-
-function formatUptime(seconds) {
-  if (!seconds) return '—';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 24) return `${Math.floor(h / 24)}d ${h % 24}h`;
-  return `${h}h ${m}m`;
 }
 
 export default MetricsModule;

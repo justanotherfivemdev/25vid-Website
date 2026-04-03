@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from typing import Any, Dict, Optional, Tuple
 
 from config import DOCKER_SOCKET_PATH
@@ -243,6 +244,65 @@ class DockerAgent:
         except Exception as exc:
             logger.error("Failed to fetch logs for %s: %s", container_name, exc)
             return ""
+
+    async def stream_container_logs(
+        self,
+        container_name: str,
+        *,
+        tail: int = 0,
+        since: Optional[int] = None,
+    ):
+        container = await self.get_container(container_name)
+        if container is None:
+            return
+
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue[Optional[str]] = asyncio.Queue(maxsize=512)
+        stop_event = threading.Event()
+
+        def _pump_logs() -> None:
+            stream = None
+            try:
+                kwargs: Dict[str, Any] = {
+                    "stream": True,
+                    "follow": True,
+                    "timestamps": True,
+                    "tail": tail,
+                }
+                if since is not None:
+                    kwargs["since"] = since
+                stream = container.logs(**kwargs)
+                for chunk in stream:
+                    if stop_event.is_set():
+                        break
+                    text = chunk.decode("utf-8", errors="replace") if isinstance(chunk, bytes) else str(chunk)
+                    future = asyncio.run_coroutine_threadsafe(queue.put(text), loop)
+                    try:
+                        future.result()
+                    except Exception as put_exc:
+                        logger.warning("Log stream queue put failed for %s, stopping producer: %s", container_name, put_exc)
+                        break
+            except Exception as exc:
+                logger.error("Failed to stream logs for %s: %s", container_name, exc)
+            finally:
+                if hasattr(stream, "close"):
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
+                asyncio.run_coroutine_threadsafe(queue.put(None), loop)
+
+        worker = threading.Thread(target=_pump_logs, name=f"log-stream-{container_name}", daemon=True)
+        worker.start()
+
+        try:
+            while True:
+                chunk = await queue.get()
+                if chunk is None:
+                    break
+                yield chunk
+        finally:
+            stop_event.set()
 
     async def get_container_ip(self, container_name: str) -> Optional[str]:
         container = await self.get_container(container_name)

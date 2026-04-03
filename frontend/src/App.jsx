@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
@@ -11,75 +11,75 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Users, Shield, Megaphone, Clock, ChevronRight, Globe } from 'lucide-react';
 import { defaultSiteContent } from '@/config/siteContent';
 import { applyBrowserMetadata } from '@/utils/browserMetadata';
-
-import AdminDashboard from '@/pages/admin/Dashboard';
-import OperationsManager from '@/pages/admin/OperationsManager';
-import SiteContentManager from '@/pages/admin/SiteContentManager';
-import AnnouncementsManager from '@/pages/admin/AnnouncementsManager';
-import UsersManager from '@/pages/admin/UsersManager';
-import TrainingManager from '@/pages/admin/TrainingManager';
-import GalleryManager from '@/pages/admin/GalleryManager';
-import MemberHub from '@/pages/member/MemberHub';
-import DiscussionForum from '@/pages/member/DiscussionForum';
-import DiscussionThread from '@/pages/member/DiscussionThread';
-import OperationDetail from '@/pages/member/OperationDetail';
-import UnitRoster from '@/pages/member/UnitRoster';
-import MemberProfile from '@/pages/member/MemberProfile';
-import EditProfile from '@/pages/member/EditProfile';
-import IntelBoard from '@/pages/member/IntelBoard';
-import CampaignMap from '@/pages/member/CampaignMap';
-import ThreatMapPage from '@/pages/member/ThreatMapPage';
-import GalleryHub from '@/pages/member/GalleryHub';
-import AdminMemberDetail from '@/pages/admin/AdminMemberDetail';
-import HistoryManager from '@/pages/admin/HistoryManager';
-import RecruitDashboard from '@/pages/RecruitDashboard';
-import RecruitmentManager from '@/pages/admin/RecruitmentManager';
-import IntelManager from '@/pages/admin/IntelManager';
-import CampaignManager from '@/pages/admin/CampaignManager';
-import UnitTagsManager from '@/pages/admin/UnitTagsManager';
-import PartnerUnitsManager from '@/pages/admin/PartnerUnitsManager';
-import PartnerLoginPage from '@/pages/partner/PartnerLoginPage';
-import PartnerHub from '@/pages/partner/PartnerHub';
-import PartnerAdmin from '@/pages/partner/PartnerAdmin';
-import PartnerApply from '@/pages/partner/PartnerApply';
-import PartnerThreatMap from '@/pages/partner/PartnerThreatMap';
-import WorldMonitorNginxFallback from '@/components/threatmap/WorldMonitorNginxFallback';
-import PartnerApplicationsReview from '@/pages/admin/PartnerApplicationsReview';
-import AuditLogsManager from '@/pages/admin/AuditLogsManager';
-import ErrorLogsManager from '@/pages/admin/ErrorLogsManager';
-import LOARequest from '@/pages/member/LOARequest';
-import LOAManager from '@/pages/admin/LOAManager';
-import PipelineManager from '@/pages/admin/PipelineManager';
-import DeploymentManager from '@/pages/admin/DeploymentManager';
-import ServerDashboard from '@/pages/admin/servers/ServerDashboard';
-import ModIssues from '@/pages/admin/servers/ModIssues';
-import ServerWorkspace from '@/pages/admin/servers/ServerWorkspace';
-import OverviewModule from '@/pages/admin/servers/modules/OverviewModule';
-import ConsoleModule from '@/pages/admin/servers/modules/ConsoleModule';
-import RconModule from '@/pages/admin/servers/modules/RconModule';
-import PlayersModule from '@/pages/admin/servers/modules/PlayersModule';
-import MetricsModule from '@/pages/admin/servers/modules/MetricsModule';
-import ModsModule from '@/pages/admin/servers/modules/ModsModule';
-import SchedulesModule from '@/pages/admin/servers/modules/SchedulesModule';
-import ServerSettingsModule from '@/pages/admin/servers/modules/ServerSettingsModule';
-import SatConfigModule from '@/pages/admin/servers/modules/SatConfigModule';
-import SystemSettingsModule from '@/pages/admin/servers/modules/SystemSettingsModule';
-import NotesModule from '@/pages/admin/servers/modules/NotesModule';
-import NotificationsModule from '@/pages/admin/servers/modules/NotificationsModule';
-import IncidentsModule from '@/pages/admin/servers/modules/IncidentsModule';
-import FileManagerModule from '@/pages/admin/servers/modules/FileManagerModule';
-import TriggerExecModule from '@/pages/admin/servers/modules/TriggerExecModule';
-import ReportsModule from '@/pages/admin/servers/modules/ReportsModule';
-import TodoModule from '@/pages/admin/servers/modules/TodoModule';
-import WatchersModule from '@/pages/admin/servers/modules/WatchersModule';
-import SharedArea from '@/pages/member/SharedArea';
-import PartnerSharedArea from '@/pages/partner/PartnerSharedArea';
-import OperationsPlanner from '@/pages/member/OperationsPlanner';
-import OperationsPlanView from '@/pages/member/OperationsPlanView';
-import JoinUs from '@/pages/JoinUs';
-import MemberLayout from '@/components/MemberLayout';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { isStaff, STAFF_ROLES, hasPermission, PERMISSIONS } from '@/utils/permissions';
+
+const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'));
+const OperationsManager = lazy(() => import('@/pages/admin/OperationsManager'));
+const SiteContentManager = lazy(() => import('@/pages/admin/SiteContentManager'));
+const AnnouncementsManager = lazy(() => import('@/pages/admin/AnnouncementsManager'));
+const UsersManager = lazy(() => import('@/pages/admin/UsersManager'));
+const TrainingManager = lazy(() => import('@/pages/admin/TrainingManager'));
+const GalleryManager = lazy(() => import('@/pages/admin/GalleryManager'));
+const MemberHub = lazy(() => import('@/pages/member/MemberHub'));
+const DiscussionForum = lazy(() => import('@/pages/member/DiscussionForum'));
+const DiscussionThread = lazy(() => import('@/pages/member/DiscussionThread'));
+const OperationDetail = lazy(() => import('@/pages/member/OperationDetail'));
+const UnitRoster = lazy(() => import('@/pages/member/UnitRoster'));
+const MemberProfile = lazy(() => import('@/pages/member/MemberProfile'));
+const EditProfile = lazy(() => import('@/pages/member/EditProfile'));
+const IntelBoard = lazy(() => import('@/pages/member/IntelBoard'));
+const CampaignMap = lazy(() => import('@/pages/member/CampaignMap'));
+const ThreatMapPage = lazy(() => import('@/pages/member/ThreatMapPage'));
+const GalleryHub = lazy(() => import('@/pages/member/GalleryHub'));
+const AdminMemberDetail = lazy(() => import('@/pages/admin/AdminMemberDetail'));
+const HistoryManager = lazy(() => import('@/pages/admin/HistoryManager'));
+const RecruitDashboard = lazy(() => import('@/pages/RecruitDashboard'));
+const RecruitmentManager = lazy(() => import('@/pages/admin/RecruitmentManager'));
+const IntelManager = lazy(() => import('@/pages/admin/IntelManager'));
+const CampaignManager = lazy(() => import('@/pages/admin/CampaignManager'));
+const UnitTagsManager = lazy(() => import('@/pages/admin/UnitTagsManager'));
+const PartnerUnitsManager = lazy(() => import('@/pages/admin/PartnerUnitsManager'));
+const PartnerLoginPage = lazy(() => import('@/pages/partner/PartnerLoginPage'));
+const PartnerHub = lazy(() => import('@/pages/partner/PartnerHub'));
+const PartnerAdmin = lazy(() => import('@/pages/partner/PartnerAdmin'));
+const PartnerApply = lazy(() => import('@/pages/partner/PartnerApply'));
+const PartnerThreatMap = lazy(() => import('@/pages/partner/PartnerThreatMap'));
+const WorldMonitorNginxFallback = lazy(() => import('@/components/threatmap/WorldMonitorNginxFallback'));
+const PartnerApplicationsReview = lazy(() => import('@/pages/admin/PartnerApplicationsReview'));
+const AuditLogsManager = lazy(() => import('@/pages/admin/AuditLogsManager'));
+const ErrorLogsManager = lazy(() => import('@/pages/admin/ErrorLogsManager'));
+const LOARequest = lazy(() => import('@/pages/member/LOARequest'));
+const LOAManager = lazy(() => import('@/pages/admin/LOAManager'));
+const PipelineManager = lazy(() => import('@/pages/admin/PipelineManager'));
+const DeploymentManager = lazy(() => import('@/pages/admin/DeploymentManager'));
+const ServerDashboard = lazy(() => import('@/pages/admin/servers/ServerDashboard'));
+const ModIssues = lazy(() => import('@/pages/admin/servers/ModIssues'));
+const ServerWorkspace = lazy(() => import('@/pages/admin/servers/ServerWorkspace'));
+const OverviewModule = lazy(() => import('@/pages/admin/servers/modules/OverviewModule'));
+const ConsoleModule = lazy(() => import('@/pages/admin/servers/modules/ConsoleModule'));
+const RconModule = lazy(() => import('@/pages/admin/servers/modules/RconModule'));
+const PlayersModule = lazy(() => import('@/pages/admin/servers/modules/PlayersModule'));
+const MetricsModule = lazy(() => import('@/pages/admin/servers/modules/MetricsModule'));
+const ModsModule = lazy(() => import('@/pages/admin/servers/modules/ModsModule'));
+const SchedulesModule = lazy(() => import('@/pages/admin/servers/modules/SchedulesModule'));
+const ServerSettingsModule = lazy(() => import('@/pages/admin/servers/modules/ServerSettingsModule'));
+const SatConfigModule = lazy(() => import('@/pages/admin/servers/modules/SatConfigModule'));
+const SystemSettingsModule = lazy(() => import('@/pages/admin/servers/modules/SystemSettingsModule'));
+const NotesModule = lazy(() => import('@/pages/admin/servers/modules/NotesModule'));
+const NotificationsModule = lazy(() => import('@/pages/admin/servers/modules/NotificationsModule'));
+const IncidentsModule = lazy(() => import('@/pages/admin/servers/modules/IncidentsModule'));
+const FileManagerModule = lazy(() => import('@/pages/admin/servers/modules/FileManagerModule'));
+const TriggerExecModule = lazy(() => import('@/pages/admin/servers/modules/TriggerExecModule'));
+const ReportsModule = lazy(() => import('@/pages/admin/servers/modules/ReportsModule'));
+const TodoModule = lazy(() => import('@/pages/admin/servers/modules/TodoModule'));
+const WatchersModule = lazy(() => import('@/pages/admin/servers/modules/WatchersModule'));
+const SharedArea = lazy(() => import('@/pages/member/SharedArea'));
+const PartnerSharedArea = lazy(() => import('@/pages/partner/PartnerSharedArea'));
+const OperationsPlanner = lazy(() => import('@/pages/member/OperationsPlanner'));
+const OperationsPlanView = lazy(() => import('@/pages/member/OperationsPlanView'));
+const JoinUs = lazy(() => import('@/pages/JoinUs'));
+const MemberLayout = lazy(() => import('@/components/MemberLayout'));
+const AdminLayout = lazy(() => import('@/components/admin/AdminLayout'));
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
 const API = `${BACKEND_URL}/api`;
@@ -1243,9 +1243,21 @@ function ExternalRedirect({ to }) {
   return null;
 }
 
+function RouteFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-black text-gray-300">
+      <div className="text-center">
+        <div className="mx-auto mb-4 h-10 w-10 rounded-full border-2 border-tropic-gold border-t-transparent animate-spin" />
+        <p className="text-sm tracking-[0.18em] text-tropic-gold/80">LOADING MODULE</p>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -1347,6 +1359,7 @@ function App() {
         <Route path="/worldmonitor" element={<WorldMonitorNginxFallback />} />
         <Route path="/worldmonitor/*" element={<WorldMonitorNginxFallback />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

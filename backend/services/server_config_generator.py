@@ -15,7 +15,7 @@ from config import SERVER_CONFIG_FILENAME, SERVER_SAT_REQUIRED_MOD_ID
 logger = logging.getLogger(__name__)
 
 DEFAULT_SCENARIO = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
-DEFAULT_SUPPORTED_PLATFORMS = ["PLATFORM_PC", "PLATFORM_XBL"]
+DEFAULT_SUPPORTED_PLATFORMS = ["PLATFORM_PC", "PLATFORM_XBL", "PLATFORM_PSN"]
 DEFAULT_MOD_NAME = "Server Admin Tools"
 
 # ── Arma Reforger config schema whitelist ────────────────────────────────
@@ -74,6 +74,13 @@ def _normalize_int(value: Any, default: int) -> int:
         return default
 
 
+def _normalize_any_int(value: Any, default: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _normalize_navmesh_streaming(value: Any) -> list | None:
     """Normalise ``disableNavmeshStreaming`` to the array type required since
     Arma Reforger 1.2.
@@ -89,6 +96,39 @@ def _normalize_navmesh_streaming(value: Any) -> list | None:
         return []
     # False, None, or any other non-truthy value → omit from config
     return None
+
+
+def _normalize_string_list(value: Any) -> list[str]:
+    if not isinstance(value, (list, tuple)):
+        return []
+    return [
+        str(item).strip()
+        for item in value
+        if str(item).strip()
+    ]
+
+
+def _sanitize_join_queue(value: Any) -> dict | None:
+    if not isinstance(value, dict):
+        return None
+    max_size = max(0, _normalize_any_int(value.get("maxSize"), 0))
+    return {"maxSize": max_size}
+
+
+def _sanitize_persistence(value: Any) -> dict:
+    if not isinstance(value, dict):
+        return {}
+
+    result: dict[str, Any] = {}
+    if "autoSaveInterval" in value:
+        result["autoSaveInterval"] = max(0, _normalize_any_int(value.get("autoSaveInterval"), 10))
+    if "hiveId" in value:
+        result["hiveId"] = max(0, _normalize_any_int(value.get("hiveId"), 0))
+    if isinstance(value.get("databases"), dict):
+        result["databases"] = value.get("databases") or {}
+    if isinstance(value.get("storages"), dict):
+        result["storages"] = value.get("storages") or {}
+    return result
 
 
 def normalize_mod_entry(mod: Dict[str, Any]) -> Dict[str, Any]:
@@ -109,6 +149,8 @@ def normalize_mod_entry(mod: Dict[str, Any]) -> Dict[str, Any]:
     version = (mod.get("version") or "").strip()
     if version and version.lower() != "latest":
         entry["version"] = version
+    if isinstance(mod.get("required"), bool):
+        entry["required"] = mod["required"]
 
     # Preserve optional metadata for UI display (not written to config JSON).
     for meta_key in ("author", "description", "thumbnail_url", "tags",
@@ -123,8 +165,9 @@ def format_mod_for_config(mod: Dict[str, Any]) -> Dict[str, Any]:
     """Format a mod entry strictly for the Arma Reforger server config JSON.
 
     Only includes fields that are valid in the Reforger server configuration:
-    ``modId``, ``name``, and optionally ``version``.  No additional metadata,
-    no ``required`` flag, no author/description fields.
+    ``modId``, ``name``, optionally ``version``, and optionally ``required``
+    (only emitted when the mod dict contains an explicit boolean value for the
+    ``required`` key).  No other metadata (author, description, etc.) is included.
     """
     mod_id = mod.get("modId") or mod.get("mod_id") or ""
     if not mod_id:
@@ -138,6 +181,8 @@ def format_mod_for_config(mod: Dict[str, Any]) -> Dict[str, Any]:
     version = (mod.get("version") or "").strip()
     if version and version.lower() != "latest":
         config_entry["version"] = version
+    if isinstance(mod.get("required"), bool):
+        config_entry["required"] = mod["required"]
 
     return config_entry
 
@@ -244,6 +289,11 @@ def _sanitize_operating(operating: Dict[str, Any]) -> Dict[str, Any]:
                 key, type(value).__name__, expected_type.__name__,
             )
             continue
+        if key == "joinQueue":
+            normalized_join_queue = _sanitize_join_queue(value)
+            if normalized_join_queue is not None:
+                sanitized[key] = normalized_join_queue
+            continue
         sanitized[key] = value
     return sanitized
 
@@ -254,6 +304,7 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
     game = config.get("game") or {}
     operating = config.get("operating") or {}
     game_props = game.get("gameProperties") or {}
+    persistence = game.get("persistence") or {}
     rcon = config.get("rcon") or {}
     a2s = config.get("a2s") or {}
 
@@ -264,15 +315,21 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
     )
     operating_section: Dict[str, Any] = {
         "lobbyPlayerSynchronise": _normalize_bool(operating.get("lobbyPlayerSynchronise"), True),
+        "disableCrashReporter": _normalize_bool(operating.get("disableCrashReporter"), False),
         "disableServerShutdown": _normalize_bool(operating.get("disableServerShutdown"), False),
         "disableAI": _normalize_bool(operating.get("disableAI"), False),
-        "playerSaveTime": _normalize_int(operating.get("playerSaveTime"), 120),
-        "aiLimit": operating.get("aiLimit", -1),
+        "playerSaveTime": _normalize_any_int(operating.get("playerSaveTime"), 120),
+        "aiLimit": _normalize_any_int(operating.get("aiLimit"), -1),
+        "slotReservationTimeout": max(5, _normalize_any_int(operating.get("slotReservationTimeout"), 60)),
     }
     if navmesh_streaming is not None:
         operating_section["disableNavmeshStreaming"] = navmesh_streaming
+    join_queue = _sanitize_join_queue(operating.get("joinQueue"))
+    if join_queue is not None:
+        operating_section["joinQueue"] = join_queue
 
-    return {
+    persistence_section = _sanitize_persistence(persistence)
+    result = {
         "bindAddress": config.get("bindAddress", "0.0.0.0"),
         "bindPort": _normalize_int(ports.get("game"), 2001),
         "publicAddress": config.get("publicAddress", ""),
@@ -294,12 +351,12 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
             "name": game.get("name", server.get("name", "Arma Reforger Server")),
             "password": game.get("password", ""),
             "passwordAdmin": game.get("passwordAdmin", ""),
-            "admins": list(game.get("admins") or []),
+            "admins": _normalize_string_list(game.get("admins")),
             "scenarioId": game.get("scenarioId", DEFAULT_SCENARIO),
             "maxPlayers": _normalize_int(game.get("maxPlayers"), 32),
             "visible": _normalize_bool(game.get("visible"), True),
             "crossPlatform": _normalize_bool(game.get("crossPlatform"), True),
-            "supportedPlatforms": list(game.get("supportedPlatforms") or DEFAULT_SUPPORTED_PLATFORMS),
+            "supportedPlatforms": _normalize_string_list(game.get("supportedPlatforms")) or list(DEFAULT_SUPPORTED_PLATFORMS),
             "modsRequiredByDefault": _normalize_bool(game.get("modsRequiredByDefault"), True),
             "gameProperties": {
                 "serverMaxViewDistance": _normalize_int(game_props.get("serverMaxViewDistance"), 2500),
@@ -317,6 +374,11 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
         },
         "operating": _sanitize_operating(operating_section),
     }
+
+    if persistence_section:
+        result["game"]["persistence"] = persistence_section
+
+    return result
 
 
 def build_default_server_config(server: Dict[str, Any] | None = None) -> Dict[str, Any]:
@@ -395,11 +457,14 @@ def _flat_legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
     operating: Dict[str, Any] = {}
     for key in (
         "lobbyPlayerSynchronise",
+        "disableCrashReporter",
         "disableNavmeshStreaming",
         "disableServerShutdown",
         "disableAI",
         "playerSaveTime",
         "aiLimit",
+        "slotReservationTimeout",
+        "joinQueue",
     ):
         if key in config:
             operating[key] = config[key]
@@ -435,6 +500,11 @@ def normalize_server_config(raw_config: Dict[str, Any] | None, server: Dict[str,
 
     if "VONTransmitCrossFaction" in game_props and "VONCanTransmitCrossFaction" not in game_props:
         game_props["VONCanTransmitCrossFaction"] = game_props["VONTransmitCrossFaction"]
+
+    if not isinstance(game.get("persistence"), dict):
+        game["persistence"] = {}
+    else:
+        game["persistence"] = _sanitize_persistence(game.get("persistence"))
 
     # Sanitise the operating section: coerce types and strip unknown keys so
     # the Reforger engine's JSON-schema validator does not reject the config.

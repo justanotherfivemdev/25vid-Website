@@ -71,6 +71,9 @@ const EMPTY_FORM = {
   description: '',
   auto_restart: false,
   max_restart_attempts: 3,
+  log_stats_enabled: true,
+  max_fps: 120,
+  startup_parameters: '',
   tags: [],
 };
 
@@ -227,6 +230,12 @@ function ServerDashboard() {
         tags: form.tags,
         auto_restart: form.auto_restart,
         max_restart_attempts: form.auto_restart ? form.max_restart_attempts : undefined,
+        log_stats_enabled: form.log_stats_enabled,
+        max_fps: Math.max(30, parseInt(form.max_fps, 10) || 120),
+        startup_parameters: String(form.startup_parameters || '')
+          .split(/\r?\n|,/)
+          .map((value) => value.trim())
+          .filter(Boolean),
       });
       setShowCreateModal(false);
       setForm(EMPTY_FORM);
@@ -260,6 +269,23 @@ function ServerDashboard() {
     return { total, running, issues };
   }, [servers]);
 
+  const dashboardAverages = useMemo(() => {
+    const latestMetrics = Object.values(serverMetrics)
+      .map((entry) => entry?.latest)
+      .filter(Boolean);
+
+    const averageOf = (values) => {
+      const numeric = values.filter((value) => Number.isFinite(value));
+      if (!numeric.length) return null;
+      return numeric.reduce((sum, value) => sum + value, 0) / numeric.length;
+    };
+
+    return {
+      fps: averageOf(latestMetrics.map((metric) => metric.server_fps ?? metric.fps ?? null)),
+      ping: averageOf(latestMetrics.map((metric) => metric.avg_player_ping_ms ?? metric.ping ?? null)),
+    };
+  }, [serverMetrics]);
+
   const filteredServers = useMemo(() => {
     if (!searchQuery.trim()) return servers;
     const q = searchQuery.toLowerCase();
@@ -291,19 +317,19 @@ function ServerDashboard() {
     },
     {
       label: 'Avg FPS',
-      value: '\u2014', // em-dash — not available from backend yet
+      value: dashboardAverages.fps != null ? `${dashboardAverages.fps.toFixed(1)}` : '\u2014',
       icon: Gauge,
       color: 'text-emerald-400',
       glow: '',
     },
     {
       label: 'Avg Ping',
-      value: '\u2014',
+      value: dashboardAverages.ping != null ? `${dashboardAverages.ping.toFixed(0)} ms` : '\u2014',
       icon: Wifi,
       color: 'text-blue-400',
       glow: '',
     },
-  ], [stats]);
+  ], [dashboardAverages.fps, dashboardAverages.ping, stats]);
 
   const openCreateModal = useCallback(() => {
     setForm(EMPTY_FORM);
@@ -613,6 +639,50 @@ function ServerDashboard() {
                 />
               </div>
             )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center justify-between rounded-lg border border-tropic-gold-dark/10 bg-black/40 px-4 py-3">
+                <Label htmlFor="srv-logstats" className="text-sm text-gray-300">
+                  Enable logStats
+                </Label>
+                <Switch
+                  id="srv-logstats"
+                  checked={form.log_stats_enabled}
+                  onCheckedChange={(value) => setForm((prev) => ({ ...prev, log_stats_enabled: value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="srv-maxfps" className="text-sm text-gray-300">
+                  Max FPS
+                </Label>
+                <Input
+                  id="srv-maxfps"
+                  type="number"
+                  min={30}
+                  max={240}
+                  value={form.max_fps}
+                  onChange={(e) => setForm((prev) => ({ ...prev, max_fps: parseInt(e.target.value, 10) || 120 }))}
+                  className="border-tropic-gold-dark/20 bg-black/60 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="srv-startup-params" className="text-sm text-gray-300">
+                Extra Startup Parameters
+              </Label>
+              <Textarea
+                id="srv-startup-params"
+                value={form.startup_parameters}
+                onChange={(e) => setForm((prev) => ({ ...prev, startup_parameters: e.target.value }))}
+                placeholder="-profileVerbose&#10;-SomeFlag value"
+                className="border-tropic-gold-dark/20 bg-black/60 font-mono text-white placeholder:text-gray-600"
+                rows={3}
+              />
+              <p className="text-xs text-gray-500">
+                One parameter per line. <code>-logstats</code> is managed separately so telemetry stays on by default.
+              </p>
+            </div>
 
             {/* Tags */}
             <div className="space-y-2">

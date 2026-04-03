@@ -14,11 +14,11 @@ ENV CI=true
 
 # Install dependencies
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci --legacy-peer-deps 2>/dev/null || npm install --legacy-peer-deps
+RUN npm ci
 
 # Copy source and build
 COPY frontend/ .
-RUN npx craco build
+RUN npm run build
 
 # ── Build World Monitor ──────────────────────────────────────
 FROM node:20-alpine AS worldmonitor-build
