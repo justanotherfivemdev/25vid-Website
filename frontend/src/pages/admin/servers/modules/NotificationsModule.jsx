@@ -16,6 +16,7 @@ import {
   Bell,
   CheckCircle2,
   ClipboardList,
+  AlertTriangle,
   Loader2,
   Plus,
   Send,
@@ -86,22 +87,31 @@ function NotificationsModule() {
     fetchModuleData();
   }, [fetchModuleData]);
 
+  const [webhookError, setWebhookError] = useState(null);
+
   const createWebhook = useCallback(async () => {
     if (!newWebhook.name || !newWebhook.url) return;
     setCreating(true);
+    setWebhookError(null);
     try {
       await axios.post(`${API}/servers/webhooks`, newWebhook);
       setDialogOpen(false);
       setNewWebhook({ name: '', url: '', events: [], enabled: true });
       await fetchModuleData();
+    } catch (err) {
+      setWebhookError(err.response?.data?.detail || 'Failed to create webhook.');
     } finally {
       setCreating(false);
     }
   }, [fetchModuleData, newWebhook]);
 
   const deleteWebhook = useCallback(async (id) => {
-    await axios.delete(`${API}/servers/webhooks/${id}`);
-    await fetchModuleData();
+    try {
+      await axios.delete(`${API}/servers/webhooks/${id}`);
+      await fetchModuleData();
+    } catch (err) {
+      setWebhookError(err.response?.data?.detail || 'Failed to delete webhook.');
+    }
   }, [fetchModuleData]);
 
   const testWebhook = useCallback(async (webhook) => {
@@ -140,6 +150,11 @@ function NotificationsModule() {
         ? prev.events.filter((existing) => existing !== event)
         : [...prev.events, event],
     }));
+  }, []);
+
+  const handleDialogOpenChange = useCallback((open) => {
+    setDialogOpen(open);
+    if (!open) setWebhookError(null);
   }, []);
 
   return (
@@ -291,6 +306,14 @@ function NotificationsModule() {
                 </div>
               </div>
 
+              {webhookError && (
+                <div className="mb-3 flex items-center gap-2 rounded border border-red-600/30 bg-red-600/10 px-3 py-2 text-xs text-red-400">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  <span>{webhookError}</span>
+                  <button onClick={() => setWebhookError(null)} className="ml-auto text-red-400/60 hover:text-red-400">✕</button>
+                </div>
+              )}
+
               {webhooks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Webhook className="mb-2 h-8 w-8 text-gray-700" />
@@ -352,12 +375,18 @@ function NotificationsModule() {
         </>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-w-md border-zinc-800 bg-zinc-950 text-white">
           <DialogHeader>
             <DialogTitle className="text-tropic-gold">Add Webhook</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {webhookError && (
+              <div className="flex items-center gap-2 rounded border border-red-600/30 bg-red-600/10 px-3 py-2 text-xs text-red-400">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span>{webhookError}</span>
+              </div>
+            )}
             <div>
               <label className="text-xs text-gray-400">Name</label>
               <Input

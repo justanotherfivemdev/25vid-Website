@@ -165,8 +165,9 @@ def format_mod_for_config(mod: Dict[str, Any]) -> Dict[str, Any]:
     """Format a mod entry strictly for the Arma Reforger server config JSON.
 
     Only includes fields that are valid in the Reforger server configuration:
-    ``modId``, ``name``, and optionally ``version``.  No additional metadata,
-    no ``required`` flag, no author/description fields.
+    ``modId``, ``name``, optionally ``version``, and optionally ``required``
+    (only emitted when the mod dict contains an explicit boolean value for the
+    ``required`` key).  No other metadata (author, description, etc.) is included.
     """
     mod_id = mod.get("modId") or mod.get("mod_id") or ""
     if not mod_id:

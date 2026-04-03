@@ -257,7 +257,7 @@ class DockerAgent:
             return
 
         loop = asyncio.get_running_loop()
-        queue: asyncio.Queue[Optional[str]] = asyncio.Queue()
+        queue: asyncio.Queue[Optional[str]] = asyncio.Queue(maxsize=512)
         stop_event = threading.Event()
 
         def _pump_logs() -> None:
@@ -276,7 +276,12 @@ class DockerAgent:
                     if stop_event.is_set():
                         break
                     text = chunk.decode("utf-8", errors="replace") if isinstance(chunk, bytes) else str(chunk)
-                    asyncio.run_coroutine_threadsafe(queue.put(text), loop)
+                    future = asyncio.run_coroutine_threadsafe(queue.put(text), loop)
+                    try:
+                        future.result()
+                    except Exception as put_exc:
+                        logger.warning("Log stream queue put failed for %s, stopping producer: %s", container_name, put_exc)
+                        break
             except Exception as exc:
                 logger.error("Failed to stream logs for %s: %s", container_name, exc)
             finally:

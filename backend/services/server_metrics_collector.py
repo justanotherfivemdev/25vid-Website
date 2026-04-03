@@ -115,8 +115,11 @@ async def _collect_a2s_metrics(server: dict) -> dict:
 
 
 def _log_stats_enabled(server: dict) -> bool:
-    if server.get("log_stats_enabled") is True:
+    explicit = server.get("log_stats_enabled")
+    if explicit is True:
         return True
+    if explicit is False:
+        return False
     startup_parameters = server.get("startup_parameters")
     if not isinstance(startup_parameters, list):
         startup_parameters = ((server.get("config") or {}).get("startupParameters") or [])

@@ -106,7 +106,7 @@ function RconModule() {
     const connect = () => {
       if (disposed) return;
       const token = document.cookie.split(';').find((cookie) => cookie.trim().startsWith('session='))?.split('=')?.[1] || '';
-      const url = `${WS_BASE}/api/ws/servers/${serverId}/rcon?token=${token}`;
+      const url = `${WS_BASE}/api/ws/servers/${serverId}/rcon?token=${encodeURIComponent(token)}`;
       setWsState((current) => (current === 'live' ? current : 'connecting'));
 
       try {
@@ -181,7 +181,7 @@ function RconModule() {
 
   const sendCommand = useCallback(async (cmd) => {
     const trimmed = (cmd || command).trim();
-    if (!trimmed || !canExecute) return;
+    if (!trimmed || !canExecute || loading) return;
     setLoading(true);
     const entry = { id: Date.now(), command: trimmed, response: null, error: null, ts: new Date() };
     setHistory((prev) => {
@@ -370,7 +370,7 @@ function RconModule() {
                   <div key={index} className="flex items-center gap-2">
                     <button
                       onClick={() => sendCommand(snippet.command)}
-                      disabled={!canExecute}
+                      disabled={!canExecute || loading}
                       className="flex-1 rounded border border-zinc-800 px-2 py-1 text-left text-xs text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold disabled:opacity-50"
                     >
                       <span className="font-medium">{snippet.name}</span>
