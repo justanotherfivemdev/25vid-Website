@@ -505,10 +505,30 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         )
 
     # ── Build final updates ──
+    # Perform a live container check: if the container is actually running,
+    # the server is operational regardless of post-start validation results
+    # (SAT discovery, profile generation, etc.).  Report "running" so the
+    # UI does not incorrectly flag the server as failed.
+    live_running = False
+    try:
+        live_status = await docker_agent.get_container_status(server["container_name"])
+        live_running = live_status is not None and live_status.get("running", False)
+    except Exception:
+        pass
+
+    if live_running and result.container_started:
+        effective_status = "running"
+        effective_provisioning = "ready"
+        effective_readiness = "ready" if result.all_succeeded else "degraded"
+    else:
+        effective_status = result.overall_status
+        effective_provisioning = result.provisioning_state
+        effective_readiness = result.readiness_state
+
     result.updates.update({
-        "status": result.overall_status,
-        "provisioning_state": result.provisioning_state,
-        "readiness_state": result.readiness_state,
+        "status": effective_status,
+        "provisioning_state": effective_provisioning,
+        "readiness_state": effective_readiness,
         "provisioning_stages": result.stages_dict(),
         "config_path": config_result,
         "data_root": server["data_root"],
@@ -521,9 +541,19 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         "port_allocations": server["ports"],
     })
 
-    # If all stages succeeded, also set provisioning_step to ready
-    if result.all_succeeded:
+    # If all stages succeeded, also set provisioning_step to ready.
+    # When the container is live-running but some stages failed, still mark
+    # the provisioning_step as ready so the UI treats the server as running.
+    if result.all_succeeded or (live_running and result.container_started):
         result.updates["provisioning_step"] = "ready"
+        if not result.all_succeeded:
+            # Preserve warnings for non-critical failures (e.g. SAT not yet found)
+            failed = result.failed_stages
+            if failed:
+                result.updates["last_docker_error"] = (
+                    f"Server is running. Non-critical stage warnings: "
+                    f"{', '.join(s.name for s in failed)}"
+                )
     else:
         failed = result.failed_stages
         result.updates["provisioning_step"] = failed[0].name if failed else "unknown"

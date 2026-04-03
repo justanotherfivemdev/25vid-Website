@@ -17,6 +17,24 @@ DEFAULT_SCENARIO = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
 DEFAULT_SUPPORTED_PLATFORMS = ["PLATFORM_PC", "PLATFORM_XBL"]
 DEFAULT_MOD_NAME = "Server Admin Tools"
 
+# ── Arma Reforger config schema whitelist ────────────────────────────────
+# Only keys listed here are emitted in the written server config.  Any
+# unknown / unsupported key is silently dropped so we never send a value
+# the Reforger engine rejects during JSON-schema validation.
+#
+# Types:  bool, int, str, list, dict   (Python built-in types)
+VALID_OPERATING_KEYS: dict[str, type] = {
+    "lobbyPlayerSynchronise": bool,
+    "disableNavmeshStreaming": list,        # Changed from bool → array in 1.2
+    "disableServerShutdown": bool,
+    "disableAI": bool,
+    "disableCrashReporter": bool,
+    "playerSaveTime": int,
+    "aiLimit": int,
+    "slotReservationTimeout": int,
+    "joinQueue": dict,
+}
+
 
 def _default_rcon_password(server: Dict[str, Any]) -> str:
     """Generate a cryptographically-random RCON password.
@@ -53,6 +71,23 @@ def _normalize_int(value: Any, default: int) -> int:
         return parsed if parsed > 0 else default
     except (TypeError, ValueError):
         return default
+
+
+def _normalize_navmesh_streaming(value: Any) -> list | None:
+    """Normalise ``disableNavmeshStreaming`` to the array type required since
+    Arma Reforger 1.2.
+
+    * ``list``/``tuple`` → kept as-is (already correct type).
+    * ``True`` (legacy boolean) → ``[]``  (disable streaming for all projects).
+    * ``False`` / ``None`` / missing → ``None`` (omit the key — streaming
+      stays enabled, which is the engine default).
+    """
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    if value is True:
+        return []
+    # False, None, or any other non-truthy value → omit from config
+    return None
 
 
 def normalize_mod_entry(mod: Dict[str, Any]) -> Dict[str, Any]:
@@ -168,6 +203,33 @@ def _legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
     return translated
 
 
+def _sanitize_operating(operating: Dict[str, Any]) -> Dict[str, Any]:
+    """Strip any keys from the ``operating`` section that are not in the
+    Arma Reforger server config schema.  Also coerce values that have an
+    incorrect type (e.g. legacy boolean ``disableNavmeshStreaming``).
+    """
+    sanitized: Dict[str, Any] = {}
+    for key, value in operating.items():
+        expected_type = VALID_OPERATING_KEYS.get(key)
+        if expected_type is None:
+            logger.debug("Dropping unknown operating key %r", key)
+            continue
+        # Special handling: disableNavmeshStreaming must be an array.
+        if key == "disableNavmeshStreaming":
+            converted = _normalize_navmesh_streaming(value)
+            if converted is not None:
+                sanitized[key] = converted
+            continue
+        if not isinstance(value, expected_type):
+            logger.debug(
+                "Dropping operating key %r with wrong type %s (expected %s)",
+                key, type(value).__name__, expected_type.__name__,
+            )
+            continue
+        sanitized[key] = value
+    return sanitized
+
+
 def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
     ports = server.get("ports") or {}
     config = server.get("config") or {}
@@ -220,14 +282,16 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
             },
             "mods": mods_for_config(ensure_required_mods(server.get("mods") or [])),
         },
-        "operating": {
+        "operating": _sanitize_operating({
             "lobbyPlayerSynchronise": _normalize_bool(operating.get("lobbyPlayerSynchronise"), True),
-            "disableNavmeshStreaming": _normalize_bool(operating.get("disableNavmeshStreaming"), False),
             "disableServerShutdown": _normalize_bool(operating.get("disableServerShutdown"), False),
             "disableAI": _normalize_bool(operating.get("disableAI"), False),
             "playerSaveTime": _normalize_int(operating.get("playerSaveTime"), 120),
             "aiLimit": operating.get("aiLimit", -1),
-        },
+            # disableNavmeshStreaming is only emitted when explicitly requested
+            # (engine default = streaming enabled; the field is an array since 1.2).
+            **({"disableNavmeshStreaming": ns} if (ns := _normalize_navmesh_streaming(operating.get("disableNavmeshStreaming"))) is not None else {}),
+        }),
     }
 
 
@@ -347,6 +411,11 @@ def normalize_server_config(raw_config: Dict[str, Any] | None, server: Dict[str,
 
     if "VONTransmitCrossFaction" in game_props and "VONCanTransmitCrossFaction" not in game_props:
         game_props["VONCanTransmitCrossFaction"] = game_props["VONTransmitCrossFaction"]
+
+    # Sanitise the operating section: coerce types and strip unknown keys so
+    # the Reforger engine's JSON-schema validator does not reject the config.
+    normalized["operating"] = _sanitize_operating(normalized.get("operating") or {})
+
     return normalized
 
 
