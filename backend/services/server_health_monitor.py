@@ -105,9 +105,9 @@ async def _evaluate_server(server: dict, server_id: str, server_name: str,
 
         # Also check recent logs for mod download activity
         try:
-            from services.reforger_orchestrator import _is_in_mod_cycle
+            from services.reforger_orchestrator import is_in_mod_cycle
             logs = await docker_agent.get_container_logs(container_name, tail=100)
-            if _is_in_mod_cycle(logs):
+            if is_in_mod_cycle(logs):
                 logger.info(
                     "Container for %s exited during mod download cycle — "
                     "not flagging as crash",

@@ -334,7 +334,8 @@ def normalize_server_config(raw_config: Dict[str, Any] | None, server: Dict[str,
     # The Arma Reforger engine schema only accepts missionHeader inside gameProperties;
     # placing it directly under game triggers an additionalProperties validation error.
     if isinstance(game.get("missionHeader"), dict):
-        if not isinstance(game_props.get("missionHeader"), dict) or not game_props["missionHeader"]:
+        existing_gp_mh = game_props.get("missionHeader")
+        if not isinstance(existing_gp_mh, dict) or not existing_gp_mh:
             game_props["missionHeader"] = game.pop("missionHeader")
         else:
             game.pop("missionHeader", None)

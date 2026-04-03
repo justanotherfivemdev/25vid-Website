@@ -58,6 +58,9 @@ MAX_PROVISION_RESTART_CYCLES = 5
 # Seconds to wait for readiness after initial startup (covers mod download +
 # mount + world load phases).
 DEFAULT_READINESS_TIMEOUT = 300
+# Number of log tail lines to fetch for readiness / mod-cycle checks.
+READINESS_LOG_TAIL_LINES = 200
+MOD_CYCLE_LOG_TAIL_LINES = 100
 
 
 # ── Provisioning stage tracking ─────────────────────────────────────────────
@@ -253,7 +256,7 @@ async def _check_server_readiness(container_name: str) -> bool:
     scenario has loaded and the server is accepting connections.
     """
     try:
-        logs = await docker_agent.get_container_logs(container_name, tail=200)
+        logs = await docker_agent.get_container_logs(container_name, tail=READINESS_LOG_TAIL_LINES)
     except Exception:
         return False
     if not logs:
@@ -264,7 +267,7 @@ async def _check_server_readiness(container_name: str) -> bool:
     return False
 
 
-def _is_in_mod_cycle(logs: str) -> bool:
+def is_in_mod_cycle(logs: str) -> bool:
     """Check if recent logs indicate a mod download / mount cycle."""
     if not logs:
         return False
@@ -307,11 +310,11 @@ async def wait_for_server_readiness(
         else:
             # Container is not running — could be a restart cycle
             try:
-                logs = await docker_agent.get_container_logs(container_name, tail=100)
+                logs = await docker_agent.get_container_logs(container_name, tail=MOD_CYCLE_LOG_TAIL_LINES)
             except Exception:
                 logs = ""
 
-            if _is_in_mod_cycle(logs):
+            if is_in_mod_cycle(logs):
                 restart_count += 1
                 logger.info(
                     "Server %s restart cycle %d/%d detected (mod download/mount)",
