@@ -494,11 +494,16 @@ function ModsModule() {
                       setSelectedMod(prev => ({ ...prev, version: newVersion }));
                       // Also update in enabledMods if this mod is already added
                       const modId = selectedMod.mod_id || selectedMod.modId;
-                      setEnabledMods(prev => prev.map(m =>
-                        (m.mod_id || m.modId) === modId
-                          ? { ...m, version: newVersion || undefined }
-                          : m
-                      ));
+                      setEnabledMods(prev => prev.map(m => {
+                        if ((m.mod_id || m.modId) !== modId) return m;
+                        const updated = { ...m };
+                        if (newVersion) {
+                          updated.version = newVersion;
+                        } else {
+                          delete updated.version;
+                        }
+                        return updated;
+                      }));
                       setDirty(true);
                     }}
                     className="mt-1 block w-full rounded border border-zinc-700 bg-black/60 px-2 py-1 text-xs text-white"

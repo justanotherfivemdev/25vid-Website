@@ -331,7 +331,9 @@ async def create_server(
         updates["config"] = generate_reforger_config({**doc, **updates})
         updates["updated_at"] = datetime.now(timezone.utc)
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": updates})
-        # Log partial success as warning, not error
+        # Partial success: container is running but later stages (e.g. SAT
+        # config discovery, mod validation) may have failed.  The server is
+        # operational with degraded capabilities rather than fully failed.
         status = updates.get("status", "")
         if status == "provisioning_partial":
             logger.warning(

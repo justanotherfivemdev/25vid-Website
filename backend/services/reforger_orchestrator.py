@@ -297,9 +297,9 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         container_stage.status = "success"
         container_stage.message = f"Container {server['container_name']} created"
         result.updates.update(runtime_updates)
-    except ProvisioningError:
+    except ProvisioningError as exc:
         container_stage.status = "failed"
-        container_stage.error = str(container_stage)
+        container_stage.error = exc.message
         raise
     except Exception as exc:
         container_stage.status = "failed"
