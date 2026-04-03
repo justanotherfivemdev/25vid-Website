@@ -255,7 +255,7 @@ function ServerDashboard() {
   const stats = useMemo(() => {
     const total   = servers.length;
     const running = servers.filter((s) => s.status === 'running').length;
-    const issues  = servers.filter((s) => s.status === 'error' || s.status === 'crash_loop').length;
+    const issues  = servers.filter((s) => ['error', 'crash_loop', 'provisioning_failed', 'provisioning_partial'].includes(s.status)).length;
     return { total, running, issues };
   }, [servers]);
 

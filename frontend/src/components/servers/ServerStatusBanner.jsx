@@ -74,6 +74,24 @@ const STATUS_CONFIG = {
     badgeCls: 'bg-blue-600/20 text-blue-400 border-blue-600/30',
     pulse: false,
   },
+  provisioning_failed: {
+    icon: AlertTriangle,
+    label: 'PROVISION FAILED',
+    action: 'Server provisioning failed — check stages for details.',
+    bg: 'bg-red-900/30 border-red-700/50',
+    text: 'text-red-400',
+    badgeCls: 'bg-red-600/20 text-red-400 border-red-600/30',
+    pulse: false,
+  },
+  provisioning_partial: {
+    icon: AlertTriangle,
+    label: 'PARTIAL',
+    action: 'Server started but some provisioning stages failed.',
+    bg: 'bg-amber-900/30 border-amber-700/50',
+    text: 'text-amber-400',
+    badgeCls: 'bg-amber-600/20 text-amber-400 border-amber-600/30',
+    pulse: false,
+  },
 };
 
 const DEFAULT_CONFIG = {
