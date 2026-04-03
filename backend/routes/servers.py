@@ -46,7 +46,7 @@ from services.server_config_generator import (
     write_config_file,
 )
 from services.rcon_bridge import bercon_client
-from services.sat_config_service import discover_sat_config, load_sat_config, save_sat_config
+from services.sat_config_service import discover_sat_config, load_sat_config, overlay_baseline_if_configured, save_sat_config
 from models.server import (
     ManagedServer, ServerCreate, ServerUpdate,
     WorkshopMod, WorkshopModCreate,
@@ -83,11 +83,46 @@ def _redact_env(env: dict) -> dict:
     }
 
 
+def _normalize_server_contract(server: dict) -> dict:
+    """Normalize legacy provisioning statuses into operational/readiness fields."""
+    doc = dict(server or {})
+    status = doc.get("status")
+
+    if status == "provisioning_partial":
+        doc["status"] = "running"
+        doc["provisioning_state"] = "ready"
+        doc["readiness_state"] = doc.get("readiness_state") or "degraded"
+        if not (doc.get("provisioning_warnings") or []):
+            failed = [
+                stage for stage in (doc.get("provisioning_stages") or {}).values()
+                if stage.get("status") == "failed"
+            ]
+            if failed:
+                doc["provisioning_warnings"] = [
+                    {
+                        "stage": stage.get("name", "unknown"),
+                        "message": stage.get("error") or stage.get("message") or "Stage completed with warnings",
+                    }
+                    for stage in failed
+                ]
+
+    if status == "provisioning_failed":
+        doc["status"] = "error"
+        doc["provisioning_state"] = "failed"
+        doc["readiness_state"] = "failed"
+
+    warnings = doc.get("provisioning_warnings") or []
+    if doc.get("status") == "running" and warnings and doc.get("readiness_state") == "ready":
+        doc["readiness_state"] = "degraded"
+
+    return doc
+
+
 def _server_response(server: dict) -> dict:
     """Prepare a server document for API response (redact secrets)."""
     if not server:
         return server
-    doc = _serialize_doc(dict(server))
+    doc = _serialize_doc(_normalize_server_contract(dict(server)))
     doc.pop("_id", None)
     if "environment" in doc:
         doc["environment"] = _redact_env(doc["environment"])
@@ -344,23 +379,15 @@ async def create_server(
         updates["config"] = generate_reforger_config({**doc, **updates})
         updates["updated_at"] = datetime.now(timezone.utc)
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": updates})
-        # Partial success: container is running but later stages (e.g. SAT
-        # config discovery, mod validation) may have failed.  The server is
-        # operational with degraded capabilities rather than fully failed.
-        status = updates.get("status", "")
-        if status == "provisioning_partial":
-            logger.warning(
-                "Provisioning partially succeeded for %s: %s",
-                doc["id"], updates.get("last_docker_error", ""),
-            )
     except ProvisioningError as exc:
         failure_updates = {
-            "status": "provisioning_failed",
+            "status": "error",
             "provisioning_state": "failed",
             "provisioning_step": exc.step,
             "readiness_state": "failed",
             "last_docker_error": exc.message,
             "provisioning_stages": exc.stages,
+            "summary_message": exc.message,
             "updated_at": datetime.now(timezone.utc),
         }
         await db.managed_servers.update_one({"id": doc["id"]}, {"$set": failure_updates})
@@ -643,7 +670,7 @@ async def get_server_status(server_id: str, current_user: dict = Depends(_requir
     )
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    return _serialize_doc(server)
+    return _serialize_doc(_normalize_server_contract(server))
 
 
 @router.get("/servers/{server_id}/diagnostics")
@@ -742,6 +769,246 @@ async def update_sat_config(
     return {"message": "SAT config updated", "config_path": sat_path}
 
 
+def _resolve_sat_path(server: dict) -> tuple[Optional[str], str]:
+    sat_path = server.get("sat_config_path")
+    sat_status = server.get("sat_status", "pending")
+    if sat_path:
+        return sat_path, sat_status
+    return discover_sat_config(server.get("profile_path", ""))
+
+
+async def _load_sat_state(server: dict) -> tuple[str, dict]:
+    sat_path, sat_status = _resolve_sat_path(server)
+    if not sat_path:
+        raise HTTPException(status_code=409, detail=f"Server Admin Tools config is not available yet ({sat_status})")
+    try:
+        return sat_path, load_sat_config(sat_path)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to read SAT config: {exc}") from exc
+
+
+def _get_sat_bans(config: dict) -> list[dict]:
+    bans = config.get("bans")
+    if isinstance(bans, list):
+        normalized = []
+        for index, entry in enumerate(bans):
+            if isinstance(entry, dict):
+                player_id = entry.get("playerId") or entry.get("id") or entry.get("guid") or ""
+                reason = entry.get("reason") or ""
+            else:
+                player_id = str(entry or "")
+                reason = ""
+            if player_id:
+                normalized.append({"id": player_id, "reason": reason, "index": index})
+        return normalized
+    if isinstance(bans, dict):
+        return [
+            {"id": str(player_id), "reason": str(reason or ""), "index": index}
+            for index, (player_id, reason) in enumerate(bans.items())
+        ]
+    return []
+
+
+async def _sync_workshop_mod_metadata(server_id: str, mods: list[dict], current_user: dict) -> None:
+    from services.workshop_ingest import fetch_and_store_mod
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    for mod in mods:
+        mod_id = (mod.get("mod_id") or mod.get("modId") or "").strip()
+        if not mod_id:
+            continue
+        stored = None
+        try:
+            stored = await fetch_and_store_mod(mod_id)
+        except Exception:
+            stored = None
+
+        canonical = {
+            "mod_id": mod_id,
+            "name": mod.get("name") or (stored or {}).get("name") or mod_id,
+            "author": mod.get("author") or (stored or {}).get("author") or "",
+            "version": mod.get("version") or (stored or {}).get("version") or "",
+            "description": mod.get("description") or (stored or {}).get("description") or "",
+            "tags": mod.get("tags") or (stored or {}).get("tags") or [],
+            "dependencies": mod.get("dependencies") or (stored or {}).get("dependencies") or [],
+            "scenario_ids": mod.get("scenario_ids") or (stored or {}).get("scenario_ids") or [],
+            "thumbnail_url": mod.get("thumbnail_url") or (stored or {}).get("thumbnail_url") or "",
+            "workshop_url": mod.get("workshop_url") or (stored or {}).get("workshop_url") or f"https://reforger.armaplatform.com/workshop/{mod_id}",
+            "metadata_source": mod.get("metadata_source") or (stored or {}).get("metadata_source") or "server_assignment",
+            "last_fetched": (stored or {}).get("last_fetched") or now,
+            "last_used_by_server_id": server_id,
+            "last_used_by_user_id": current_user["id"],
+            "last_used_at": now,
+        }
+        await db.workshop_mods.update_one({"mod_id": mod_id}, {"$set": canonical}, upsert=True)
+        await db.mod_download_history.update_one(
+            {"mod_id": mod_id, "server_id": server_id},
+            {"$set": {
+                "mod_id": mod_id,
+                "mod_name": canonical["name"],
+                "server_id": server_id,
+                "downloaded_by": current_user.get("username") or current_user.get("id", ""),
+                "downloaded_by_id": current_user["id"],
+                "downloaded_at": now,
+            }},
+            upsert=True,
+        )
+
+    active_server_mods = await db.managed_servers.find({}, {"mods": 1, "_id": 0}).to_list(None)
+    globally_active_ids: set[str] = set()
+    for active_server in active_server_mods:
+        for mod in active_server.get("mods", []):
+            mod_id = (mod.get("mod_id") or mod.get("modId") or "").strip()
+            if mod_id:
+                globally_active_ids.add(mod_id)
+
+    await db.workshop_mods.delete_many({
+        "mod_id": {"$nin": list(globally_active_ids)},
+        "manually_entered": {"$ne": True},
+    })
+
+
+class SatBanCreate(BaseModel):
+    player_id: str
+    reason: str = ""
+
+
+@router.get("/servers/{server_id}/sat/status")
+async def get_sat_status(server_id: str, current_user: dict = Depends(_require_servers)):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    sat_path, sat_status = _resolve_sat_path(server)
+    latest_metrics = await db.server_metrics.find_one({"server_id": server_id}, {"_id": 0}, sort=[("timestamp", -1)])
+    sat_config = None
+    if sat_path:
+        try:
+            sat_config = load_sat_config(sat_path)
+        except Exception:
+            sat_config = None
+
+    return _serialize_doc({
+        "server_id": server_id,
+        "status": server.get("status"),
+        "readiness_state": server.get("readiness_state"),
+        "sat_status": sat_status,
+        "sat_config_path": sat_path,
+        "uptime_seconds": (latest_metrics or {}).get("uptime_seconds"),
+        "player_count": (latest_metrics or {}).get("player_count"),
+        "server_fps": (latest_metrics or {}).get("server_fps"),
+        "avg_player_ping_ms": (latest_metrics or {}).get("avg_player_ping_ms"),
+        "ban_count": len(_get_sat_bans(sat_config or {})),
+        "repeated_message_count": len((sat_config or {}).get("repeatedChatMessages") or []),
+        "scheduled_message_count": len((sat_config or {}).get("scheduledChatMessages") or []),
+    })
+
+
+@router.get("/servers/{server_id}/sat/bans")
+async def get_sat_bans(server_id: str, current_user: dict = Depends(_require_servers)):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    _, config = await _load_sat_state(server)
+    return {"server_id": server_id, "bans": _get_sat_bans(config)}
+
+
+@router.post("/servers/{server_id}/sat/bans")
+async def add_sat_ban(
+    server_id: str,
+    body: SatBanCreate,
+    current_user: dict = Depends(_require_servers),
+):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    sat_path, config = await _load_sat_state(server)
+
+    bans = _get_sat_bans(config)
+    if not any(entry["id"] == body.player_id for entry in bans):
+        bans.append({"id": body.player_id, "reason": body.reason})
+    config["bans"] = [{"playerId": entry["id"], "reason": entry.get("reason", "")} for entry in bans]
+    save_sat_config(sat_path, config)
+
+    live_sync = {"executed": False, "response": "Server is offline"}
+    if server.get("status") == "running":
+        live_sync["executed"], live_sync["response"] = await bercon_client.execute(
+            host="127.0.0.1",
+            port=int((server.get("ports") or {}).get("rcon", 19999)),
+            password=str(((server.get("config") or {}).get("rcon") or {}).get("password") or ""),
+            command=f"#ban {body.player_id}",
+        )
+
+    return {"message": "Ban added", "bans": _get_sat_bans(config), "live_sync": live_sync}
+
+
+@router.delete("/servers/{server_id}/sat/bans/{player_id}")
+async def remove_sat_ban(server_id: str, player_id: str, current_user: dict = Depends(_require_servers)):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    sat_path, config = await _load_sat_state(server)
+
+    bans = [entry for entry in _get_sat_bans(config) if entry["id"] != player_id]
+    config["bans"] = [{"playerId": entry["id"], "reason": entry.get("reason", "")} for entry in bans]
+    save_sat_config(sat_path, config)
+    return {"message": "Ban removed", "bans": _get_sat_bans(config)}
+
+
+@router.post("/servers/{server_id}/sat/bans/sync")
+async def sync_sat_bans(server_id: str, current_user: dict = Depends(_require_servers)):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    _, config = await _load_sat_state(server)
+    bans = _get_sat_bans(config)
+    if server.get("status") != "running":
+        return {"executed": False, "detail": "Server is offline", "bans": bans}
+
+    responses = []
+    for entry in bans:
+        success, response = await bercon_client.execute(
+            host="127.0.0.1",
+            port=int((server.get("ports") or {}).get("rcon", 19999)),
+            password=str(((server.get("config") or {}).get("rcon") or {}).get("password") or ""),
+            command=f"#ban {entry['id']}",
+        )
+        responses.append({"player_id": entry["id"], "executed": success, "response": response})
+    return {"executed": True, "count": len(responses), "responses": responses}
+
+
+@router.post("/servers/{server_id}/sat/tools/restore-defaults")
+async def restore_sat_defaults(server_id: str, current_user: dict = Depends(_require_servers)):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    sat_path, _ = _resolve_sat_path(server)
+    if not sat_path:
+        raise HTTPException(status_code=409, detail="Server Admin Tools config is not available yet")
+    if not overlay_baseline_if_configured(sat_path):
+        raise HTTPException(status_code=409, detail="SAT baseline is not configured on this host")
+    config = load_sat_config(sat_path)
+    await db.managed_servers.update_one(
+        {"id": server_id},
+        {"$set": {"sat_config_path": sat_path, "sat_status": "configured", "updated_at": datetime.now(timezone.utc)}},
+    )
+    return {"message": "SAT defaults restored", "config": config}
+
+
+@router.post("/servers/{server_id}/sat/tools/copy-from-server")
+async def copy_sat_from_server(server_id: str, current_user: dict = Depends(_require_servers)):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    sat_path, config = await _load_sat_state(server)
+    await db.managed_servers.update_one(
+        {"id": server_id},
+        {"$set": {"sat_config_path": sat_path, "sat_status": "discovered", "updated_at": datetime.now(timezone.utc)}},
+    )
+    return {"message": "SAT config copied from server", "config": config}
+
+
 # ── Mods Management ─────────────────────────────────────────────────────────
 
 @router.get("/servers/{server_id}/mods")
@@ -781,6 +1048,7 @@ async def update_server_mods(
         {"id": server_id},
         {"$set": {"mods": normalized_mods, "config": next_config, "config_path": result, "updated_at": now}},
     )
+    await _sync_workshop_mod_metadata(server_id, normalized_mods, current_user)
     await log_audit(
         user_id=current_user["id"],
         action_type="server_mods_update",
@@ -911,11 +1179,16 @@ async def import_mods_json(
                 entry[key] = m[key]
         normalized.append(entry)
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
+    next_config = generate_reforger_config({**server, "mods": normalized})
+    ok, config_path = await write_config_file({**server, "mods": normalized, "config": next_config})
+    if not ok:
+        raise HTTPException(status_code=400, detail=config_path)
     await db.managed_servers.update_one(
         {"id": server_id},
-        {"$set": {"mods": normalized, "updated_at": now}},
+        {"$set": {"mods": normalized, "config": next_config, "config_path": config_path, "updated_at": now}},
     )
+    await _sync_workshop_mod_metadata(server_id, normalized, current_user)
     await log_audit(
         user_id=current_user["id"],
         action_type="server_mods_import",
@@ -926,20 +1199,6 @@ async def import_mods_json(
     )
 
     # Record download history for each imported mod
-    for mod in normalized:
-        await db.mod_download_history.update_one(
-            {"mod_id": mod["mod_id"], "server_id": server_id},
-            {"$set": {
-                "mod_id": mod["mod_id"],
-                "mod_name": mod.get("name", ""),
-                "server_id": server_id,
-                "downloaded_by": current_user.get("username") or current_user.get("id", ""),
-                "downloaded_by_id": current_user["id"],
-                "downloaded_at": now,
-            }},
-            upsert=True,
-        )
-
     return {"message": "Mods imported", "count": len(normalized)}
 
 
@@ -1622,8 +1881,8 @@ async def test_webhook(webhook_id: str, current_user: dict = Depends(_require_se
 @router.get("/servers/{server_id}/metrics")
 async def get_server_metrics(
     server_id: str,
-    period: str = Query("1h", regex="^(1h|6h|24h|7d)$"),
-    resolution: str = Query("raw", regex="^(raw|1m|5m|1h)$"),
+    period: str = Query("1h", pattern="^(1h|6h|24h|7d|30d)$"),
+    resolution: str = Query("raw", pattern="^(raw|1m|5m|1h)$"),
     current_user: dict = Depends(_require_servers),
 ):
     """Get performance metrics for a server with time range and resolution."""
@@ -1668,6 +1927,7 @@ async def get_server_metrics_summary(
 async def get_server_logs(
     server_id: str,
     tail: int = Query(200, ge=1, le=5000),
+    since: Optional[str] = Query(None),
     current_user: dict = Depends(_require_servers),
 ):
     """Get recent container logs for a server."""
@@ -1676,11 +1936,13 @@ async def get_server_logs(
         raise HTTPException(status_code=404, detail="Server not found")
 
     container_name = server.get("container_name") or server.get("name", "")
-    logs = await _docker.get_container_logs(container_name, tail=tail)
+    logs = await _docker.get_container_logs(container_name, tail=tail, since=_parse_log_since(since))
+    entries = _build_log_entries(logs)
     return {
         "server_id": server_id,
         "logs": logs,
-        "lines": len(logs.splitlines()) if logs else 0,
+        "entries": entries,
+        "lines": len(entries),
     }
 
 
@@ -1707,6 +1969,46 @@ async def _authenticate_ws(websocket: WebSocket) -> Optional[dict]:
         return None
 
 
+def _parse_log_line(raw_line: str, fallback_index: int) -> dict:
+    timestamp = None
+    line = raw_line
+    if " " in raw_line:
+        possible_ts, possible_line = raw_line.split(" ", 1)
+        if "T" in possible_ts:
+            timestamp = possible_ts
+            line = possible_line
+    timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+    cursor = f"{timestamp}|{fallback_index}|{abs(hash(raw_line)) % 100000000}"
+    return {
+        "cursor": cursor,
+        "timestamp": timestamp,
+        "line": line,
+        "raw": raw_line,
+    }
+
+
+def _build_log_entries(logs: str) -> list[dict]:
+    return [
+        _parse_log_line(raw_line, index)
+        for index, raw_line in enumerate((logs or "").splitlines())
+        if raw_line.strip()
+    ]
+
+
+def _parse_log_since(value: Optional[str]) -> Optional[int]:
+    if not value:
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return int(parsed.timestamp())
+    except ValueError:
+        return None
+
+
 @router.websocket("/ws/servers/{server_id}/logs")
 async def ws_server_logs(websocket: WebSocket, server_id: str):
     """Stream container logs in real-time via WebSocket.
@@ -1714,6 +2016,7 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
     Query params:
       - token: JWT auth token
       - tail: number of initial history lines (default 100)
+      - since: unix timestamp or ISO timestamp for reconnect backfill
     """
     from middleware.rbac import has_permission, Permission
 
@@ -1735,34 +2038,48 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
 
     container_name = server.get("container_name") or server.get("name", "")
     tail = int(websocket.query_params.get("tail", "100"))
-    last_log_len = 0
+    since = _parse_log_since(websocket.query_params.get("since"))
+    seen_cursors: set[str] = set()
 
     try:
-        # Send initial log history
-        initial_logs = await _docker.get_container_logs(container_name, tail=tail)
-        if initial_logs:
-            for line in initial_logs.splitlines():
+        await websocket.send_json({
+            "type": "status",
+            "state": "connected",
+            "server_id": server_id,
+        })
+
+        initial_logs = await _docker.get_container_logs(container_name, tail=tail, since=since)
+        for entry in _build_log_entries(initial_logs):
+            seen_cursors.add(entry["cursor"])
+            await websocket.send_json({
+                "type": "log",
+                "cursor": entry["cursor"],
+                "timestamp": entry["timestamp"],
+                "line": entry["line"],
+                "raw": entry["raw"],
+                "stream": "stdout",
+            })
+            since = max(since or 0, _parse_log_since(entry["timestamp"]) or 0)
+
+        while True:
+            await asyncio.sleep(1)
+            new_logs = await _docker.get_container_logs(container_name, tail=0, since=since)
+            for entry in _build_log_entries(new_logs):
+                if entry["cursor"] in seen_cursors:
+                    continue
+                seen_cursors.add(entry["cursor"])
+                if len(seen_cursors) > 4000:
+                    seen_cursors.clear()
+                    seen_cursors.add(entry["cursor"])
                 await websocket.send_json({
                     "type": "log",
-                    "line": line,
+                    "cursor": entry["cursor"],
+                    "timestamp": entry["timestamp"],
+                    "line": entry["line"],
+                    "raw": entry["raw"],
                     "stream": "stdout",
                 })
-            last_log_len = len(initial_logs)
-
-        # Poll for new logs every 2 seconds
-        while True:
-            await asyncio.sleep(2)
-            new_logs = await _docker.get_container_logs(container_name, tail=50)
-            if new_logs and len(new_logs) != last_log_len:
-                lines = new_logs.splitlines()
-                # Send only lines that are likely new
-                for line in lines[-20:]:
-                    await websocket.send_json({
-                        "type": "log",
-                        "line": line,
-                        "stream": "stdout",
-                    })
-                last_log_len = len(new_logs)
+                since = max(since or 0, _parse_log_since(entry["timestamp"]) or 0)
 
     except WebSocketDisconnect:
         logger.debug("Log stream disconnected for server %s", server_id)

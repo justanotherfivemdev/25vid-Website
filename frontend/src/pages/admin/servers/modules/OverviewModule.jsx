@@ -32,9 +32,11 @@ import {
   Lock,
 } from 'lucide-react';
 import { API } from '@/utils/api';
+import { canRestartServer, canStartServer, canStopServer, getOperationalSummary, isServerDegraded, normalizeServer } from '@/utils/serverStatus';
 
 function OverviewModule() {
-  const { server, serverId, fetchServer, handleServerAction, actionLoading } = useOutletContext();
+  const { server: rawServer, serverId, fetchServer, handleServerAction, actionLoading } = useOutletContext();
+  const server = normalizeServer(rawServer);
   const [metricsSummary, setMetricsSummary] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,10 +66,11 @@ function OverviewModule() {
   const latest = metricsSummary?.latest || {};
   const trend = metricsSummary?.trend_24h || {};
   const status = server?.status || 'stopped';
+  const summary = getOperationalSummary(server);
   const isRunning = status === 'running';
-  const canStart = ['created', 'stopped', 'error', 'crash_loop'].includes(status);
-  const canStop = ['running', 'starting'].includes(status);
-  const canRestart = status === 'running';
+  const canStart = canStartServer(server);
+  const canStop = canStopServer(server);
+  const canRestart = canRestartServer(server);
   const modCount = server?.mods?.length || 0;
   const ports = server?.ports || {};
   const troubleshooting = server?.troubleshooting || {};
@@ -111,27 +114,27 @@ function OverviewModule() {
   const healthCards = [
     {
       label: 'CPU Usage',
-      value: latest.cpu_percent != null ? `${latest.cpu_percent.toFixed(1)}%` : '—',
+      value: latest.cpu_host_percent != null || latest.cpu_percent != null ? `${(latest.cpu_host_percent ?? latest.cpu_percent).toFixed(1)}%` : 'Unavailable',
       icon: Cpu,
       color: 'text-blue-400',
       border: 'border-blue-600/20',
-      trend: trend.avg_cpu != null ? `Avg: ${trend.avg_cpu.toFixed(1)}%` : null,
+      trend: trend.avg_cpu != null ? `Avg: ${trend.avg_cpu.toFixed(1)}%` : 'Container metric',
     },
     {
       label: 'Memory',
-      value: latest.memory_mb != null ? `${latest.memory_mb.toFixed(0)} MB` : '—',
+      value: latest.memory_mb != null ? `${latest.memory_mb.toFixed(0)} MB` : 'Unavailable',
       icon: HardDrive,
       color: 'text-purple-400',
       border: 'border-purple-600/20',
-      trend: trend.avg_memory != null ? `Avg: ${trend.avg_memory.toFixed(0)} MB` : null,
+      trend: trend.avg_memory != null ? `Avg: ${trend.avg_memory.toFixed(0)} MB` : 'Container metric',
     },
     {
       label: 'Players',
-      value: latest.player_count != null ? `${latest.player_count}/${latest.max_players || '?'}` : '—',
+      value: latest.player_count != null ? `${latest.player_count}/${latest.max_players || '?'}` : 'Unavailable',
       icon: Users,
       color: 'text-green-400',
       border: 'border-green-600/20',
-      trend: trend.max_player_count != null ? `Peak: ${trend.max_player_count}` : null,
+      trend: latest.metric_sources?.player_count ? `Source: ${latest.metric_sources.player_count}` : 'Awaiting live RCON data',
     },
     {
       label: 'Uptime',
@@ -169,22 +172,22 @@ function OverviewModule() {
       </div>
 
       {/* Provisioning Stages */}
-      {(server?.status === 'provisioning_partial' || server?.status === 'provisioning_failed') &&
+      {(isServerDegraded(server) || server?.status === 'error') &&
         server?.provisioning_stages && Object.keys(server.provisioning_stages).length > 0 && (
         <Card className={`border ${
-          server.status === 'provisioning_partial'
+          isServerDegraded(server)
             ? 'border-amber-600/30 bg-amber-600/5'
             : 'border-red-600/30 bg-red-600/5'
         }`}>
           <CardContent className="p-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
               <AlertTriangle className={`h-4 w-4 ${
-                server.status === 'provisioning_partial' ? 'text-amber-400' : 'text-red-400'
+                isServerDegraded(server) ? 'text-amber-300' : 'text-red-400'
               }`} />
-              <span className={server.status === 'provisioning_partial' ? 'text-amber-400' : 'text-red-400'}>
-                {server.status === 'provisioning_partial'
-                  ? 'Provisioning Stages — Partial Success'
-                  : 'Provisioning Stages — Failed'}
+              <span className={isServerDegraded(server) ? 'text-amber-300' : 'text-red-400'}>
+                {isServerDegraded(server)
+                  ? 'Provisioning Stages — Created With Follow-up Work'
+                  : 'Provisioning Stages — Failed Before Runtime'}
               </span>
             </div>
             <div className="space-y-2">
@@ -221,8 +224,8 @@ function OverviewModule() {
                 </div>
               ))}
             </div>
-            {server.last_docker_error && (
-              <p className="mt-3 text-xs text-gray-500 border-t border-zinc-800 pt-2">{server.last_docker_error}</p>
+            {(server.summary_message || server.last_docker_error) && (
+              <p className="mt-3 border-t border-zinc-800 pt-2 text-xs text-gray-500">{server.summary_message || server.last_docker_error}</p>
             )}
           </CardContent>
         </Card>

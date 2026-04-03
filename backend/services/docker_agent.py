@@ -33,18 +33,32 @@ def _get_client():
     return _docker_client
 
 
+def _cpu_core_count(stats: dict) -> int:
+    try:
+        cpu = stats["cpu_stats"]
+        return len(cpu["cpu_usage"].get("percpu_usage", [])) or int(cpu.get("online_cpus") or 1)
+    except (KeyError, TypeError, ValueError):
+        return 1
+
+
 def _calculate_cpu_percent(stats: dict) -> float:
     try:
         cpu = stats["cpu_stats"]
         pre = stats["precpu_stats"]
         delta_container = cpu["cpu_usage"]["total_usage"] - pre["cpu_usage"]["total_usage"]
         delta_system = cpu["system_cpu_usage"] - pre["system_cpu_usage"]
-        num_cpus = len(cpu["cpu_usage"].get("percpu_usage", [])) or cpu.get("online_cpus", 1)
+        num_cpus = _cpu_core_count(stats)
         if delta_system > 0:
             return round((delta_container / delta_system) * num_cpus * 100.0, 2)
     except (KeyError, TypeError, ZeroDivisionError):
         return 0.0
     return 0.0
+
+
+def _normalize_host_cpu_percent(raw_cpu_percent: float, cpu_core_count: int) -> float:
+    if cpu_core_count <= 0:
+        return round(raw_cpu_percent, 2)
+    return round(max(0.0, raw_cpu_percent / cpu_core_count), 2)
 
 
 class DockerAgent:
@@ -253,8 +267,14 @@ class DockerAgent:
             stats = await asyncio.to_thread(container.stats, stream=False)
             mem = stats.get("memory_stats", {})
             networks = stats.get("networks", {})
+            cpu_raw_percent = _calculate_cpu_percent(stats)
+            cpu_core_count = _cpu_core_count(stats)
             return {
-                "cpu_percent": _calculate_cpu_percent(stats),
+                "cpu_percent": cpu_raw_percent,
+                "cpu_raw_percent": cpu_raw_percent,
+                "cpu_host_percent": _normalize_host_cpu_percent(cpu_raw_percent, cpu_core_count),
+                "cpu_core_count": cpu_core_count,
+                "cpu_cores_used": round(cpu_raw_percent / 100.0, 2),
                 "memory_mb": round(mem.get("usage", 0) / (1024 * 1024), 2),
                 "memory_limit_mb": round(mem.get("limit", 0) / (1024 * 1024), 2),
                 "network_rx": sum(iface.get("rx_bytes", 0) for iface in networks.values()),

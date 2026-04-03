@@ -9,7 +9,7 @@ os.environ.setdefault("DB_NAME", "test_db")
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
-from routes.servers import _derive_troubleshooting
+from routes.servers import _build_log_entries, _derive_troubleshooting, _normalize_server_contract, _parse_log_since
 from services.server_config_generator import (
     _normalize_navmesh_streaming,
     _sanitize_operating,
@@ -19,7 +19,8 @@ from services.server_config_generator import (
     mods_for_config,
     normalize_server_config,
 )
-from services.reforger_orchestrator import extract_config_errors
+from services.docker_agent import _normalize_host_cpu_percent
+from services.reforger_orchestrator import ProvisioningResult, StageResult, extract_config_errors
 from services.server_metrics_collector import _PERIOD_DELTAS
 
 
@@ -434,3 +435,46 @@ def test_extract_config_errors_returns_empty_for_clean_logs():
     """Clean logs should produce no config errors."""
     assert extract_config_errors("") == []
     assert extract_config_errors("Game started\nScenario loaded\n") == []
+
+
+def test_normalize_server_contract_upgrades_legacy_partial_status():
+    server = {
+        "status": "provisioning_partial",
+        "readiness_state": "ready",
+        "provisioning_stages": {
+            "sat_discovery": {"name": "sat_discovery", "status": "failed", "error": "missing config"},
+        },
+    }
+    normalized = _normalize_server_contract(server)
+    assert normalized["status"] == "running"
+    assert normalized["provisioning_state"] == "ready"
+    assert normalized["readiness_state"] == "degraded"
+    assert normalized["provisioning_warnings"][0]["stage"] == "sat_discovery"
+
+
+def test_provisioning_result_reports_running_when_container_started():
+    result = ProvisioningResult(
+        stages=[
+            StageResult(name="container_creation", status="success"),
+            StageResult(name="initial_startup", status="success"),
+            StageResult(name="sat_discovery", status="failed"),
+        ]
+    )
+    assert result.container_started is True
+    assert result.overall_status == "running"
+    assert result.readiness_state == "degraded"
+    assert "follow-up stages need attention" in result.summary_message
+
+
+def test_log_helpers_build_structured_entries_and_parse_since():
+    logs = "2026-04-03T10:00:00Z Engine ready\n2026-04-03T10:00:05Z Scenario loaded"
+    entries = _build_log_entries(logs)
+    assert len(entries) == 2
+    assert entries[0]["timestamp"] == "2026-04-03T10:00:00Z"
+    assert entries[0]["line"] == "Engine ready"
+    assert _parse_log_since("2026-04-03T10:00:05Z") == 1775210405
+    assert _parse_log_since("1775210405") == 1775210405
+
+
+def test_cpu_normalization_scales_multicore_usage_to_host_percent():
+    assert _normalize_host_cpu_percent(250.0, 4) == 62.5

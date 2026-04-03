@@ -36,19 +36,19 @@ import {
 import { API } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
+import { canRestartServer, canStartServer, canStopServer, getOperationalSummary, isServerDegraded, normalizeServer } from '@/utils/serverStatus';
 
 const AUTO_REFRESH_MS = 10_000;
 
 const STATUS_CONFIG = {
   running: { label: 'RUNNING', cls: 'bg-green-600/20 text-green-400 border-green-600/30', dot: 'bg-green-400', icon: CheckCircle },
+  degraded: { label: 'DEGRADED', cls: 'bg-amber-600/20 text-amber-300 border-amber-500/30', dot: 'bg-amber-300', icon: AlertTriangle },
   starting: { label: 'STARTING', cls: 'bg-amber-600/20 text-amber-400 border-amber-600/30', dot: 'bg-amber-400', icon: Loader2, spin: true },
   initializing: { label: 'INITIALIZING', cls: 'bg-amber-600/20 text-amber-400 border-amber-600/30', dot: 'bg-amber-400', icon: Loader2, spin: true },
   stopping: { label: 'STOPPING', cls: 'bg-amber-600/20 text-amber-400 border-amber-600/30', dot: 'bg-amber-400', icon: Loader2, spin: true },
   stopped: { label: 'STOPPED', cls: 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30', dot: 'bg-zinc-500', icon: Circle },
   created: { label: 'CREATED', cls: 'bg-blue-600/20 text-blue-400 border-blue-600/30', dot: 'bg-blue-400', icon: Info },
   error: { label: 'ERROR', cls: 'bg-red-600/20 text-red-400 border-red-600/30', dot: 'bg-red-400', icon: AlertTriangle },
-  provisioning_failed: { label: 'PROVISION FAILED', cls: 'bg-red-600/20 text-red-400 border-red-600/30', dot: 'bg-red-400', icon: AlertTriangle },
-  provisioning_partial: { label: 'PARTIAL', cls: 'bg-amber-600/20 text-amber-400 border-amber-600/30', dot: 'bg-amber-400', icon: AlertTriangle },
   deletion_pending: { label: 'DELETING', cls: 'bg-amber-600/20 text-amber-400 border-amber-600/30', dot: 'bg-amber-400', icon: Loader2, spin: true },
   crash_loop: { label: 'CRASH LOOP', cls: 'bg-red-600/20 text-red-400 border-red-600/30', dot: 'bg-red-400', icon: AlertOctagon },
 };
@@ -113,7 +113,7 @@ function ServerWorkspace() {
     if (!silent) setLoading(true);
     try {
       const res = await axios.get(`${API}/servers/${id}`);
-      setServer(res.data);
+      setServer(normalizeServer(res.data));
       setError(null);
     } catch (err) {
       if (!silent) {
@@ -160,11 +160,13 @@ function ServerWorkspace() {
   }, [id, navigate]);
 
   const status = server?.status || 'created';
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.created;
+  const summary = getOperationalSummary(server);
+  const effectiveStatus = status === 'running' && isServerDegraded(server) ? 'degraded' : status;
+  const cfg = STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.created;
   const StatusIcon = cfg.icon;
-  const canStart = ['stopped', 'created', 'error', 'provisioning_failed'].includes(status);
-  const canStop = ['running', 'starting', 'initializing', 'provisioning_partial'].includes(status);
-  const canRestart = ['running', 'provisioning_partial'].includes(status);
+  const canStart = canStartServer(server);
+  const canStop = canStopServer(server);
+  const canRestart = canRestartServer(server);
 
   if (loading) {
     return (
@@ -291,19 +293,19 @@ function ServerWorkspace() {
         )}
 
         {/* Provisioning stages detail banner */}
-        {(status === 'provisioning_partial' || status === 'provisioning_failed') && (
+        {(summary.state === 'degraded' || status === 'error') && (
           <div className={`mt-2 rounded border px-3 py-2 text-xs ${
-            status === 'provisioning_partial'
-              ? 'border-amber-600/30 bg-amber-600/10 text-amber-400'
+            summary.state === 'degraded'
+              ? 'border-amber-600/30 bg-amber-600/10 text-amber-300'
               : 'border-red-600/30 bg-red-600/10 text-red-400'
           }`}>
             <div className="flex items-center gap-2 font-semibold mb-1">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               {server.needs_manual_intervention
                 ? 'Auto-recovery exhausted — manual config correction required'
-                : status === 'provisioning_partial'
-                  ? 'Server started with partial provisioning — some stages failed'
-                  : 'Provisioning failed'}
+                : summary.state === 'degraded'
+                  ? 'Server created successfully, but follow-up stages need attention'
+                  : 'Server creation failed before the container became operational'}
             </div>
             {server.needs_manual_intervention && server.auto_recovery_attempts > 0 && (
               <p className="mb-1 text-amber-300">
@@ -311,8 +313,8 @@ function ServerWorkspace() {
                 Please review the server settings and correct the configuration manually.
               </p>
             )}
-            {server.last_docker_error && (
-              <p className="mb-1 text-gray-400">{server.last_docker_error}</p>
+            {(server.summary_message || server.last_docker_error) && (
+              <p className="mb-1 text-gray-400">{server.summary_message || server.last_docker_error}</p>
             )}
             {server.provisioning_stages && Object.keys(server.provisioning_stages).length > 0 && (
               <div className="mt-1 space-y-0.5">

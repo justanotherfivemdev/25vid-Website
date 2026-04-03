@@ -38,9 +38,13 @@ const RESOLUTION_MAP = {
 function normalizeMetricPoint(point) {
   return {
     ...point,
-    cpu_percent: point.cpu_percent ?? point.avg_cpu_percent ?? 0,
+    cpu_percent: point.cpu_host_percent ?? point.cpu_percent ?? point.avg_cpu_percent ?? 0,
+    cpu_host_percent: point.cpu_host_percent ?? point.cpu_percent ?? point.avg_cpu_percent ?? 0,
+    cpu_raw_percent: point.cpu_raw_percent ?? point.avg_cpu_raw_percent ?? 0,
     memory_mb: point.memory_mb ?? point.avg_memory_mb ?? 0,
     player_count: point.player_count ?? point.max_player_count ?? point.avg_player_count ?? 0,
+    server_fps: point.server_fps ?? point.avg_server_fps ?? point.fps ?? null,
+    avg_player_ping_ms: point.avg_player_ping_ms ?? point.ping ?? null,
   };
 }
 
@@ -78,8 +82,8 @@ function MetricsModule() {
   const summaryCards = [
     {
       label: 'CPU',
-      value: latest.cpu_percent != null ? `${latest.cpu_percent.toFixed(1)}%` : '—',
-        avg: trend.avg_cpu != null ? `${trend.avg_cpu.toFixed(1)}%` : null,
+      value: latest.cpu_host_percent != null || latest.cpu_percent != null ? `${(latest.cpu_host_percent ?? latest.cpu_percent).toFixed(1)}%` : 'Unavailable',
+      avg: trend.avg_cpu != null ? `${trend.avg_cpu.toFixed(1)}%` : 'Container metric',
       icon: Cpu,
       color: 'text-blue-400',
       border: 'border-blue-600/20',
@@ -88,11 +92,29 @@ function MetricsModule() {
     {
       label: 'Memory',
       value: latest.memory_mb != null ? `${latest.memory_mb.toFixed(0)} MB` : '—',
-        avg: trend.avg_memory != null ? `${trend.avg_memory.toFixed(0)} MB` : null,
+      avg: trend.avg_memory != null ? `${trend.avg_memory.toFixed(0)} MB` : null,
       icon: HardDrive,
       color: 'text-purple-400',
       border: 'border-purple-600/20',
       bg: 'bg-purple-600/5',
+    },
+    {
+      label: 'Server FPS',
+      value: latest.server_fps != null ? `${latest.server_fps.toFixed(1)}` : 'Unavailable',
+      avg: trend.avg_server_fps != null ? `${trend.avg_server_fps.toFixed(1)} avg` : 'Awaiting logStats signal',
+      icon: Activity,
+      color: 'text-emerald-400',
+      border: 'border-emerald-600/20',
+      bg: 'bg-emerald-600/5',
+    },
+    {
+      label: 'Avg Ping',
+      value: latest.avg_player_ping_ms != null ? `${latest.avg_player_ping_ms.toFixed(0)} ms` : 'Unavailable',
+      avg: trend.avg_player_ping_ms != null ? `${trend.avg_player_ping_ms.toFixed(0)} ms avg` : 'Awaiting live RCON data',
+      icon: Users,
+      color: 'text-amber-300',
+      border: 'border-amber-500/20',
+      bg: 'bg-amber-500/5',
     },
     {
       label: 'Network RX',
@@ -112,8 +134,8 @@ function MetricsModule() {
     },
     {
       label: 'Players',
-      value: latest.player_count != null ? `${latest.player_count}` : '—',
-      avg: trend.max_player_count != null ? `Peak: ${trend.max_player_count}` : null,
+      value: latest.player_count != null ? `${latest.player_count}` : 'Unavailable',
+      avg: trend.max_player_count != null ? `Peak: ${trend.max_player_count}` : 'Awaiting live RCON data',
       icon: Users,
       color: 'text-green-400',
       border: 'border-green-600/20',
@@ -155,7 +177,7 @@ function MetricsModule() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
         {summaryCards.map((card) => {
           const Icon = card.icon;
           return (
@@ -199,7 +221,7 @@ function MetricsModule() {
               <MetricBar
                 label="CPU Usage"
                 data={metrics}
-                dataKey="cpu_percent"
+                dataKey="cpu_host_percent"
                 unit="%"
                 maxVal={100}
                 color="bg-blue-500"
@@ -224,6 +246,15 @@ function MetricsModule() {
                 maxVal={Math.max(...metrics.map(m => m.max_players || 64), 1)}
                 color="bg-green-500"
                 trackColor="bg-green-500/10"
+              />
+              <MetricBar
+                label="Server FPS"
+                data={metrics.filter((point) => point.server_fps != null)}
+                dataKey="server_fps"
+                unit=""
+                maxVal={Math.max(...metrics.map(m => m.server_fps || 1), 1)}
+                color="bg-emerald-500"
+                trackColor="bg-emerald-500/10"
               />
             </div>
           )}
