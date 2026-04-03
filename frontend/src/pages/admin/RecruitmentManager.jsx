@@ -10,9 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Edit, Users, UserPlus, Clock, CheckCircle, XCircle, Eye, Building2, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Edit, UserPlus, Clock, CheckCircle, XCircle, Eye, Building2, ExternalLink } from 'lucide-react';
 
-import { BACKEND_URL, API } from '@/utils/api';
+import { API } from '@/utils/api';
 
 const STATUS_COLORS = {
   pending: 'bg-tropic-gold/20 text-tropic-gold border-tropic-gold/30',
@@ -40,6 +40,8 @@ const RecruitmentManager = () => {
   // Application review
   const [selectedApp, setSelectedApp] = useState(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [deletingApplicationId, setDeletingApplicationId] = useState(null);
 
   useEffect(() => {
     fetchAll();
@@ -59,6 +61,35 @@ const RecruitmentManager = () => {
       setUnitTags(tagsRes.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
+  };
+
+  const getErrorMessage = (error, fallback) => error.response?.data?.detail || fallback;
+
+  const removeApplicationFromState = (applicationId) => {
+    const deletedApplication = applications.find((application) => application.id === applicationId);
+
+    setApplications((currentApplications) => currentApplications.filter((application) => application.id !== applicationId));
+    setStats((currentStats) => {
+      if (!currentStats || !deletedApplication) {
+        return currentStats;
+      }
+
+      const nextStats = {
+        ...currentStats,
+        total_applications: Math.max(0, (currentStats.total_applications || 0) - 1)
+      };
+
+      if (deletedApplication.status && typeof nextStats[deletedApplication.status] === 'number') {
+        nextStats[deletedApplication.status] = Math.max(0, nextStats[deletedApplication.status] - 1);
+      }
+
+      return nextStats;
+    });
+
+    if (selectedApp?.id === applicationId) {
+      setSelectedApp(null);
+      setReviewDialogOpen(false);
+    }
   };
 
   const handleSaveBillet = async (e) => {
@@ -113,6 +144,37 @@ const RecruitmentManager = () => {
     } catch (e) { alert('Failed to update'); }
   };
 
+  const handleDeleteApplication = async (app) => {
+    if (!window.confirm(`Delete the reviewed application for ${app.applicant_name}? This cannot be undone.`)) return;
+
+    setDeletingApplicationId(app.id);
+    setFeedback(null);
+
+    try {
+      await axios.delete(`${API}/admin/recruitment/applications/${app.id}`);
+      removeApplicationFromState(app.id);
+      setFeedback({
+        type: 'success',
+        message: `Application for ${app.applicant_name} deleted.`
+      });
+    } catch (error) {
+      if (error.response?.status === 404) {
+        removeApplicationFromState(app.id);
+        setFeedback({
+          type: 'success',
+          message: `Application for ${app.applicant_name} was already deleted.`
+        });
+      } else {
+        setFeedback({
+          type: 'error',
+          message: getErrorMessage(error, 'Failed to delete application')
+        });
+      }
+    } finally {
+      setDeletingApplicationId(null);
+    }
+  };
+
   const filteredApps = statusFilter === 'all' 
     ? applications 
     : applications.filter(a => a.status === statusFilter);
@@ -136,6 +198,15 @@ const RecruitmentManager = () => {
             </Button>
           </a>
         </div>
+
+        {feedback && (
+          <Alert
+            variant={feedback.type === 'error' ? 'destructive' : 'default'}
+            className={feedback.type === 'success' ? 'border-green-500/30 bg-green-500/10 text-green-100 [&>svg]:text-green-300' : 'bg-gray-950 border-red-500/40'}
+          >
+            <AlertDescription>{feedback.message}</AlertDescription>
+          </Alert>
+        )}
 
         {/* Stats Cards */}
         {stats && (
@@ -233,9 +304,23 @@ const RecruitmentManager = () => {
                             {app.reviewed_by && <span> · Reviewed by {app.reviewed_by}</span>}
                           </div>
                         </div>
-                        <Button onClick={() => handleReviewApp(app)} className="bg-tropic-red hover:bg-tropic-red-dark shrink-0" data-testid={`review-${app.id}`}>
-                          <Eye className="w-4 h-4 mr-1" />Review
-                        </Button>
+                        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                          <Button onClick={() => handleReviewApp(app)} className="bg-tropic-red hover:bg-tropic-red-dark" data-testid={`review-${app.id}`}>
+                            <Eye className="w-4 h-4 mr-1" />Review
+                          </Button>
+                          {app.reviewed_at && (
+                            <Button
+                              variant="outline"
+                              onClick={() => handleDeleteApplication(app)}
+                              disabled={deletingApplicationId === app.id}
+                              className="border-red-700/50 text-red-400 hover:bg-red-700/10 disabled:opacity-60"
+                              data-testid={`delete-${app.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              {deletingApplicationId === app.id ? 'Deleting...' : 'Delete'}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

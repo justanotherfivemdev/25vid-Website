@@ -10,11 +10,18 @@ from models.recruitment import (
     PublicApplicationCreate, ApplicationReviewUpdate,
     RecruitApplication,
 )
-from middleware.auth import get_current_user, get_current_admin
+from middleware.auth import get_current_user
 from middleware.rbac import require_permission, Permission
 from services.auth_service import normalize_email
 
 router = APIRouter()
+
+
+def _normalize_application_id(application_id: str) -> str:
+    try:
+        return str(uuid.UUID(application_id))
+    except (ValueError, TypeError, AttributeError):
+        raise HTTPException(status_code=400, detail="Invalid application id")
 
 
 @router.get("/recruitment/billets")
@@ -107,6 +114,15 @@ async def update_application(application_id: str, updates: ApplicationReviewUpda
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")
     return {"message": "Application updated"}
+
+
+@router.delete("/admin/recruitment/applications/{application_id}")
+async def delete_application(application_id: str, current_user: dict = Depends(require_permission(Permission.MANAGE_RECRUITMENT))):
+    normalized_application_id = _normalize_application_id(application_id)
+    result = await db.applications.delete_one({"id": normalized_application_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return {"message": "Application deleted", "id": normalized_application_id}
 
 
 @router.get("/admin/recruitment/stats")
