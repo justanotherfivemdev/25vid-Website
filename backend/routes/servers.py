@@ -6,6 +6,7 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 (S4 Logistics and S1/Admin).
 """
 
+import json
 import logging
 import asyncio
 from datetime import datetime, timezone
@@ -41,6 +42,7 @@ from services.reforger_orchestrator import (
 from services.server_config_generator import (
     ensure_required_mods,
     generate_reforger_config,
+    normalize_server_config,
     write_config_file,
 )
 from services.rcon_bridge import bercon_client
@@ -90,6 +92,137 @@ def _server_response(server: dict) -> dict:
     if "environment" in doc:
         doc["environment"] = _redact_env(doc["environment"])
     return doc
+
+
+def _validate_mission_header(config: dict) -> None:
+    """Ensure missionHeader is a JSON-serializable object when provided."""
+    game = config.get("game") if isinstance(config.get("game"), dict) else config
+    mission_header = game.get("missionHeader") if game else None
+    if mission_header is None:
+        return
+    if not isinstance(mission_header, dict):
+        raise HTTPException(
+            status_code=422,
+            detail="missionHeader must be a JSON object (not an array, string, or primitive).",
+        )
+    try:
+        json.dumps(mission_header, ensure_ascii=False)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"missionHeader contains values that cannot be serialized to JSON: {exc}",
+        )
+
+
+def _find_mount_source(mounts: list[dict], destinations: tuple[str, ...]) -> Optional[str]:
+    for mount in mounts or []:
+        destination = mount.get("destination")
+        source = mount.get("source")
+        if destination in destinations and source:
+            return source
+    return None
+
+
+def _normalize_host_path(path: Optional[str]) -> str:
+    return (path or "").replace("\\", "/").rstrip("/")
+
+
+def _server_scoped_path(root: Optional[str], server_id: str) -> str:
+    normalized = _normalize_host_path(root)
+    if not normalized or not server_id:
+        return normalized
+    segments = [segment for segment in normalized.split("/") if segment]
+    if server_id in segments:
+        return normalized
+    return f"{normalized}/{server_id}"
+
+
+def _derive_troubleshooting(server: dict, runtime: Optional[dict] = None) -> dict:
+    runtime = runtime or {}
+    mounts = runtime.get("mounts") or []
+    server_id = server.get("id", "")
+    volumes = server.get("volumes") or {}
+
+    config_destinations = ("/reforger/Configs", "/app/server-configs")
+    profile_destinations = ("/home/profile", "/app/profiles", "/profile", "/app/profile")
+    workshop_destinations = ("/reforger/workshop", "/app/workshop")
+
+    config_directory = _normalize_host_path(Path(server["config_path"]).parent.as_posix()) if server.get("config_path") else ""
+    if not config_directory:
+        config_root = _find_mount_source(mounts, config_destinations) or next(
+            (host for host, container in volumes.items() if container in config_destinations),
+            None,
+        )
+        config_directory = _server_scoped_path(config_root, server_id)
+
+    profile_directory = _normalize_host_path(server.get("profile_path"))
+    if not profile_directory:
+        profile_root = _find_mount_source(mounts, profile_destinations) or next(
+            (host for host, container in volumes.items() if container in profile_destinations),
+            None,
+        )
+        profile_directory = _server_scoped_path(profile_root, server_id)
+
+    workshop_directory = _normalize_host_path(server.get("workshop_path"))
+    if not workshop_directory:
+        workshop_root = _find_mount_source(mounts, workshop_destinations) or next(
+            (host for host, container in volumes.items() if container in workshop_destinations),
+            None,
+        )
+        workshop_directory = _server_scoped_path(workshop_root, server_id)
+
+    config_file = _normalize_host_path(server.get("config_path")) or (
+        f"{config_directory}/server.json" if config_directory else ""
+    )
+    working_directory = _normalize_host_path(runtime.get("working_dir")) or profile_directory or config_directory
+
+    return {
+        "actual_container_name": runtime.get("actual_container_name") or server.get("container_name") or server.get("name", ""),
+        "requested_container_name": server.get("container_name") or server.get("name", ""),
+        "working_directory": working_directory,
+        "config_directory": config_directory,
+        "config_file": config_file,
+        "profile_directory": profile_directory,
+        "workshop_directory": workshop_directory,
+        "cd_target": profile_directory or config_directory or working_directory,
+        "mounts": mounts,
+    }
+
+
+def _merge_nested_dicts(base: dict, incoming: dict) -> dict:
+    merged = dict(base or {})
+    for key, value in (incoming or {}).items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _merge_nested_dicts(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def _parse_players_response(response: str) -> list[dict]:
+    players: list[dict] = []
+    for raw_line in (response or "").splitlines():
+        line = raw_line.strip()
+        if not line or line.lower().startswith(("players", "---", "name")):
+            continue
+        if "|" in line:
+            parts = [part.strip() for part in line.split("|") if part.strip()]
+            if len(parts) >= 2:
+                name = parts[1] if parts[0].isdigit() else parts[0]
+                players.append({
+                    "name": name,
+                    "raw": line,
+                    "ping": next(
+                        (int(token[:-2]) for token in parts if token.lower().endswith("ms") and token[:-2].isdigit()),
+                        None,
+                    ),
+                })
+                continue
+        if line[0].isdigit():
+            name = line.lstrip("0123456789.-: ").strip()
+            if name:
+                players.append({"name": name, "raw": line, "ping": None})
+    return players
 
 
 def _serialize_doc(value):
@@ -245,6 +378,9 @@ async def update_server(
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
 
+    if "config" in updates:
+        _validate_mission_header(updates["config"])
+
     before = {k: server.get(k) for k in updates}
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
@@ -267,7 +403,14 @@ async def update_server(
         next_mods = updates["mods"]
 
     if "config" in updates:
-        updates["config"] = generate_reforger_config({**server, **updates, "mods": next_mods})
+        merged_config = _merge_nested_dicts(server.get("config") or {}, updates["config"])
+        normalized_config = normalize_server_config(
+            merged_config,
+            {**server, **updates, "mods": next_mods},
+        )
+        updates["config"] = generate_reforger_config(
+            {**server, **updates, "config": normalized_config, "mods": next_mods},
+        )
 
     if "config" in updates or "mods" in updates:
         merged = {**server, **updates}

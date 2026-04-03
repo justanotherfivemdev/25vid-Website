@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -103,7 +104,15 @@ def _legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
     game = dict(translated.get("game") or {})
     if "playerCountLimit" in game and "maxPlayers" not in game:
         game["maxPlayers"] = game["playerCountLimit"]
-    translated["game"] = game
+    props = dict(game.get("gameProperties") or {})
+    if "VONTransmitCrossFaction" in props and "VONCanTransmitCrossFaction" not in props:
+        props["VONCanTransmitCrossFaction"] = props["VONTransmitCrossFaction"]
+    if props:
+        game["gameProperties"] = props
+    if game:
+        translated["game"] = game
+    else:
+        translated.pop("game", None)
     return translated
 
 
@@ -169,9 +178,113 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def build_default_server_config(server: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    return build_default_config(server or {})
+
+
+def _flat_legacy_to_current(config: Dict[str, Any]) -> Dict[str, Any]:
+    if any(isinstance(config.get(key), dict) for key in ("game", "a2s", "rcon", "operating")):
+        return config
+
+    translated: Dict[str, Any] = {}
+
+    for src, dest in (
+        ("bindAddress", "bindAddress"),
+        ("publicAddress", "publicAddress"),
+        ("bindPort", "bindPort"),
+        ("publicPort", "publicPort"),
+    ):
+        if src in config:
+            translated[dest] = config[src]
+
+    game: Dict[str, Any] = {}
+    for src, dest in (
+        ("name", "name"),
+        ("password", "password"),
+        ("passwordAdmin", "passwordAdmin"),
+        ("scenarioId", "scenarioId"),
+        ("playerCountLimit", "maxPlayers"),
+        ("maxPlayers", "maxPlayers"),
+        ("visible", "visible"),
+        ("crossPlatform", "crossPlatform"),
+        ("supportedPlatforms", "supportedPlatforms"),
+        ("modsRequiredByDefault", "modsRequiredByDefault"),
+        ("admins", "admins"),
+    ):
+        if src in config:
+            game[dest] = config[src]
+    if isinstance(config.get("missionHeader"), dict):
+        game["missionHeader"] = config["missionHeader"]
+
+    game_props: Dict[str, Any] = {}
+    for src, dest in (
+        ("serverMaxViewDistance", "serverMaxViewDistance"),
+        ("serverMinGrassDistance", "serverMinGrassDistance"),
+        ("networkViewDistance", "networkViewDistance"),
+        ("disableThirdPerson", "disableThirdPerson"),
+        ("fastValidation", "fastValidation"),
+        ("battlEye", "battlEye"),
+        ("VONDisableUI", "VONDisableUI"),
+        ("VONDisableDirectSpeechUI", "VONDisableDirectSpeechUI"),
+        ("VONTransmitCrossFaction", "VONCanTransmitCrossFaction"),
+        ("VONCanTransmitCrossFaction", "VONCanTransmitCrossFaction"),
+    ):
+        if src in config:
+            game_props[dest] = config[src]
+    if game_props:
+        game["gameProperties"] = game_props
+    if game:
+        translated["game"] = game
+
+    if "a2s_address" in config:
+        translated["a2s"] = {"address": config["a2s_address"]}
+
+    rcon: Dict[str, Any] = {}
+    for src, dest in (
+        ("rcon_address", "address"),
+        ("rcon_password", "password"),
+        ("rcon_permission", "permission"),
+        ("rcon_max_clients", "maxClients"),
+    ):
+        if src in config:
+            rcon[dest] = config[src]
+    if rcon:
+        translated["rcon"] = rcon
+
+    operating: Dict[str, Any] = {}
+    for key in (
+        "lobbyPlayerSynchronise",
+        "disableNavmeshStreaming",
+        "disableServerShutdown",
+        "disableAI",
+        "playerSaveTime",
+        "aiLimit",
+    ):
+        if key in config:
+            operating[key] = config[key]
+    if operating:
+        translated["operating"] = operating
+
+    return translated
+
+
+def normalize_server_config(raw_config: Dict[str, Any] | None, server: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    server = server or {}
+    current = _legacy_to_current(raw_config or {})
+    current = _flat_legacy_to_current(current)
+    normalized = _deep_merge(build_default_config({**server, "config": current}), current)
+
+    game = normalized.setdefault("game", {})
+    if not isinstance(game.get("missionHeader"), dict):
+        game["missionHeader"] = {}
+    game_props = game.setdefault("gameProperties", {})
+    if "VONTransmitCrossFaction" in game_props and "VONCanTransmitCrossFaction" not in game_props:
+        game_props["VONCanTransmitCrossFaction"] = game_props["VONTransmitCrossFaction"]
+    return normalized
+
+
 def generate_reforger_config(server: Dict[str, Any]) -> Dict[str, Any]:
-    current = _legacy_to_current(server.get("config") or {})
-    config = _deep_merge(build_default_config({**server, "config": current}), current)
+    config = normalize_server_config(server.get("config") or {}, server)
     config["bindPort"] = _normalize_int((server.get("ports") or {}).get("game"), config["bindPort"])
     config["publicPort"] = config["bindPort"]
     config.setdefault("a2s", {})
@@ -228,7 +341,10 @@ async def write_config_file(server: Dict[str, Any], config_dir: str | None = Non
     target_dir.mkdir(parents=True, exist_ok=True)
     target_file = target_dir / SERVER_CONFIG_FILENAME
     try:
-        target_file.write_text(json.dumps(config, indent=2), encoding="utf-8")
+        file_contents = json.dumps(config, indent=2, ensure_ascii=False)
+        fd = os.open(target_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(file_contents)
         logger.info("Wrote Reforger config to %s", target_file)
         return True, str(target_file)
     except OSError as exc:

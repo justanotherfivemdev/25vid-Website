@@ -32,9 +32,9 @@ def test_normalize_server_config_upgrades_legacy_flat_shape():
     )
 
     assert normalized["game"]["name"] == "Alpha Custom"
-    assert normalized["game"]["playerCountLimit"] == 80
+    assert normalized["game"]["maxPlayers"] == 80
     assert normalized["game"]["gameProperties"]["disableThirdPerson"] is True
-    assert normalized["game"]["gameProperties"]["VONTransmitCrossFaction"] is False
+    assert normalized["game"]["gameProperties"]["VONCanTransmitCrossFaction"] is False
     assert normalized["game"]["missionHeader"] == {"modes": ["Conflict"]}
 
 
@@ -62,8 +62,9 @@ def test_generate_reforger_config_uses_nested_canonical_shape():
     assert generated["game"]["name"] == "Bravo Live"
     assert generated["game"]["missionHeader"] == {"rotations": [1, 2]}
     assert generated["game"]["gameProperties"]["disableThirdPerson"] is True
-    assert generated["game"]["gameProperties"]["VONTransmitCrossFaction"] is False
-    assert generated["gameHostBindPort"] == 2201
+    assert generated["game"]["gameProperties"]["VONCanTransmitCrossFaction"] is False
+    assert generated["bindPort"] == 2201
+    assert generated["publicPort"] == 2201
     assert generated["a2s"]["port"] == 18888
     assert generated["rcon"]["port"] == 21111
 
@@ -71,25 +72,28 @@ def test_generate_reforger_config_uses_nested_canonical_shape():
 def test_derive_troubleshooting_prefers_runtime_mounts_for_cd_target():
     server = {
         "id": "srv-3",
-        "container_name": "25vid-gs-srv3",
-        "volumes": {"/srv/configs": "/app/server-configs"},
+        "container_name": "reforger-srv-3",
+        "volumes": {
+            "/mnt/reforger/srv-3/Configs": "/reforger/Configs",
+            "/mnt/reforger/srv-3/profile": "/home/profile",
+        },
         "environment": {},
     }
     runtime = {
-        "actual_container_name": "25vid-gs-srv3-real",
-        "working_dir": "/game",
+        "actual_container_name": "reforger-srv-3-real",
+        "working_dir": "/reforger",
         "mounts": [
-            {"source": "/mnt/reforger/configs", "destination": "/app/server-configs"},
-            {"source": "/mnt/reforger/profiles", "destination": "/app/profiles"},
+            {"source": "/mnt/reforger/srv-3/Configs", "destination": "/reforger/Configs"},
+            {"source": "/mnt/reforger/srv-3/profile", "destination": "/home/profile"},
         ],
     }
 
     details = _derive_troubleshooting(server, runtime)
 
-    assert details["actual_container_name"] == "25vid-gs-srv3-real"
-    assert details["config_directory"] == "/mnt/reforger/configs/srv-3"
-    assert details["profile_directory"] == "/mnt/reforger/profiles/srv-3"
-    assert details["cd_target"] == "/mnt/reforger/profiles/srv-3"
+    assert details["actual_container_name"] == "reforger-srv-3-real"
+    assert details["config_directory"] == "/mnt/reforger/srv-3/Configs"
+    assert details["profile_directory"] == "/mnt/reforger/srv-3/profile"
+    assert details["cd_target"] == "/mnt/reforger/srv-3/profile"
 
 
 def test_metrics_period_support_includes_30_days():

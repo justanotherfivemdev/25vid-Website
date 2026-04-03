@@ -15,6 +15,7 @@ _PERIOD_DELTAS = {
     "6h": timedelta(hours=6),
     "24h": timedelta(hours=24),
     "7d": timedelta(days=7),
+    "30d": timedelta(days=30),
 }
 
 _RESOLUTION_SECONDS = {
