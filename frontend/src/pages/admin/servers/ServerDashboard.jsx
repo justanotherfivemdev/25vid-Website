@@ -23,6 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { hasPermission, PERMISSIONS } from '@/utils/permissions';
 import { isServerDegraded, normalizeServer } from '@/utils/serverStatus';
 import ServerCard from '@/components/servers/ServerCard';
+import { TerminalTransition, buildServerConnectLines, buildServerProvisionLines } from '@/components/tactical/TerminalTransition';
 
 const AUTO_REFRESH_MS = 15_000;
 const METRICS_REFRESH_MS = 30_000;
@@ -107,6 +108,9 @@ function ServerDashboard() {
       return next;
     });
   }, []);
+
+  /* ── terminal transition state ─────────────────────────────────────── */
+  const [transition, setTransition] = useState(null);
 
   /* ── create-modal state ────────────────────────────────────────────── */
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -252,7 +256,7 @@ function ServerDashboard() {
       setForm(EMPTY_FORM);
       setTagInput('');
       await fetchServers({ silent: true });
-      navigate(`/admin/servers/${createdServer.id}`);
+      setTransition({ lines: buildServerProvisionLines(createdServer.name), dest: `/admin/servers/${createdServer.id}` });
     } catch (err) {
       console.error('Failed to create server:', err);
       setCreateError(err.response?.data?.detail || 'Failed to create server.');
@@ -350,7 +354,21 @@ function ServerDashboard() {
     setShowCreateModal(true);
   }, []);
 
+  const handleServerNavigate = useCallback((serverId, serverName) => {
+    setTransition({ lines: buildServerConnectLines(serverName), dest: `/admin/servers/${serverId}` });
+  }, []);
+
   /* ── render ────────────────────────────────────────────────────────── */
+
+  if (transition) {
+    return (
+      <TerminalTransition
+        lines={transition.lines}
+        onComplete={() => navigate(transition.dest)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────────── */}
@@ -538,6 +556,7 @@ function ServerDashboard() {
                     onStart={onStart}
                     onStop={onStop}
                     onRestart={onRestart}
+                    onNavigate={handleServerNavigate}
                   />
                 ))}
               </div>

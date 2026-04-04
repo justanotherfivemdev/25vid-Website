@@ -133,7 +133,7 @@ function MetricSparkline({ label, value, data, dataKey, color, emptyLabel }) {
   );
 }
 
-function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChange, period = '1d' }) {
+function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChange, period = '1d', onNavigate }) {
   if (!server) return null;
 
   const normalized = normalizeServer(server);
@@ -159,13 +159,20 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
   const canRestart = canRestartServer(normalized);
   const showFooter = (canStart && onStart) || (canStop && onStop) || (canRestart && onRestart);
 
+  const handleNavigate = (e) => {
+    if (onNavigate) {
+      e.preventDefault();
+      onNavigate(id, name);
+    }
+  };
+
   return (
     <Card
       className={`group flex flex-col border-tropic-gold-dark/15 bg-[#050a0e]/80 backdrop-blur-sm transition-all duration-200 hover:border-tropic-gold/30 hover:bg-[#050a0e]/90 ${glow}`}
     >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-3">
-          <Link to={`/admin/servers/${id}`} className="min-w-0 flex-1">
+          <Link to={`/admin/servers/${id}`} onClick={handleNavigate} className="min-w-0 flex-1">
             <h3 className="truncate text-base font-semibold text-tropic-gold-light transition-colors group-hover:text-tropic-gold">
               {name || 'Unnamed Server'}
             </h3>
