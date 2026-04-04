@@ -99,11 +99,13 @@ const HistoryManager = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="history-manager-title">UNIT HISTORY</h1>
-            <p className="text-[#8a9aa8] mt-2">Manage the 25th Infantry Division timeline</p>
-          </div>
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Unit Legacy</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="history-manager-title">UNIT HISTORY</h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Manage the 25th Infantry Division timeline</p>
+            </div>
           <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-history-btn">
@@ -199,6 +201,7 @@ const HistoryManager = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <p className="text-sm text-[#4a6070]">

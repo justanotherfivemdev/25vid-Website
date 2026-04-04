@@ -135,22 +135,23 @@ const AuditLogsManager = () => {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-tropic-gold tracking-wide" style={{ fontFamily: "'Share Tech', sans-serif" }}>
-              AUDIT LOGS
-            </h1>
-            <p className="text-[#8a9aa8] mt-1">System activity trail and administrative action history</p>
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>System Monitoring</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>AUDIT LOGS</h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>System activity trail and administrative action history</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { fetchLogs(); fetchStats(); }}
+              className="border-tropic-gold/40 text-tropic-gold hover:bg-tropic-gold/10"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { fetchLogs(); fetchStats(); }}
-            className="border-tropic-gold/40 text-tropic-gold hover:bg-tropic-gold/10"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
         </div>
 
         {/* Stats Cards */}
