@@ -1,0 +1,97 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const BOOT_LINES = [
+  { text: 'TROPIC LIGHTNING NETWORK v4.2.1', delay: 0 },
+  { text: 'INITIALIZING SECURE CHANNEL...', delay: 300 },
+  { text: 'LOADING CRYPTOGRAPHIC MODULES... OK', delay: 600 },
+  { text: 'ESTABLISHING ENCRYPTED LINK... OK', delay: 1000 },
+  { text: 'AUTHENTICATING TERMINAL ACCESS...', delay: 1400 },
+  { text: 'SYSTEM STATUS: ALL SYSTEMS NOMINAL', delay: 1800 },
+  { text: '', delay: 2000 },
+  { text: '25TH INFANTRY DIVISION — DIGITAL COMMAND CENTER', delay: 2200 },
+  { text: 'TROPIC LIGHTNING NETWORK ONLINE', delay: 2600, highlight: true },
+];
+
+export function BootSequence({ onComplete, skipIfReturning = true }) {
+  const [visible, setVisible] = useState(false);
+  const [lines, setLines] = useState([]);
+  const [phase, setPhase] = useState('booting');
+
+  useEffect(() => {
+    if (skipIfReturning) {
+      try {
+        const hasVisited = sessionStorage.getItem('25vid_boot_done');
+        if (hasVisited) {
+          onComplete?.();
+          return;
+        }
+      } catch {
+        // sessionStorage unavailable
+      }
+    }
+    setVisible(true);
+  }, [skipIfReturning, onComplete]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const timers = BOOT_LINES.map((line) =>
+      setTimeout(() => setLines(prev => [...prev, line]), line.delay)
+    );
+    const completeTimer = setTimeout(() => {
+      setPhase('done');
+      try { sessionStorage.setItem('25vid_boot_done', '1'); } catch { /* ignore */ }
+      setTimeout(() => { setPhase('hidden'); onComplete?.(); }, 600);
+    }, 3200);
+    return () => { timers.forEach(clearTimeout); clearTimeout(completeTimer); };
+  }, [visible, onComplete]);
+
+  const handleSkip = useCallback(() => {
+    setPhase('hidden');
+    try { sessionStorage.setItem('25vid_boot_done', '1'); } catch { /* ignore */ }
+    onComplete?.();
+  }, [onComplete]);
+
+  if (!visible || phase === 'hidden') return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        key="boot"
+        initial={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+        className="fixed inset-0 z-[10000] bg-[#050a0e] flex flex-col items-start justify-center px-8 md:px-20"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,136,0.02) 2px, rgba(0,255,136,0.02) 4px)'
+        }} />
+        <div className="relative z-10 w-full max-w-2xl space-y-1">
+          {lines.map((line, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.15 }}
+              className={`text-xs md:text-sm tracking-wider ${
+                line.highlight ? 'text-[#e8c547] font-bold text-base md:text-lg' : 'text-[#00ff88]'
+              }`}
+            >
+              {line.text && <><span className="text-[#4a6070] mr-2">{'>'}</span>{line.text}</>}
+            </motion.div>
+          ))}
+          {phase === 'booting' && (
+            <span className="inline-block w-2 h-4 bg-[#00ff88] animate-[blink_0.8s_steps(1)_infinite]" />
+          )}
+        </div>
+        <button
+          onClick={handleSkip}
+          className="absolute bottom-8 right-8 text-[10px] tracking-[0.3em] text-[#4a6070] hover:text-[#00ff88] transition-colors uppercase"
+        >
+          [SKIP]
+        </button>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
