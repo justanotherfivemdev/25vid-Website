@@ -116,7 +116,7 @@ class BERConClient:
         if not password:
             return {"state": "disabled", "detail": "RCON password is not configured"}
 
-        ok, response = await self.execute(host, port, password, "help")
+        ok, response = await self.execute(host, port, password, "#status")
         if ok:
             return {"state": "connected", "detail": "BattlEye RCON is reachable"}
         if "authentication failed" in response.lower():

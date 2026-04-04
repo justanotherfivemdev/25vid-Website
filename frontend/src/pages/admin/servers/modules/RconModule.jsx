@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { API } from '@/utils/api';
+import { buildServerWsUrl } from '@/utils/serverRealtime';
 import {
   AlertTriangle,
   BookOpen,
@@ -28,9 +29,6 @@ const QUICK_COMMANDS = [
 ];
 
 const SAVED_SNIPPETS_KEY = 'rcon_saved_snippets';
-const WS_BASE = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '')
-  .replace(/^http/, 'ws')
-  .replace(/\/$/, '');
 
 const STATUS_TEXT = {
   offline: 'Server is offline.',
@@ -105,8 +103,7 @@ function RconModule() {
 
     const connect = () => {
       if (disposed) return;
-      const token = document.cookie.split(';').find((cookie) => cookie.trim().startsWith('session='))?.split('=')?.[1] || '';
-      const url = `${WS_BASE}/api/ws/servers/${serverId}/rcon?token=${encodeURIComponent(token)}`;
+      const url = buildServerWsUrl(`/api/ws/servers/${serverId}/rcon`);
       setWsState((current) => (current === 'live' ? current : 'connecting'));
 
       try {

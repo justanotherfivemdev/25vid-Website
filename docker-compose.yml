@@ -55,10 +55,13 @@ services:
       VALYU_API_KEY: ${VALYU_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       DOCKER_SOCKET_PATH: unix:///var/run/docker.sock
+      SERVER_RUNTIME_HOST: ${SERVER_RUNTIME_HOST:-host.docker.internal}
     volumes:
       - backend_uploads:/app/uploads
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - game_server_configs:/app/server-configs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/')"]
       interval: 15s
