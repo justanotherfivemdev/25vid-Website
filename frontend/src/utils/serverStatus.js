@@ -7,7 +7,7 @@ export function normalizeServer(server) {
     next.status = 'running';
     next.deployment_state = next.deployment_state || 'created';
     next.provisioning_state = 'warning';
-    next.readiness_state = next.readiness_state || 'ready';
+    next.readiness_state = next.readiness_state || 'degraded';
   }
 
   if (next.status === 'provisioning_failed') {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, NavLink, Outlet, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Badge } from '@/components/ui/badge';
@@ -138,17 +138,22 @@ function ServerWorkspace() {
     }
   }, [id]);
 
+  const serverRef = useRef(null);
+  useEffect(() => {
+    serverRef.current = server;
+  }, [server]);
+
   const fetchServerSummary = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/servers/${id}/summary`);
       setServer((current) => mergeServerSummary(current, res.data));
       setError(null);
     } catch (err) {
-      if (!server) {
+      if (!serverRef.current) {
         setError(err.response?.data?.detail || 'Failed to load server summary.');
       }
     }
-  }, [id, server]);
+  }, [id]);
 
   useEffect(() => {
     fetchServer();

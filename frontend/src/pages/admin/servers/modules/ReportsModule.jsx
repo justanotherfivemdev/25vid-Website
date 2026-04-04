@@ -34,12 +34,17 @@ function ReportsModule() {
   const { serverId } = useOutletContext();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await axios.get(`${API}/servers/${serverId}/reports/summary`);
       setReport(res.data);
+    } catch (err) {
+      setFetchError(err.response?.data?.detail || 'Failed to load report.');
+      setReport({});
     } finally {
       setLoading(false);
     }
@@ -76,6 +81,18 @@ function ReportsModule() {
     );
   }
 
+  if (fetchError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16">
+        <AlertTriangle className="h-5 w-5 text-red-400" />
+        <p className="text-xs text-red-400">{fetchError}</p>
+        <Button size="sm" variant="outline" onClick={fetchData} className="h-7 border-zinc-800 text-xs text-gray-400">
+          <RefreshCw className="mr-1 h-3 w-3" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
   const detections = report?.detections || [];
   const incidents = report?.incidents || [];
   const backups = report?.backups || [];
@@ -97,7 +114,7 @@ function ReportsModule() {
           <Button size="sm" variant="outline" onClick={fetchData} className="h-7 border-zinc-800 text-xs text-gray-400">
             <RefreshCw className="mr-1 h-3 w-3" /> Refresh
           </Button>
-          <Button size="sm" onClick={exportReport} className="h-7 bg-tropic-gold text-black hover:bg-tropic-gold-light text-xs">
+          <Button size="sm" onClick={exportReport} disabled={!report || Object.keys(report).length === 0} className="h-7 bg-tropic-gold text-black hover:bg-tropic-gold-light text-xs disabled:opacity-50">
             <Download className="mr-1 h-3 w-3" /> Export
           </Button>
         </div>

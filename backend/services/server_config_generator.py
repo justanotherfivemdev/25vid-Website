@@ -154,7 +154,8 @@ def normalize_mod_entry(mod: Dict[str, Any]) -> Dict[str, Any]:
 
     # Preserve optional metadata for UI display (not written to config JSON).
     for meta_key in ("author", "description", "thumbnail_url", "tags",
-                     "dependencies", "scenario_ids", "metadata_source"):
+                     "dependencies", "scenario_ids", "metadata_source",
+                     "system_managed"):
         if mod.get(meta_key):
             entry[meta_key] = mod[meta_key]
 

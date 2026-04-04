@@ -1,7 +1,7 @@
 """Data models for the Arma Reforger server management domain."""
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -290,6 +290,11 @@ class ServerBackup(BaseModel):
 WATCHER_TYPES = ["health", "log", "threshold"]
 WATCHER_VERDICTS = ["active", "monitoring", "resolved", "false_positive"]
 
+WatcherType = Literal["health", "log", "threshold"]
+WatcherSeverity = Literal["low", "medium", "high", "critical"]
+WatcherMetric = Literal["cpu_percent", "memory_mb", "player_count", "server_fps", "avg_player_ping_ms"]
+DetectionStatus = Literal["active", "monitoring", "resolved", "false_positive"]
+
 
 class ServerWatcher(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -297,13 +302,13 @@ class ServerWatcher(BaseModel):
     id: str = Field(default_factory=lambda: f"watch_{uuid.uuid4().hex[:12]}")
     server_id: str
     name: str
-    type: str = "health"
+    type: WatcherType = "health"
     enabled: bool = True
     notify: bool = True
     pattern: str = ""
-    metric: str = "cpu_percent"
+    metric: WatcherMetric = "cpu_percent"
     threshold: float = 90.0
-    severity: str = "medium"
+    severity: WatcherSeverity = "medium"
     created_by: str = ""
     created_at: datetime = Field(default_factory=_utc_now)
     updated_at: datetime = Field(default_factory=_utc_now)
@@ -313,24 +318,24 @@ class ServerWatcher(BaseModel):
 
 class ServerWatcherCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
-    type: str = "health"
+    type: WatcherType = "health"
     enabled: bool = True
     notify: bool = True
     pattern: str = ""
-    metric: str = "cpu_percent"
+    metric: WatcherMetric = "cpu_percent"
     threshold: float = 90.0
-    severity: str = "medium"
+    severity: WatcherSeverity = "medium"
 
 
 class ServerWatcherUpdate(BaseModel):
     name: Optional[str] = None
-    type: Optional[str] = None
+    type: Optional[WatcherType] = None
     enabled: Optional[bool] = None
     notify: Optional[bool] = None
     pattern: Optional[str] = None
-    metric: Optional[str] = None
+    metric: Optional[WatcherMetric] = None
     threshold: Optional[float] = None
-    severity: Optional[str] = None
+    severity: Optional[WatcherSeverity] = None
 
 
 class WatcherDetection(BaseModel):
@@ -342,8 +347,8 @@ class WatcherDetection(BaseModel):
     detection_key: str = ""
     title: str
     summary: str = ""
-    severity: str = "medium"
-    status: str = "active"
+    severity: WatcherSeverity = "medium"
+    status: DetectionStatus = "active"
     source_category: str = "runtime-script"
     source_streams: List[str] = Field(default_factory=list)
     occurrence_count: int = 0
