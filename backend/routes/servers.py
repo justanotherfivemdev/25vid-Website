@@ -1944,7 +1944,6 @@ async def list_watchers(server_id: str, current_user: dict = Depends(_require_se
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0, "id": 1})
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    await ensure_default_watchers(server_id, created_by=current_user["id"])
     watchers = await db.server_watchers.find({"server_id": server_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return _serialize_doc(watchers)
 
@@ -2070,7 +2069,6 @@ async def get_server_report_summary(server_id: str, current_user: dict = Depends
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
-    await ensure_default_watchers(server_id, created_by=current_user["id"])
     detections = await db.server_detections.find({"server_id": server_id}, {"_id": 0}).sort("last_seen", -1).to_list(100)
     incidents = await db.server_incidents.find({"server_id": server_id}, {"_id": 0}).sort("detected_at", -1).to_list(100)
     backups = await db.server_backups.find({"server_id": server_id}, {"_id": 0}).sort("created_at", -1).to_list(50)

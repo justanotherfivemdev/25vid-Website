@@ -188,7 +188,7 @@ function ServerSettingsModule() {
       if (histRes.status === 'fulfilled') setConfigHistory(histRes.value.data?.history || histRes.value.data || []);
       else setConfigHistory([]);
     }).finally(() => setLoading(false));
-  }, [initializeEditors, serverId]);
+  }, [initializeEditors, server, serverId]);
 
   useEffect(() => {
     if (activeTab === 'json' && config) {

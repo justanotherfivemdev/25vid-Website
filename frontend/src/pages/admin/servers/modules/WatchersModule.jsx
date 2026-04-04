@@ -79,8 +79,17 @@ function comparisonLabel(value) {
   return THRESHOLD_COMPARISONS.find((item) => item.value === value)?.label || '>';
 }
 
+function humanizeSourceCategory(value) {
+  return String(value)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function sourceCategoryLabel(value) {
-  return WATCHER_CATEGORIES.find((item) => item.value === value)?.label || value || 'Unclassified';
+  const label = WATCHER_CATEGORIES.find((item) => item.value === value)?.label;
+  if (label) return label;
+  if (!value) return 'Unclassified';
+  return humanizeSourceCategory(value);
 }
 
 function defaultWatcherState() {
@@ -110,8 +119,8 @@ function WatchersModule() {
   const [message, setMessage] = useState('');
   const [newWatcher, setNewWatcher] = useState(defaultWatcherState);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError('');
     try {
       const [watchersRes, detectionsRes] = await Promise.allSettled([
@@ -127,7 +136,7 @@ function WatchersModule() {
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load watchers.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [serverId]);
 
@@ -136,7 +145,7 @@ function WatchersModule() {
   }, [fetchData]);
 
   useEffect(() => {
-    const intervalId = setInterval(fetchData, 30_000);
+    const intervalId = setInterval(() => fetchData({ silent: true }), 30_000);
     return () => clearInterval(intervalId);
   }, [fetchData]);
 

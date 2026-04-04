@@ -186,10 +186,18 @@ def build_essential_watchers(server_id: str, *, created_by: str = "system") -> l
 
 
 async def ensure_default_watchers(server_id: str, *, created_by: str = "system") -> list[dict]:
+    essential_template_keys = [
+        str(template.get("template_key") or "").strip()
+        for template in ESSENTIAL_WATCHER_TEMPLATES
+        if template.get("template_key")
+    ]
     existing = await db.server_watchers.find(
-        {"server_id": server_id},
+        {
+            "server_id": server_id,
+            "template_key": {"$in": essential_template_keys},
+        },
         {"_id": 0, "template_key": 1},
-    ).to_list(200)
+    ).to_list(len(essential_template_keys))
     existing_keys = {
         str(watcher.get("template_key") or "").strip()
         for watcher in existing
@@ -233,11 +241,11 @@ async def _upsert_detection(
     if existing and existing.get("status") == "false_positive":
         next_status = "false_positive"
 
-    recommended_actions = list(
-        watcher.get("recommended_actions")
-        or (existing.get("recommended_actions") if existing else [])
-        or []
-    )
+    watcher_recommended_actions = watcher.get("recommended_actions") if "recommended_actions" in watcher else None
+    if watcher_recommended_actions is not None:
+        recommended_actions = list(watcher_recommended_actions)
+    else:
+        recommended_actions = list((existing.get("recommended_actions") if existing else []) or [])
 
     await db.server_detections.update_one(
         {"server_id": server["id"], "detection_key": detection_key},
