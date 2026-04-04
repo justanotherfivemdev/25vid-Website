@@ -103,7 +103,7 @@ export default function ThreatMapPage() {
   }, [fetchEvents, fetchMilitaryBases, fetchOperations, fetchIntelEvents, fetchCampaignEvents]);
 
   return (
-    <div className="flex h-screen flex-col bg-black threat-map-page">
+    <div className="flex h-screen flex-col bg-[#050a0e] threat-map-page">
       <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} mapStatus={mapStatus} isAdmin={isAdmin} />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
