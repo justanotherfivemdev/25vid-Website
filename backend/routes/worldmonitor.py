@@ -3,14 +3,17 @@ WorldMonitor-aligned data API routes.
 
 Exposes GDELT, USGS, NWS, FRED, Polymarket, and ACLED data through
 REST endpoints, mirroring the data sources used by the worldmonitor-
-bayesian overlay system.
+bayesian overlay system.  Also provides RSS and Finnhub proxy endpoints
+so the standalone World Monitor SPA can bypass CORS restrictions.
 """
 
 import os
 import logging
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
-from fastapi import APIRouter, Query, HTTPException
+import httpx
+from fastapi import APIRouter, Query, HTTPException, Response
 
 from services.worldmonitor_ingest import (
     fetch_gdelt_articles,
@@ -204,3 +207,108 @@ async def get_pipeline_status():
         "stored_events_by_provider": provider_counts,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+# ---------------------------------------------------------------------------
+# RSS Proxy — bypasses CORS for the World Monitor's news feeds
+# ---------------------------------------------------------------------------
+
+# Allowlist of domains the RSS proxy may fetch from (prevents SSRF)
+_RSS_ALLOWED_DOMAINS = frozenset({
+    # Wire services & major outlets
+    "feeds.reuters.com", "rss.nytimes.com", "feeds.bbci.co.uk",
+    "www.theguardian.com", "feeds.washingtonpost.com",
+    "rss.cnn.com", "feeds.npr.org", "www.aljazeera.com",
+    "www.ft.com", "rss.politico.com", "feeds.bloomberg.com",
+    "www.cnbc.com", "feeds.feedburner.com", "www.reddit.com",
+    "rss.app", "news.google.com", "api.gdeltproject.org",
+    "feeds.marketwatch.com", "search.cnbc.com",
+    "finance.yahoo.com", "www.politico.com",
+    # Defense & military
+    "www.defense.gov", "www.stripes.com", "news.usni.org",
+    "www.armytimes.com", "www.navytimes.com", "www.airforcetimes.com",
+    "www.marinecorpstimes.com", "www.militarytimes.com",
+    "www.janes.com", "breakingdefense.com", "www.defensenews.com",
+    "www.defenseone.com", "www.thedrive.com",
+    # Tech & security
+    "cyberscoop.com", "therecord.media", "krebsonsecurity.com",
+    "techcrunch.com", "venturebeat.com", "www.technologyreview.com",
+    "www.theverge.com", "feeds.arstechnica.com", "export.arxiv.org",
+    # Think tanks & policy
+    "foreignpolicy.com", "www.foreignaffairs.com", "thediplomat.com",
+    "www.atlanticcouncil.org", "www.bellingcat.com",
+    # Government
+    "www.federalreserve.gov", "www.sec.gov",
+    # Aggregators
+    "hnrss.org", "layoffs.fyi",
+})
+
+
+@router.get("/rss-proxy")
+async def rss_proxy(url: str = Query(..., description="RSS feed URL to fetch")):
+    """Proxy an RSS feed to bypass CORS for the World Monitor frontend."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail="Only http/https URLs are allowed")
+    if parsed.hostname and parsed.hostname not in _RSS_ALLOWED_DOMAINS:
+        raise HTTPException(status_code=403, detail="Domain not in RSS allowlist")
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            resp = await client.get(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0 WorldMonitor/1.0",
+                    "Accept": "application/rss+xml, application/xml, text/xml, */*",
+                },
+            )
+        return Response(
+            content=resp.content,
+            media_type="application/xml",
+            headers={"Cache-Control": "public, max-age=300"},
+        )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="RSS feed timed out")
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"RSS fetch failed: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Finnhub Proxy — injects API key server-side
+# ---------------------------------------------------------------------------
+
+@router.get("/finnhub")
+async def finnhub_proxy(symbols: str = Query(..., description="Comma-separated stock symbols")):
+    """Proxy Finnhub stock quotes, injecting the API key server-side."""
+    api_key = os.environ.get("FINNHUB_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="FINNHUB_API_KEY not configured")
+
+    symbol_list = [s.strip() for s in symbols.split(",") if s.strip()][:20]
+    quotes = []
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for symbol in symbol_list:
+            try:
+                resp = await client.get(
+                    f"https://finnhub.io/api/v1/quote?symbol={symbol}&token={api_key}",
+                )
+                data = resp.json()
+                if data.get("c", 0) == 0 and data.get("h", 0) == 0:
+                    quotes.append({"symbol": symbol, "error": "No data available"})
+                else:
+                    quotes.append({
+                        "symbol": symbol,
+                        "price": data.get("c"),
+                        "change": data.get("d"),
+                        "changePercent": data.get("dp"),
+                        "high": data.get("h"),
+                        "low": data.get("l"),
+                        "open": data.get("o"),
+                        "previousClose": data.get("pc"),
+                        "timestamp": data.get("t"),
+                    })
+            except Exception:
+                quotes.append({"symbol": symbol, "error": "Fetch failed"})
+
+    return {"quotes": quotes}
