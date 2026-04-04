@@ -70,7 +70,7 @@ const RosterPanel = ({ operationId }) => {
   return (
     <div className="space-y-4 pt-2" data-testid={`roster-panel-${operationId}`}>
       {/* Summary Bar */}
-      <div className="flex items-center gap-6 bg-[#050a0e]/40 rounded-lg p-3 border border-[rgba(201,162,39,0.12)]/50">
+      <div className="flex items-center gap-6 bg-[#050a0e]/40 rounded-lg p-3 border border-[rgba(201,162,39,0.06)]">
         <div className="text-center"><div className="text-xl font-bold text-green-400">{counts.attending}</div><div className="text-[9px] text-[#4a6070] tracking-wider">ATTENDING</div></div>
         <div className="text-center"><div className="text-xl font-bold text-yellow-400">{counts.tentative}</div><div className="text-[9px] text-[#4a6070] tracking-wider">TENTATIVE</div></div>
         <div className="text-center"><div className="text-xl font-bold text-orange-400">{counts.waitlisted}</div><div className="text-[9px] text-[#4a6070] tracking-wider">WAITLISTED</div></div>
@@ -79,7 +79,7 @@ const RosterPanel = ({ operationId }) => {
 
       {/* MOS Summary */}
       {mos_summary && Object.keys(mos_summary).length > 0 && (
-        <div className="bg-[#050a0e]/40 rounded-lg p-3 border border-[rgba(201,162,39,0.12)]/50">
+        <div className="bg-[#050a0e]/40 rounded-lg p-3 border border-[rgba(201,162,39,0.06)]">
           <div className="text-[10px] text-tropic-gold tracking-wider font-bold mb-2">MANPOWER BY MOS</div>
           <div className="flex flex-wrap gap-2">
             {Object.entries(mos_summary).sort((a, b) => b[1] - a[1]).map(([mos, count]) => (
@@ -120,7 +120,7 @@ const RosterPanel = ({ operationId }) => {
                 </thead>
                 <tbody>
                   {list.map((r, i) => (
-                    <tr key={r.user_id || i} className="border-b border-[rgba(201,162,39,0.12)]/30 hover:bg-[#111a24]/30 transition-colors" data-testid={`roster-row-${r.user_id}`}>
+                    <tr key={r.user_id || i} className="border-b border-[rgba(201,162,39,0.036)] hover:bg-[#111a24]/30 transition-colors" data-testid={`roster-row-${r.user_id}`}>
                       <td className="py-2 px-2">
                         <div className="flex items-center gap-2">
                           {r.avatar_url ? (
@@ -599,7 +599,7 @@ const OperationsManager = () => {
                           <span className={`${getTypeColor(op.operation_type)} px-3 py-1 rounded text-xs font-bold uppercase`}>
                             {op.operation_type}
                           </span>
-                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${op.activity_state === 'ongoing' ? 'bg-tropic-red/20 text-tropic-red border border-tropic-red/40' : op.activity_state === 'completed' ? 'bg-green-700/20 text-green-400 border border-green-700/40' : 'bg-[#111a24]/40 text-[#8a9aa8] border border-[rgba(201,162,39,0.15)]/40'}`}>
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${op.activity_state === 'ongoing' ? 'bg-tropic-red/20 text-tropic-red border border-tropic-red/40' : op.activity_state === 'completed' ? 'bg-green-700/20 text-green-400 border border-green-700/40' : 'bg-[#111a24]/40 text-[#8a9aa8] border border-[rgba(201,162,39,0.06)]'}`}>
                             {op.activity_state || 'planned'}
                           </span>
                           {isDiscordSynced ? (

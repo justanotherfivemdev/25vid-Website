@@ -1742,7 +1742,7 @@ export default function GlobalThreatMap({
                     <span className="text-[9px] font-black tracking-[0.15em] uppercase px-2 py-0.5 bg-blue-800/30 text-blue-300 border border-blue-700/30 rounded-sm">
                       {deploymentPopup.data.affiliation}
                     </span>
-                    <span className="text-[9px] tracking-wider uppercase px-2 py-0.5 bg-[#111a24] text-[#8a9aa8] border border-[rgba(201,162,39,0.15)]/40 rounded-sm">
+                    <span className="text-[9px] tracking-wider uppercase px-2 py-0.5 bg-[#111a24] text-[#8a9aa8] border border-[rgba(201,162,39,0.06)] rounded-sm">
                       {deploymentPopup.data.symbol_type?.replace(/_/g, ' ')}
                     </span>
                   </div>
@@ -1763,7 +1763,7 @@ export default function GlobalThreatMap({
                       deploymentPopup.data.status === 'deployed'  ? 'bg-green-900/30 text-green-300 border-green-700/30' :
                       deploymentPopup.data.status === 'endex'     ? 'bg-orange-900/30 text-orange-300 border-orange-700/30' :
                       deploymentPopup.data.status === 'rtb'       ? 'bg-blue-900/30 text-blue-300 border-blue-700/30' :
-                      'bg-[#111a24]/50 text-[#8a9aa8] border-[rgba(201,162,39,0.15)]/30'
+                      'bg-[#111a24]/50 text-[#8a9aa8] border-[rgba(201,162,39,0.045)]'
                     }`}>
                       {deploymentPopup.data.status}
                     </span>

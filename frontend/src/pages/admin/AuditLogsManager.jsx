@@ -103,7 +103,7 @@ const AuditLogsManager = () => {
   };
 
   const getActionBadgeClass = (actionType) => {
-    return ACTION_COLORS[actionType] || 'bg-[#111a24]/50 text-[#8a9aa8] border-[rgba(201,162,39,0.2)]/30';
+    return ACTION_COLORS[actionType] || 'bg-[#111a24]/50 text-[#8a9aa8] border-[rgba(201,162,39,0.06)]';
   };
 
   const renderMetadata = (log) => {
@@ -307,7 +307,7 @@ const AuditLogsManager = () => {
                 {logs.map((log, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-4 px-4 py-3 rounded-lg hover:bg-white/[0.02] transition-colors border border-transparent hover:border-[rgba(201,162,39,0.12)]/50"
+                    className="flex items-start gap-4 px-4 py-3 rounded-lg hover:bg-white/[0.02] transition-colors border border-transparent hover:border-[rgba(201,162,39,0.06)]"
                   >
                     {/* Timestamp */}
                     <div className="flex-shrink-0 w-40 text-xs text-[#4a6070] font-mono pt-0.5">

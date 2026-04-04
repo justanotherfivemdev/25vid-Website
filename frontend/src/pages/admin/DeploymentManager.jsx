@@ -1134,7 +1134,7 @@ const DeploymentManager = () => {
                 {(deploymentForm.route_points || []).map((rp, idx) => {
                   const isLockedOrigin = idx === 0 && deploymentForm.origin_type === '25th';
                   return (
-                  <div key={idx} className={`border rounded p-2 space-y-2 ${isLockedOrigin ? 'border-tropic-gold/40 bg-tropic-gold/5' : 'border-[rgba(201,162,39,0.12)]/60'}`}>
+                  <div key={idx} className={`border rounded p-2 space-y-2 ${isLockedOrigin ? 'border-tropic-gold/40 bg-tropic-gold/5' : 'border-[rgba(201,162,39,0.072)]'}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-tropic-gold font-bold tracking-wider">
                         {isLockedOrigin ? 'ORIGIN — SCHOFIELD BARRACKS (LOCKED)' : `Stop ${idx + 1}`}

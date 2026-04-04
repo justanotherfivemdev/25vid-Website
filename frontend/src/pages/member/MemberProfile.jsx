@@ -86,7 +86,7 @@ const MemberProfile = () => {
               </div>
 
               {/* Info grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.12)]/50">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.06)]">
                 {profile.billet && <div><div className="text-[10px] text-[#4a6070] tracking-wider mb-0.5">BILLET / POSITION</div><div className="text-sm font-medium">{profile.billet_acronym ? `${profile.billet_acronym} — ` : ''}{profile.billet}</div></div>}
                 {profile.specialization && <div><div className="text-[10px] text-[#4a6070] tracking-wider mb-0.5">SPECIALIZATION</div><div className="text-sm font-medium">{profile.specialization}</div></div>}
                 {profile.display_mos && <div><div className="text-[10px] text-[#4a6070] tracking-wider mb-0.5">MOS</div><div className="text-sm font-medium font-mono text-tropic-gold">{profile.display_mos}</div></div>}
@@ -109,7 +109,7 @@ const MemberProfile = () => {
               <CardContent>
                 <div className="grid gap-3">
                   {profile.awards.map((a, i) => (
-                    <div key={a.id || i} className="flex items-center gap-3 bg-[#050a0e]/30 rounded-lg p-3 border border-[rgba(201,162,39,0.12)]/50">
+                    <div key={a.id || i} className="flex items-center gap-3 bg-[#050a0e]/30 rounded-lg p-3 border border-[rgba(201,162,39,0.06)]">
                       <Award className="w-5 h-5 text-yellow-600 shrink-0" />
                       <div><div className="font-medium text-sm">{a.name}</div>{a.description && <div className="text-xs text-[#4a6070]">{a.description}</div>}</div>
                       {a.date && <div className="ml-auto text-xs text-[#4a6070]">{a.date}</div>}
@@ -127,7 +127,7 @@ const MemberProfile = () => {
               <CardContent>
                 <div className="space-y-3">
                   {profile.mission_history.map((m, i) => (
-                    <div key={m.id || i} className="bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.12)]/50">
+                    <div key={m.id || i} className="bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.06)]">
                       <div className="flex items-center justify-between mb-1">
                         <div className="font-bold text-sm tracking-wide" style={{ fontFamily: "'Share Tech', sans-serif" }}>{m.operation_name}</div>
                         <div className="text-xs text-[#4a6070] flex items-center gap-1"><Calendar className="w-3 h-3" />{m.date}</div>
@@ -148,7 +148,7 @@ const MemberProfile = () => {
               <CardContent>
                 <div className="space-y-3">
                   {profile.training_history.map((t, i) => (
-                    <div key={t.id || i} className="bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.12)]/50">
+                    <div key={t.id || i} className="bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.06)]">
                       <div className="flex items-center justify-between mb-1">
                         <div className="font-bold text-sm tracking-wide" style={{ fontFamily: "'Share Tech', sans-serif" }}>{t.course_name}</div>
                         <div className="text-xs text-[#4a6070] flex items-center gap-1"><Clock className="w-3 h-3" />{t.completion_date}</div>

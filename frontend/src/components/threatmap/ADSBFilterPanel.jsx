@@ -23,7 +23,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
         } ${
           hasActiveFilters
             ? 'bg-cyan-900/90 text-cyan-300 border border-cyan-500/40'
-            : 'bg-[#050a0e]/85 text-[#8a9aa8] border border-[rgba(201,162,39,0.15)]/50'
+            : 'bg-[#050a0e]/85 text-[#8a9aa8] border border-[rgba(201,162,39,0.075)]'
         } backdrop-blur-md shadow-lg`}
       >
         <span className="flex items-center gap-1.5">
@@ -46,7 +46,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
 
       {/* Filter panel body */}
       {expanded && (
-        <div className="bg-[#050a0e]/90 backdrop-blur-md border border-t-0 border-[rgba(201,162,39,0.15)]/50 rounded-b-lg p-3 space-y-3 shadow-lg">
+        <div className="bg-[#050a0e]/90 backdrop-blur-md border border-t-0 border-[rgba(201,162,39,0.075)] rounded-b-lg p-3 space-y-3 shadow-lg">
           {/* Callsign search */}
           <div>
             <label className="text-[10px] text-[#8a9aa8] uppercase tracking-wider font-semibold">
@@ -57,7 +57,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
               value={adsbFilters.callsignSearch}
               onChange={(e) => setAdsbFilter('callsignSearch', e.target.value)}
               placeholder="Search callsign..."
-              className="mt-1 w-full px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] placeholder-[#4a6070] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
+              className="mt-1 w-full px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.075)] text-xs text-[#d0d8e0] placeholder-[#4a6070] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
             />
           </div>
 
@@ -69,7 +69,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
             <select
               value={adsbFilters.originCountry}
               onChange={(e) => setAdsbFilter('originCountry', e.target.value)}
-              className="mt-1 w-full px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 appearance-none"
+              className="mt-1 w-full px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.075)] text-xs text-[#d0d8e0] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 appearance-none"
             >
               <option value="">All Countries</option>
               {countries.map((c) => (
@@ -90,7 +90,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
                 onChange={(e) => setAdsbFilter('altitudeMin', e.target.value ? Number(e.target.value) : null)}
                 placeholder="Min"
                 min="0"
-                className="w-1/2 px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] placeholder-[#4a6070] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
+                className="w-1/2 px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.075)] text-xs text-[#d0d8e0] placeholder-[#4a6070] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
               />
               <span className="text-[#4a6070] text-xs">—</span>
               <input
@@ -99,7 +99,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
                 onChange={(e) => setAdsbFilter('altitudeMax', e.target.value ? Number(e.target.value) : null)}
                 placeholder="Max"
                 min="0"
-                className="w-1/2 px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] placeholder-[#4a6070] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
+                className="w-1/2 px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.075)] text-xs text-[#d0d8e0] placeholder-[#4a6070] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
               />
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
           {hasActiveFilters && (
             <button
               onClick={resetAdsbFilters}
-              className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded bg-[#111a24]/60 hover:bg-[#111a24]/60 border border-[rgba(201,162,39,0.15)]/40 text-xs text-[#8a9aa8] hover:text-[#d0d8e0] transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded bg-[#111a24]/60 hover:bg-[#111a24]/60 border border-[rgba(201,162,39,0.06)] text-xs text-[#8a9aa8] hover:text-[#d0d8e0] transition-colors"
             >
               <RotateCcw className="h-3 w-3" />
               Reset Filters

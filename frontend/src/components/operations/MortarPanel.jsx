@@ -354,7 +354,7 @@ export default function MortarPanel({
                   className={`rounded border p-2 text-xs ${
                     i === 0
                       ? 'border-green-700/50 bg-green-900/10'
-                      : 'border-[rgba(201,162,39,0.15)]/50 bg-[#111a24]/20'
+                      : 'border-[rgba(201,162,39,0.075)] bg-[#111a24]/20'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">

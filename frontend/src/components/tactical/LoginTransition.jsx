@@ -20,6 +20,8 @@ export function LoginTransition({ username, onComplete }) {
   const [phase, setPhase] = useState('active');
   const hasCompletedRef = useRef(false);
 
+  const fadeTimerRef = useRef(null);
+
   useEffect(() => {
     if (hasCompletedRef.current) return;
     const loginLines = buildLoginLines(username);
@@ -29,7 +31,7 @@ export function LoginTransition({ username, onComplete }) {
     const completeTimer = setTimeout(() => {
       if (hasCompletedRef.current) return;
       setPhase('done');
-      setTimeout(() => {
+      fadeTimerRef.current = setTimeout(() => {
         if (hasCompletedRef.current) return;
         hasCompletedRef.current = true;
         setPhase('hidden');
@@ -39,6 +41,7 @@ export function LoginTransition({ username, onComplete }) {
     return () => {
       timers.forEach(clearTimeout);
       clearTimeout(completeTimer);
+      clearTimeout(fadeTimerRef.current);
     };
   }, [username, onComplete]);
 

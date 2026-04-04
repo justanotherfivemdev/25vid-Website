@@ -1176,7 +1176,7 @@ function ServerDetail() {
                     </thead>
                     <tbody>
                       {metrics.slice(-20).map((m, idx) => (
-                        <tr key={idx} className="border-b border-[rgba(201,162,39,0.12)]/50 hover:bg-[#0c1117]/30">
+                        <tr key={idx} className="border-b border-[rgba(201,162,39,0.06)] hover:bg-[#0c1117]/30">
                           <td className="py-2 px-3 text-[#8a9aa8] font-mono text-xs">
                             {m.timestamp
                               ? new Date(m.timestamp).toLocaleTimeString()

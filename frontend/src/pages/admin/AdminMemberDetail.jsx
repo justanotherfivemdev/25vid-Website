@@ -347,7 +347,7 @@ const AdminMemberDetail = () => {
             {(!member.mission_history?.length) ? <p className="text-sm text-[#4a6070]">No mission records.</p> : (
               <div className="space-y-2">
                 {member.mission_history.map((m, i) => (
-                  <div key={m.id || i} className="flex items-center justify-between bg-[#050a0e]/30 rounded p-3 border border-[rgba(201,162,39,0.12)]/50">
+                  <div key={m.id || i} className="flex items-center justify-between bg-[#050a0e]/30 rounded p-3 border border-[rgba(201,162,39,0.06)]">
                     <div><div className="font-medium text-sm">{m.operation_name}</div><div className="text-xs text-[#4a6070]">{m.date} — {m.role_performed}{m.notes ? ` — ${m.notes}` : ''}</div></div>
                     <Button size="sm" variant="ghost" onClick={() => removeMission(m.id)} className="text-tropic-red hover:bg-tropic-red/10 shrink-0"><Trash2 className="w-4 h-4" /></Button>
                   </div>
@@ -385,7 +385,7 @@ const AdminMemberDetail = () => {
             {(!member.training_history?.length) ? <p className="text-sm text-[#4a6070]">No training records.</p> : (
               <div className="space-y-2">
                 {member.training_history.map((t, i) => (
-                  <div key={t.id || i} className="flex items-center justify-between bg-[#050a0e]/30 rounded p-3 border border-[rgba(201,162,39,0.12)]/50">
+                  <div key={t.id || i} className="flex items-center justify-between bg-[#050a0e]/30 rounded p-3 border border-[rgba(201,162,39,0.06)]">
                     <div><div className="font-medium text-sm">{t.course_name}</div><div className="text-xs text-[#4a6070]">{t.completion_date}{t.instructor ? ` — ${t.instructor}` : ''}{t.notes ? ` — ${t.notes}` : ''}</div></div>
                     <Button size="sm" variant="ghost" onClick={() => removeTraining(t.id)} className="text-tropic-red hover:bg-tropic-red/10 shrink-0"><Trash2 className="w-4 h-4" /></Button>
                   </div>
@@ -418,7 +418,7 @@ const AdminMemberDetail = () => {
             {(!member.awards?.length) ? <p className="text-sm text-[#4a6070]">No awards.</p> : (
               <div className="space-y-2">
                 {member.awards.map((a, i) => (
-                  <div key={a.id || i} className="flex items-center justify-between bg-[#050a0e]/30 rounded p-3 border border-[rgba(201,162,39,0.12)]/50">
+                  <div key={a.id || i} className="flex items-center justify-between bg-[#050a0e]/30 rounded p-3 border border-[rgba(201,162,39,0.06)]">
                     <div className="flex items-center gap-2"><Award className="w-4 h-4 text-yellow-600 shrink-0" /><div><div className="font-medium text-sm">{a.name}</div>{a.description && <div className="text-xs text-[#4a6070]">{a.description}</div>}</div></div>
                     <div className="flex items-center gap-2">{a.date && <span className="text-xs text-[#4a6070]">{a.date}</span>}<Button size="sm" variant="ghost" onClick={() => removeAward(a.id)} className="text-tropic-red hover:bg-tropic-red/10"><Trash2 className="w-4 h-4" /></Button></div>
                   </div>

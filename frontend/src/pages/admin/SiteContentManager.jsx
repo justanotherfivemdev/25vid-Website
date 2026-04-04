@@ -46,7 +46,7 @@ const FieldHint = ({ location, purpose, recommended }) => (
 /* ─── section wrapper ─── */
 const SectionCard = ({ number, icon: Icon, title, subtitle, children }) => (
   <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)] overflow-hidden" data-testid={`section-${number}`}>
-    <CardHeader className="bg-[#0c1117]/80 border-b border-[rgba(201,162,39,0.12)]/60">
+    <CardHeader className="bg-[#0c1117]/80 border-b border-[rgba(201,162,39,0.072)]">
       <div className="flex items-center gap-4">
         <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-tropic-gold/20 text-tropic-gold font-bold text-sm shrink-0">{number}</div>
         <div className="flex-1">
@@ -342,7 +342,7 @@ const SiteContentManager = () => {
             { key: 'gallery', label: 'Mission Gallery', defaultH: 'MISSION GALLERY', defaultS: 'Moments from the field' },
             { key: 'enlist', label: 'Enlist / Join Section', defaultH: 'ENLIST TODAY', defaultS: 'Join the most professional MilSim unit' },
           ].map(({ key, label, defaultH, defaultS }) => (
-            <div key={key} className="grid grid-cols-[1fr,1fr] gap-4 pb-4 border-b border-[rgba(201,162,39,0.12)]/50 last:border-0">
+            <div key={key} className="grid grid-cols-[1fr,1fr] gap-4 pb-4 border-b border-[rgba(201,162,39,0.06)] last:border-0">
               <div>
                 <Label>{label} — Heading</Label>
                 <Input value={get(`sectionHeadings.${key}.heading`) || ''} onChange={e => set(`sectionHeadings.${key}.heading`, e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-1" />

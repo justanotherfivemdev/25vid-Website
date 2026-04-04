@@ -23,7 +23,7 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
-    <div className="border border-[rgba(201,162,39,0.12)]/50 rounded overflow-hidden" data-testid={`rsvp-entry-${r.user_id}`}>
+    <div className="border border-[rgba(201,162,39,0.06)] rounded overflow-hidden" data-testid={`rsvp-entry-${r.user_id}`}>
       <div 
         className="flex items-center justify-between py-2 px-3 bg-[#050a0e]/30 cursor-pointer hover:bg-[#050a0e]/50 transition-colors"
         onClick={() => setExpanded(!expanded)}
@@ -54,7 +54,7 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
         </div>
       </div>
       {expanded && (
-        <div className="px-3 py-2 bg-[#0c1117]/50 border-t border-[rgba(201,162,39,0.12)]/30 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+        <div className="px-3 py-2 bg-[#0c1117]/50 border-t border-[rgba(201,162,39,0.036)] grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           {r.company && <div><span className="text-[#4a6070]">Company:</span> <span className="text-tropic-gold">{r.company}</span></div>}
           {r.platoon && <div><span className="text-[#4a6070]">Platoon:</span> <span className="text-green-400">{r.platoon}</span></div>}
           {r.squad && <div><span className="text-[#4a6070]">Squad:</span> <span className="text-[#8a9aa8]">{r.squad}</span></div>}
@@ -207,7 +207,7 @@ const OperationDetail = () => {
                 const declined = (operation.attendees || []).filter(a => a.status === 'declined');
                 const tentativeAtt = (operation.attendees || []).filter(a => a.status === 'tentative');
                 return (
-                  <div className="flex items-center gap-6 bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.12)]/50">
+                  <div className="flex items-center gap-6 bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.06)]">
                     <div className="text-center"><div className="text-2xl font-bold text-green-400">{accepted.length}</div><div className="text-[10px] text-[#4a6070] tracking-wider">ACCEPTED</div></div>
                     <div className="text-center"><div className="text-2xl font-bold text-red-400">{declined.length}</div><div className="text-[10px] text-[#4a6070] tracking-wider">DECLINED</div></div>
                     {tentativeAtt.length > 0 && <div className="text-center"><div className="text-2xl font-bold text-yellow-400">{tentativeAtt.length}</div><div className="text-[10px] text-[#4a6070] tracking-wider">TENTATIVE</div></div>}
@@ -215,7 +215,7 @@ const OperationDetail = () => {
                   </div>
                 );
               })() : (
-                <div className="flex items-center gap-6 bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.12)]/50">
+                <div className="flex items-center gap-6 bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.06)]">
                   <div className="text-center"><div className="text-2xl font-bold text-green-400">{counts.attending || 0}</div><div className="text-[10px] text-[#4a6070] tracking-wider">ATTENDING</div></div>
                   <div className="text-center"><div className="text-2xl font-bold text-yellow-400">{counts.tentative || 0}</div><div className="text-[10px] text-[#4a6070] tracking-wider">TENTATIVE</div></div>
                   {maxP && <div className="text-center"><div className="text-2xl font-bold text-orange-400">{counts.waitlisted || 0}</div><div className="text-[10px] text-[#4a6070] tracking-wider">WAITLISTED</div></div>}
@@ -278,7 +278,7 @@ const OperationDetail = () => {
                     <CardContent>
                       <div className="space-y-1">
                         {accepted.map((a, i) => (
-                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-[#050a0e]/30 rounded border border-[rgba(201,162,39,0.12)]/50">
+                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-[#050a0e]/30 rounded border border-[rgba(201,162,39,0.06)]">
                             <div className="w-8 h-8 rounded bg-green-900/40 flex items-center justify-center text-xs font-bold text-green-400">{(a.display_name || '?')[0].toUpperCase()}</div>
                             <span className="text-sm font-medium">{a.display_name}</span>
                             {a.user_id && <Badge variant="outline" className="text-[10px] border-tropic-gold/40 text-tropic-gold">LINKED</Badge>}
@@ -298,7 +298,7 @@ const OperationDetail = () => {
                     <CardContent>
                       <div className="space-y-1">
                         {declined.map((a, i) => (
-                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-[#050a0e]/30 rounded border border-[rgba(201,162,39,0.12)]/50">
+                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-[#050a0e]/30 rounded border border-[rgba(201,162,39,0.06)]">
                             <div className="w-8 h-8 rounded bg-red-900/40 flex items-center justify-center text-xs font-bold text-red-400">{(a.display_name || '?')[0].toUpperCase()}</div>
                             <span className="text-sm font-medium text-[#8a9aa8]">{a.display_name}</span>
                           </div>
@@ -317,7 +317,7 @@ const OperationDetail = () => {
                     <CardContent>
                       <div className="space-y-1">
                         {tentativeAtt.map((a, i) => (
-                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-[#050a0e]/30 rounded border border-[rgba(201,162,39,0.12)]/50">
+                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-[#050a0e]/30 rounded border border-[rgba(201,162,39,0.06)]">
                             <div className="w-8 h-8 rounded bg-yellow-900/40 flex items-center justify-center text-xs font-bold text-yellow-400">{(a.display_name || '?')[0].toUpperCase()}</div>
                             <span className="text-sm font-medium">{a.display_name}</span>
                           </div>

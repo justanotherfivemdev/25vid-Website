@@ -550,7 +550,7 @@ const CampaignMap = () => {
                           const st = OBJ_STATUS_CFG[o.status] || OBJ_STATUS_CFG.pending;
                           const pr = PRIORITY_CFG[o.priority] || PRIORITY_CFG.secondary;
                           return (
-                            <div key={i} className={`${st.color} rounded-lg p-3 border border-[rgba(201,162,39,0.12)]/50`} data-testid={`objective-${i}`}>
+                            <div key={i} className={`${st.color} rounded-lg p-3 border border-[rgba(201,162,39,0.06)]`} data-testid={`objective-${i}`}>
                               <div className="flex items-start gap-3">
                                 <div className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${st.dot}`}></div>
                                 <div className="flex-1 min-w-0">

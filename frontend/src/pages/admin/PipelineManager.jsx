@@ -19,7 +19,7 @@ const STAGES = [
   { value: 'active_member', label: 'Active Member', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
   { value: 'rejected', label: 'Rejected', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
   { value: 'dropped', label: 'Dropped', color: 'bg-red-700/20 text-red-500 border-red-700/30' },
-  { value: 'archived', label: 'Archived', color: 'bg-[#111a24]/20 text-[#4a6070] border-[rgba(201,162,39,0.15)]/30' },
+  { value: 'archived', label: 'Archived', color: 'bg-[#111a24]/20 text-[#4a6070] border-[rgba(201,162,39,0.045)]' },
 ];
 
 const getStageColor = (stage) => STAGES.find(s => s.value === stage)?.color || 'bg-[#111a24]';
@@ -194,7 +194,7 @@ const PipelineManager = () => {
                     <Label className="text-xs tracking-wider text-[#8a9aa8] mb-2 block">PIPELINE HISTORY</Label>
                     <div className="space-y-2">
                       {detailData.pipeline_history.slice().reverse().map((h, i) => (
-                        <div key={i} className="bg-[#050a0e]/20 border border-[rgba(201,162,39,0.12)]/50 rounded p-2 text-xs">
+                        <div key={i} className="bg-[#050a0e]/20 border border-[rgba(201,162,39,0.06)] rounded p-2 text-xs">
                           {h.type === 'note' ? (
                             <div>
                               <span className="text-[#4a6070]">{h.created_at?.split('T')[0]}</span>

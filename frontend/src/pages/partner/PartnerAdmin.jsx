@@ -604,7 +604,7 @@ const PartnerAdmin = () => {
                         </Button>
                       </div>
                       {depForm.route_points.map((rp, idx) => (
-                        <div key={idx} className="border border-[rgba(201,162,39,0.12)]/60 rounded p-2 space-y-1">
+                        <div key={idx} className="border border-[rgba(201,162,39,0.072)] rounded p-2 space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] text-tropic-gold font-bold">Stop {idx + 1}</span>
                             <Button type="button" variant="outline" size="sm" className="border-red-900/50 text-red-400 h-6 w-6 p-0" onClick={() => {

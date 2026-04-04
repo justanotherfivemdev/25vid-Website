@@ -35,7 +35,7 @@ export default function CoordinateDisplay({
   const ny = mapDimensions.w > 0 ? (y / mapDimensions.h).toFixed(4) : '—';
 
   return (
-    <div className="absolute bottom-2 left-2 z-20 flex items-center gap-3 bg-[#050a0e]/80 backdrop-blur-sm border border-[rgba(201,162,39,0.15)]/60 rounded px-3 py-1.5 text-[11px] font-mono text-[#8a9aa8] pointer-events-none select-none">
+    <div className="absolute bottom-2 left-2 z-20 flex items-center gap-3 bg-[#050a0e]/80 backdrop-blur-sm border border-[rgba(201,162,39,0.09)] rounded px-3 py-1.5 text-[11px] font-mono text-[#8a9aa8] pointer-events-none select-none">
       <Crosshair className="w-3.5 h-3.5 text-[#C9A227] shrink-0" />
       {isReforgerMap && reforgerMapConfig ? (
         <>

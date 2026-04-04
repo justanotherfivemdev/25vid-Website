@@ -16,7 +16,7 @@ const STATUS_COLORS = {
   denied: 'bg-red-500/20 text-red-400 border-red-500/30',
   active: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   returned: 'bg-[#4a6070]/20 text-[#8a9aa8] border-[#4a6070]/30',
-  expired: 'bg-[#111a24]/20 text-[#4a6070] border-[rgba(201,162,39,0.15)]/30',
+  expired: 'bg-[#111a24]/20 text-[#4a6070] border-[rgba(201,162,39,0.045)]',
 };
 
 const LOAManager = () => {

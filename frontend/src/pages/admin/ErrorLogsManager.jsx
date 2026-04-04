@@ -16,7 +16,7 @@ const SEVERITY_CONFIG = {
   error: { color: 'bg-orange-600/20 text-orange-300 border-orange-600/40', icon: AlertTriangle, label: 'ERROR' },
   warning: { color: 'bg-yellow-600/20 text-yellow-300 border-yellow-600/40', icon: AlertTriangle, label: 'WARNING' },
   info: { color: 'bg-blue-600/20 text-blue-300 border-blue-600/40', icon: Bug, label: 'INFO' },
-  debug: { color: 'bg-[#4a6070]/20 text-[#8a9aa8] border-[rgba(201,162,39,0.2)]/40', icon: Bug, label: 'DEBUG' },
+  debug: { color: 'bg-[#4a6070]/20 text-[#8a9aa8] border-[rgba(201,162,39,0.08)]', icon: Bug, label: 'DEBUG' },
 };
 
 const SOURCE_COLORS = {
@@ -243,7 +243,7 @@ const ErrorLogsManager = () => {
                   <div className="text-[10px] text-[#4a6070] tracking-wider font-bold mb-2">BY SOURCE</div>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(stats.by_source).map(([src, count]) => {
-                      const color = SOURCE_COLORS[src] || 'bg-[#4a6070]/20 text-[#8a9aa8] border-[rgba(201,162,39,0.2)]/30';
+                      const color = SOURCE_COLORS[src] || 'bg-[#4a6070]/20 text-[#8a9aa8] border-[rgba(201,162,39,0.06)]';
                       return (
                         <Badge key={src} className={`${color} border text-xs cursor-pointer`}
                           onClick={() => handleFilterChange('source', src)}>
@@ -377,7 +377,7 @@ const ErrorLogsManager = () => {
             {logs.map((log) => {
               const sevCfg = SEVERITY_CONFIG[log.severity] || SEVERITY_CONFIG.error;
               const SevIcon = sevCfg.icon;
-              const srcColor = SOURCE_COLORS[log.source] || 'bg-[#4a6070]/20 text-[#8a9aa8] border-[rgba(201,162,39,0.2)]/30';
+              const srcColor = SOURCE_COLORS[log.source] || 'bg-[#4a6070]/20 text-[#8a9aa8] border-[rgba(201,162,39,0.06)]';
               const isExpanded = expandedIds.has(log.id);
 
               return (
@@ -452,7 +452,7 @@ const ErrorLogsManager = () => {
 
                     {/* Expanded details */}
                     {isExpanded && (
-                      <div className="px-4 pb-4 pt-0 ml-8 border-t border-[rgba(201,162,39,0.12)]/50 mt-0 space-y-3">
+                      <div className="px-4 pb-4 pt-0 ml-8 border-t border-[rgba(201,162,39,0.06)] mt-0 space-y-3">
                         {/* Full message */}
                         <div className="mt-3">
                           <div className="text-[10px] text-[#4a6070] tracking-wider font-bold mb-1">MESSAGE</div>

@@ -249,7 +249,7 @@ export default function EventPopup({ event, isAdmin = false }) {
       </div>
 
       <div className="mt-2 flex flex-wrap gap-1">
-        <Badge variant="outline" className="text-[10px] capitalize text-[#8a9aa8] border-[rgba(201,162,39,0.15)]/60">
+        <Badge variant="outline" className="text-[10px] capitalize text-[#8a9aa8] border-[rgba(201,162,39,0.09)]">
           {event.category}
         </Badge>
         <Badge variant="outline" className={`text-[10px] ${
