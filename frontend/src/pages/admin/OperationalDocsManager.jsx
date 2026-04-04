@@ -191,11 +191,11 @@ export default function OperationalDocsManager() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(103,137,43,0.22),rgba(7,10,13,0.96)_54%)] px-6 py-7 shadow-2xl">
+      <div className="relative corner-bracket border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-tropic-gold-dark">Operations Workspace</p>
-            <h1 className="mt-3 text-4xl font-black tracking-[0.08em] text-white" style={{ fontFamily: "'Share Tech', sans-serif" }}>
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Operations Workspace</p>
+            <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
               Operational Documents
             </h1>
             <p className="mt-3 max-w-3xl text-sm text-[#8a9aa8]">

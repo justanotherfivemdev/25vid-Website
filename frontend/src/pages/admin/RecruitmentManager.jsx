@@ -185,18 +185,21 @@ const RecruitmentManager = () => {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="recruitment-title">
-              RECRUITMENT PIPELINE
-            </h1>
-            <p className="text-sm text-[#4a6070]">Manage open positions and review applications</p>
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>S-1 Personnel</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="recruitment-title">
+                RECRUITMENT PIPELINE
+              </h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Manage open positions and review applications</p>
+            </div>
+            <a href="/join" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10">
+                <ExternalLink className="w-4 h-4 mr-2" />View Public Page
+              </Button>
+            </a>
           </div>
-          <a href="/join" target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10">
-              <ExternalLink className="w-4 h-4 mr-2" />View Public Page
-            </Button>
-          </a>
         </div>
 
         {feedback && (

@@ -134,14 +134,17 @@ const SiteContentManager = () => {
     <>
       <div className="space-y-6 max-w-5xl">
         {/* Header */}
-        <div className="flex items-center justify-between sticky top-0 z-10 bg-[#050a0e]/95 backdrop-blur-sm py-4 -mx-2 px-2 border-b border-[rgba(201,162,39,0.12)]/50">
-          <div>
-            <h1 className="text-3xl font-bold tracking-wider" data-testid="site-content-title">COMMAND CENTER</h1>
-            <p className="text-sm text-[#4a6070] mt-1">Edit all website branding, text, and imagery. Changes are live after saving.</p>
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl sticky top-0 z-10 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Branding & Content</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="site-content-title">COMMAND CENTER</h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Edit all website branding, text, and imagery. Changes are live after saving.</p>
+            </div>
+            <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black px-8" data-testid="save-content-btn">
+              <Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save All'}
+            </Button>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black px-8" data-testid="save-content-btn">
-            <Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save All'}
-          </Button>
         </div>
 
         {message.text && (

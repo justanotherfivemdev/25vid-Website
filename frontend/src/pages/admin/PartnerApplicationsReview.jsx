@@ -67,18 +67,21 @@ const PartnerApplicationsReview = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-tropic-gold" style={{ fontFamily: "'Share Tech', sans-serif" }}>
-              <Shield className="w-6 h-6 inline mr-2" />PARTNER APPLICATIONS
-            </h2>
-            <p className="text-sm text-[#4a6070] mt-1">Review and manage incoming partner unit enrollment requests</p>
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>S-5 Liaison</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
+                <Shield className="w-7 h-7 inline mr-2" />PARTNER APPLICATIONS
+              </h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Review and manage incoming partner unit enrollment requests</p>
+            </div>
+            {pendingCount > 0 && (
+              <Badge className="bg-yellow-900/50 text-yellow-400 border border-yellow-700 text-sm px-3 py-1">
+                {pendingCount} Pending
+              </Badge>
+            )}
           </div>
-          {pendingCount > 0 && (
-            <Badge className="bg-yellow-900/50 text-yellow-400 border border-yellow-700 text-sm px-3 py-1">
-              {pendingCount} Pending
-            </Badge>
-          )}
         </div>
 
         {loading ? (

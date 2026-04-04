@@ -198,19 +198,18 @@ const UnitTagsManager = () => {
     <>
       <div className="space-y-6 max-w-4xl">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="unit-tags-title">
-              UNIT CONFIGURATION
-            </h1>
-            <p className="text-sm text-[#4a6070] mt-1">
-              Manage ranks, units, billets, and other organizational tags. Custom tags extend the defaults.
-            </p>
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Organization Structure</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="unit-tags-title">UNIT CONFIGURATION</h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Manage ranks, units, billets, and other organizational tags</p>
+            </div>
+            <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="save-tags-btn">
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="save-tags-btn">
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Changes'}
-          </Button>
         </div>
 
         {/* Message */}

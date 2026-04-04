@@ -177,11 +177,11 @@ const AdminMemberDetail = () => {
   return (
     <>
       <div className="space-y-6 max-w-4xl">
-        <div className="flex flex-col gap-4 rounded-3xl border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(85,107,47,0.16),rgba(7,10,13,0.96)_58%)] px-6 py-6 shadow-2xl md:flex-row md:items-center md:justify-between">
+        <div className="relative corner-bracket flex flex-col gap-4 border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-6 shadow-2xl md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <Link to="/admin/users"><Button size="sm" variant="outline" className="border-tropic-gold/25 bg-[#050a0e]/40 text-tropic-gold hover:bg-tropic-gold/10"><ArrowLeft className="w-4 h-4 mr-1" />Members</Button></Link>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-tropic-gold-dark">Member Workspace</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Member Workspace</p>
               <h1 className="mt-2 text-3xl font-bold tracking-wider text-white" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="admin-member-title">{member.username}</h1>
               <p className="text-sm text-[#8a9aa8]">{member.email}</p>
             </div>

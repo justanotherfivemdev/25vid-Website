@@ -116,17 +116,20 @@ const PartnerUnitsManager = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-tropic-gold" style={{ fontFamily: "'Share Tech', sans-serif" }}>
-              <Shield className="w-6 h-6 inline mr-2" />PARTNER UNITS
-            </h1>
-            <p className="text-sm text-[#4a6070] mt-1">S-5 Liaison — Manage allied/partner unit enrollment</p>
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>S-5 Liaison</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
+                <Shield className="w-7 h-7 inline mr-2" />PARTNER UNITS
+              </h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Manage allied/partner unit enrollment</p>
+            </div>
+            <Button onClick={() => { setShowForm(!showForm); setEditingUnit(null); setFormData({ name: '', abbreviation: '', description: '', contact_email: '', max_members: 50 }); }}
+              className="bg-tropic-gold hover:bg-tropic-gold-light text-black">
+              <Plus className="w-4 h-4 mr-2" />{showForm ? 'Cancel' : 'Enroll Partner Unit'}
+            </Button>
           </div>
-          <Button onClick={() => { setShowForm(!showForm); setEditingUnit(null); setFormData({ name: '', abbreviation: '', description: '', contact_email: '', max_members: 50 }); }}
-            className="bg-tropic-gold hover:bg-tropic-gold-light text-black">
-            <Plus className="w-4 h-4 mr-2" />{showForm ? 'Cancel' : 'Enroll Partner Unit'}
-          </Button>
         </div>
 
         {/* Create/Edit Form */}
