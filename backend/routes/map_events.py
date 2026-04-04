@@ -3,7 +3,7 @@ import json
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from starlette.responses import StreamingResponse
@@ -26,6 +26,67 @@ from services.threat_intel import (
 
 valyu_logger = logging.getLogger("valyu")
 router = APIRouter()
+
+THREAT_LEVEL_PRIORITY = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+
+
+def _coerce_event_time(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, str) and value:
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+        except ValueError:
+            return datetime.fromtimestamp(0, timezone.utc)
+    return datetime.fromtimestamp(0, timezone.utc)
+
+
+def _normalize_threat_event(doc: dict, provider_default: str) -> dict:
+    event = {**doc}
+    event.setdefault("provider", provider_default)
+    event.setdefault("source", provider_default)
+    event.setdefault("event_nature", "real")
+    event.setdefault("is_simulated", event.get("event_nature") == "fictional")
+    event.setdefault("campaign_id", None)
+    event.setdefault("campaign_name", None)
+    event.setdefault("operation_id", None)
+    event.setdefault("source_document_ids", [])
+    event.setdefault("generation_provider", None)
+    event.setdefault("generation_status", None)
+    event.setdefault("location_precision", "country" if provider_default != "community" else None)
+    event.setdefault("rawContent", event.get("summary") or event.get("title") or "")
+    event.setdefault("source_badge", event.get("admin_source") or event.get("provider") or event.get("source"))
+
+    location = event.get("location") or {}
+    lat = location.get("latitude")
+    lng = location.get("longitude")
+    has_point = isinstance(lat, (float, int)) and isinstance(lng, (float, int))
+    if event.get("map_worthy") is None:
+        if event.get("location_precision") == "country" and provider_default != "community":
+            event["map_worthy"] = False
+        else:
+            event["map_worthy"] = bool(has_point and (lat != 0 or lng != 0))
+
+    if "timestamp" not in event and "created_at" in event:
+        created_at = event["created_at"]
+        event["timestamp"] = created_at if isinstance(created_at, str) else created_at.isoformat()
+
+    if event.get("admin_description"):
+        event["summary"] = event["admin_description"]
+
+    return event
+
+
+def _sort_threat_events(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return sorted(
+        events,
+        key=lambda event: (
+            _coerce_event_time(event.get("timestamp")).timestamp(),
+            -THREAT_LEVEL_PRIORITY.get(event.get("threatLevel"), 5),
+        ),
+        reverse=True,
+    )
 
 
 @router.get("/map/overlays")
@@ -256,17 +317,7 @@ async def _get_community_events() -> list:
     docs = await db.community_events.find(
         {"visible": True, "approved": True}, {"_id": 0}
     ).sort("created_at", -1).to_list(300)
-    for d in docs:
-        d.setdefault("source", "community")
-        d.setdefault("provider", "community")
-        d.setdefault("event_nature", "real")
-        # Ensure timestamp exists for filtering
-        if "timestamp" not in d and "created_at" in d:
-            d["timestamp"] = d["created_at"] if isinstance(d["created_at"], str) else d["created_at"].isoformat()
-        # Apply admin description override for display
-        if d.get("admin_description"):
-            d["summary"] = d["admin_description"]
-    return docs
+    return [_normalize_threat_event(d, "community") for d in docs]
 
 
 @router.post("/threat-events")
@@ -276,34 +327,33 @@ async def get_threat_events():
 
     cached = await _get_cached_response("threat_events_global", VALYU_CACHE_TTL_MINUTES)
     if cached:
-        merged = community + (cached.get("events") or [])
+        external = [_normalize_threat_event(event, event.get("provider") or "external") for event in (cached.get("events") or [])]
+        merged = _sort_threat_events(community + external)
         return {
             "events": merged[:500],
             "count": len(merged[:500]),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "hybrid",
-            "sources": {"community": len(community), "external": len(cached.get("events") or [])},
+            "sources": {"community": len(community), "external": len(external)},
         }
 
     stored_events = await db.external_events.find(
         {}, {"_id": 0}
     ).sort("ingested_at", -1).to_list(200)
-    for ext in stored_events:
-        if ext.get("admin_description"):
-            ext["summary"] = ext["admin_description"]
+    external = [_normalize_threat_event(ext, ext.get("provider") or "external") for ext in stored_events]
     if stored_events:
-        merged = community + stored_events[:200]
+        merged = _sort_threat_events(community + external[:200])
         result = {
             "events": merged[:500],
             "count": len(merged[:500]),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "hybrid",
-            "sources": {"community": len(community), "external": len(stored_events[:200])},
+            "sources": {"community": len(community), "external": len(external[:200])},
         }
         # Cache only external events; community events are always loaded fresh
         await _set_cached_response("threat_events_global", {
-            "events": stored_events[:200],
-            "count": len(stored_events[:200]),
+            "events": external[:200],
+            "count": len(external[:200]),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "stored",
         })
@@ -311,7 +361,7 @@ async def get_threat_events():
 
     if not VALYU_API_KEY:
         return {
-            "events": community,
+            "events": _sort_threat_events(community),
             "count": len(community),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "community_only",
@@ -339,7 +389,7 @@ async def get_threat_events():
         _mark_valyu_called()
         valyu_logger.info(f"Valyu request SUCCEEDED: threat-events ({len(events)} events)")
         result = {
-            "events": events[:200],
+            "events": [_normalize_threat_event(event, event.get("provider") or "valyu") for event in events[:200]],
             "count": len(events[:200]),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "live",
@@ -362,18 +412,19 @@ async def get_threat_events():
 
     try:
         live_result = await _deduplicated_request("threat_events_global", _fetch_live)
-        merged = community + (live_result.get("events") or [])
+        external = [_normalize_threat_event(event, event.get("provider") or "valyu") for event in (live_result.get("events") or [])]
+        merged = _sort_threat_events(community + external)
         return {
             "events": merged[:500],
             "count": len(merged[:500]),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "hybrid",
-            "sources": {"community": len(community), "external": len(live_result.get("events") or [])},
+            "sources": {"community": len(community), "external": len(external)},
         }
     except Exception as e:
         valyu_logger.error(f"Valyu request FAILED: threat-events: {e}")
         return {
-            "events": community,
+            "events": _sort_threat_events(community),
             "count": len(community),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "valyu_failed",

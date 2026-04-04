@@ -483,7 +483,13 @@ const deploymentArrowLayer = {
 
 /* (Removed – countdown timer is now rendered via React Markers) */
 
-export default function GlobalThreatMap({ operations = [], intelEvents = [], campaignEvents = [] }) {
+export default function GlobalThreatMap({
+  operations = [],
+  intelEvents = [],
+  campaignEvents = [],
+  isAdmin = false,
+  onStatusChange,
+}) {
   const mapRef = useRef(null);
   const {
     viewport, showHeatmap, showClusters, showMilitaryBases, showADSB,
@@ -497,6 +503,8 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   const [campaignPopup, setCampaignPopup] = useState(null);
   const [countryModal, setCountryModal] = useState(null);
   const [cursor, setCursor] = useState('');
+  const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState(null);
 
   // NATO markers, deployments, and division location state
   const [natoMarkers, setNatoMarkers] = useState([]);
@@ -553,7 +561,12 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
   const eventsGeoJson = useMemo(() => ({
     type: 'FeatureCollection',
     features: filteredEvents
-      .filter((e) => e.location && typeof e.location.latitude === 'number' && typeof e.location.longitude === 'number')
+      .filter((e) =>
+        e.map_worthy !== false &&
+        e.location &&
+        typeof e.location.latitude === 'number' &&
+        typeof e.location.longitude === 'number'
+      )
       .map((event) => ({
         type: 'Feature',
         geometry: {
@@ -574,6 +587,12 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           country: event.location.country || '',
           keywords: JSON.stringify(event.keywords || []),
           rawContent: event.rawContent || '',
+          campaign_name: event.campaign_name || '',
+          event_nature: event.event_nature || 'real',
+          is_simulated: String(Boolean(event.is_simulated || event.event_nature === 'fictional')),
+          source_badge: event.source_badge || event.provider || event.source || '',
+          generation_provider: event.generation_provider || '',
+          location_precision: event.location_precision || '',
         },
       })),
   }), [filteredEvents]);
@@ -940,6 +959,12 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
           source: props.source,
           sourceUrl: props.sourceUrl,
           rawContent: props.rawContent,
+          campaign_name: props.campaign_name,
+          event_nature: props.event_nature,
+          is_simulated: props.is_simulated === 'true',
+          source_badge: props.source_badge,
+          generation_provider: props.generation_provider,
+          location_precision: props.location_precision,
           keywords: (() => { try { return JSON.parse(props.keywords); } catch { return []; } })(),
           location: {
             placeName: props.placeName,
@@ -1049,14 +1074,43 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
     if (mapRef.current) {
       addAircraftIcon(mapRef.current.getMap());
     }
-  }, []);
+    setMapReady(true);
+    setMapError(null);
+    onStatusChange?.({ ready: true, error: null });
+  }, [onStatusChange]);
+
+  const onMapError = useCallback((event) => {
+    const message = event?.error?.message || event?.message || 'Map rendering failed.';
+    setMapReady(false);
+    setMapError(message);
+    onStatusChange?.({ ready: false, error: message });
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    if (!MAPBOX_TOKEN) {
+      onStatusChange?.({
+        ready: false,
+        error: 'Mapbox token missing. Set REACT_APP_MAPBOX_TOKEN to enable the globe.',
+      });
+    }
+  }, [onStatusChange]);
 
   if (!MAPBOX_TOKEN) {
     return (
-      <div className="flex h-full items-center justify-center bg-black text-tropic-gold-dark">
-        <div className="text-center p-8">
-          <p className="text-lg font-semibold mb-2 text-tropic-gold">Mapbox Token Required</p>
-          <p className="text-sm">Set <code className="bg-gray-900 text-tropic-gold-light px-2 py-1 rounded border border-tropic-gold-dark/30">REACT_APP_MAPBOX_TOKEN</code> in your environment.</p>
+      <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,#223012_0%,#0a0d12_52%,#040506_100%)] text-tropic-gold-dark">
+        <div className="max-w-lg rounded-2xl border border-tropic-gold/20 bg-black/80 p-8 text-center shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-tropic-gold-dark">Threat Map Offline</p>
+          <p className="mt-3 text-2xl font-semibold text-tropic-gold">Mapbox token required</p>
+          <p className="mt-3 text-sm text-gray-400">
+            The intelligence feed is still available, but the globe cannot render until
+            <code className="mx-1 rounded border border-tropic-gold/20 bg-black px-2 py-1 text-tropic-gold-light">REACT_APP_MAPBOX_TOKEN</code>
+            is configured.
+          </p>
+          {isAdmin && (
+            <p className="mt-4 text-xs text-gray-500">
+              Admin diagnostic: verify the token, map style access, and outbound tile connectivity.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -1064,6 +1118,27 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
 
   return (
     <div className="relative h-full w-full">
+      {!mapReady && !mapError && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/35 backdrop-blur-[1px]">
+          <div className="rounded-xl border border-tropic-gold/20 bg-black/75 px-4 py-3 text-sm text-tropic-gold-light">
+            Initializing globe...
+          </div>
+        </div>
+      )}
+      {mapError && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/75 backdrop-blur-sm">
+          <div className="max-w-xl rounded-2xl border border-red-500/25 bg-[#091018] p-6 text-center shadow-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-red-300">Map Rendering Degraded</p>
+            <p className="mt-3 text-xl font-semibold text-tropic-gold">Global threat map unavailable</p>
+            <p className="mt-3 text-sm text-gray-300">
+              The sidebar feed and search remain active while the globe recovers.
+            </p>
+            <p className="mt-4 text-xs text-gray-500">
+              {isAdmin ? mapError : 'A map style, token, or tile-loading error prevented the globe from rendering.'}
+            </p>
+          </div>
+        </div>
+      )}
       <Map
         ref={mapRef}
         {...viewport}
@@ -1071,6 +1146,7 @@ export default function GlobalThreatMap({ operations = [], intelEvents = [], cam
         onMove={onMove}
         onClick={onMapClick}
         onLoad={onMapLoad}
+        onError={onMapError}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         cursor={cursor}

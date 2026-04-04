@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useEventsStore } from '@/stores/threatMapStore';
+import React, { useEffect, useMemo } from 'react';
+import { useEventsStore, getEventSourceKey } from '@/stores/threatMapStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,11 +16,33 @@ const threatBadgeVariant = {
 
 export default function FeedFilters({ isAdmin = false }) {
   const {
-    searchQuery, categoryFilters, threatLevelFilters,
-    setSearchQuery, setCategoryFilters, setThreatLevelFilters, clearFilters,
+    events, searchQuery, categoryFilters, threatLevelFilters,
+    sourceFilters, campaignFilter,
+    setSearchQuery, setCategoryFilters, setThreatLevelFilters,
+    setSourceFilters, setCampaignFilter, clearFilters,
   } = useEventsStore();
 
-  const hasFilters = searchQuery || categoryFilters.length > 0 || threatLevelFilters.length > 0;
+  const hasFilters = (
+    searchQuery ||
+    categoryFilters.length > 0 ||
+    threatLevelFilters.length > 0 ||
+    sourceFilters.length > 0 ||
+    campaignFilter !== 'all'
+  );
+
+  const sourceOptions = useMemo(() => {
+    return [...new Set(events.map(getEventSourceKey))].filter(Boolean);
+  }, [events]);
+
+  const campaignOptions = useMemo(() => {
+    return events
+      .filter((event) => event.campaign_id || event.campaign_name)
+      .map((event) => ({
+        id: event.campaign_id || event.campaign_name,
+        label: event.campaign_name || event.campaign_id,
+      }))
+      .filter((value, index, arr) => arr.findIndex((candidate) => candidate.id === value.id) === index);
+  }, [events]);
 
   const toggleCategory = (category) => {
     if (categoryFilters.includes(category)) {
@@ -38,12 +60,22 @@ export default function FeedFilters({ isAdmin = false }) {
     }
   };
 
+  const toggleSource = (source) => {
+    if (sourceFilters.includes(source)) {
+      setSourceFilters(sourceFilters.filter((value) => value !== source));
+    } else {
+      setSourceFilters([...sourceFilters, source]);
+    }
+  };
+
   // Non-admin users see a simplified curated view with search only
   // Clear any leftover category/threat filters so the feed isn't unexpectedly empty
   useEffect(() => {
-    if (!isAdmin && (categoryFilters.length > 0 || threatLevelFilters.length > 0)) {
+    if (!isAdmin && (categoryFilters.length > 0 || threatLevelFilters.length > 0 || sourceFilters.length > 0 || campaignFilter !== 'all')) {
       setCategoryFilters([]);
       setThreatLevelFilters([]);
+      setSourceFilters([]);
+      setCampaignFilter('all');
     }
   }, [isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -132,6 +164,44 @@ export default function FeedFilters({ isAdmin = false }) {
           ))}
         </div>
       </div>
+
+      {sourceOptions.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-medium text-tropic-gold-dark">Source</p>
+          <div className="flex flex-wrap gap-1">
+            {sourceOptions.map((source) => (
+              <Badge
+                key={source}
+                variant="outline"
+                className={`cursor-pointer text-xs ${
+                  sourceFilters.includes(source)
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                    : 'border-tropic-gold-dark/20 text-gray-500 hover:text-tropic-gold-light hover:border-tropic-gold-dark/40'
+                }`}
+                onClick={() => toggleSource(source)}
+              >
+                {source}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {campaignOptions.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-medium text-tropic-gold-dark">Campaign</p>
+          <select
+            value={campaignFilter}
+            onChange={(event) => setCampaignFilter(event.target.value)}
+            className="w-full rounded-md border border-tropic-gold-dark/30 bg-black px-3 py-2 text-sm text-gray-200 focus:border-tropic-gold/50 focus:outline-none"
+          >
+            <option value="all">All campaigns</option>
+            {campaignOptions.map((campaign) => (
+              <option key={campaign.id} value={campaign.id}>{campaign.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {hasFilters && (
         <Button

@@ -32,6 +32,7 @@ class CommunityEvent(BaseModel):
     source: str = "community"
     sourceUrl: Optional[str] = None
     keywords: List[str] = Field(default_factory=list)
+    rawContent: Optional[str] = None
 
     # Community-specific fields
     event_nature: Literal["real", "fictional"] = "real"
@@ -42,6 +43,16 @@ class CommunityEvent(BaseModel):
 
     # Layer/overlay grouping
     layer: Optional[str] = None  # e.g. "infrastructure", "economic", "military"
+    campaign_id: Optional[str] = None
+    campaign_name: Optional[str] = None
+    operation_id: Optional[str] = None
+    source_document_ids: List[str] = Field(default_factory=list)
+    generation_provider: Optional[str] = None
+    generation_status: Optional[str] = None
+    generation_signature: Optional[str] = None
+    is_simulated: bool = False
+    map_worthy: Optional[bool] = None
+    location_precision: Optional[str] = None
 
     # Admin intelligence override fields
     admin_description: Optional[str] = None
@@ -66,8 +77,19 @@ class CommunityEventCreate(BaseModel):
     location: CommunityEventLocation
     sourceUrl: Optional[str] = None
     keywords: List[str] = Field(default_factory=list)
+    rawContent: Optional[str] = None
     event_nature: Literal["real", "fictional"] = "real"
     layer: Optional[str] = None
+    campaign_id: Optional[str] = None
+    campaign_name: Optional[str] = None
+    operation_id: Optional[str] = None
+    source_document_ids: List[str] = Field(default_factory=list)
+    generation_provider: Optional[str] = None
+    generation_status: Optional[str] = None
+    generation_signature: Optional[str] = None
+    is_simulated: bool = False
+    map_worthy: Optional[bool] = None
+    location_precision: Optional[str] = None
 
 
 class CommunityEventUpdate(BaseModel):
@@ -78,8 +100,19 @@ class CommunityEventUpdate(BaseModel):
     location: Optional[CommunityEventLocation] = None
     sourceUrl: Optional[str] = None
     keywords: Optional[List[str]] = None
+    rawContent: Optional[str] = None
     event_nature: Optional[Literal["real", "fictional"]] = None
     layer: Optional[str] = None
+    campaign_id: Optional[str] = None
+    campaign_name: Optional[str] = None
+    operation_id: Optional[str] = None
+    source_document_ids: Optional[List[str]] = None
+    generation_provider: Optional[str] = None
+    generation_status: Optional[str] = None
+    generation_signature: Optional[str] = None
+    is_simulated: Optional[bool] = None
+    map_worthy: Optional[bool] = None
+    location_precision: Optional[str] = None
     visible: Optional[bool] = None
     approved: Optional[bool] = None
     # Admin override fields

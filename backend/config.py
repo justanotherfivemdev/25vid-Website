@@ -69,6 +69,9 @@ VALYU_MIN_EVENTS_THRESHOLD = int(os.environ.get("VALYU_MIN_EVENTS_THRESHOLD", 20
 EVENT_PRUNE_DAYS = int(os.environ.get("EVENT_PRUNE_DAYS", 15))
 OPENAI_INGESTION_INTERVAL_HOURS = int(os.environ.get("OPENAI_INGESTION_INTERVAL_HOURS", 24))
 MAX_VALYU_QUERIES_PER_CYCLE = int(os.environ.get("MAX_VALYU_QUERIES_PER_CYCLE", 8))
+OPERATIONAL_DOC_AI_MODEL = os.environ.get("OPERATIONAL_DOC_AI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
+OPERATIONAL_DOC_AI_MAX_EVENTS_PER_RUN = int(os.environ.get("OPERATIONAL_DOC_AI_MAX_EVENTS_PER_RUN", 5))
+OPERATIONAL_DOC_AI_COOLDOWN_MINUTES = int(os.environ.get("OPERATIONAL_DOC_AI_COOLDOWN_MINUTES", 240))
 
 # Server Management / Docker configuration
 DOCKER_SOCKET_PATH = os.environ.get("DOCKER_SOCKET_PATH", "unix:///var/run/docker.sock")

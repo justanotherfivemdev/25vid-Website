@@ -177,12 +177,13 @@ const AdminMemberDetail = () => {
   return (
     <>
       <div className="space-y-6 max-w-4xl">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 rounded-3xl border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(85,107,47,0.16),rgba(7,10,13,0.96)_58%)] px-6 py-6 shadow-2xl md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/admin/users"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Members</Button></Link>
+            <Link to="/admin/users"><Button size="sm" variant="outline" className="border-tropic-gold/25 bg-black/40 text-tropic-gold hover:bg-tropic-gold/10"><ArrowLeft className="w-4 h-4 mr-1" />Members</Button></Link>
             <div>
-              <h1 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="admin-member-title">{member.username}</h1>
-              <p className="text-sm text-gray-500">{member.email}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-tropic-gold-dark">Member Workspace</p>
+              <h1 className="mt-2 text-3xl font-bold tracking-wider text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="admin-member-title">{member.username}</h1>
+              <p className="text-sm text-gray-400">{member.email}</p>
             </div>
           </div>
           {!isTrainingStaffOnly && <Button onClick={handleSaveProfile} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="admin-save-profile-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>}
@@ -193,7 +194,7 @@ const AdminMemberDetail = () => {
         {/* Profile fields */}
         {isTrainingStaffOnly ? (
           /* Training Staff: read-only view of identity */
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl">
             <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider">IDENTITY & ASSIGNMENT</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {member.avatar_url && <img src={resolveImg(member.avatar_url)} alt="avatar" className="w-16 h-16 rounded-lg object-cover" />}
@@ -215,7 +216,7 @@ const AdminMemberDetail = () => {
             </CardContent>
           </Card>
         ) : (
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl">
           <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider">IDENTITY & ASSIGNMENT</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <ImageUpload value={member.avatar_url || ''} onChange={url => setMember({ ...member, avatar_url: url })} label="Avatar" description="Profile photo. 300x300px recommended." previewClass="w-16 h-16 rounded-lg object-cover" />
@@ -262,7 +263,7 @@ const AdminMemberDetail = () => {
         {!isTrainingStaffOnly && (
         <>
         {/* Unit Assignment (Hierarchy) */}
-        <Card className="bg-gray-900 border-gray-800" data-testid="admin-unit-assignment">
+        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl" data-testid="admin-unit-assignment">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg tracking-wider flex items-center gap-2">
               <Building2 className="w-5 h-5 text-tropic-gold" /> UNIT ASSIGNMENT
@@ -283,7 +284,7 @@ const AdminMemberDetail = () => {
         </Card>
 
         {/* Discord Integration Prep */}
-        <Card className="bg-gray-900 border-gray-800" data-testid="admin-discord-fields">
+        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl" data-testid="admin-discord-fields">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg tracking-wider flex items-center gap-2">
               <Link2 className="w-5 h-5 text-tropic-gold" /> DISCORD INTEGRATION PREP
@@ -321,13 +322,13 @@ const AdminMemberDetail = () => {
         </Card>
 
         {/* Mission History */}
-        <Card className="bg-gray-900 border-gray-800" data-testid="admin-mission-history">
+        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl" data-testid="admin-mission-history">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg tracking-wider flex items-center gap-2"><Target className="w-5 h-5 text-tropic-gold" /> MISSION HISTORY</CardTitle>
               <Dialog open={missionDialogOpen} onOpenChange={setMissionDialogOpen}>
                 <DialogTrigger asChild><Button size="sm" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="add-mission-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
-                <DialogContent className="bg-gray-900 text-white border-gray-800">
+        <DialogContent className="bg-[#0b1016] text-white border-tropic-gold/15">
                   <DialogHeader><DialogTitle>Add Mission Record</DialogTitle></DialogHeader>
                   <form onSubmit={addMission} className="space-y-3">
                     <div><Label>Operation Name</Label><Input required value={missionForm.operation_name} onChange={e => setMissionForm({...missionForm, operation_name: e.target.value})} className="bg-black border-gray-700" data-testid="mission-name-input" /></div>
@@ -359,13 +360,13 @@ const AdminMemberDetail = () => {
         )}
 
         {/* Training History */}
-        <Card className="bg-gray-900 border-gray-800" data-testid="admin-training-history">
+        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl" data-testid="admin-training-history">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg tracking-wider flex items-center gap-2"><Calendar className="w-5 h-5 text-tropic-gold" /> TRAINING HISTORY</CardTitle>
               <Dialog open={trainingDialogOpen} onOpenChange={setTrainingDialogOpen}>
                 <DialogTrigger asChild><Button size="sm" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="add-training-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
-                <DialogContent className="bg-gray-900 text-white border-gray-800">
+        <DialogContent className="bg-[#0b1016] text-white border-tropic-gold/15">
                   <DialogHeader><DialogTitle>Add Training Record</DialogTitle></DialogHeader>
                   <form onSubmit={addTraining} className="space-y-3">
                     <div><Label>Course / Training Name</Label><Input required value={trainingForm.course_name} onChange={e => setTrainingForm({...trainingForm, course_name: e.target.value})} className="bg-black border-gray-700" data-testid="training-name-input" /></div>
@@ -395,13 +396,13 @@ const AdminMemberDetail = () => {
         </Card>
 
         {/* Awards */}
-        <Card className="bg-gray-900 border-gray-800" data-testid="admin-awards">
+        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl" data-testid="admin-awards">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg tracking-wider flex items-center gap-2"><Award className="w-5 h-5 text-yellow-500" /> AWARDS & QUALIFICATIONS</CardTitle>
               <Dialog open={awardDialogOpen} onOpenChange={setAwardDialogOpen}>
                 <DialogTrigger asChild><Button size="sm" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="add-award-btn"><Plus className="w-4 h-4 mr-1" />Add</Button></DialogTrigger>
-                <DialogContent className="bg-gray-900 text-white border-gray-800">
+        <DialogContent className="bg-[#0b1016] text-white border-tropic-gold/15">
                   <DialogHeader><DialogTitle>Add Award / Qualification</DialogTitle></DialogHeader>
                   <form onSubmit={addAward} className="space-y-3">
                     <div><Label>Award Name</Label><Input required value={awardForm.name} onChange={e => setAwardForm({...awardForm, name: e.target.value})} className="bg-black border-gray-700" data-testid="award-name-input" /></div>

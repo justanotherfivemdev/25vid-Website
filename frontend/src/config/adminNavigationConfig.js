@@ -119,6 +119,14 @@ export const ADMIN_NAV_GROUPS = [
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_CAMPAIGNS),
       },
       {
+        path: '/admin/operational-docs',
+        label: 'Operational Docs',
+        icon: FileText,
+        show: (role) =>
+          hasPermission(role, PERMISSIONS.MANAGE_OPERATIONS) ||
+          hasPermission(role, PERMISSIONS.MANAGE_CAMPAIGNS),
+      },
+      {
         path: '/hub/operations-planner',
         label: 'Operations Planner',
         icon: Map,

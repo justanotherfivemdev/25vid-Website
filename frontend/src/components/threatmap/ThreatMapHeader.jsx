@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Activity, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MapViewToggle from './MapViewToggle';
+import CorrelationPanel from './CorrelationPanel';
 
-export default function ThreatMapHeader({ onRefresh, isLoading }) {
+export default function ThreatMapHeader({ onRefresh, isLoading, mapStatus, isAdmin = false }) {
   const { filteredEvents } = useEventsStore();
   const { dataSourceFilter } = useMapStore();
 
@@ -132,19 +133,31 @@ export default function ThreatMapHeader({ onRefresh, isLoading }) {
               {dataSourceFilter === 'fictional' ? 'Fictional' : 'Real-World'}
             </Badge>
           )}
+          {mapStatus?.error && (
+            <Badge
+              variant="outline"
+              className="text-[10px] border-red-500/40 text-red-300 bg-red-500/10"
+              title={isAdmin ? mapStatus.error : 'Map rendering issue'}
+            >
+              Map degraded
+            </Badge>
+          )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onRefresh}
-          disabled={isLoading}
-          title="Refresh events"
-          className="hover:bg-tropic-gold/10"
-          style={{ color: 'rgba(255,215,0,0.7)' }}
-        >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-        </Button>
+        <div className="relative flex items-center gap-2">
+          <CorrelationPanel docked />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onRefresh}
+            disabled={isLoading}
+            title="Refresh events"
+            className="hover:bg-tropic-gold/10"
+            style={{ color: 'rgba(255,215,0,0.7)' }}
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </div>
     </header>
   );

@@ -8,6 +8,17 @@ const THREAT_LEVEL_PRIORITY = {
   info: 4,
 };
 
+export const getEventSourceKey = (event) => {
+  if (event?.is_simulated || event?.event_nature === 'fictional') return 'simulated-intel';
+  return (
+    event?.source_badge ||
+    event?.admin_source ||
+    event?.provider ||
+    event?.source ||
+    'unknown'
+  );
+};
+
 export const threatLevelColors = {
   critical: '#ef4444',
   high: '#f97316',
@@ -153,6 +164,8 @@ export const useEventsStore = create((set, get) => ({
   timeRange: null,
   categoryFilters: [],
   threatLevelFilters: [],
+  sourceFilters: [],
+  campaignFilter: 'all',
   searchQuery: '',
 
   setEvents: (events) => {
@@ -184,13 +197,26 @@ export const useEventsStore = create((set, get) => ({
     get().applyFilters();
   },
 
+  setSourceFilters: (sourceFilters) => {
+    set({ sourceFilters });
+    get().applyFilters();
+  },
+
+  setCampaignFilter: (campaignFilter) => {
+    set({ campaignFilter });
+    get().applyFilters();
+  },
+
   setSearchQuery: (searchQuery) => {
     set({ searchQuery });
     get().applyFilters();
   },
 
   applyFilters: () => {
-    const { events, timeRange, categoryFilters, threatLevelFilters, searchQuery } = get();
+    const {
+      events, timeRange, categoryFilters, threatLevelFilters,
+      sourceFilters, campaignFilter, searchQuery,
+    } = get();
     const { dataSourceFilter } = useMapStore.getState();
     let filtered = [...events];
 
@@ -216,29 +242,51 @@ export const useEventsStore = create((set, get) => ({
       filtered = filtered.filter((event) => threatLevelFilters.includes(event.threatLevel));
     }
 
+    if (sourceFilters.length > 0) {
+      filtered = filtered.filter((event) => sourceFilters.includes(getEventSourceKey(event)));
+    }
+
+    if (campaignFilter && campaignFilter !== 'all') {
+      filtered = filtered.filter(
+        (event) =>
+          event.campaign_id === campaignFilter ||
+          event.campaign_name === campaignFilter
+      );
+    }
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (event) =>
           event.title.toLowerCase().includes(query) ||
           event.summary.toLowerCase().includes(query) ||
-          (event.location.placeName || '').toLowerCase().includes(query) ||
-          (event.location.country || '').toLowerCase().includes(query)
+          (event.location?.placeName || '').toLowerCase().includes(query) ||
+          (event.location?.country || '').toLowerCase().includes(query) ||
+          (event.campaign_name || '').toLowerCase().includes(query) ||
+          getEventSourceKey(event).toLowerCase().includes(query)
       );
     }
 
     filtered.sort((a, b) => {
+      const timeDiff = new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      if (timeDiff !== 0) return timeDiff;
       const priorityA = THREAT_LEVEL_PRIORITY[a.threatLevel] ?? 5;
       const priorityB = THREAT_LEVEL_PRIORITY[b.threatLevel] ?? 5;
-      if (priorityA !== priorityB) return priorityA - priorityB;
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      return priorityA - priorityB;
     });
 
     set({ filteredEvents: filtered });
   },
 
   clearFilters: () => {
-    set({ timeRange: null, categoryFilters: [], threatLevelFilters: [], searchQuery: '' });
+    set({
+      timeRange: null,
+      categoryFilters: [],
+      threatLevelFilters: [],
+      sourceFilters: [],
+      campaignFilter: 'all',
+      searchQuery: '',
+    });
     get().applyFilters();
   },
 }));

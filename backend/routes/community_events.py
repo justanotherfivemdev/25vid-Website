@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from database import db
 from middleware.auth import get_current_user
+from middleware.rbac import Permission, has_permission
 from models.community_event import (
     CommunityEvent,
     CommunityEventCreate,
@@ -30,6 +31,11 @@ async def list_community_events(
     category: Optional[str] = None,
     layer: Optional[str] = None,
     threat_level: Optional[str] = None,
+    campaign_id: Optional[str] = None,
+    operation_id: Optional[str] = None,
+    source_document_id: Optional[str] = None,
+    generation_status: Optional[str] = None,
+    include_hidden: bool = False,
     current_user: dict = Depends(get_current_user),
 ):
     """List community events with optional filters.
@@ -37,11 +43,19 @@ async def list_community_events(
     By default only approved & visible events are returned.
     Admins also see unapproved events; creators see their own pending items.
     """
+    role = current_user.get("role", "member")
     is_admin = current_user.get("role") == "admin"
+    can_review_hidden = (
+        is_admin
+        or has_permission(role, Permission.MANAGE_OPERATIONS)
+        or has_permission(role, Permission.MANAGE_CAMPAIGNS)
+    )
     user_id = current_user.get("id", "")
 
-    if is_admin:
-        query: dict = {"visible": True}
+    if can_review_hidden and include_hidden:
+        query: dict = {}
+    elif can_review_hidden:
+        query = {"visible": True}
     else:
         # Non-admins see approved events OR their own unapproved events
         query = {
@@ -60,6 +74,14 @@ async def list_community_events(
         query["layer"] = layer
     if threat_level:
         query["threatLevel"] = threat_level
+    if campaign_id:
+        query["campaign_id"] = campaign_id
+    if operation_id:
+        query["operation_id"] = operation_id
+    if source_document_id:
+        query["source_document_ids"] = source_document_id
+    if generation_status:
+        query["generation_status"] = generation_status
 
     events = (
         await db[COLLECTION]
@@ -156,7 +178,14 @@ async def approve_community_event(
 
     result = await db[COLLECTION].update_one(
         {"id": event_id},
-        {"$set": {"approved": True, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        {
+            "$set": {
+                "approved": True,
+                "visible": True,
+                "generation_status": "published",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+        },
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Event not found")
