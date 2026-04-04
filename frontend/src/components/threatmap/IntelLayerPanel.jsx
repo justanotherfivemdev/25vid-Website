@@ -36,7 +36,7 @@ const LAYER_GROUPS = [
     label: 'Economic & Trade',
     icon: TrendingDown,
     description: 'Markets, sanctions, commodities',
-    color: '#22c55e',
+    color: '#c9a227',
   },
   {
     id: 'diplomatic',
@@ -99,7 +99,7 @@ export default function IntelLayerPanel() {
   }, [filteredEvents]);
 
   const riskLevel = riskScore >= 70 ? 'CRITICAL' : riskScore >= 40 ? 'HIGH' : riskScore >= 20 ? 'MEDIUM' : 'LOW';
-  const riskColor = riskScore >= 70 ? '#ef4444' : riskScore >= 40 ? '#f97316' : riskScore >= 20 ? '#eab308' : '#22c55e';
+  const riskColor = riskScore >= 70 ? '#ef4444' : riskScore >= 40 ? '#f97316' : riskScore >= 20 ? '#eab308' : '#c9a227';
 
   if (isCollapsed) {
     return (
@@ -242,7 +242,7 @@ export default function IntelLayerPanel() {
       {/* View mode indicator */}
       <div className="px-3 py-1.5 border-t text-center" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
         <div className="flex items-center justify-center gap-1.5">
-          <Activity className="h-3 w-3 text-green-500" />
+          <Activity className="h-3 w-3 text-[#c9a227]" />
           <span className="text-[8px] text-[#4a6070] uppercase tracking-wider">
             {mapViewMode === 'globe' ? '🌍 Globe View' : '🗺️ World Monitor'} • Live
           </span>

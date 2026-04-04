@@ -10,8 +10,8 @@ const threatBadgeVariant = {
   critical: 'bg-red-500/20 text-red-400 border-red-500/30',
   high: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  low: 'bg-green-500/20 text-green-400 border-green-500/30',
-  info: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+  low: 'bg-[rgba(201,162,39,0.15)] text-[#c9a227] border-[rgba(201,162,39,0.3)]',
+  info: 'bg-[#111a24] text-[#8a9aa8] border-[rgba(138,154,168,0.3)]',
 };
 
 export default function FeedFilters({ isAdmin = false }) {
@@ -175,7 +175,7 @@ export default function FeedFilters({ isAdmin = false }) {
                 variant="outline"
                 className={`cursor-pointer text-xs ${
                   sourceFilters.includes(source)
-                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                    ? 'bg-[rgba(201,162,39,0.1)] text-[#e8c547] border-[rgba(201,162,39,0.3)]'
                     : 'border-tropic-gold-dark/20 text-[#4a6070] hover:text-tropic-gold-light hover:border-tropic-gold-dark/40'
                 }`}
                 onClick={() => toggleSource(source)}

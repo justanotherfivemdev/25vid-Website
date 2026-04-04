@@ -102,8 +102,8 @@ const severityColor = {
   critical: '#ef4444',
   high: '#f97316',
   medium: '#eab308',
-  low: '#22c55e',
-  info: '#94a3b8',
+  low: '#c9a227',
+  info: '#8a9aa8',
 };
 
 export default function CorrelationPanel({ docked = false }) {
@@ -184,8 +184,8 @@ export default function CorrelationPanel({ docked = false }) {
                 <div
                   className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded"
                   style={{
-                    background: `${severityColor[signal.severity] || '#94a3b8'}15`,
-                    border: `1px solid ${severityColor[signal.severity] || '#94a3b8'}40`,
+                    background: `${severityColor[signal.severity] || '#8a9aa8'}15`,
+                    border: `1px solid ${severityColor[signal.severity] || '#8a9aa8'}40`,
                   }}
                 >
                   <Icon className="h-3 w-3" style={{ color: severityColor[signal.severity] }} />

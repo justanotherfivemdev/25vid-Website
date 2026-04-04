@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Flag, ExternalLink } from 'lucide-react';
 
 const THREAT_LEVEL_COLORS = {
-  low: 'bg-green-700/15 text-green-400',
+  low: 'bg-[rgba(201,162,39,0.1)] text-[#c9a227]',
   medium: 'bg-tropic-gold/15 text-tropic-gold',
   high: 'bg-orange-700/15 text-orange-400',
   critical: 'bg-tropic-red/15 text-tropic-red',

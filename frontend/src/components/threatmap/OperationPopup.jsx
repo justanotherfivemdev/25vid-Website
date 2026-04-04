@@ -6,7 +6,7 @@ import { Calendar, Users, ExternalLink, Map } from 'lucide-react';
 export default function OperationPopup({ operation }) {
   const stateColors = {
     planned: 'bg-tropic-gold/15 text-tropic-gold',
-    ongoing: 'bg-green-500/15 text-green-400',
+    ongoing: 'bg-[rgba(201,162,39,0.1)] text-[#c9a227]',
     completed: 'bg-[#4a6070]/15 text-[#8a9aa8]',
   };
 

@@ -193,7 +193,7 @@ export default function EntitySearch() {
                 </div>
 
                 {deployMsg && (
-                  <div className={`text-xs rounded p-2 ${deployMsg.type === 'success' ? 'bg-green-900/30 text-green-400 border border-green-800/30' : 'bg-tropic-red/10 text-tropic-red-light border border-tropic-red/20'}`}>
+                  <div className={`text-xs rounded p-2 ${deployMsg.type === 'success' ? 'bg-[rgba(201,162,39,0.1)] text-[#c9a227] border border-[rgba(201,162,39,0.3)]' : 'bg-tropic-red/10 text-tropic-red-light border border-tropic-red/20'}`}>
                     {deployMsg.text}
                   </div>
                 )}

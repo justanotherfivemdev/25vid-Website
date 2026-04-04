@@ -24,12 +24,12 @@ export default function WorldMonitorNginxFallback() {
         textAlign: 'center',
       }}>
         <div aria-hidden="true" style={{ fontSize: 48, marginBottom: 16 }}>🌐</div>
-        <h2 style={{ color: '#FFD700', fontSize: 18, marginBottom: 12 }}>
+        <h2 style={{ color: '#e8c547', fontSize: 18, marginBottom: 12 }}>
           World Monitor — Nginx Configuration Required
         </h2>
-        <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
+        <p style={{ color: '#8a9aa8', fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
           The World Monitor is a standalone app that must be served by Nginx at{' '}
-          <code style={{ color: '#FFD700', background: '#1e293b', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>/worldmonitor/</code>.
+          <code style={{ color: '#e8c547', background: '#111a24', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>/worldmonitor/</code>.
           This page is showing because Nginx is serving the React app instead.
         </p>
         <div style={{
@@ -48,13 +48,13 @@ export default function WorldMonitorNginxFallback() {
           <div style={{ color: '#64748b', marginTop: 8, marginBottom: 4 }}># 2. Copy build output to Nginx root</div>
           <div>cp -r dist/* $NGINX_ROOT/worldmonitor/</div>
           <div style={{ color: '#64748b', marginTop: 8, marginBottom: 4 }}># 3. Add to nginx config (before the catch-all location /)</div>
-          <div style={{ color: '#FFD700' }}>location /worldmonitor/ {'{'}</div>
+          <div style={{ color: '#e8c547' }}>location /worldmonitor/ {'{'}</div>
           <div>&nbsp;&nbsp;try_files $uri $uri/ /worldmonitor/index.html;</div>
-          <div style={{ color: '#FFD700' }}>{'}'}</div>
+          <div style={{ color: '#e8c547' }}>{'}'}</div>
         </div>
         <p style={{ color: '#64748b', fontSize: 11, marginTop: 16 }}>
-          See <code style={{ color: '#94a3b8' }}>nginx-production.conf</code> and{' '}
-          <code style={{ color: '#94a3b8' }}>docs/WORLDMONITOR_INTEGRATION.md</code> for details.
+          See <code style={{ color: '#8a9aa8' }}>nginx-production.conf</code> and{' '}
+          <code style={{ color: '#8a9aa8' }}>docs/WORLDMONITOR_INTEGRATION.md</code> for details.
         </p>
       </div>
     </div>

@@ -144,8 +144,8 @@ export default function PartnerThreatMap() {
           <span className="text-xs text-[#4a6070]">{user?.username}</span>
         </div>
       </div>
-      <div className="flex flex-1 overflow-hidden">
-        <div className="relative flex-1">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="relative min-h-0 flex-1">
           <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
           <TimelineScrubber />
           <ThreatMapControls />
