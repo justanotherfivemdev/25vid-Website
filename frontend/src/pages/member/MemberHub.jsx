@@ -172,7 +172,7 @@ const MemberHub = () => {
               <h3 className="text-xl font-bold text-[#e8c547]" style={{ fontFamily: "'Orbitron', sans-serif" }}>SEARCH RESULTS</h3>
               {searchResults.operations?.length > 0 && (
                 <div>
-                  <h4 className="text-sm tracking-wider tracking-[0.15em] text-[#8a9aa8] mb-2" style={{ fontFamily: "'Oswald', sans-serif" }}>OPERATIONS ({searchResults.operations.length})</h4>
+                  <h4 className="text-sm tracking-[0.15em] text-[#8a9aa8] mb-2" style={{ fontFamily: "'Oswald', sans-serif" }}>OPERATIONS ({searchResults.operations.length})</h4>
                   <div className="grid md:grid-cols-2 gap-3">
                     {searchResults.operations.map(op => (
                       <Link to={`/hub/operations/${op.id}`} key={op.id}>
@@ -192,7 +192,7 @@ const MemberHub = () => {
               )}
               {searchResults.discussions?.length > 0 && (
                 <div>
-                  <h4 className="text-sm tracking-wider tracking-[0.15em] text-[#8a9aa8] mb-2" style={{ fontFamily: "'Oswald', sans-serif" }}>DISCUSSIONS ({searchResults.discussions.length})</h4>
+                  <h4 className="text-sm tracking-[0.15em] text-[#8a9aa8] mb-2" style={{ fontFamily: "'Oswald', sans-serif" }}>DISCUSSIONS ({searchResults.discussions.length})</h4>
                   <div className="space-y-2">
                     {searchResults.discussions.map(d => (
                       <Link to={`/hub/discussions/${d.id}`} key={d.id}>
@@ -277,7 +277,7 @@ const MemberHub = () => {
             <section data-testid="my-schedule-section">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-2xl font-bold flex items-center gap-2 text-[#e8c547]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
-                  <CalendarCheck className="w-6 h-6 text-green-500" /> MY SCHEDULE
+                  <CalendarCheck className="w-6 h-6 text-[#00ff88]" /> MY SCHEDULE
                 </h3>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
