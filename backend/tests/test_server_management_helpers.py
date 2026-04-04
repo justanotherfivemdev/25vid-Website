@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 from datetime import timedelta
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -21,6 +22,7 @@ from services.server_config_generator import (
 )
 from services.docker_agent import _normalize_host_cpu_percent
 from services.reforger_orchestrator import ProvisioningResult, StageResult, extract_config_errors
+import services.reforger_orchestrator as reforger_orchestrator
 from services.sat_config_service import normalize_sat_config
 from services.server_metrics_collector import _PERIOD_DELTAS
 
@@ -447,7 +449,7 @@ def test_normalize_server_contract_upgrades_legacy_partial_status():
     }
     normalized = _normalize_server_contract(server)
     assert normalized["status"] == "running"
-    assert normalized["provisioning_state"] == "ready"
+    assert normalized["provisioning_state"] == "warning"
     assert normalized["readiness_state"] == "ready"
     assert normalized["provisioning_warnings"][0]["stage"] == "sat_discovery"
 
@@ -472,6 +474,7 @@ def test_log_helpers_build_structured_entries_and_parse_since():
     assert len(entries) == 2
     assert entries[0]["timestamp"] == "2026-04-03T10:00:00Z"
     assert entries[0]["line"] == "Engine ready"
+    assert entries[0]["source"] == "docker"
     assert _parse_log_since("2026-04-03T10:00:05Z") == 1775210405
     assert _parse_log_since("1775210405") == 1775210405
 
@@ -507,6 +510,43 @@ def test_log_cursor_is_stable_across_calls():
     raw_hash = _stable_hash("hello")
     assert len(raw_hash) == 8
     assert all(ch in "0123456789abcdef" for ch in raw_hash)
+
+
+def test_prepare_server_deployment_marks_server_created(monkeypatch):
+    server = {
+        "id": "srv-prep",
+        "name": "Prep",
+        "ports": {"game": 2001, "query": 17777, "rcon": 19999},
+        "log_stats_enabled": True,
+        "max_fps": 120,
+        "startup_parameters": [],
+    }
+
+    async def fake_ensure_filesystem(_server):
+        return None
+
+    async def fake_write_config_file(_server):
+        return True, "C:/reforger/srv-prep/Configs/server-config.json"
+
+    async def fake_ensure_container(_server):
+        return {
+            "container_id": "container-123",
+            "environment": {"ARMA_CONFIG": "server-config.json"},
+            "volumes": {"C:/reforger/srv-prep/profile": "/home/profile"},
+            "last_known_container_status": "created",
+        }
+
+    monkeypatch.setattr(reforger_orchestrator, "ensure_filesystem", fake_ensure_filesystem)
+    monkeypatch.setattr(reforger_orchestrator, "write_config_file", fake_write_config_file)
+    monkeypatch.setattr(reforger_orchestrator, "ensure_container", fake_ensure_container)
+
+    updates = asyncio.run(reforger_orchestrator.prepare_server_deployment(server))
+
+    assert updates["deployment_state"] == "created"
+    assert updates["status"] == "created"
+    assert updates["provisioning_state"] == "queued"
+    assert updates["summary_message"].startswith("Server container created successfully")
+    assert updates["provisioning_stages"]["container_creation"]["status"] == "success"
 
 
 def test_player_id_validation_rejects_whitespace_and_control_chars():

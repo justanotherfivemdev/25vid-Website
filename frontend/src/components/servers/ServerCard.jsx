@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Square, RotateCcw, Users, Gauge, Wifi } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, Tooltip, ResponsiveContainer, YAxis } from 'recharts';
 import { canRestartServer, canStartServer, canStopServer, isServerDegraded, normalizeServer } from '@/utils/serverStatus';
 
 const PERIODS = ['1d', '7d', '30d'];
@@ -34,10 +34,6 @@ function getStatusVisuals(status) {
       };
     case 'stopped':
     case 'created':
-      return {
-        glow: '',
-        dotCls: 'h-2.5 w-2.5 rounded-full bg-zinc-600',
-      };
     default:
       return {
         glow: '',
@@ -49,8 +45,8 @@ function getStatusVisuals(status) {
 function formatGraphTime(timestamp) {
   if (!timestamp) return '';
   try {
-    const d = new Date(timestamp);
-    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const date = new Date(timestamp);
+    return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   } catch {
     return '';
   }
@@ -63,11 +59,30 @@ function CustomTooltip({ active, payload, label }) {
       <p className="mb-1 text-tropic-gold-dark">{label}</p>
       {payload.map((entry) => (
         <p key={entry.dataKey} style={{ color: entry.color }}>
-          {entry.name}: {entry.value ?? '—'}
+          {entry.name}: {entry.value ?? '-'}
         </p>
       ))}
     </div>
   );
+}
+
+function getNumericValues(series, key) {
+  return series
+    .map((item) => item[key])
+    .filter((value) => Number.isFinite(value));
+}
+
+function getPaddedDomain(values, minimumSpan = 1) {
+  if (!values.length) return [0, minimumSpan];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (min === max) {
+    const pad = Math.max(minimumSpan, Math.abs(max) * 0.15 || minimumSpan);
+    return [Math.max(0, min - pad), max + pad];
+  }
+  const span = Math.max(max - min, minimumSpan);
+  const pad = Math.max(minimumSpan * 0.2, span * 0.15);
+  return [Math.max(0, min - pad), max + pad];
 }
 
 function StatBox({ icon: Icon, label, value }) {
@@ -76,8 +91,44 @@ function StatBox({ icon: Icon, label, value }) {
       <Icon className="h-3.5 w-3.5 shrink-0 text-tropic-gold-dark" />
       <div className="min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-tropic-gold-dark">{label}</p>
-        <p className="truncate text-sm font-semibold text-gray-200">{value ?? '—'}</p>
+        <p className="truncate text-sm font-semibold text-gray-200">{value ?? '-'}</p>
       </div>
+    </div>
+  );
+}
+
+function MetricSparkline({ label, value, data, dataKey, color, emptyLabel }) {
+  const numericValues = getNumericValues(data, dataKey);
+  const domain = getPaddedDomain(numericValues, dataKey === 'Players' ? 2 : 1);
+
+  return (
+    <div className="grid grid-cols-[64px_72px_1fr] items-center gap-3 rounded-lg bg-zinc-950/60 px-3 py-2">
+      <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-tropic-gold-dark">{label}</span>
+      <span className="text-sm font-semibold text-gray-200">{value}</span>
+      {numericValues.length < 2 ? (
+        <div className="flex h-10 items-center justify-end text-[11px] text-zinc-500">
+          {emptyLabel}
+        </div>
+      ) : (
+        <div className="h-10">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 4, right: 2, bottom: 4, left: 2 }}>
+              <YAxis hide domain={domain} />
+              <Tooltip content={<CustomTooltip />} />
+              <Line
+                type="monotone"
+                dataKey={dataKey}
+                name={label}
+                stroke={color}
+                strokeWidth={2}
+                dot={numericValues.length <= 2 ? { r: 2 } : false}
+                connectNulls
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
@@ -95,11 +146,11 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
   const hasTimeseries = Array.isArray(timeseries) && timeseries.length > 0;
 
   const graphData = hasTimeseries
-    ? timeseries.map((pt) => ({
-        time: formatGraphTime(pt.timestamp),
-        FPS: pt.fps ?? null,
-        Players: pt.player_count ?? null,
-        Ping: pt.ping ?? null,
+    ? timeseries.map((point) => ({
+        time: formatGraphTime(point.timestamp),
+        FPS: point.fps ?? null,
+        Players: point.player_count ?? null,
+        Ping: point.ping ?? null,
       }))
     : [];
 
@@ -112,7 +163,6 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
     <Card
       className={`group flex flex-col border-tropic-gold-dark/15 bg-black/80 backdrop-blur-sm transition-all duration-200 hover:border-tropic-gold/30 hover:bg-black/90 ${glow}`}
     >
-      {/* Top Section */}
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-3">
           <Link to={`/admin/servers/${id}`} className="min-w-0 flex-1">
@@ -124,97 +174,76 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
           <span className="sr-only">Server status: {displayStatus}</span>
         </div>
         {description && (
-          <p className="mt-1 text-xs text-gray-500 line-clamp-1">{description}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-gray-500">{description}</p>
         )}
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col gap-3 pb-3">
-        {/* Metrics Row */}
         <div className="flex gap-2">
           <StatBox icon={Users} label="Players" value={latest?.player_count ?? 'Unavailable'} />
           <StatBox icon={Gauge} label="FPS" value={latest?.server_fps ?? latest?.fps ?? 'Unavailable'} />
           <StatBox icon={Wifi} label="Ping" value={latest?.avg_player_ping_ms != null ? `${latest.avg_player_ping_ms}ms` : 'Unavailable'} />
         </div>
 
-        {/* Graph Area */}
         <div className="flex-1 rounded bg-zinc-900/40 p-2">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider text-tropic-gold-dark">
-              Performance
+              Performance Trends
             </span>
             <div className="flex gap-1">
-              {PERIODS.map((p) => (
+              {PERIODS.map((value) => (
                 <button
-                  key={p}
+                  key={value}
                   type="button"
-                  aria-pressed={period === p}
-                  onClick={() => onPeriodChange?.(id, p)}
+                  aria-pressed={period === value}
+                  onClick={() => onPeriodChange?.(id, value)}
                   className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                    period === p
+                    period === value
                       ? 'bg-tropic-gold/20 text-tropic-gold'
                       : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  {p}
+                  {value}
                 </button>
               ))}
             </div>
           </div>
 
           {hasTimeseries ? (
-            <ResponsiveContainer width="100%" height={120}>
-              <LineChart data={graphData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <XAxis
-                  dataKey="time"
-                  tick={{ fontSize: 9, fill: '#71717a' }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  tick={{ fontSize: 9, fill: '#71717a' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="FPS"
-                  name="FPS"
-                  stroke="#22c55e"
-                  strokeWidth={1.5}
-                  dot={false}
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Players"
-                  name="Players"
-                  stroke="#c9a227"
-                  strokeWidth={1.5}
-                  dot={false}
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Ping"
-                  name="Ping"
-                  stroke="#3b82f6"
-                  strokeWidth={1.5}
-                  dot={false}
-                  connectNulls
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="space-y-2">
+              <MetricSparkline
+                label="FPS"
+                value={latest?.server_fps != null || latest?.fps != null ? `${latest?.server_fps ?? latest?.fps}` : 'N/A'}
+                data={graphData}
+                dataKey="FPS"
+                color="#22c55e"
+                emptyLabel="Waiting for logStats samples"
+              />
+              <MetricSparkline
+                label="Players"
+                value={latest?.player_count != null ? `${latest.player_count}` : 'N/A'}
+                data={graphData}
+                dataKey="Players"
+                color="#c9a227"
+                emptyLabel="Collecting player samples"
+              />
+              <MetricSparkline
+                label="Ping"
+                value={latest?.avg_player_ping_ms != null ? `${latest.avg_player_ping_ms}ms` : 'N/A'}
+                data={graphData}
+                dataKey="Ping"
+                color="#3b82f6"
+                emptyLabel="Collecting latency samples"
+              />
+            </div>
           ) : (
             <div className="flex h-[120px] items-center justify-center text-xs text-zinc-600">
-              No data available
+              Collecting telemetry
             </div>
           )}
         </div>
       </CardContent>
 
-      {/* Quick Actions Footer */}
       {showFooter && (
         <CardFooter className="gap-2 border-t border-tropic-gold-dark/10 pt-3">
           {canStart && onStart && (
@@ -254,7 +283,6 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
           )}
         </CardFooter>
       )}
-
     </Card>
   );
 }

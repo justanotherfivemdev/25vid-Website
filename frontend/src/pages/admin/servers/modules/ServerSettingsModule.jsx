@@ -292,7 +292,7 @@ function ServerSettingsModule() {
       </div>
 
       <div className="rounded border border-amber-600/30 bg-amber-600/5 px-3 py-2 text-xs text-amber-400">
-        All safe Reforger config options are editable here. Host IPs, Docker mounts, and allocated ports remain backend-managed so users cannot break provisioning.
+        New servers start with the minimum dashboard-ready config. Optional gameplay, persistence, and operating overrides stay effectively unset until you change them here. Host IPs, Docker mounts, and allocated ports remain backend-managed so users cannot break provisioning.
       </div>
 
       <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -317,7 +317,7 @@ function ServerSettingsModule() {
           <div className="grid gap-4 xl:grid-cols-2">
             <Card className="border-zinc-800 bg-black/60">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">RUNTIME & TELEMETRY</CardTitle>
+                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">RCON & TELEMETRY</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FieldShell label="Enable logStats" help="Needed for FPS metrics and richer diagnostics.">
@@ -337,7 +337,7 @@ function ServerSettingsModule() {
 
             <Card className="border-zinc-800 bg-black/60">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">GAME</CardTitle>
+                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">CORE SERVER</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FieldShell label="Server Name">
@@ -354,7 +354,7 @@ function ServerSettingsModule() {
                 </FieldShell>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldShell label="Max Players">
-                    <Input type="number" value={game.maxPlayers ?? 64} onChange={(e) => updateNumber('game.maxPlayers', e.target.value, 64)} className="border-zinc-800 bg-black/60 text-white" />
+                    <Input type="number" value={game.maxPlayers ?? 32} onChange={(e) => updateNumber('game.maxPlayers', e.target.value, 32)} className="border-zinc-800 bg-black/60 text-white" />
                   </FieldShell>
                   <FieldShell label="Mods Required By Default">
                     <div className="flex items-center justify-between rounded border border-zinc-800 bg-black/40 px-3 py-2">
@@ -406,9 +406,12 @@ function ServerSettingsModule() {
 
             <Card className="border-zinc-800 bg-black/60">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">GAME PROPERTIES</CardTitle>
+                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">OPTIONAL GAMEPLAY</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <p className="text-xs text-gray-600">
+                  These overrides are not pre-filled into new server configs. Leave them untouched to keep the deployed JSON minimal.
+                </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldShell label="Max View Distance">
                     <Input type="number" value={gameProps.serverMaxViewDistance ?? 2500} onChange={(e) => updateNumber('game.gameProperties.serverMaxViewDistance', e.target.value, 2500)} className="border-zinc-800 bg-black/60 text-white" />
@@ -482,9 +485,12 @@ function ServerSettingsModule() {
 
             <Card className="border-zinc-800 bg-black/60">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">PERSISTENCE</CardTitle>
+                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">OPTIONAL PERSISTENCE</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <p className="text-xs text-gray-600">
+                  Persistence stays unset on new servers until you opt in. Configure overrides here only when the scenario or save model requires them.
+                </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldShell label="Auto Save Interval">
                     <Input type="number" value={persistence.autoSaveInterval ?? 10} onChange={(e) => updateNumber('game.persistence.autoSaveInterval', e.target.value, 10)} className="border-zinc-800 bg-black/60 text-white" />
@@ -506,9 +512,12 @@ function ServerSettingsModule() {
 
             <Card className="border-zinc-800 bg-black/60">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">OPERATING</CardTitle>
+                <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">OPTIONAL OPERATING</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <p className="text-xs text-gray-600">
+                  Operating overrides are advanced host-level controls. Leave them at engine defaults unless you are solving a specific gameplay or performance problem.
+                </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {[
                     ['Lobby Player Synchronise', 'operating.lobbyPlayerSynchronise', operating.lobbyPlayerSynchronise !== false],

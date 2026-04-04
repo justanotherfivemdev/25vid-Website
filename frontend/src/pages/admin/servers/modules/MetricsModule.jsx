@@ -62,13 +62,13 @@ function normalizeMetricPoint(point) {
 function formatBytes(bytes) {
   if (!bytes) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB'];
-  let idx = 0;
+  let index = 0;
   let value = bytes;
-  while (value >= 1024 && idx < units.length - 1) {
+  while (value >= 1024 && index < units.length - 1) {
     value /= 1024;
-    idx += 1;
+    index += 1;
   }
-  return `${value.toFixed(value >= 100 ? 0 : 1)} ${units[idx]}`;
+  return `${value.toFixed(value >= 100 ? 0 : 1)} ${units[index]}`;
 }
 
 function formatUptime(seconds) {
@@ -105,6 +105,25 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
+function getNumericValues(points, key) {
+  return points
+    .map((point) => point[key])
+    .filter((value) => Number.isFinite(value));
+}
+
+function getPaddedDomain(values, { floor = 0, minimumSpan = 1 } = {}) {
+  if (!values.length) return [floor, floor + minimumSpan];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (min === max) {
+    const pad = Math.max(minimumSpan, Math.abs(max) * 0.15 || minimumSpan);
+    return [Math.max(floor, min - pad), max + pad];
+  }
+  const span = Math.max(max - min, minimumSpan);
+  const pad = Math.max(minimumSpan * 0.2, span * 0.15);
+  return [Math.max(floor, min - pad), max + pad];
+}
+
 function ChartShell({ title, subtitle, icon: Icon, children }) {
   return (
     <Card className="border-zinc-800 bg-black/60">
@@ -126,6 +145,16 @@ function EmptyChartState({ loading }) {
       {loading ? <Loader2 className="mb-3 h-6 w-6 animate-spin text-tropic-gold" /> : <BarChart3 className="mb-3 h-8 w-8 text-gray-700" />}
       <p className="text-sm">{loading ? 'Loading metrics...' : 'No metrics available yet'}</p>
       <p className="mt-1 text-xs">Metrics are collected while the server is running.</p>
+    </div>
+  );
+}
+
+function SparseChartState({ label }) {
+  return (
+    <div className="flex h-[280px] flex-col items-center justify-center text-gray-600">
+      <BarChart3 className="mb-3 h-8 w-8 text-gray-700" />
+      <p className="text-sm">More telemetry is needed for {label.toLowerCase()}.</p>
+      <p className="mt-1 text-xs">The summary cards show the current sample, but the chart waits for a usable series.</p>
     </div>
   );
 }
@@ -183,6 +212,26 @@ function MetricsModule() {
     ping_ms: point.avg_player_ping_ms != null ? Number(point.avg_player_ping_ms.toFixed(1)) : null,
     fps: point.server_fps != null ? Number(point.server_fps.toFixed(1)) : null,
   })), [metrics, period]);
+
+  const cpuValues = getNumericValues(chartData, 'cpu_host_percent');
+  const memoryValues = getNumericValues(chartData, 'memory_mb');
+  const playerValues = getNumericValues(chartData, 'player_count');
+  const pingValues = getNumericValues(chartData, 'ping_ms');
+  const fpsValues = getNumericValues(chartData, 'fps');
+  const rxValues = getNumericValues(chartData, 'rx_mb');
+  const txValues = getNumericValues(chartData, 'tx_mb');
+
+  const cpuMemoryPointCount = Math.max(cpuValues.length, memoryValues.length);
+  const playerPingPointCount = Math.max(playerValues.length, pingValues.length);
+  const fpsPointCount = fpsValues.length;
+  const networkPointCount = Math.max(rxValues.length, txValues.length);
+
+  const cpuDomain = getPaddedDomain(cpuValues, { floor: 0, minimumSpan: 10 });
+  const memoryDomain = getPaddedDomain(memoryValues, { floor: 0, minimumSpan: 64 });
+  const playerDomain = getPaddedDomain(playerValues, { floor: 0, minimumSpan: 4 });
+  const pingDomain = getPaddedDomain(pingValues, { floor: 0, minimumSpan: 20 });
+  const fpsDomain = getPaddedDomain(fpsValues, { floor: 0, minimumSpan: 10 });
+  const networkDomain = getPaddedDomain([...rxValues, ...txValues], { floor: 0, minimumSpan: 1 });
 
   const summaryCards = [
     {
@@ -311,6 +360,8 @@ function MetricsModule() {
         <ChartShell title="CPU & Memory" subtitle="Container load over time." icon={Cpu}>
           {chartData.length === 0 ? (
             <EmptyChartState loading={loading} />
+          ) : cpuMemoryPointCount < 2 ? (
+            <SparseChartState label="CPU and memory" />
           ) : (
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -327,8 +378,8 @@ function MetricsModule() {
                   </defs>
                   <CartesianGrid stroke="#27272a" vertical={false} />
                   <XAxis dataKey="tick" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} minTickGap={24} />
-                  <YAxis yAxisId="cpu" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={36} />
-                  <YAxis yAxisId="memory" orientation="right" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={42} />
+                  <YAxis yAxisId="cpu" domain={cpuDomain} tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={36} />
+                  <YAxis yAxisId="memory" domain={memoryDomain} orientation="right" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={42} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Area yAxisId="cpu" type="monotone" dataKey="cpu_host_percent" name="CPU %" stroke="#60a5fa" fill="url(#cpuFill)" strokeWidth={2} />
@@ -342,18 +393,20 @@ function MetricsModule() {
         <ChartShell title="Players & Ping" subtitle="Population and latency, with A2S and RCON fallbacks." icon={Users}>
           {chartData.length === 0 ? (
             <EmptyChartState loading={loading} />
+          ) : playerPingPointCount < 2 ? (
+            <SparseChartState label="players and ping" />
           ) : (
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
                   <CartesianGrid stroke="#27272a" vertical={false} />
                   <XAxis dataKey="tick" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} minTickGap={24} />
-                  <YAxis yAxisId="players" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={36} />
-                  <YAxis yAxisId="ping" orientation="right" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={42} />
+                  <YAxis yAxisId="players" domain={playerDomain} tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={36} />
+                  <YAxis yAxisId="ping" domain={pingDomain} orientation="right" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={42} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line yAxisId="players" type="monotone" dataKey="player_count" name="Players" stroke="#22c55e" strokeWidth={2} dot={false} connectNulls />
-                  <Line yAxisId="ping" type="monotone" dataKey="ping_ms" name="Ping ms" stroke="#f59e0b" strokeWidth={2} dot={false} connectNulls />
+                  <Line yAxisId="players" type="monotone" dataKey="player_count" name="Players" stroke="#22c55e" strokeWidth={2} dot={playerValues.length <= 2 ? { r: 2 } : false} connectNulls />
+                  <Line yAxisId="ping" type="monotone" dataKey="ping_ms" name="Ping ms" stroke="#f59e0b" strokeWidth={2} dot={pingValues.length <= 2 ? { r: 2 } : false} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -363,16 +416,18 @@ function MetricsModule() {
         <ChartShell title="Server FPS" subtitle="Derived from logStats. Provisioning now enables it by default." icon={Activity}>
           {chartData.length === 0 || !chartData.some((point) => point.fps != null) ? (
             <EmptyChartState loading={loading} />
+          ) : fpsPointCount < 2 ? (
+            <SparseChartState label="server FPS" />
           ) : (
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
                   <CartesianGrid stroke="#27272a" vertical={false} />
                   <XAxis dataKey="tick" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} minTickGap={24} />
-                  <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={36} />
+                  <YAxis domain={fpsDomain} tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={36} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="fps" name="Server FPS" stroke="#10b981" strokeWidth={2.5} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="fps" name="Server FPS" stroke="#10b981" strokeWidth={2.5} dot={fpsValues.length <= 2 ? { r: 2 } : false} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -382,6 +437,8 @@ function MetricsModule() {
         <ChartShell title="Network Throughput" subtitle="RX and TX volume captured from Docker stats." icon={Network}>
           {chartData.length === 0 ? (
             <EmptyChartState loading={loading} />
+          ) : networkPointCount < 2 ? (
+            <SparseChartState label="network throughput" />
           ) : (
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -398,7 +455,7 @@ function MetricsModule() {
                   </defs>
                   <CartesianGrid stroke="#27272a" vertical={false} />
                   <XAxis dataKey="tick" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} minTickGap={24} />
-                  <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={44} />
+                  <YAxis domain={networkDomain} tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} width={44} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Area type="monotone" dataKey="rx_mb" name="RX MB" stroke="#06b6d4" fill="url(#rxFill)" strokeWidth={2} />

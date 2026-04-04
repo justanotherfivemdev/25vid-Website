@@ -8,6 +8,7 @@ from database import db
 from services.a2s_query import query_a2s_info
 from services.docker_agent import DockerAgent
 from services.rcon_bridge import bercon_client
+from services.server_logs import get_recent_server_log_text
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +134,7 @@ async def _collect_fps_metric(server: dict, container_name: str) -> dict:
     if not _log_stats_enabled(server):
         return {}
 
-    logs = await docker_agent.get_container_logs(container_name, tail=200)
+    logs = await get_recent_server_log_text(server, tail=400)
     if not logs:
         return {}
 
