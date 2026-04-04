@@ -8,9 +8,15 @@ const THREAT_LEVEL_PRIORITY = {
   info: 4,
 };
 
-const getEventSourceKey = (event) => {
+export const getEventSourceKey = (event) => {
   if (event?.is_simulated || event?.event_nature === 'fictional') return 'simulated-intel';
-  return event?.provider || event?.source || 'unknown';
+  return (
+    event?.source_badge ||
+    event?.admin_source ||
+    event?.provider ||
+    event?.source ||
+    'unknown'
+  );
 };
 
 export const threatLevelColors = {

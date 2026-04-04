@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useEventsStore } from '@/stores/threatMapStore';
+import { useEventsStore, getEventSourceKey } from '@/stores/threatMapStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,10 +31,7 @@ export default function FeedFilters({ isAdmin = false }) {
   );
 
   const sourceOptions = useMemo(() => {
-    return [...new Set(events.map((event) => {
-      if (event?.is_simulated || event?.event_nature === 'fictional') return 'simulated-intel';
-      return event?.provider || event?.source || 'unknown';
-    }))].filter(Boolean);
+    return [...new Set(events.map(getEventSourceKey))].filter(Boolean);
   }, [events]);
 
   const campaignOptions = useMemo(() => {

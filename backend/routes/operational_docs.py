@@ -43,11 +43,15 @@ def _serialize_document(document: Optional[Dict[str, Any]]) -> Optional[Dict[str
 
 
 def _safe_relative_doc_path(file_path: Path) -> str:
+    upload_root = Path(UPLOAD_DIR).resolve()
+    resolved_file_path = file_path.resolve()
+
     try:
-        relative = file_path.relative_to(UPLOAD_DIR)
-        return str(relative).replace("\\", "/")
-    except Exception:
-        return str(file_path).replace("\\", "/")
+        relative = resolved_file_path.relative_to(upload_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail="Document path outside allowed storage directory") from exc
+
+    return relative.as_posix()
 
 
 async def _resolve_campaign_and_operation(campaign_id: str, operation_id: Optional[str]) -> Tuple[dict, Optional[dict]]:
@@ -81,7 +85,7 @@ async def list_operational_documents(
         query["operation_id"] = operation_id
 
     documents = (
-        await db.operation_documents.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+        await db.operation_documents.find(query, {"_id": 0, "extracted_text": 0}).sort("created_at", -1).to_list(500)
     )
     return {
         "documents": [_serialize_document(document) for document in documents],
@@ -163,7 +167,7 @@ async def upload_operational_document(
         campaign_name=campaign.get("name", ""),
         operation_id=operation_id,
         operation_title=(operation or {}).get("title", ""),
-        original_filename=file.filename or original_filename,
+        original_filename=original_filename,
         stored_filename=stored_filename,
         file_path=_safe_relative_doc_path(file_path),
         content_type=content_type,
