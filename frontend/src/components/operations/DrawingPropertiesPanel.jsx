@@ -104,7 +104,7 @@ export default function DrawingPropertiesPanel({
                   className={`w-5 h-5 rounded border transition ${
                     style.color === c
                       ? 'border-white scale-110'
-                      : 'border-[rgba(201,162,39,0.15)] hover:border-gray-500'
+                      : 'border-[rgba(201,162,39,0.15)] hover:border-[rgba(201,162,39,0.3)]'
                   }`}
                   style={{ backgroundColor: c }}
                   onClick={() =>

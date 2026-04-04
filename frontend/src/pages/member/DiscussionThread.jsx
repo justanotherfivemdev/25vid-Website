@@ -66,7 +66,7 @@ const DiscussionThread = () => {
     navigate('/');
   };
 
-  const getCatColor = (c) => ({ general: 'border-gray-500 text-[#8a9aa8]', operations: 'border-tropic-red text-tropic-red', training: 'border-tropic-gold text-tropic-gold', feedback: 'border-green-500 text-green-400' }[c] || 'border-gray-500 text-[#8a9aa8]');
+  const getCatColor = (c) => ({ general: 'border-[#4a6070] text-[#8a9aa8]', operations: 'border-tropic-red text-tropic-red', training: 'border-tropic-gold text-tropic-gold', feedback: 'border-green-500 text-green-400' }[c] || 'border-[#4a6070] text-[#8a9aa8]');
 
   if (loading) return <div className="min-h-screen bg-[#050a0e] text-white flex items-center justify-center">Loading...</div>;
   if (!discussion) return <div className="min-h-screen bg-[#050a0e] text-white flex items-center justify-center">Discussion not found</div>;

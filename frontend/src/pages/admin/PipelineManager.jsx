@@ -12,7 +12,7 @@ import { Search, ChevronRight, ArrowRight, MessageSquare } from 'lucide-react';
 import { API } from '@/utils/api';
 
 const STAGES = [
-  { value: 'applicant', label: 'Applicant', color: 'bg-gray-500/20 text-[#8a9aa8] border-gray-500/30' },
+  { value: 'applicant', label: 'Applicant', color: 'bg-[#4a6070]/20 text-[#8a9aa8] border-[#4a6070]/30' },
   { value: 'accepted_recruit', label: 'Accepted Recruit', color: 'bg-tropic-gold/20 text-tropic-gold border-tropic-gold/30' },
   { value: 'bct_in_progress', label: 'BCT In Progress', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
   { value: 'probationary', label: 'Probationary', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },

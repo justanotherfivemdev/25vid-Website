@@ -657,16 +657,16 @@ const UnitHistorySection = ({ content }) => {
                         </>
                       )}
 
-                      <div className={`relative z-10 ${useDarkText ? 'text-gray-900' : 'text-white'}`}>
+                      <div className={`relative z-10 ${useDarkText ? 'text-[#d0d8e0]' : 'text-white'}`}>
                       {/* Year badge */}
                       <div className="flex items-center gap-3 mb-3">
-                        <span className={`${useDarkText ? 'text-gray-900' : 'text-[#e8c547]'} font-bold text-lg tracking-wider`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>{entry.year}</span>
+                        <span className={`${useDarkText ? 'text-[#d0d8e0]' : 'text-[#e8c547]'} font-bold text-lg tracking-wider`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>{entry.year}</span>
                         <span className={`text-[10px] tracking-widest px-2 py-0.5 rounded ${accent.split(' ')[1]} text-white/90`}>{entry.campaign_type.toUpperCase()}</span>
                       </div>
 
                       <h3 className="text-xl md:text-2xl font-bold tracking-wide mb-3" style={{ fontFamily: "'Share Tech', sans-serif" }}>{entry.title}</h3>
 
-                      <p className={`${useDarkText ? 'text-gray-800' : 'text-[#d0d8e0]'} text-sm leading-relaxed`}>{entry.description}</p>
+                      <p className={`${useDarkText ? 'text-[#8a9aa8]' : 'text-[#d0d8e0]'} text-sm leading-relaxed`}>{entry.description}</p>
                       </div>
                     </div>
                   </div>

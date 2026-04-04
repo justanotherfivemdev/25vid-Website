@@ -406,7 +406,7 @@ const RecruitmentManager = () => {
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base">{billet.title}</CardTitle>
-                        <Badge className={billet.is_open ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-[#8a9aa8]'}>
+                        <Badge className={billet.is_open ? 'bg-green-500/20 text-green-400' : 'bg-[#4a6070]/20 text-[#8a9aa8]'}>
                           {billet.is_open ? 'OPEN' : 'CLOSED'}
                         </Badge>
                       </div>

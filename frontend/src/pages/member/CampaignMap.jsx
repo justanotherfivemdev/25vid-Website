@@ -18,7 +18,7 @@ import { useMemberLayout } from '@/components/MemberLayout';
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const OBJ_STATUS_CFG = {
-  pending: { color: 'bg-[#111a24]', dot: 'bg-gray-500', label: 'PENDING' },
+  pending: { color: 'bg-[#111a24]', dot: 'bg-[#4a6070]', label: 'PENDING' },
   in_progress: { color: 'bg-tropic-red/15', dot: 'bg-tropic-red animate-pulse', label: 'IN PROGRESS' },
   complete: { color: 'bg-tropic-gold/15', dot: 'bg-tropic-gold', label: 'COMPLETE' },
   failed: { color: 'bg-red-900/20', dot: 'bg-red-500', label: 'FAILED' },

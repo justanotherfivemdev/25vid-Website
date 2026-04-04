@@ -102,7 +102,7 @@ const DiscussionForum = () => {
 
   const filtered = filter === 'all' ? discussions : discussions.filter(d => d.category === filter);
 
-  const getCatColor = (c) => ({ general: 'border-gray-500 text-[#8a9aa8]', operations: 'border-tropic-red text-tropic-red', training: 'border-tropic-gold text-tropic-gold', feedback: 'border-green-500 text-green-400' }[c] || 'border-gray-500 text-[#8a9aa8]');
+  const getCatColor = (c) => ({ general: 'border-[#4a6070] text-[#8a9aa8]', operations: 'border-tropic-red text-tropic-red', training: 'border-tropic-gold text-tropic-gold', feedback: 'border-green-500 text-green-400' }[c] || 'border-[#4a6070] text-[#8a9aa8]');
 
   return (
     <div className={inLayout ? '' : 'min-h-screen bg-[#050a0e] text-white'}>

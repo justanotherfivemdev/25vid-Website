@@ -7,7 +7,7 @@ export default function OperationPopup({ operation }) {
   const stateColors = {
     planned: 'bg-tropic-gold/15 text-tropic-gold',
     ongoing: 'bg-green-500/15 text-green-400',
-    completed: 'bg-gray-500/15 text-[#8a9aa8]',
+    completed: 'bg-[#4a6070]/15 text-[#8a9aa8]',
   };
 
   return (

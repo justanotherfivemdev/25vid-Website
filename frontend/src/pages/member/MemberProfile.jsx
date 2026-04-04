@@ -69,9 +69,9 @@ const MemberProfile = () => {
             <CardContent className="px-6 pb-6 -mt-10">
               <div className="flex items-end gap-5">
                 {profile.avatar_url ? (
-                  <img src={resolveImg(profile.avatar_url)} alt="" className="w-20 h-20 rounded-xl object-cover border-4 border-gray-900 shadow-lg" />
+                  <img src={resolveImg(profile.avatar_url)} alt="" className="w-20 h-20 rounded-xl object-cover border-4 border-[rgba(201,162,39,0.15)] shadow-lg" />
                 ) : (
-                  <div className="w-20 h-20 rounded-xl bg-[#111a24] border-4 border-gray-900 shadow-lg flex items-center justify-center text-3xl font-bold text-[#4a6070]" style={{ fontFamily: "'Share Tech', sans-serif" }}>{profile.username[0]?.toUpperCase()}</div>
+                  <div className="w-20 h-20 rounded-xl bg-[#111a24] border-4 border-[rgba(201,162,39,0.15)] shadow-lg flex items-center justify-center text-3xl font-bold text-[#4a6070]" style={{ fontFamily: "'Share Tech', sans-serif" }}>{profile.username[0]?.toUpperCase()}</div>
                 )}
                 <div className="flex-1 pb-1">
                   <h2 className="text-2xl font-bold tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>{profile.username}</h2>

@@ -57,7 +57,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
               value={adsbFilters.callsignSearch}
               onChange={(e) => setAdsbFilter('callsignSearch', e.target.value)}
               placeholder="Search callsign..."
-              className="mt-1 w-full px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
+              className="mt-1 w-full px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] placeholder-[#4a6070] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
             />
           </div>
 
@@ -90,7 +90,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
                 onChange={(e) => setAdsbFilter('altitudeMin', e.target.value ? Number(e.target.value) : null)}
                 placeholder="Min"
                 min="0"
-                className="w-1/2 px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
+                className="w-1/2 px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] placeholder-[#4a6070] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
               />
               <span className="text-[#4a6070] text-xs">—</span>
               <input
@@ -99,7 +99,7 @@ export default function ADSBFilterPanel({ countries = [], aircraftCount = 0 }) {
                 onChange={(e) => setAdsbFilter('altitudeMax', e.target.value ? Number(e.target.value) : null)}
                 placeholder="Max"
                 min="0"
-                className="w-1/2 px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
+                className="w-1/2 px-2 py-1.5 rounded bg-[#111a24]/80 border border-[rgba(201,162,39,0.15)]/50 text-xs text-[#d0d8e0] placeholder-[#4a6070] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20"
               />
             </div>
           </div>
