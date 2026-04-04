@@ -1,31 +1,43 @@
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 45 67% 47%;
-    --primary-foreground: 0 0% 6%;
+    --background: 210 40% 3%;
+    --foreground: 210 15% 88%;
+    --card: 210 30% 5%;
+    --card-foreground: 210 15% 88%;
+    --popover: 210 30% 5%;
+    --popover-foreground: 210 15% 88%;
+    --primary: 43 70% 47%;
+    --primary-foreground: 210 40% 3%;
     --secondary: 82 39% 30%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 70%;
-    --accent: 45 67% 47%;
-    --accent-foreground: 0 0% 6%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 45 35% 22%;
-    --input: 45 20% 18%;
-    --ring: 45 67% 47%;
-    --radius: 0.5rem;
+    --secondary-foreground: 210 15% 88%;
+    --muted: 210 20% 12%;
+    --muted-foreground: 210 15% 55%;
+    --accent: 43 70% 47%;
+    --accent-foreground: 210 40% 3%;
+    --destructive: 0 80% 50%;
+    --destructive-foreground: 210 15% 88%;
+    --border: 210 25% 16%;
+    --input: 210 20% 14%;
+    --ring: 43 70% 47%;
+    --radius: 0.25rem;
+
+    /* Military terminal custom props */
+    --brand-gold: #c9a227;
+    --brand-gold-light: #e8c547;
+    --brand-gold-dark: #8f701a;
+    --brand-red: #ff3333;
+    --brand-olive: #556b2f;
+    --terminal-green: #00ff88;
+    --terminal-green-dark: #00cc6a;
+    --hud-blue: #00aaff;
+    --mil-bg-deep: #050a0e;
+    --mil-bg-panel: #0c1117;
+    --mil-bg-elevated: #111a24;
+    --mil-bg-surface: #080d12;
   }
 }
 
@@ -35,14 +47,34 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', 'Roboto', sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
   }
+}
+
+/* ============ GLOBAL TACTICAL SCROLLBAR ============ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--mil-bg-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 136, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 136, 0.3);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 136, 0.15) var(--mil-bg-deep);
 }
 
 .hero-section {
@@ -61,7 +93,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.9) 100%);
+  background: linear-gradient(180deg, rgba(5,10,14,0.7) 0%, rgba(5,10,14,0.9) 100%);
   z-index: 1;
 }
 
@@ -82,8 +114,8 @@
   bottom: 0;
   left: 0;
   width: 80px;
-  height: 3px;
-  background: hsl(var(--primary));
+  height: 2px;
+  background: linear-gradient(90deg, var(--terminal-green), transparent);
 }
 
 .tactical-grid {
@@ -92,11 +124,7 @@
   gap: 1rem;
 }
 
-.glass-card {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
+/* glass-card defined in App.css */
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
@@ -117,17 +145,17 @@
 
 .command-center-scroll ::-webkit-scrollbar-thumb,
 .command-center-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(201, 162, 39, 0.2);
+  background-color: rgba(0, 255, 136, 0.15);
   border-radius: 9999px;
 }
 
 .command-center-scroll ::-webkit-scrollbar-thumb:hover,
 .command-center-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(201, 162, 39, 0.4);
+  background-color: rgba(0, 255, 136, 0.3);
 }
 
 /* Firefox thin scrollbar support */
 .command-center-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(201, 162, 39, 0.2) transparent;
+  scrollbar-color: rgba(0, 255, 136, 0.15) transparent;
 }

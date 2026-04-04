@@ -1,64 +1,80 @@
 /**
  * Centralized theme constants for 25th Infantry Division website.
  *
- * Black + gold private military command-center aesthetic.
- * Import this module wherever you need brand-consistent values.
+ * Military command-center terminal aesthetic — "TROPIC THUNDER COMMAND"
+ * Deep navy-black backgrounds, tactical gold accents, terminal green data readouts.
  */
 
 // ---------------------------------------------------------------------------
-// Color palette
+// Color palette — "Night Operations"
 // ---------------------------------------------------------------------------
 export const colors = {
-  // Primary brand
-  gold: '#C5A046',
-  goldLight: '#E5C76B',
+  // Primary brand — Tactical gold (military insignia)
+  gold: '#c9a227',
+  goldLight: '#e8c547',
   goldDark: '#8F701A',
+  goldMuted: '#a08420',
 
-  // Tropic Lightning palette (shared with Tailwind config)
-  tropicRed: '#C8102E',
-  tropicGold: '#FFD700',
-  tropicGoldLight: '#FFE44D',
-  tropicGoldDark: '#B8960F',
-  tropicRedDark: '#8B0A1E',
-  tropicRedLight: '#E0334A',
+  // Tropic Lightning palette
+  tropicRed: '#ff3333',
+  tropicGold: '#e8c547',
+  tropicGoldLight: '#f0d56a',
+  tropicGoldDark: '#a08420',
+  tropicRedDark: '#cc0000',
+  tropicRedLight: '#ff5555',
   tropicOlive: '#556B2F',
 
-  // Background hierarchy
-  bgDeep: '#0B0B0B',
-  bgPanel: '#111111',
-  bgElevated: '#1a1a1a',
-  bgSurface: '#0a0a0a',
+  // Terminal green
+  terminalGreen: '#00ff88',
+  terminalGreenDark: '#00cc6a',
+
+  // HUD blue
+  hudBlue: '#00aaff',
+  hudBlueDark: '#0088cc',
+
+  // Background hierarchy — Deep navy-black
+  bgDeep: '#050a0e',
+  bgPanel: '#0c1117',
+  bgElevated: '#111a24',
+  bgSurface: '#080d12',
+  bgCard: '#0a1018',
 
   // Borders
-  border: '#1f1f1f',
-  borderGold: '#2a2318',
+  border: '#1a2a3a',
+  borderGold: 'rgba(201, 162, 39, 0.2)',
+  borderGreen: 'rgba(0, 255, 136, 0.15)',
 
   // Text
-  textPrimary: '#e5e7eb',
-  textMuted: '#6b7280',
-  textGold: '#FFD700',
+  textPrimary: '#d0d8e0',
+  textMuted: '#4a6070',
+  textGold: '#e8c547',
+  textGreen: '#00ff88',
 
   // Map marker colors
-  markerExternal: '#ef4444',   // Red – external/global threats
-  markerOperation: '#FFD700',  // Gold – operations
-  markerIntel: '#a855f7',      // Purple – intel
-  markerCampaign: '#3b82f6',   // Blue – campaigns
+  markerExternal: '#ff3333',
+  markerOperation: '#e8c547',
+  markerIntel: '#a855f7',
+  markerCampaign: '#00aaff',
 
   // Threat levels
-  threatCritical: '#ef4444',
-  threatHigh: '#f97316',
-  threatMedium: '#eab308',
-  threatLow: '#22c55e',
-  threatInfo: '#3b82f6',
+  threatCritical: '#ff3333',
+  threatHigh: '#ff6600',
+  threatMedium: '#ffaa00',
+  threatLow: '#00ff88',
+  threatInfo: '#00aaff',
+
+  // Grid/Lines
+  gridLine: 'rgba(0, 255, 136, 0.06)',
 };
 
 // ---------------------------------------------------------------------------
 // Typography
 // ---------------------------------------------------------------------------
 export const fonts = {
-  heading: "'Rajdhani', 'Segoe UI', system-ui, sans-serif",
-  body: "'Roboto', 'Segoe UI', system-ui, sans-serif",
-  mono: "'Roboto Mono', 'Courier New', monospace",
+  heading: "'Orbitron', 'Rajdhani', 'Segoe UI', system-ui, sans-serif",
+  body: "'Inter', 'Roboto', 'Segoe UI', system-ui, sans-serif",
+  mono: "'JetBrains Mono', 'Fira Code', 'Roboto Mono', 'Courier New', monospace",
+  condensed: "'Oswald', 'Rajdhani', 'Segoe UI', system-ui, sans-serif",
 };
 
 // ---------------------------------------------------------------------------
@@ -67,26 +83,27 @@ export const fonts = {
 export const panel = {
   background: colors.bgPanel,
   border: `1px solid ${colors.border}`,
-  borderRadius: '8px',
+  borderRadius: '4px',
 };
 
 export const button = {
   primary: {
-    background: colors.gold,
-    color: '#000',
-    hoverBackground: colors.goldLight,
-  },
-  secondary: {
     background: 'transparent',
     color: colors.gold,
     border: `1px solid ${colors.gold}`,
-    hoverBackground: `${colors.gold}22`,
+    hoverBorder: colors.goldLight,
+  },
+  secondary: {
+    background: 'transparent',
+    color: colors.terminalGreen,
+    border: `1px solid ${colors.borderGreen}`,
+    hoverBackground: 'rgba(0, 255, 136, 0.08)',
   },
 };
 
 export const table = {
   headerBg: colors.bgElevated,
-  rowHoverBg: `${colors.gold}0a`,
+  rowHoverBg: 'rgba(0, 255, 136, 0.04)',
   borderColor: colors.border,
 };
 
@@ -110,6 +127,8 @@ export const cssVars = {
   '--brand-border': colors.border,
   '--brand-text': colors.textPrimary,
   '--brand-muted': colors.textMuted,
+  '--terminal-green': colors.terminalGreen,
+  '--hud-blue': colors.hudBlue,
 };
 
 const theme = {

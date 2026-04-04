@@ -1,28 +1,93 @@
-/* Additional app-specific styles */
+/* ============================================================================
+   25TH INFANTRY DIVISION — TROPIC THUNDER COMMAND
+   Military Terminal UI Design System
+   ============================================================================ */
+
 .App {
   min-height: 100vh;
-  background-color: #000000;
+  background-color: #050a0e;
 }
 
 :root {
   --brand-gold: #c9a227;
-  --brand-gold-light: #e3c766;
+  --brand-gold-light: #e8c547;
   --brand-gold-dark: #8f701a;
-  --brand-red: #b01c2e;
+  --brand-red: #ff3333;
   --brand-olive: #556b2f;
+  --terminal-green: #00ff88;
+  --hud-blue: #00aaff;
+  --mil-bg-deep: #050a0e;
+  --mil-bg-panel: #0c1117;
+  --mil-bg-elevated: #111a24;
 }
 
-.compass-logo {
-  filter: drop-shadow(0 0 24px rgba(201, 162, 39, 0.45));
+/* ============ GLOBAL EFFECTS LAYER ============ */
+
+/* Scanline overlay — applied to page-level containers */
+.scanline-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  overflow: hidden;
 }
 
+.scanline-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 136, 0.012) 2px,
+    rgba(0, 255, 136, 0.012) 4px
+  );
+}
+
+/* CRT vignette — darken edges */
+.crt-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(0, 0, 0, 0.25) 85%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+}
+
+/* ============ TACTICAL BUTTON ============ */
 .tactical-button {
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(201, 162, 39, 0.22);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
 }
+
+.tactical-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  background: linear-gradient(135deg, rgba(201, 162, 39, 0.15), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
 .tactical-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(201, 162, 39, 0.34);
+  box-shadow: 0 0 20px rgba(201, 162, 39, 0.25), 0 0 40px rgba(201, 162, 39, 0.1);
+}
+
+.tactical-button:hover::before {
+  opacity: 1;
+}
+
+.tactical-button:active {
+  transform: translateY(0);
+  box-shadow: 0 0 30px rgba(201, 162, 39, 0.4), inset 0 0 20px rgba(201, 162, 39, 0.1);
 }
 
 /* ============ OPERATION CARDS ============ */
@@ -30,14 +95,17 @@
   position: relative;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  background: var(--mil-bg-panel);
+  border: 1px solid rgba(0, 255, 136, 0.1);
 }
+
 .op-card::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, transparent 52%, rgba(201, 162, 39, 0.42));
+  background: linear-gradient(135deg, transparent 52%, rgba(0, 255, 136, 0.3));
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
@@ -45,10 +113,12 @@
   opacity: 0;
   transition: opacity 0.35s ease;
 }
+
 .op-card:hover::before { opacity: 1; }
 .op-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(201, 162, 39, 0.16), 0 0 0 1px rgba(201, 162, 39, 0.24);
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.08), 0 0 0 1px rgba(0, 255, 136, 0.2);
+  border-color: rgba(0, 255, 136, 0.25);
 }
 
 /* ============ INTEL/ANNOUNCEMENT CARDS ============ */
@@ -56,35 +126,38 @@
   position: relative;
   transition: all 0.3s ease;
   overflow: hidden;
+  background: var(--mil-bg-panel);
 }
+
 .intel-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.42);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 255, 136, 0.05);
 }
-.intel-urgent { border-left: 3px solid var(--brand-red); }
-.intel-high { border-left: 3px solid var(--brand-gold-light); }
-.intel-normal { border-left: 3px solid var(--brand-gold); }
-.intel-low { border-left: 3px solid #555; }
 
-/* ============ SECTION DIVIDERS ============ */
+.intel-urgent { border-left: 3px solid var(--brand-red); }
+.intel-high { border-left: 3px solid #ff6600; }
+.intel-normal { border-left: 3px solid var(--brand-gold); }
+.intel-low { border-left: 3px solid var(--terminal-green); }
+
+/* ============ SECTION DIVIDERS — Terminal style ============ */
 .section-divider {
   position: relative;
   height: 3px;
   width: 100%;
 }
+
 .section-divider::before {
-  content: '';
+  content: '◆';
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
-  border: 1px solid rgba(201, 162, 39, 0.6);
-  background: #000;
-  transform: translate(-50%, -50%) rotate(45deg);
+  font-size: 8px;
+  color: var(--terminal-green);
   z-index: 1;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
 }
+
 .section-divider::after {
   content: '';
   position: absolute;
@@ -93,41 +166,47 @@
   transform: translate(-50%, -50%);
   width: 70%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.15) 15%, rgba(201, 162, 39, 0.65), rgba(201, 162, 39, 0.15) 85%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.08) 15%, rgba(0, 255, 136, 0.3), rgba(0, 255, 136, 0.08) 85%, transparent);
 }
 
-/* ============ SECTION LABEL ============ */
+/* ============ SECTION LABEL — Military briefing style ============ */
 .section-label {
   text-align: center;
   margin-bottom: 4rem;
 }
+
 .section-label h2 {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: 'Orbitron', 'Rajdhani', sans-serif;
   letter-spacing: 0.12em;
   position: relative;
   display: inline-block;
   text-transform: uppercase;
 }
+
 .section-label h2::after {
   content: '';
   display: block;
   width: 60px;
   height: 2px;
-  background: var(--brand-gold);
+  background: linear-gradient(90deg, var(--terminal-green), transparent);
   margin: 14px auto 0;
 }
+
 .section-label p {
-  color: #777;
+  color: #4a6070;
   margin-top: 10px;
   letter-spacing: 0.06em;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
 }
 
-/* ============ GLASS CARD ============ */
+/* ============ GLASS CARD — Command terminal panel ============ */
 .glass-card {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(12, 17, 23, 0.9);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(201, 162, 39, 0.12);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 255, 136, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(0, 255, 136, 0.05);
 }
 
 /* ============ SECTION UNDERLINE ============ */
@@ -136,14 +215,15 @@
   display: inline-block;
   padding-bottom: 10px;
 }
+
 .section-underline::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   width: 80px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--brand-gold), transparent);
+  height: 2px;
+  background: linear-gradient(90deg, var(--terminal-green), transparent);
 }
 
 /* ============ TACTICAL GRID ============ */
@@ -161,28 +241,20 @@
 
 /* ============ MOBILE IMPROVEMENTS ============ */
 @media (max-width: 767px) {
-  /* Prevent horizontal overflow on mobile */
   body {
     overflow-x: hidden;
   }
-  
-  /* Ensure touch-friendly tap targets */
   button, a, [role="button"] {
     min-height: 36px;
   }
-
-  /* Make tables scrollable on mobile */
   table {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-
   thead, tbody, tr, th, td {
     display: revert;
   }
-
-  /* Improve modal sizing on mobile */
   [role="dialog"] {
     max-width: 95vw !important;
     margin-left: auto;
@@ -192,11 +264,11 @@
 
 /* keep backwards compat */
 .announcement-urgent { border-left: 4px solid var(--brand-red); }
-.announcement-high { border-left: 4px solid var(--brand-gold-light); }
+.announcement-high { border-left: 4px solid #ff6600; }
 .announcement-normal { border-left: 4px solid var(--brand-gold); }
-.announcement-low { border-left: 4px solid #888888; }
+.announcement-low { border-left: 4px solid var(--terminal-green); }
 .operation-card { transition: all 0.3s ease; }
-.operation-card:hover { transform: scale(1.02); border-color: rgba(201, 162, 39, 0.5); }
+.operation-card:hover { transform: scale(1.02); border-color: rgba(0, 255, 136, 0.3); }
 
 /* Improve dark-theme date/time input readability */
 input[type='date'],
@@ -215,11 +287,12 @@ input[type='time']::-webkit-calendar-picker-indicator {
   0%   { transform: translateY(0); }
   100% { transform: translateY(4px); }
 }
+
 @keyframes glitchFlicker {
   0%, 93%, 100% { opacity: 0; }
-  94%           { opacity: 0.06; transform: translate(-2px, 0); }
+  94%           { opacity: 0.04; transform: translate(-2px, 0); }
   95%           { opacity: 0; }
-  96%           { opacity: 0.04; transform: translate(2px, 1px); }
+  96%           { opacity: 0.03; transform: translate(2px, 1px); }
   97%           { opacity: 0; }
 }
 
@@ -240,8 +313,8 @@ input[type='time']::-webkit-calendar-picker-indicator {
     0deg,
     transparent,
     transparent 2px,
-    rgba(201, 162, 39, 0.018) 2px,
-    rgba(201, 162, 39, 0.018) 4px
+    rgba(0, 255, 136, 0.012) 2px,
+    rgba(0, 255, 136, 0.012) 4px
   );
   animation: scanlines 0.15s linear infinite;
 }
@@ -251,7 +324,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
   content: '';
   position: absolute;
   inset: -5px;
-  background: linear-gradient(90deg, transparent 30%, rgba(201, 162, 39, 0.05) 50%, transparent 70%);
+  background: linear-gradient(90deg, transparent 30%, rgba(0, 255, 136, 0.03) 50%, transparent 70%);
   animation: glitchFlicker 8s steps(1) infinite;
 }
 
@@ -259,6 +332,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .corner-bracket {
   position: relative;
 }
+
 .corner-bracket::before,
 .corner-bracket::after {
   content: '';
@@ -266,18 +340,32 @@ input[type='time']::-webkit-calendar-picker-indicator {
   width: 16px;
   height: 16px;
   pointer-events: none;
+  z-index: 2;
 }
+
 .corner-bracket::before {
   top: -1px;
   left: -1px;
-  border-top: 2px solid rgba(201, 162, 39, 0.45);
-  border-left: 2px solid rgba(201, 162, 39, 0.45);
+  border-top: 2px solid rgba(0, 255, 136, 0.35);
+  border-left: 2px solid rgba(0, 255, 136, 0.35);
 }
+
 .corner-bracket::after {
   bottom: -1px;
   right: -1px;
-  border-bottom: 2px solid rgba(201, 162, 39, 0.45);
-  border-right: 2px solid rgba(201, 162, 39, 0.45);
+  border-bottom: 2px solid rgba(0, 255, 136, 0.35);
+  border-right: 2px solid rgba(0, 255, 136, 0.35);
+}
+
+/* Gold variant */
+.corner-bracket-gold::before {
+  border-top-color: rgba(201, 162, 39, 0.4);
+  border-left-color: rgba(201, 162, 39, 0.4);
+}
+
+.corner-bracket-gold::after {
+  border-bottom-color: rgba(201, 162, 39, 0.4);
+  border-right-color: rgba(201, 162, 39, 0.4);
 }
 
 /* ============ HERO TACTICAL GRID ============ */
@@ -285,11 +373,22 @@ input[type='time']::-webkit-calendar-picker-indicator {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(201, 162, 39, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 162, 39, 0.03) 1px, transparent 1px);
-  background-size: 80px 80px;
+    linear-gradient(rgba(0, 255, 136, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
   pointer-events: none;
   z-index: 1;
+}
+
+/* Topographic pattern overlay */
+.hero-topo-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  background-image:
+    repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 40px, rgba(0, 255, 136, 0.08) 40px, transparent 41px);
 }
 
 .hero-aurora {
@@ -297,8 +396,8 @@ input[type='time']::-webkit-calendar-picker-indicator {
   width: 28rem;
   height: 28rem;
   border-radius: 9999px;
-  filter: blur(90px);
-  opacity: 0.18;
+  filter: blur(120px);
+  opacity: 0.12;
   pointer-events: none;
   z-index: 0;
 }
@@ -306,22 +405,23 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .hero-aurora-left {
   left: 4%;
   top: 18%;
-  background: radial-gradient(circle, rgba(201, 162, 39, 0.9), rgba(201, 162, 39, 0));
+  background: radial-gradient(circle, rgba(0, 255, 136, 0.5), rgba(0, 255, 136, 0));
 }
 
 .hero-aurora-right {
   right: 6%;
   bottom: 14%;
-  background: radial-gradient(circle, rgba(85, 107, 47, 0.95), rgba(85, 107, 47, 0));
+  background: radial-gradient(circle, rgba(201, 162, 39, 0.5), rgba(201, 162, 39, 0));
 }
 
+/* ============ HERO INTEL CARDS — HUD panels ============ */
 .hero-intel-card {
   position: relative;
   overflow: hidden;
-  border-radius: 1rem;
-  border: 1px solid rgba(201, 162, 39, 0.12);
+  border-radius: 2px;
+  border: 1px solid rgba(0, 255, 136, 0.12);
   background:
-    linear-gradient(180deg, rgba(19, 24, 18, 0.72), rgba(8, 10, 14, 0.88)),
+    linear-gradient(180deg, rgba(12, 17, 23, 0.85), rgba(5, 10, 14, 0.95)),
     rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(12px);
   padding: 1.1rem 1.2rem;
@@ -333,15 +433,15 @@ input[type='time']::-webkit-calendar-picker-indicator {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(201, 162, 39, 0.12), transparent 42%, rgba(85, 107, 47, 0.12));
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.06), transparent 42%, rgba(201, 162, 39, 0.06));
   opacity: 0;
   transition: opacity 0.28s ease;
 }
 
 .hero-intel-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(201, 162, 39, 0.28);
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(201, 162, 39, 0.08);
+  border-color: rgba(0, 255, 136, 0.25);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.34), 0 0 20px rgba(0, 255, 136, 0.08);
 }
 
 .hero-intel-card:hover::before {
@@ -354,11 +454,16 @@ input[type='time']::-webkit-calendar-picker-indicator {
   justify-content: center;
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: 0.8rem;
-  border: 1px solid rgba(201, 162, 39, 0.25);
-  color: var(--brand-gold-light);
-  background: linear-gradient(180deg, rgba(201, 162, 39, 0.14), rgba(85, 107, 47, 0.12));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-radius: 2px;
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  color: var(--terminal-green);
+  background: linear-gradient(180deg, rgba(0, 255, 136, 0.08), rgba(0, 255, 136, 0.03));
+  box-shadow: inset 0 1px 0 rgba(0, 255, 136, 0.05);
+}
+
+/* ============ COMPASS LOGO ============ */
+.compass-logo {
+  filter: drop-shadow(0 0 30px rgba(201, 162, 39, 0.4)) drop-shadow(0 0 60px rgba(0, 255, 136, 0.15));
 }
 
 /* ============ FOOTER REFINEMENT ============ */
@@ -366,22 +471,140 @@ input[type='time']::-webkit-calendar-picker-indicator {
   position: relative;
   height: 1px;
   width: 100%;
-  background: linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.25), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.15), transparent);
 }
 
 /* ============ PAGE CHROME — Consistent inner-page styling ============ */
 .page-nav {
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(5, 10, 14, 0.95);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(201, 162, 39, 0.15);
+  border-bottom: 1px solid rgba(0, 255, 136, 0.1);
 }
 
 .page-card {
-  background: rgba(10, 10, 10, 0.85);
-  border: 1px solid rgba(201, 162, 39, 0.1);
-  border-radius: 0.5rem;
+  background: var(--mil-bg-panel);
+  border: 1px solid rgba(0, 255, 136, 0.08);
+  border-radius: 2px;
   transition: border-color 0.3s ease;
 }
+
 .page-card:hover {
-  border-color: rgba(201, 162, 39, 0.25);
+  border-color: rgba(0, 255, 136, 0.2);
+}
+
+/* ============ BOOT SEQUENCE ============ */
+@keyframes bootFlicker {
+  0% { opacity: 0; }
+  5% { opacity: 0.3; }
+  10% { opacity: 0; }
+  15% { opacity: 0.6; }
+  20% { opacity: 0.2; }
+  25% { opacity: 0.8; }
+  30% { opacity: 0.4; }
+  40% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+.boot-sequence {
+  animation: bootFlicker 1.5s ease-out forwards;
+}
+
+/* ============ CLASSIFICATION BANNER ============ */
+.classification-banner {
+  font-family: 'Oswald', 'Rajdhani', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--terminal-green);
+  opacity: 0.4;
+  padding: 4px 0;
+  text-align: center;
+  border-top: 1px solid rgba(0, 255, 136, 0.1);
+  border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+}
+
+/* ============ STATUS INDICATOR DOTS ============ */
+@keyframes statusPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot-online {
+  background: var(--terminal-green);
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.status-dot-degraded {
+  background: #ffaa00;
+  box-shadow: 0 0 6px rgba(255, 170, 0, 0.6);
+  animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+.status-dot-critical {
+  background: var(--brand-red);
+  box-shadow: 0 0 6px rgba(255, 51, 51, 0.6);
+  animation: statusPulse 1s ease-in-out infinite;
+}
+
+.status-dot-offline {
+  background: #4a6070;
+}
+
+/* ============ DATA READOUT ============ */
+.data-readout {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  letter-spacing: 0.05em;
+}
+
+/* ============ TACTICAL INPUT FIELDS ============ */
+.tactical-input {
+  background: var(--mil-bg-deep);
+  border: 1px solid rgba(0, 255, 136, 0.1);
+  color: var(--brand-text, #d0d8e0);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tactical-input:focus {
+  border-color: rgba(0, 255, 136, 0.3);
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.08);
+  outline: none;
+}
+
+/* ============ HUD CORNERS — 4-corner bracket overlay ============ */
+.hud-corners {
+  position: relative;
+}
+
+.hud-corners::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border-top: 2px solid rgba(0, 255, 136, 0.3);
+  border-left: 2px solid rgba(0, 255, 136, 0.3);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hud-corners::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+  border-right: 2px solid rgba(0, 255, 136, 0.3);
+  pointer-events: none;
+  z-index: 2;
 }
