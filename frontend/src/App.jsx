@@ -13,6 +13,7 @@ import { defaultSiteContent } from '@/config/siteContent';
 import { applyBrowserMetadata } from '@/utils/browserMetadata';
 import { isStaff, STAFF_ROLES, hasPermission, PERMISSIONS } from '@/utils/permissions';
 import { BootSequence } from '@/components/tactical/BootSequence';
+import { LoginTransition } from '@/components/tactical/LoginTransition';
 
 const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'));
 const OperationsManager = lazy(() => import('@/pages/admin/OperationsManager'));
@@ -1066,6 +1067,7 @@ const LoginPage = () => {
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimChecked, setClaimChecked] = useState(false);
   const [claimUsername, setClaimUsername] = useState('');
+  const [loginTransition, setLoginTransition] = useState(null);
   const navigate = useNavigate();
 
   // If already authenticated, send the user to the correct destination immediately
@@ -1117,7 +1119,8 @@ const LoginPage = () => {
         .then(res => {
           login(res.data);
           window.history.replaceState({}, '', '/login');
-          navigate(getPostAuthRoute(res.data), { replace: true });
+          const dest = getPostAuthRoute(res.data);
+          setLoginTransition({ username: res.data.username, dest });
         })
         .catch(() => {
           setError('Discord login failed. Please try again.');
@@ -1151,7 +1154,8 @@ const LoginPage = () => {
       const response = await axios.post(`${API}${endpoint}`, payload);
       if (isLogin) {
         login(response.data.user);
-        navigate(getPostAuthRoute(response.data.user), { replace: true });
+        const dest = getPostAuthRoute(response.data.user);
+        setLoginTransition({ username: response.data.user.username, dest });
         return;
       }
 
@@ -1223,7 +1227,8 @@ const LoginPage = () => {
     try {
       const res = await axios.post(`${API}/auth/claim-account`, { email: formData.email, password: formData.password });
       login(res.data.user);
-      navigate(getPostAuthRoute(res.data.user), { replace: true });
+      const dest = getPostAuthRoute(res.data.user);
+      setLoginTransition({ username: res.data.user.username, dest });
     } catch (err) {
       setError(err.response?.data?.detail || 'Claim failed.');
     } finally { setSubmitting(false); }
@@ -1247,7 +1252,7 @@ const LoginPage = () => {
     backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed'
   } : {};
 
-  if (discordLoading) {
+  if (discordLoading && !loginTransition) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#050a0e]">
         <div className="text-center">
@@ -1255,6 +1260,15 @@ const LoginPage = () => {
           <p className="text-[#4a6070] tracking-[0.2em] text-xs" style={{ fontFamily: "'JetBrains Mono', monospace" }}>AUTHENTICATING WITH DISCORD...</p>
         </div>
       </div>
+    );
+  }
+
+  if (loginTransition) {
+    return (
+      <LoginTransition
+        username={loginTransition.username}
+        onComplete={() => navigate(loginTransition.dest, { replace: true })}
+      />
     );
   }
 
