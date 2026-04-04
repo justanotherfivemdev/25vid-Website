@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -106,146 +104,163 @@ const AdminDashboard = () => {
   return (
     <>
       <div className="space-y-8">
-        <div className="rounded-3xl border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(85,107,47,0.18),rgba(7,10,13,0.96)_58%)] px-6 py-7 shadow-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-tropic-gold-dark">Command Overview</p>
-          <h1 className="mt-3 text-4xl font-black tracking-[0.08em] text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-            DASHBOARD
+        {/* Hero banner */}
+        <div className="relative border border-[rgba(0,255,136,0.15)] bg-[radial-gradient(circle_at_top,rgba(0,255,136,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="corner-bracket" />
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Force Readiness Overview</p>
+          <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+            COMMAND DASHBOARD
           </h1>
-          <p className="mt-3 max-w-3xl text-sm text-gray-300">
+          <p className="mt-3 max-w-3xl text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>
             Command-center summary for personnel, operations tempo, content flow, and member recognition.
           </p>
         </div>
-        
+
+        {/* Stat cards */}
         {loading ? (
-          <div className="text-center py-12">Loading statistics...</div>
+          <div className="text-center py-12 text-[#00ff88]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <span className="animate-pulse">■</span> Loading statistics...
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {statCards.map((stat, idx) => {
               const Icon = stat.icon;
               return (
-                <Card key={idx} className="border-tropic-gold/12 bg-[#0b1016] shadow-xl">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-400">
+                <div key={idx} className="relative border border-[rgba(0,255,136,0.12)] bg-[#0c1117] shadow-xl p-0">
+                  <div className="corner-bracket" />
+                  <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#4a6070]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                       {stat.label}
-                    </CardTitle>
-                    <div className="rounded-xl border border-tropic-gold/15 bg-black/50 p-2">
-                      <Icon className={`w-5 h-5 ${stat.color === 'tropic-red' ? 'text-tropic-red' : 'text-tropic-gold'}`} />
+                    </span>
+                    <div className="border border-[rgba(0,255,136,0.15)] bg-[#050a0e] p-2">
+                      <Icon className="w-5 h-5 text-[#00aaff]" />
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                  </div>
+                  <div className="px-5 pb-5">
+                    <div className="text-4xl font-bold text-[#00ff88]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                       {stat.value}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
             })}
           </div>
         )}
-        
+
         {/* Soldier of the Month Management */}
-        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <div className="relative border border-[rgba(0,255,136,0.12)] bg-[#0c1117] shadow-xl">
+          <div className="corner-bracket" />
+          <div className="flex flex-row items-center justify-between px-5 pt-5 pb-3">
             <div>
-              <CardTitle className="flex items-center gap-2"><Star className="w-5 h-5 text-tropic-gold" />Soldier of the Month</CardTitle>
-              <CardDescription>Highlight an outstanding unit member — visible to all in the Hub. Auto-clears after 30 days.</CardDescription>
+              <h3 className="flex items-center gap-2 text-[#e8c547] font-bold uppercase tracking-wider text-sm" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+                <Star className="w-5 h-5 text-[#e8c547]" />Soldier of the Month
+              </h3>
+              <p className="text-xs text-[#4a6070] mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>Highlight an outstanding unit member — visible to all in the Hub. Auto-clears after 30 days.</p>
             </div>
             <div className="flex gap-2">
               <Dialog open={motwOpen} onOpenChange={setMotwOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="bg-tropic-red hover:bg-tropic-red-dark" onClick={openMotwDialog} data-testid="set-motw-btn">
-                    <Star className="w-4 h-4 mr-1" />{motw ? 'Change' : 'Set'}
-                  </Button>
+                  <button className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] hover:border-[rgba(0,255,136,0.5)] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }} onClick={openMotwDialog} data-testid="set-motw-btn">
+                    <Star className="w-4 h-4 mr-1 inline-block" />{motw ? 'Change' : 'Set'}
+                  </button>
                 </DialogTrigger>
-                <DialogContent className="bg-[#0b1016] text-white border-tropic-gold/15 max-w-lg max-h-[80vh] overflow-y-auto">
-                  <DialogHeader><DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>Set Soldier of the Month</DialogTitle></DialogHeader>
+                <DialogContent className="bg-[#0c1117] text-[#d0d8e0] border-[rgba(0,255,136,0.2)] max-w-lg max-h-[80vh] overflow-y-auto rounded-none">
+                  <DialogHeader>
+                    <DialogTitle className="text-[#e8c547] uppercase tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>Set Soldier of the Month</DialogTitle>
+                  </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label>Search Members</Label>
+                      <Label className="text-[#8a9aa8] text-xs uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Search Members</Label>
                       <Input value={memberSearch} onChange={e => setMemberSearch(e.target.value)}
-                        placeholder="Search by name or email..." className="bg-black border-gray-700" data-testid="motw-search" />
+                        placeholder="Search by name or email..." className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0] rounded-none" style={{ fontFamily: "'JetBrains Mono', monospace" }} data-testid="motw-search" />
                     </div>
-                    <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-800 rounded p-2">
+                    <div className="max-h-48 overflow-y-auto space-y-1 border border-[rgba(0,255,136,0.1)] p-2 bg-[#050a0e]">
                       {filteredMembers.map(m => (
                         <button key={m.id} type="button"
                           onClick={() => setMotwForm({ ...motwForm, user_id: m.id })}
-                          className={`w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 transition-colors ${motwForm.user_id === m.id ? 'bg-tropic-red/10 border border-tropic-red/50' : 'hover:bg-gray-800'}`}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${motwForm.user_id === m.id ? 'bg-[rgba(0,255,136,0.08)] border border-[rgba(0,255,136,0.4)]' : 'hover:bg-[#111a24]'}`}
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
                           data-testid={`motw-member-${m.id}`}>
-                          <span className="font-medium">{m.username}</span>
-                          <span className="text-gray-500 text-xs">{m.rank || ''}</span>
+                          <span className="font-medium text-[#d0d8e0]">{m.username}</span>
+                          <span className="text-[#4a6070] text-xs">{m.rank || ''}</span>
                         </button>
                       ))}
-                      {filteredMembers.length === 0 && <p className="text-gray-500 text-sm text-center py-2">No members found</p>}
+                      {filteredMembers.length === 0 && <p className="text-[#4a6070] text-sm text-center py-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>No members found</p>}
                     </div>
                     <div>
-                      <Label>Reason / Citation (optional)</Label>
+                      <Label className="text-[#8a9aa8] text-xs uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Reason / Citation (optional)</Label>
                       <Textarea rows={3} value={motwForm.reason}
                         onChange={e => setMotwForm({ ...motwForm, reason: e.target.value })}
-                        className="bg-black border-gray-700"
+                        className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0] rounded-none"
+                        style={{ fontFamily: "'JetBrains Mono', monospace" }}
                         placeholder="Outstanding performance during Operation Thunderbolt..."
                         data-testid="motw-reason" />
                     </div>
-                    <Button disabled={!motwForm.user_id} onClick={handleSetMotw}
-                      className="w-full bg-tropic-red hover:bg-tropic-red-dark" data-testid="motw-confirm-btn">
+                    <button disabled={!motwForm.user_id} onClick={handleSetMotw}
+                      className="tactical-button w-full px-4 py-3 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] hover:border-[rgba(0,255,136,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }} data-testid="motw-confirm-btn">
                       Confirm Soldier of the Month
-                    </Button>
+                    </button>
                   </div>
                 </DialogContent>
               </Dialog>
               {motw && (
-                <Button size="sm" variant="outline" className="border-gray-700 text-gray-400" onClick={handleClearMotw} data-testid="clear-motw-btn">
-                  <X className="w-4 h-4 mr-1" />Clear
-                </Button>
+                <button className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#ff3333] border border-[rgba(255,51,51,0.3)] hover:bg-[rgba(255,51,51,0.08)] hover:border-[rgba(255,51,51,0.5)] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }} onClick={handleClearMotw} data-testid="clear-motw-btn">
+                  <X className="w-4 h-4 mr-1 inline-block" />Clear
+                </button>
               )}
             </div>
-          </CardHeader>
+          </div>
           {motw && (
-            <CardContent className="pt-0">
-              <div className="flex items-center gap-4 p-3 bg-tropic-red/10 rounded-lg border border-tropic-red/30">
-                <div className="w-12 h-12 rounded-full border-2 border-tropic-red/50 overflow-hidden bg-gray-800 flex items-center justify-center shrink-0">
+            <div className="px-5 pb-5">
+              <div className="flex items-center gap-4 p-4 bg-[rgba(0,255,136,0.04)] border border-[rgba(0,255,136,0.15)]">
+                <div className="w-12 h-12 border-2 border-[rgba(0,255,136,0.3)] overflow-hidden bg-[#050a0e] flex items-center justify-center shrink-0">
                   {motw.avatar_url ? (
                     <img src={resolveImg(motw.avatar_url)} alt={motw.username} className="w-full h-full object-cover" />
                   ) : (
-                    <Star className="w-6 h-6 text-tropic-gold" />
+                    <Star className="w-6 h-6 text-[#e8c547]" />
                   )}
                 </div>
                 <div>
-                  <div className="font-bold">{motw.username} {motw.rank && <span className="text-gray-400 font-normal text-sm ml-1">({motw.rank})</span>}</div>
-                  {motw.reason && <p className="text-sm text-gray-400 mt-0.5 whitespace-pre-wrap">{motw.reason}</p>}
+                  <div className="font-bold text-[#00ff88]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    {motw.username} {motw.rank && <span className="text-[#4a6070] font-normal text-xs ml-1">({motw.rank})</span>}
+                  </div>
+                  {motw.reason && <p className="text-sm text-[#8a9aa8] mt-0.5 whitespace-pre-wrap" style={{ fontFamily: "'Inter', sans-serif" }}>{motw.reason}</p>}
                 </div>
               </div>
-            </CardContent>
+            </div>
           )}
-        </Card>
+        </div>
 
-        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common administrative tasks</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Link to="/admin/operations" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
-              <Calendar className="w-8 h-8 mx-auto mb-2 text-tropic-gold" />
-              <div className="font-medium">Manage Operations</div>
+        {/* Quick Actions */}
+        <div className="relative border border-[rgba(0,255,136,0.12)] bg-[#0c1117] shadow-xl">
+          <div className="corner-bracket" />
+          <div className="px-5 pt-5 pb-3">
+            <h3 className="text-[#e8c547] font-bold uppercase tracking-wider text-sm" style={{ fontFamily: "'Orbitron', sans-serif" }}>Quick Actions</h3>
+            <p className="text-xs text-[#4a6070] mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>Common administrative tasks</p>
+          </div>
+          <div className="px-5 pb-5 grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Link to="/admin/operations" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
+              <Calendar className="w-8 h-8 mx-auto mb-2 text-[#00aaff]" />
+              <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Manage Operations</div>
             </Link>
-            <Link to="/admin/announcements" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
-              <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" />
-              <div className="font-medium">Post Announcement</div>
+            <Link to="/admin/announcements" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
+              <Megaphone className="w-8 h-8 mx-auto mb-2 text-[#e8c547]" />
+              <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Post Announcement</div>
             </Link>
-            <Link to="/admin/users" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
-              <Users className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
-              <div className="font-medium">Manage Members</div>
+            <Link to="/admin/users" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
+              <Users className="w-8 h-8 mx-auto mb-2 text-[#e8c547]" />
+              <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Manage Members</div>
             </Link>
-            <Link to="/admin/site-content" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
-              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-green-500" />
-              <div className="font-medium">Edit Site Content</div>
+            <Link to="/admin/site-content" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
+              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-[#00ff88]" />
+              <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Edit Site Content</div>
             </Link>
-            <Link to="/admin/gallery" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
-              <Image className="w-8 h-8 mx-auto mb-2 text-tropic-red" />
-              <div className="font-medium">Manage Gallery</div>
+            <Link to="/admin/gallery" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
+              <Image className="w-8 h-8 mx-auto mb-2 text-[#ff3333]" />
+              <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Manage Gallery</div>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </>
   );
