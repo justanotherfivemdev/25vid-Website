@@ -8,6 +8,7 @@ so the standalone World Monitor SPA can bypass CORS restrictions.
 """
 
 import os
+import re
 import logging
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -255,10 +256,15 @@ async def rss_proxy(url: str = Query(..., description="RSS feed URL to fetch")):
 
     # Reconstruct the URL from validated components to prevent URL manipulation
     # that could bypass the allowlist (e.g., user:password@evil.com).
+    # Reject suspicious path traversal or control characters.
+    if ".." in (parsed.path or "") or any(ord(c) < 0x20 for c in (parsed.path or "")):
+        raise HTTPException(status_code=400, detail="Invalid path")
     safe_url = f"{parsed.scheme}://{parsed.hostname}"
-    if parsed.port:
+    if parsed.port and parsed.port in (80, 443):
+        pass  # omit default ports
+    elif parsed.port:
         safe_url += f":{parsed.port}"
-    safe_url += parsed.path
+    safe_url += parsed.path or "/"
     if parsed.query:
         safe_url += f"?{parsed.query}"
 
@@ -287,6 +293,8 @@ async def rss_proxy(url: str = Query(..., description="RSS feed URL to fetch")):
 # ---------------------------------------------------------------------------
 
 _MAX_FINNHUB_SYMBOLS = 20
+# Stock symbols: uppercase letters, digits, periods, hyphens, carets, equal signs
+_SYMBOL_PATTERN = re.compile(r"^[A-Z0-9.\-^=]{1,12}$")
 
 
 @router.get("/finnhub")
@@ -296,7 +304,8 @@ async def finnhub_proxy(symbols: str = Query(..., description="Comma-separated s
     if not api_key:
         raise HTTPException(status_code=503, detail="FINNHUB_API_KEY not configured")
 
-    symbol_list = [s.strip() for s in symbols.split(",") if s.strip()][:_MAX_FINNHUB_SYMBOLS]
+    raw_list = [s.strip().upper() for s in symbols.split(",") if s.strip()][:_MAX_FINNHUB_SYMBOLS]
+    symbol_list = [s for s in raw_list if _SYMBOL_PATTERN.match(s)]
     quotes = []
 
     async with httpx.AsyncClient(timeout=10.0) as client:
