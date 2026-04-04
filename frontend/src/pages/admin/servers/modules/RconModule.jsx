@@ -86,6 +86,13 @@ function RconModule() {
     fetchStatus();
   }, [fetchStatus]);
 
+  // Periodically re-probe RCON status every 30 seconds to detect disconnects
+  useEffect(() => {
+    if (server?.status !== 'running') return undefined;
+    const interval = setInterval(fetchStatus, 30_000);
+    return () => clearInterval(interval);
+  }, [server?.status, fetchStatus]);
+
   useEffect(() => () => {
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     if (wsRef.current) wsRef.current.close();
@@ -192,9 +199,15 @@ function RconModule() {
         wsRef.current.send(JSON.stringify({ command: trimmed }));
       } else {
         const res = await axios.post(`${API}/servers/${serverId}/rcon`, { command: trimmed });
-        setHistory((prev) => prev.map((item) => (
-          item.id === entry.id ? { ...item, response: res.data?.response || 'OK' } : item
-        )));
+        if (res.data?.executed) {
+          setHistory((prev) => prev.map((item) => (
+            item.id === entry.id ? { ...item, response: res.data?.response || 'OK' } : item
+          )));
+        } else {
+          setHistory((prev) => prev.map((item) => (
+            item.id === entry.id ? { ...item, error: res.data?.response || 'RCON command failed' } : item
+          )));
+        }
         setLoading(false);
       }
     } catch (err) {
@@ -264,7 +277,7 @@ function RconModule() {
   return (
     <div className="flex h-full flex-col gap-4">
       <div className={`flex items-center gap-2 rounded border px-3 py-2 text-xs ${
-        canExecute ? 'border-green-600/30 bg-green-600/10 text-green-400' : 'border-amber-600/30 bg-amber-600/10 text-amber-400'
+        canExecute ? 'border-[rgba(201,162,39,0.3)] bg-[rgba(201,162,39,0.08)] text-[#e8c547]' : 'border-amber-600/30 bg-amber-600/10 text-amber-400'
       }`}>
         {statusLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
         <span>{statusLoading ? 'Checking RCON availability...' : `${statusDetail} ${socketDetail || ''}`.trim()}</span>

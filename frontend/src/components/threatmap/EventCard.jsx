@@ -29,8 +29,8 @@ const threatBg = {
   critical: 'bg-red-500/20 text-red-400',
   high: 'bg-orange-500/20 text-orange-400',
   medium: 'bg-yellow-500/20 text-yellow-400',
-  low: 'bg-green-500/20 text-green-400',
-  info: 'bg-slate-500/20 text-slate-400',
+  low: 'bg-[rgba(201,162,39,0.15)] text-[#c9a227]',
+  info: 'bg-[#111a24] text-[#8a9aa8]',
 };
 
 const EventCard = memo(function EventCard({ event, isSelected, onClick, style }) {
@@ -85,8 +85,8 @@ const EventCard = memo(function EventCard({ event, isSelected, onClick, style })
               </span>
               <span className={`text-[9px] font-medium px-1 py-0.5 rounded ${
                 event.is_simulated || event.event_nature === 'fictional'
-                  ? 'text-purple-300 bg-purple-500/10'
-                  : 'text-emerald-300 bg-emerald-500/10'
+                  ? 'text-[#4a6070] bg-[#111a24]'
+                  : 'text-[#e8c547] bg-[rgba(201,162,39,0.1)]'
               }`}>
                 {sourceLabel}
               </span>

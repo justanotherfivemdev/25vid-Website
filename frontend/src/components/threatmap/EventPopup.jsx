@@ -29,7 +29,7 @@ function LinkifiedText({ text }) {
 }
 
 const CREDIBILITY_OPTIONS = [
-  { value: 'confirmed', label: 'Confirmed', color: 'text-green-400' },
+  { value: 'confirmed', label: 'Confirmed', color: 'text-[#c9a227]' },
   { value: 'probable', label: 'Probable', color: 'text-yellow-400' },
   { value: 'possible', label: 'Possible', color: 'text-orange-400' },
   { value: 'doubtful', label: 'Doubtful', color: 'text-red-400' },
@@ -116,8 +116,8 @@ export default function EventPopup({ event, isAdmin = false }) {
               event.threatLevel === 'critical' ? 'bg-red-500/20 text-red-400' :
               event.threatLevel === 'high' ? 'bg-orange-500/20 text-orange-400' :
               event.threatLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-              event.threatLevel === 'low' ? 'bg-green-500/20 text-green-400' :
-              'bg-slate-500/20 text-slate-400'
+              event.threatLevel === 'low' ? 'bg-[rgba(201,162,39,0.15)] text-[#c9a227]' :
+              'bg-[#111a24] text-[#8a9aa8]'
             }`}
           >
             {event.threatLevel}
@@ -196,7 +196,7 @@ export default function EventPopup({ event, isAdmin = false }) {
       {displayCredibility && !isEditing && (
         <div className="mb-1.5">
           <Badge variant="outline" className={`text-[9px] border-none ${
-            displayCredibility === 'confirmed' ? 'bg-green-500/15 text-green-400' :
+            displayCredibility === 'confirmed' ? 'bg-[rgba(201,162,39,0.1)] text-[#c9a227]' :
             displayCredibility === 'probable' ? 'bg-yellow-500/15 text-yellow-400' :
             displayCredibility === 'possible' ? 'bg-orange-500/15 text-orange-400' :
             'bg-red-500/15 text-red-400'
@@ -254,7 +254,7 @@ export default function EventPopup({ event, isAdmin = false }) {
         </Badge>
         <Badge variant="outline" className={`text-[10px] ${
           event.is_simulated || event.event_nature === 'fictional'
-            ? 'text-purple-300 border-purple-500/30'
+            ? 'text-[#4a6070] border-[rgba(74,96,112,0.3)]'
             : 'text-tropic-gold-dark border-tropic-gold-dark/30'
         }`}>
           {sourceLabel}

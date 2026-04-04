@@ -32,11 +32,11 @@ const clusterLayer = {
   paint: {
     'circle-color': [
       'step', ['get', 'maxSeverity'],
-      '#94a3b8', 2, '#22c55e', 3, '#eab308', 4, '#f97316', 5, '#ef4444',
+      '#8a9aa8', 2, '#c9a227', 3, '#eab308', 4, '#f97316', 5, '#ef4444',
     ],
     'circle-radius': ['step', ['get', 'point_count'], 12, 10, 16, 30, 20, 100, 24],
     'circle-stroke-width': 2,
-    'circle-stroke-color': '#1e293b',
+    'circle-stroke-color': '#0c1117',
     'circle-opacity': 0.85,
   },
 };
@@ -65,11 +65,11 @@ const unclusteredPointLayer = {
       'medium', threatLevelColors.medium,
       'low', threatLevelColors.low,
       'info', threatLevelColors.info,
-      '#94a3b8',
+      '#8a9aa8',
     ],
     'circle-radius': 8,
     'circle-stroke-width': 2,
-    'circle-stroke-color': '#1e293b',
+    'circle-stroke-color': '#0c1117',
   },
 };
 
@@ -126,7 +126,7 @@ const entityLocationLayer = {
   id: 'entity-locations',
   type: 'circle',
   paint: {
-    'circle-color': '#a855f7',
+    'circle-color': '#c9a227',
     'circle-radius': 10,
     'circle-stroke-width': 3,
     'circle-stroke-color': '#ffffff',
@@ -144,8 +144,8 @@ const entityLocationLabelLayer = {
     'text-anchor': 'top',
   },
   paint: {
-    'text-color': '#a855f7',
-    'text-halo-color': '#1e293b',
+    'text-color': '#c9a227',
+    'text-halo-color': '#0c1117',
     'text-halo-width': 1,
   },
 };
@@ -154,10 +154,10 @@ const militaryBaseLayer = {
   id: 'military-bases',
   type: 'circle',
   paint: {
-    'circle-color': '#FFD700',
+    'circle-color': '#e8c547',
     'circle-radius': 5,
     'circle-stroke-width': 1,
-    'circle-stroke-color': '#1e293b',
+    'circle-stroke-color': '#0c1117',
     'circle-opacity': 0.7,
   },
 };
@@ -175,7 +175,7 @@ const militaryBaseLabelLayer = {
   },
   paint: {
     'text-color': '#FFE44D',
-    'text-halo-color': '#1e293b',
+    'text-halo-color': '#0c1117',
     'text-halo-width': 1,
   },
 };
@@ -185,7 +185,7 @@ const operationsLayer = {
   id: 'operations-markers',
   type: 'circle',
   paint: {
-    'circle-color': '#FFD700',
+    'circle-color': '#e8c547',
     'circle-radius': 10,
     'circle-stroke-width': 3,
     'circle-stroke-color': '#B8960F',
@@ -204,8 +204,8 @@ const operationsLabelLayer = {
     'text-max-width': 12,
   },
   paint: {
-    'text-color': '#FFD700',
-    'text-halo-color': '#1e293b',
+    'text-color': '#e8c547',
+    'text-halo-color': '#0c1117',
     'text-halo-width': 1,
   },
 };
@@ -243,7 +243,7 @@ const intelLabelLayer = {
   },
   paint: {
     'text-color': '#E0334A',
-    'text-halo-color': '#1e293b',
+    'text-halo-color': '#0c1117',
     'text-halo-width': 1,
   },
 };
@@ -273,7 +273,7 @@ const campaignLabelLayer = {
   },
   paint: {
     'text-color': '#7a9a42',
-    'text-halo-color': '#1e293b',
+    'text-halo-color': '#0c1117',
     'text-halo-width': 1,
   },
 };
@@ -349,7 +349,7 @@ function buildNATOMarkerSVG(affiliation, symbolType, size = 32) {
 
 /* ── Deployment path colours per unit ────────────────────────────────────── */
 // 25th ID fixed branded color
-const TWENTY_FIFTH_COLOR = '#FFD700';
+const TWENTY_FIFTH_COLOR = '#e8c547';
 
 // Partner unit palette – blues / cyans / teals (allied tones)
 const PARTNER_COLORS = [
@@ -361,9 +361,9 @@ const PARTNER_COLORS = [
   '#38BDF8', // light sky
   '#60A5FA', // light blue
   '#2DD4BF', // aquamarine
-  '#34D399', // light emerald
+  '#c9a227', // light emerald
   '#818CF8', // light indigo
-  '#10B981', // emerald
+  '#e8c547', // emerald
   '#67E8F9', // ice cyan
   '#93C5FD', // pale blue
   '#5EEAD4', // pale teal
@@ -372,7 +372,7 @@ const PARTNER_COLORS = [
 
 // Counterpart / support unit palette – purples / pinks / oranges / warm tones
 const COUNTERPART_COLORS = [
-  '#A855F7', // purple
+  '#8a9aa8', // purple
   '#EC4899', // pink
   '#F97316', // orange
   '#EF4444', // red
@@ -384,7 +384,7 @@ const COUNTERPART_COLORS = [
   '#84CC16', // lime
   '#FB923C', // light orange
   '#E879F9', // light fuchsia
-  '#C084FC', // light purple
+  '#4a6070', // light purple
   '#FB7185', // light rose
   '#FBBF24', // bright amber
 ];
@@ -1615,7 +1615,7 @@ export default function GlobalThreatMap({
                 <span
                   className="text-[8px] font-black whitespace-nowrap px-1.5 py-0.5 rounded tracking-widest uppercase mt-0.5"
                   style={{
-                    color: '#FFD700',
+                    color: '#e8c547',
                     background: 'rgba(0,0,0,0.88)',
                     border: '1px solid rgba(255,215,0,0.35)',
                     letterSpacing: '0.12em',
@@ -1804,7 +1804,7 @@ export default function GlobalThreatMap({
                   <div className="flex items-center gap-1.5 mb-2 flex-wrap">
                     <span className={`text-[9px] font-black tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm border ${
                       deploymentPopup.data.status === 'deploying' ? 'bg-yellow-900/30 text-yellow-300 border-yellow-700/30' :
-                      deploymentPopup.data.status === 'deployed'  ? 'bg-green-900/30 text-green-300 border-green-700/30' :
+                      deploymentPopup.data.status === 'deployed'  ? 'bg-[rgba(201,162,39,0.1)] text-[#c9a227] border-[rgba(201,162,39,0.3)]' :
                       deploymentPopup.data.status === 'endex'     ? 'bg-orange-900/30 text-orange-300 border-orange-700/30' :
                       deploymentPopup.data.status === 'rtb'       ? 'bg-blue-900/30 text-blue-300 border-blue-700/30' :
                       'bg-[#111a24]/50 text-[#8a9aa8] border-[rgba(201,162,39,0.045)]'
@@ -1812,7 +1812,7 @@ export default function GlobalThreatMap({
                       {deploymentPopup.data.status}
                     </span>
                     <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-sm border ${
-                      deploymentPopup.data.origin_type === 'counterpart' ? 'bg-purple-900/30 text-purple-300 border-purple-700/30' :
+                      deploymentPopup.data.origin_type === 'counterpart' ? 'bg-[#111a24] text-[#8a9aa8] border-[rgba(138,154,168,0.3)]' :
                       deploymentPopup.data.origin_type === 'partner'     ? 'bg-cyan-900/30 text-cyan-300 border-cyan-700/30' :
                       'bg-tropic-gold/10 text-tropic-gold border-tropic-gold/30'
                     }`}>
@@ -1823,7 +1823,7 @@ export default function GlobalThreatMap({
                   {/* Title */}
                   <h3
                     className="font-black text-sm tracking-wide uppercase"
-                    style={{ color: '#FFD700' }}
+                    style={{ color: '#e8c547' }}
                   >
                     {deploymentPopup.data.title}
                   </h3>
@@ -1885,7 +1885,7 @@ export default function GlobalThreatMap({
                                   width: 6,
                                   height: 6,
                                   borderRadius: i === 0 || i === arr.length - 1 ? 1 : '50%',
-                                  backgroundColor: i === 0 ? '#22c55e' : i === arr.length - 1 ? '#ef4444' : '#FFD700',
+                                  backgroundColor: i === 0 ? '#c9a227' : i === arr.length - 1 ? '#ef4444' : '#e8c547',
                                   display: 'inline-block',
                                 }}
                               />

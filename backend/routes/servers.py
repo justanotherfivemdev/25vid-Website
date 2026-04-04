@@ -2288,12 +2288,22 @@ async def execute_rcon(
     rcon_port = int(ports.get("rcon", 19999))
     rcon_password = str(((server.get("config") or {}).get("rcon") or {}).get("password") or "")
 
-    success, response = await bercon_client.execute(
-        host=get_server_runtime_host(),
-        port=rcon_port,
-        password=rcon_password,
-        command=body.command,
-    )
+    success, response = False, "RCON execution failed unexpectedly"
+    try:
+        success, response = await asyncio.wait_for(
+            bercon_client.execute(
+                host=get_server_runtime_host(),
+                port=rcon_port,
+                password=rcon_password,
+                command=body.command,
+            ),
+            timeout=15,
+        )
+    except asyncio.TimeoutError:
+        success, response = False, "RCON command timed out after 15 seconds"
+    except Exception as exc:
+        logger.error("RCON execution error for server %s: %s", server_id, exc)
+        success, response = False, f"RCON execution failed: {exc}"
 
     await record_server_log_event(
         server_id,
@@ -2718,12 +2728,22 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
                 metadata={"command": command[:500], "via": "websocket"},
             )
 
-            success, response = await bercon_client.execute(
-                host=get_server_runtime_host(),
-                port=rcon_port,
-                password=rcon_password,
-                command=command,
-            )
+            success, response = False, "RCON execution failed unexpectedly"
+            try:
+                success, response = await asyncio.wait_for(
+                    bercon_client.execute(
+                        host=get_server_runtime_host(),
+                        port=rcon_port,
+                        password=rcon_password,
+                        command=command,
+                    ),
+                    timeout=15,
+                )
+            except asyncio.TimeoutError:
+                success, response = False, "RCON command timed out after 15 seconds"
+            except Exception as exc:
+                logger.error("WS RCON execution error for %s: %s", server_id, exc)
+                success, response = False, f"RCON execution failed: {exc}"
 
             await record_server_log_event(
                 server_id,

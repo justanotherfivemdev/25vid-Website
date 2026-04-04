@@ -23,8 +23,8 @@ export const threatLevelColors = {
   critical: '#ef4444',
   high: '#f97316',
   medium: '#eab308',
-  low: '#22c55e',
-  info: '#94a3b8',
+  low: '#c9a227',
+  info: '#8a9aa8',
 };
 
 export const categoryIcons = {

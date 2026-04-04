@@ -224,14 +224,14 @@ function ConsoleModule() {
   const dotColor = {
     offline: 'bg-zinc-600',
     connecting: 'bg-amber-400',
-    live: 'bg-green-400',
+    live: 'bg-[#c9a227]',
     reconnecting: 'bg-amber-300',
   }[connectionState] || 'bg-zinc-600';
 
   const textColor = {
     offline: 'text-zinc-500',
     connecting: 'text-amber-300',
-    live: 'text-green-400',
+    live: 'text-[#c9a227]',
     reconnecting: 'text-amber-300',
   }[connectionState] || 'text-zinc-500';
 
