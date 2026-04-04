@@ -120,8 +120,8 @@ export default function ThreatMapPage() {
         <TerminalTransition lines={threatMapLines.current} onComplete={handleAnimComplete} />
       )}
       <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} mapStatus={mapStatus} isAdmin={isAdmin} />
-      <div className="flex flex-1 overflow-hidden">
-        <div className="relative flex-1">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="relative min-h-0 flex-1">
           <GlobalThreatMap
             operations={operations}
             intelEvents={intelEvents}

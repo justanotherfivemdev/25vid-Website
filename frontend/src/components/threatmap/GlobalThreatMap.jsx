@@ -1111,8 +1111,9 @@ export default function GlobalThreatMap({
         addAircraftIcon(mapRef.current.getMap());
       }
     } catch (err) {
-      console.warn('Failed to add aircraft icon:', err);
+      console.warn('[ThreatMap] Failed to add aircraft icon:', err);
     }
+    console.info('[ThreatMap] Globe initialized successfully');
     setMapReady(true);
     setMapError(null);
     onStatusChange?.({ ready: true, error: null });
@@ -1120,6 +1121,7 @@ export default function GlobalThreatMap({
 
   const onMapError = useCallback((event) => {
     const message = event?.error?.message || event?.message || 'Map rendering failed.';
+    console.error('[ThreatMap] Map error:', message, event);
     setMapReady(false);
     setMapError(message);
     onStatusChange?.({ ready: false, error: message });
@@ -1127,10 +1129,13 @@ export default function GlobalThreatMap({
 
   useEffect(() => {
     if (!MAPBOX_TOKEN) {
+      console.warn('[ThreatMap] REACT_APP_MAPBOX_TOKEN is not set — globe disabled');
       onStatusChange?.({
         ready: false,
         error: 'Mapbox token missing. Set REACT_APP_MAPBOX_TOKEN to enable the globe.',
       });
+    } else {
+      console.info('[ThreatMap] Mapbox token present, initializing globe...');
     }
   }, [onStatusChange]);
 
