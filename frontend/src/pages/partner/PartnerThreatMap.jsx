@@ -106,13 +106,13 @@ export default function PartnerThreatMap() {
   }, [user, fetchEvents, fetchMilitaryBases, fetchPartnerOverlays]);
 
   if (!user) {
-    return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen bg-[#050a0e] text-white flex items-center justify-center">Loading...</div>;
   }
 
   return (
-    <div className="flex h-screen flex-col bg-black threat-map-page">
+    <div className="flex h-screen flex-col bg-[#050a0e] threat-map-page">
       {/* Custom header for partner context */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-tropic-olive/30 z-50">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#0c1117] border-b border-tropic-olive/30 z-50">
         <div className="flex items-center gap-3">
           <Link to="/partner">
             <Button variant="outline" size="sm" className="border-tropic-olive/60 text-tropic-olive hover:bg-tropic-olive/10">
@@ -121,7 +121,7 @@ export default function PartnerThreatMap() {
           </Link>
           <div className="flex items-center gap-2">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-6 h-6 object-contain" />
-            <h1 className="text-lg font-bold text-tropic-gold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+            <h1 className="text-lg font-bold text-tropic-gold tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>
               GLOBAL THREAT MAP
             </h1>
             <Badge className="bg-tropic-olive/20 text-tropic-olive border border-tropic-olive/40 text-[9px]">
@@ -134,14 +134,14 @@ export default function PartnerThreatMap() {
           <div className="flex items-center gap-3 mr-4">
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-tropic-gold"></span>
-              <span className="text-[10px] text-gray-400">25th ID</span>
+              <span className="text-[10px] text-[#8a9aa8]">25th ID</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-tropic-olive"></span>
-              <span className="text-[10px] text-gray-400">Partner Units</span>
+              <span className="text-[10px] text-[#8a9aa8]">Partner Units</span>
             </div>
           </div>
-          <span className="text-xs text-gray-500">{user?.username}</span>
+          <span className="text-xs text-[#4a6070]">{user?.username}</span>
         </div>
       </div>
       <div className="flex flex-1 overflow-hidden">

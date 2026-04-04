@@ -40,7 +40,7 @@ export function TerminalText({
 
   return (
     <span ref={ref} className={`${className}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-      <span className="text-[#00ff88] opacity-50">{prefix}</span>
+      <span className="text-[#e8c547] opacity-50">{prefix}</span>
       {displayed}
       {cursor && !done && (
         <span className="inline-block w-[2px] h-[1em] bg-[#e8c547] ml-0.5 animate-[blink_1s_steps(1)_infinite] align-middle" />

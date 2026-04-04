@@ -22,14 +22,14 @@ export function CommandPanel({
   }[status] || 'status-dot-online';
 
   return (
-    <div className={`bg-[#0c1117] border border-[rgba(0,255,136,0.1)] overflow-hidden ${className}`}>
+    <div className={`bg-[#0c1117] border border-[rgba(201,162,39,0.1)] overflow-hidden ${className}`}>
       <div
-        className={`flex items-center justify-between px-4 py-2.5 bg-[#080d12] border-b border-[rgba(0,255,136,0.08)] ${collapsible ? 'cursor-pointer select-none' : ''}`}
+        className={`flex items-center justify-between px-4 py-2.5 bg-[#080d12] border-b border-[rgba(201,162,39,0.08)] ${collapsible ? 'cursor-pointer select-none' : ''}`}
         onClick={collapsible ? () => setIsOpen(!isOpen) : undefined}
       >
         <div className="flex items-center gap-3">
           <span className={`status-dot ${statusDotClass}`} />
-          {Icon && <Icon className="w-4 h-4 text-[#00ff88] opacity-60" />}
+          {Icon && <Icon className="w-4 h-4 text-[#e8c547] opacity-60" />}
           <span className="text-xs tracking-[0.2em] text-[#d0d8e0] uppercase" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {title}
           </span>
@@ -37,7 +37,7 @@ export function CommandPanel({
         <div className="flex items-center gap-2">
           {badge && (
             <span className={`text-[9px] tracking-[0.2em] px-2 py-0.5 uppercase ${
-              badge === 'LIVE' ? 'text-[#00ff88] bg-[rgba(0,255,136,0.1)] border border-[rgba(0,255,136,0.2)]' :
+              badge === 'LIVE' ? 'text-[#e8c547] bg-[rgba(201,162,39,0.1)] border border-[rgba(201,162,39,0.2)]' :
               'text-[#4a6070] bg-[rgba(74,96,112,0.1)] border border-[rgba(74,96,112,0.2)]'
             }`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {badge}

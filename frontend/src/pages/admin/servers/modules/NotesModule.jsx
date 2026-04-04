@@ -186,43 +186,43 @@ function NotesModule() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h2 className="text-sm font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             ADMIN NOTES
           </h2>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-[#4a6070]">
             Log moderation decisions, mod changes, testing requests, and community follow-up in a structured ops queue.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="outline" className="border-zinc-800 text-[10px] text-gray-400">
+          <Badge variant="outline" className="border-zinc-800 text-[10px] text-[#8a9aa8]">
             Refreshes every 30s
           </Badge>
-          <Button size="sm" variant="outline" onClick={() => fetchNotes(true)} className="h-7 border-zinc-800 text-xs text-gray-400">
+          <Button size="sm" variant="outline" onClick={() => fetchNotes(true)} className="h-7 border-zinc-800 text-xs text-[#8a9aa8]">
             <RefreshCw className={`mr-1 h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
           </Button>
         </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardContent className="p-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Total Notes</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#4a6070]">Total Notes</div>
             <div className="mt-2 text-2xl font-semibold text-white">{notes.length}</div>
-            <div className="mt-1 text-xs text-gray-500">Shared operating history for this server.</div>
+            <div className="mt-1 text-xs text-[#4a6070]">Shared operating history for this server.</div>
           </CardContent>
         </Card>
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardContent className="p-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Open Queue</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#4a6070]">Open Queue</div>
             <div className="mt-2 text-2xl font-semibold text-white">{openNotes}</div>
-            <div className="mt-1 text-xs text-gray-500">{followUps} require explicit follow-up.</div>
+            <div className="mt-1 text-xs text-[#4a6070]">{followUps} require explicit follow-up.</div>
           </CardContent>
         </Card>
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardContent className="p-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Mod Related</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#4a6070]">Mod Related</div>
             <div className="mt-2 text-2xl font-semibold text-white">{modRelated}</div>
-            <div className="mt-1 text-xs text-gray-500">Requests and changes tied to mods or workshop content.</div>
+            <div className="mt-1 text-xs text-[#4a6070]">Requests and changes tied to mods or workshop content.</div>
           </CardContent>
         </Card>
       </div>
@@ -239,39 +239,39 @@ function NotesModule() {
         </div>
       ) : null}
 
-      <Card className="border-zinc-800 bg-black/60">
+      <Card className="border-zinc-800 bg-[#050a0e]/60">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">NEW OPS NOTE</CardTitle>
+          <CardTitle className="text-xs font-semibold tracking-wider text-[#8a9aa8]">NEW OPS NOTE</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 xl:grid-cols-2">
             <div>
-              <label className="text-xs text-gray-400">Title</label>
+              <label className="text-xs text-[#8a9aa8]">Title</label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
                 placeholder="Short summary for the queue"
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
+                className="mt-1 border-zinc-800 bg-[#050a0e]/60 text-sm text-white"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-400">Event Time</label>
+              <label className="text-xs text-[#8a9aa8]">Event Time</label>
               <Input
                 type="datetime-local"
                 value={form.eventAt}
                 onChange={(e) => setForm((prev) => ({ ...prev, eventAt: e.target.value }))}
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
+                className="mt-1 border-zinc-800 bg-[#050a0e]/60 text-sm text-white"
               />
             </div>
           </div>
 
           <div className="grid gap-3 xl:grid-cols-3">
             <div>
-              <label className="text-xs text-gray-400">Category</label>
+              <label className="text-xs text-[#8a9aa8]">Category</label>
               <select
                 value={form.category}
                 onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-                className="mt-1 h-9 w-full rounded border border-zinc-800 bg-black/60 px-3 text-sm text-white"
+                className="mt-1 h-9 w-full rounded border border-zinc-800 bg-[#050a0e]/60 px-3 text-sm text-white"
               >
                 {NOTE_CATEGORIES.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -279,11 +279,11 @@ function NotesModule() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-400">Status</label>
+              <label className="text-xs text-[#8a9aa8]">Status</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
-                className="mt-1 h-9 w-full rounded border border-zinc-800 bg-black/60 px-3 text-sm text-white"
+                className="mt-1 h-9 w-full rounded border border-zinc-800 bg-[#050a0e]/60 px-3 text-sm text-white"
               >
                 {NOTE_STATUSES.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -291,11 +291,11 @@ function NotesModule() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-400">Priority</label>
+              <label className="text-xs text-[#8a9aa8]">Priority</label>
               <select
                 value={form.priority}
                 onChange={(e) => setForm((prev) => ({ ...prev, priority: e.target.value }))}
-                className="mt-1 h-9 w-full rounded border border-zinc-800 bg-black/60 px-3 text-sm text-white"
+                className="mt-1 h-9 w-full rounded border border-zinc-800 bg-[#050a0e]/60 px-3 text-sm text-white"
               >
                 {NOTE_PRIORITIES.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -304,52 +304,52 @@ function NotesModule() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-black/40 px-4 py-3">
+          <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-[#050a0e]/40 px-4 py-3">
             <div>
-              <div className="text-sm text-gray-300">Follow-up required</div>
-              <div className="text-[10px] text-gray-600">Use this for unresolved tasks, moderation review, or changes that still need testing.</div>
+              <div className="text-sm text-[#8a9aa8]">Follow-up required</div>
+              <div className="text-[10px] text-[#4a6070]">Use this for unresolved tasks, moderation review, or changes that still need testing.</div>
             </div>
             <Switch checked={form.followUpRequired} onCheckedChange={(value) => setForm((prev) => ({ ...prev, followUpRequired: value }))} className="h-4 w-7" />
           </div>
 
           <div className="grid gap-3 xl:grid-cols-2">
             <div>
-              <label className="text-xs text-gray-400">Tags</label>
+              <label className="text-xs text-[#8a9aa8]">Tags</label>
               <Input
                 value={form.tagsText}
                 onChange={(e) => setForm((prev) => ({ ...prev, tagsText: e.target.value }))}
                 placeholder="Comma separated, e.g. battleye, restart-window, handoff"
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
+                className="mt-1 border-zinc-800 bg-[#050a0e]/60 text-sm text-white"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-400">Related Mods</label>
+              <label className="text-xs text-[#8a9aa8]">Related Mods</label>
               <Input
                 value={form.relatedModsText}
                 onChange={(e) => setForm((prev) => ({ ...prev, relatedModsText: e.target.value }))}
                 placeholder="Comma separated mod names"
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
+                className="mt-1 border-zinc-800 bg-[#050a0e]/60 text-sm text-white"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-gray-400">Requested Actions</label>
+            <label className="text-xs text-[#8a9aa8]">Requested Actions</label>
             <Textarea
               value={form.requestedActionsText}
               onChange={(e) => setForm((prev) => ({ ...prev, requestedActionsText: e.target.value }))}
               placeholder="One action per line, e.g. test updated mod pack on staging"
-              className="mt-1 min-h-[88px] border-zinc-800 bg-black/60 text-sm text-white placeholder:text-gray-600"
+              className="mt-1 min-h-[88px] border-zinc-800 bg-[#050a0e]/60 text-sm text-white placeholder:text-[#4a6070]"
             />
           </div>
 
           <div>
-            <label className="text-xs text-gray-400">Details</label>
+            <label className="text-xs text-[#8a9aa8]">Details</label>
             <Textarea
               value={form.content}
               onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
               placeholder="Capture the decision, evidence, impact, and what the next admin should know."
-              className="mt-1 min-h-[140px] border-zinc-800 bg-black/60 text-sm text-white placeholder:text-gray-600"
+              className="mt-1 min-h-[140px] border-zinc-800 bg-[#050a0e]/60 text-sm text-white placeholder:text-[#4a6070]"
               rows={5}
             />
           </div>
@@ -369,23 +369,23 @@ function NotesModule() {
           <Loader2 className="h-5 w-5 animate-spin text-tropic-gold" />
         </div>
       ) : notes.length === 0 ? (
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <StickyNote className="mb-2 h-8 w-8 text-gray-700" />
-            <p className="text-sm text-gray-500">No notes yet</p>
-            <p className="mt-1 text-xs text-gray-600">Start logging operational context for mod changes, moderation, testing, and handoffs.</p>
+            <StickyNote className="mb-2 h-8 w-8 text-[#4a6070]" />
+            <p className="text-sm text-[#4a6070]">No notes yet</p>
+            <p className="mt-1 text-xs text-[#4a6070]">Start logging operational context for mod changes, moderation, testing, and handoffs.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
           {notes.map((note, index) => (
-            <Card key={note.id || index} className="border-zinc-800 bg-black/60">
+            <Card key={note.id || index} className="border-zinc-800 bg-[#050a0e]/60">
               <CardContent className="space-y-3 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-gray-200">{note.title || humanize(note.category)}</span>
-                      <Badge variant="outline" className="border-zinc-700 text-[10px] text-gray-400">
+                      <span className="text-sm font-medium text-[#d0d8e0]">{note.title || humanize(note.category)}</span>
+                      <Badge variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">
                         {humanize(note.category)}
                       </Badge>
                       <Badge variant="outline" className={`text-[10px] ${statusTone(note.status)}`}>
@@ -400,14 +400,14 @@ function NotesModule() {
                         </Badge>
                       ) : null}
                     </div>
-                    <p className="mt-3 whitespace-pre-wrap text-sm text-gray-200">{note.content}</p>
+                    <p className="mt-3 whitespace-pre-wrap text-sm text-[#d0d8e0]">{note.content}</p>
                   </div>
                 </div>
 
                 {(note.tags?.length || note.related_mods?.length) ? (
                   <div className="flex flex-wrap gap-2">
                     {(note.tags || []).map((tag) => (
-                      <Badge key={`${note.id}-tag-${tag}`} variant="outline" className="border-zinc-700 text-[10px] text-gray-400">
+                      <Badge key={`${note.id}-tag-${tag}`} variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">
                         #{tag}
                       </Badge>
                     ))}
@@ -421,12 +421,12 @@ function NotesModule() {
 
                 {note.requested_actions?.length > 0 ? (
                   <div className="rounded-lg border border-zinc-800/70 bg-zinc-950/60 p-3">
-                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#4a6070]">
                       Requested Actions
                     </div>
                     <div className="space-y-1">
                       {note.requested_actions.map((action, actionIndex) => (
-                        <div key={`${note.id}-action-${actionIndex}`} className="text-xs text-gray-400">
+                        <div key={`${note.id}-action-${actionIndex}`} className="text-xs text-[#8a9aa8]">
                           {action}
                         </div>
                       ))}
@@ -434,7 +434,7 @@ function NotesModule() {
                   </div>
                 ) : null}
 
-                <div className="flex flex-wrap gap-4 text-[11px] text-gray-600">
+                <div className="flex flex-wrap gap-4 text-[11px] text-[#4a6070]">
                   <span className="flex items-center gap-1">
                     <User className="h-3 w-3" /> {note.author_name || note.author_id || 'Unknown'}
                   </span>

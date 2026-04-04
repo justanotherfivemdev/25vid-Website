@@ -105,9 +105,9 @@ const AdminDashboard = () => {
     <>
       <div className="space-y-8">
         {/* Hero banner */}
-        <div className="relative corner-bracket border border-[rgba(0,255,136,0.15)] bg-[radial-gradient(circle_at_top,rgba(0,255,136,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Force Readiness Overview</p>
-          <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+          <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             COMMAND DASHBOARD
           </h1>
           <p className="mt-3 max-w-3xl text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -117,7 +117,7 @@ const AdminDashboard = () => {
 
         {/* Stat cards */}
         {loading ? (
-          <div className="text-center py-12 text-[#00ff88]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <div className="text-center py-12 text-[#e8c547]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             <span className="animate-pulse">■</span> Loading statistics...
           </div>
         ) : (
@@ -125,18 +125,18 @@ const AdminDashboard = () => {
             {statCards.map((stat, idx) => {
               const Icon = stat.icon;
               return (
-                <div key={idx} className="relative border border-[rgba(0,255,136,0.12)] bg-[#0c1117] shadow-xl p-0">
+                <div key={idx} className="relative border border-[rgba(201,162,39,0.12)] bg-[#0c1117] shadow-xl p-0">
                   <div className="corner-bracket" />
                   <div className="flex items-center justify-between px-5 pt-4 pb-2">
                     <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#4a6070]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                       {stat.label}
                     </span>
-                    <div className="border border-[rgba(0,255,136,0.15)] bg-[#050a0e] p-2">
+                    <div className="border border-[rgba(201,162,39,0.15)] bg-[#050a0e] p-2">
                       <Icon className="w-5 h-5 text-[#00aaff]" />
                     </div>
                   </div>
                   <div className="px-5 pb-5">
-                    <div className="text-4xl font-bold text-[#00ff88]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    <div className="text-4xl font-bold text-[#e8c547]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                       {stat.value}
                     </div>
                   </div>
@@ -147,11 +147,11 @@ const AdminDashboard = () => {
         )}
 
         {/* Soldier of the Month Management */}
-        <div className="relative border border-[rgba(0,255,136,0.12)] bg-[#0c1117] shadow-xl">
+        <div className="relative border border-[rgba(201,162,39,0.12)] bg-[#0c1117] shadow-xl">
           <div className="corner-bracket" />
           <div className="flex flex-row items-center justify-between px-5 pt-5 pb-3">
             <div>
-              <h3 className="flex items-center gap-2 text-[#e8c547] font-bold uppercase tracking-wider text-sm" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+              <h3 className="flex items-center gap-2 text-[#e8c547] font-bold uppercase tracking-wider text-sm" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                 <Star className="w-5 h-5 text-[#e8c547]" />Soldier of the Month
               </h3>
               <p className="text-xs text-[#4a6070] mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>Highlight an outstanding unit member — visible to all in the Hub. Auto-clears after 30 days.</p>
@@ -159,25 +159,25 @@ const AdminDashboard = () => {
             <div className="flex gap-2">
               <Dialog open={motwOpen} onOpenChange={setMotwOpen}>
                 <DialogTrigger asChild>
-                  <button className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] hover:border-[rgba(0,255,136,0.5)] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }} onClick={openMotwDialog} data-testid="set-motw-btn">
+                  <button className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] hover:border-[rgba(201,162,39,0.5)] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }} onClick={openMotwDialog} data-testid="set-motw-btn">
                     <Star className="w-4 h-4 mr-1 inline-block" />{motw ? 'Change' : 'Set'}
                   </button>
                 </DialogTrigger>
-                <DialogContent className="bg-[#0c1117] text-[#d0d8e0] border-[rgba(0,255,136,0.2)] max-w-lg max-h-[80vh] overflow-y-auto rounded-none">
+                <DialogContent className="bg-[#0c1117] text-[#d0d8e0] border-[rgba(201,162,39,0.2)] max-w-lg max-h-[80vh] overflow-y-auto rounded-none">
                   <DialogHeader>
-                    <DialogTitle className="text-[#e8c547] uppercase tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>Set Soldier of the Month</DialogTitle>
+                    <DialogTitle className="text-[#e8c547] uppercase tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>Set Soldier of the Month</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
                       <Label className="text-[#8a9aa8] text-xs uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Search Members</Label>
                       <Input value={memberSearch} onChange={e => setMemberSearch(e.target.value)}
-                        placeholder="Search by name or email..." className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0] rounded-none" style={{ fontFamily: "'JetBrains Mono', monospace" }} data-testid="motw-search" />
+                        placeholder="Search by name or email..." className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" style={{ fontFamily: "'JetBrains Mono', monospace" }} data-testid="motw-search" />
                     </div>
-                    <div className="max-h-48 overflow-y-auto space-y-1 border border-[rgba(0,255,136,0.1)] p-2 bg-[#050a0e]">
+                    <div className="max-h-48 overflow-y-auto space-y-1 border border-[rgba(201,162,39,0.1)] p-2 bg-[#050a0e]">
                       {filteredMembers.map(m => (
                         <button key={m.id} type="button"
                           onClick={() => setMotwForm({ ...motwForm, user_id: m.id })}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${motwForm.user_id === m.id ? 'bg-[rgba(0,255,136,0.08)] border border-[rgba(0,255,136,0.4)]' : 'hover:bg-[#111a24]'}`}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${motwForm.user_id === m.id ? 'bg-[rgba(201,162,39,0.08)] border border-[rgba(201,162,39,0.4)]' : 'hover:bg-[#111a24]'}`}
                           style={{ fontFamily: "'JetBrains Mono', monospace" }}
                           data-testid={`motw-member-${m.id}`}>
                           <span className="font-medium text-[#d0d8e0]">{m.username}</span>
@@ -190,13 +190,13 @@ const AdminDashboard = () => {
                       <Label className="text-[#8a9aa8] text-xs uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Reason / Citation (optional)</Label>
                       <Textarea rows={3} value={motwForm.reason}
                         onChange={e => setMotwForm({ ...motwForm, reason: e.target.value })}
-                        className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0] rounded-none"
+                        className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none"
                         style={{ fontFamily: "'JetBrains Mono', monospace" }}
                         placeholder="Outstanding performance during Operation Thunderbolt..."
                         data-testid="motw-reason" />
                     </div>
                     <button disabled={!motwForm.user_id} onClick={handleSetMotw}
-                      className="tactical-button w-full px-4 py-3 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] hover:border-[rgba(0,255,136,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }} data-testid="motw-confirm-btn">
+                      className="tactical-button w-full px-4 py-3 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] hover:border-[rgba(201,162,39,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }} data-testid="motw-confirm-btn">
                       Confirm Soldier of the Month
                     </button>
                   </div>
@@ -211,8 +211,8 @@ const AdminDashboard = () => {
           </div>
           {motw && (
             <div className="px-5 pb-5">
-              <div className="flex items-center gap-4 p-4 bg-[rgba(0,255,136,0.04)] border border-[rgba(0,255,136,0.15)]">
-                <div className="w-12 h-12 border-2 border-[rgba(0,255,136,0.3)] overflow-hidden bg-[#050a0e] flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-4 p-4 bg-[rgba(201,162,39,0.04)] border border-[rgba(201,162,39,0.15)]">
+                <div className="w-12 h-12 border-2 border-[rgba(201,162,39,0.3)] overflow-hidden bg-[#050a0e] flex items-center justify-center shrink-0">
                   {motw.avatar_url ? (
                     <img src={resolveImg(motw.avatar_url)} alt={motw.username} className="w-full h-full object-cover" />
                   ) : (
@@ -220,7 +220,7 @@ const AdminDashboard = () => {
                   )}
                 </div>
                 <div>
-                  <div className="font-bold text-[#00ff88]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div className="font-bold text-[#e8c547]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                     {motw.username} {motw.rank && <span className="text-[#4a6070] font-normal text-xs ml-1">({motw.rank})</span>}
                   </div>
                   {motw.reason && <p className="text-sm text-[#8a9aa8] mt-0.5 whitespace-pre-wrap" style={{ fontFamily: "'Inter', sans-serif" }}>{motw.reason}</p>}
@@ -231,30 +231,30 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="relative border border-[rgba(0,255,136,0.12)] bg-[#0c1117] shadow-xl">
+        <div className="relative border border-[rgba(201,162,39,0.12)] bg-[#0c1117] shadow-xl">
           <div className="corner-bracket" />
           <div className="px-5 pt-5 pb-3">
-            <h3 className="text-[#e8c547] font-bold uppercase tracking-wider text-sm" style={{ fontFamily: "'Orbitron', sans-serif" }}>Quick Actions</h3>
+            <h3 className="text-[#e8c547] font-bold uppercase tracking-wider text-sm" style={{ fontFamily: "'Share Tech', sans-serif" }}>Quick Actions</h3>
             <p className="text-xs text-[#4a6070] mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>Common administrative tasks</p>
           </div>
           <div className="px-5 pb-5 grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Link to="/admin/operations" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
+            <Link to="/admin/operations" className="border border-[rgba(201,162,39,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(201,162,39,0.35)] hover:bg-[rgba(201,162,39,0.03)]">
               <Calendar className="w-8 h-8 mx-auto mb-2 text-[#00aaff]" />
               <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Manage Operations</div>
             </Link>
-            <Link to="/admin/announcements" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
+            <Link to="/admin/announcements" className="border border-[rgba(201,162,39,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(201,162,39,0.35)] hover:bg-[rgba(201,162,39,0.03)]">
               <Megaphone className="w-8 h-8 mx-auto mb-2 text-[#e8c547]" />
               <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Post Announcement</div>
             </Link>
-            <Link to="/admin/users" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
+            <Link to="/admin/users" className="border border-[rgba(201,162,39,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(201,162,39,0.35)] hover:bg-[rgba(201,162,39,0.03)]">
               <Users className="w-8 h-8 mx-auto mb-2 text-[#e8c547]" />
               <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Manage Members</div>
             </Link>
-            <Link to="/admin/site-content" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
-              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-[#00ff88]" />
+            <Link to="/admin/site-content" className="border border-[rgba(201,162,39,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(201,162,39,0.35)] hover:bg-[rgba(201,162,39,0.03)]">
+              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-[#e8c547]" />
               <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Edit Site Content</div>
             </Link>
-            <Link to="/admin/gallery" className="border border-[rgba(0,255,136,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(0,255,136,0.35)] hover:bg-[rgba(0,255,136,0.03)]">
+            <Link to="/admin/gallery" className="border border-[rgba(201,162,39,0.1)] bg-[#050a0e] p-4 text-center transition-colors hover:border-[rgba(201,162,39,0.35)] hover:bg-[rgba(201,162,39,0.03)]">
               <Image className="w-8 h-8 mx-auto mb-2 text-[#ff3333]" />
               <div className="font-medium text-[#d0d8e0] text-sm" style={{ fontFamily: "'Oswald', sans-serif" }}>Manage Gallery</div>
             </Link>

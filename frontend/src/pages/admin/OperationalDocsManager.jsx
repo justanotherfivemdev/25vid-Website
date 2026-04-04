@@ -191,28 +191,28 @@ export default function OperationalDocsManager() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(103,137,43,0.22),rgba(7,10,13,0.96)_54%)] px-6 py-7 shadow-2xl">
+      <div className="relative corner-bracket border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-tropic-gold-dark">Operations Workspace</p>
-            <h1 className="mt-3 text-4xl font-black tracking-[0.08em] text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Operations Workspace</p>
+            <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
               Operational Documents
             </h1>
-            <p className="mt-3 max-w-3xl text-sm text-gray-300">
+            <p className="mt-3 max-w-3xl text-sm text-[#8a9aa8]">
               Upload OPORDs for planning context and AARs for bounded AI draft generation. Drafts stay hidden until staff publish them, so we keep the feed current without burning API calls on every page load.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 lg:w-[360px]">
-            <Card className="border-tropic-gold/15 bg-black/45">
+            <Card className="border-tropic-gold/15 bg-[#050a0e]/45">
               <CardContent className="p-4">
-                <p className="text-[11px] uppercase tracking-[0.25em] text-gray-500">Documents</p>
-                <p className="mt-2 text-3xl font-black text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{documents.length}</p>
+                <p className="text-[11px] uppercase tracking-[0.25em] text-[#4a6070]">Documents</p>
+                <p className="mt-2 text-3xl font-black text-white" style={{ fontFamily: "'Share Tech', sans-serif" }}>{documents.length}</p>
               </CardContent>
             </Card>
-            <Card className="border-[#708b34]/20 bg-black/45">
+            <Card className="border-[#708b34]/20 bg-[#050a0e]/45">
               <CardContent className="p-4">
-                <p className="text-[11px] uppercase tracking-[0.25em] text-gray-500">Draft Events</p>
-                <p className="mt-2 text-3xl font-black text-[#dce7c2]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                <p className="text-[11px] uppercase tracking-[0.25em] text-[#4a6070]">Draft Events</p>
+                <p className="mt-2 text-3xl font-black text-[#dce7c2]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                   {documents.reduce((sum, document) => sum + (document.generated_event_count || 0), 0)}
                 </p>
               </CardContent>
@@ -242,22 +242,22 @@ export default function OperationalDocsManager() {
             <form className="space-y-4" onSubmit={handleUpload}>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
                 <div>
-                  <Label className="text-gray-300">Document Type</Label>
+                  <Label className="text-[#8a9aa8]">Document Type</Label>
                   <select
                     value={form.document_type}
                     onChange={(event) => setForm((prev) => ({ ...prev, document_type: event.target.value }))}
-                    className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-black px-3 py-2 text-sm text-gray-100 focus:border-tropic-gold/50 focus:outline-none"
+                    className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-[#050a0e] px-3 py-2 text-sm text-[#d0d8e0] focus:border-tropic-gold/50 focus:outline-none"
                   >
                     <option value="aar">AAR</option>
                     <option value="opord">OPORD</option>
                   </select>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Campaign</Label>
+                  <Label className="text-[#8a9aa8]">Campaign</Label>
                   <select
                     value={form.campaign_id}
                     onChange={(event) => setForm((prev) => ({ ...prev, campaign_id: event.target.value, operation_id: '' }))}
-                    className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-black px-3 py-2 text-sm text-gray-100 focus:border-tropic-gold/50 focus:outline-none"
+                    className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-[#050a0e] px-3 py-2 text-sm text-[#d0d8e0] focus:border-tropic-gold/50 focus:outline-none"
                   >
                     <option value="">Select campaign</option>
                     {campaigns.map((campaign) => (
@@ -268,11 +268,11 @@ export default function OperationalDocsManager() {
               </div>
 
               <div>
-                <Label className="text-gray-300">Linked Operation</Label>
+                <Label className="text-[#8a9aa8]">Linked Operation</Label>
                 <select
                   value={form.operation_id}
                   onChange={(event) => setForm((prev) => ({ ...prev, operation_id: event.target.value }))}
-                  className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-black px-3 py-2 text-sm text-gray-100 focus:border-tropic-gold/50 focus:outline-none"
+                  className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-[#050a0e] px-3 py-2 text-sm text-[#d0d8e0] focus:border-tropic-gold/50 focus:outline-none"
                 >
                   <option value="">Campaign-wide / none</option>
                   {uploadOperations.map((operation) => (
@@ -282,24 +282,24 @@ export default function OperationalDocsManager() {
               </div>
 
               <div>
-                <Label className="text-gray-300">Title Override</Label>
+                <Label className="text-[#8a9aa8]">Title Override</Label>
                 <Input
                   value={form.title}
                   onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
                   placeholder="Optional custom title"
-                  className="mt-2 border-tropic-gold/20 bg-black text-gray-100"
+                  className="mt-2 border-tropic-gold/20 bg-[#050a0e] text-[#d0d8e0]"
                 />
               </div>
 
               <div>
-                <Label className="text-gray-300">Document File</Label>
+                <Label className="text-[#8a9aa8]">Document File</Label>
                 <Input
                   type="file"
                   accept=".pdf,.docx,.txt"
                   onChange={(event) => setForm((prev) => ({ ...prev, file: event.target.files?.[0] || null }))}
-                  className="mt-2 border-tropic-gold/20 bg-black text-gray-100 file:mr-4 file:rounded-md file:border-0 file:bg-tropic-gold/15 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-tropic-gold"
+                  className="mt-2 border-tropic-gold/20 bg-[#050a0e] text-[#d0d8e0] file:mr-4 file:rounded-md file:border-0 file:bg-tropic-gold/15 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-tropic-gold"
                 />
-                <p className="mt-2 text-xs text-gray-500">Supported in v1: PDF, DOCX, TXT. Files remain admin-only.</p>
+                <p className="mt-2 text-xs text-[#4a6070]">Supported in v1: PDF, DOCX, TXT. Files remain admin-only.</p>
               </div>
 
               <Button type="submit" disabled={uploading} className="w-full bg-tropic-gold text-black hover:bg-tropic-gold-light">
@@ -322,7 +322,7 @@ export default function OperationalDocsManager() {
                   Review parse status, generation state, and publish or hide simulated-intel outputs.
                 </CardDescription>
               </div>
-              <Button variant="outline" onClick={() => fetchDocuments({ silent: true })} disabled={refreshing} className="border-tropic-gold/25 bg-black/40 text-tropic-gold hover:bg-tropic-gold/10">
+              <Button variant="outline" onClick={() => fetchDocuments({ silent: true })} disabled={refreshing} className="border-tropic-gold/25 bg-[#050a0e]/40 text-tropic-gold hover:bg-tropic-gold/10">
                 <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
@@ -330,11 +330,11 @@ export default function OperationalDocsManager() {
 
             <div className="grid gap-3 md:grid-cols-2">
               <div>
-                <Label className="text-gray-300">Filter Campaign</Label>
+                <Label className="text-[#8a9aa8]">Filter Campaign</Label>
                 <select
                   value={filters.campaign_id}
                   onChange={(event) => setFilters((prev) => ({ ...prev, campaign_id: event.target.value, operation_id: 'all' }))}
-                  className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-black px-3 py-2 text-sm text-gray-100 focus:border-tropic-gold/50 focus:outline-none"
+                  className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-[#050a0e] px-3 py-2 text-sm text-[#d0d8e0] focus:border-tropic-gold/50 focus:outline-none"
                 >
                   <option value="all">All campaigns</option>
                   {campaigns.map((campaign) => (
@@ -343,11 +343,11 @@ export default function OperationalDocsManager() {
                 </select>
               </div>
               <div>
-                <Label className="text-gray-300">Filter Operation</Label>
+                <Label className="text-[#8a9aa8]">Filter Operation</Label>
                 <select
                   value={filters.operation_id}
                   onChange={(event) => setFilters((prev) => ({ ...prev, operation_id: event.target.value }))}
-                  className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-black px-3 py-2 text-sm text-gray-100 focus:border-tropic-gold/50 focus:outline-none"
+                  className="mt-2 w-full rounded-md border border-tropic-gold/20 bg-[#050a0e] px-3 py-2 text-sm text-[#d0d8e0] focus:border-tropic-gold/50 focus:outline-none"
                 >
                   <option value="all">All operations</option>
                   {filteredOperations.map((operation) => (
@@ -360,19 +360,19 @@ export default function OperationalDocsManager() {
 
           <CardContent className="space-y-4">
             {loading ? (
-              <div className="py-14 text-center text-gray-500">Loading operational documents...</div>
+              <div className="py-14 text-center text-[#4a6070]">Loading operational documents...</div>
             ) : documents.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-tropic-gold/20 bg-black/30 p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-tropic-gold/20 bg-[#050a0e]/30 p-10 text-center">
                 <FileSearch className="mx-auto h-8 w-8 text-tropic-gold-dark" />
                 <p className="mt-3 text-lg font-semibold text-white">No operational documents yet</p>
-                <p className="mt-2 text-sm text-gray-500">Upload an OPORD or AAR to start building AI-assisted campaign event drafts.</p>
+                <p className="mt-2 text-sm text-[#4a6070]">Upload an OPORD or AAR to start building AI-assisted campaign event drafts.</p>
               </div>
             ) : (
               documents.map((document) => {
                 const docEvents = documentEvents[document.id] || [];
                 const isExpanded = expandedId === document.id;
                 return (
-                  <div key={document.id} className="rounded-2xl border border-tropic-gold/10 bg-black/35 p-4 shadow-lg">
+                  <div key={document.id} className="rounded-2xl border border-tropic-gold/10 bg-[#050a0e]/35 p-4 shadow-lg">
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
@@ -389,16 +389,16 @@ export default function OperationalDocsManager() {
                         </div>
 
                         <div>
-                          <h3 className="text-xl font-bold text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                          <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                             {document.title || document.original_filename}
                           </h3>
-                          <p className="mt-1 text-sm text-gray-400">
+                          <p className="mt-1 text-sm text-[#8a9aa8]">
                             {document.campaign_name || 'Unknown campaign'}
                             {document.operation_title ? ` • ${document.operation_title}` : ' • Campaign-wide context'}
                           </p>
                         </div>
 
-                        <div className="grid gap-2 text-xs text-gray-500 md:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid gap-2 text-xs text-[#4a6070] md:grid-cols-2 xl:grid-cols-3">
                           <div>File: {document.original_filename}</div>
                           <div>Size: {(document.file_size / 1024).toFixed(1)} KB</div>
                           <div>Drafts: {document.generated_event_count || 0}</div>
@@ -415,31 +415,31 @@ export default function OperationalDocsManager() {
                       </div>
 
                       <div className="grid gap-2 sm:grid-cols-2 xl:w-[280px]">
-                        <Button variant="outline" onClick={() => runDocumentAction(document, 'download')} className="border-white/10 bg-black/40 text-gray-200 hover:bg-white/5">
+                        <Button variant="outline" onClick={() => runDocumentAction(document, 'download')} className="border-white/10 bg-[#050a0e]/40 text-[#d0d8e0] hover:bg-white/5">
                           <Download className="mr-2 h-4 w-4" />
                           Download
                         </Button>
-                        <Button variant="outline" onClick={() => runDocumentAction(document, 'reprocess')} className="border-tropic-gold/20 bg-black/40 text-tropic-gold hover:bg-tropic-gold/10">
+                        <Button variant="outline" onClick={() => runDocumentAction(document, 'reprocess')} className="border-tropic-gold/20 bg-[#050a0e]/40 text-tropic-gold hover:bg-tropic-gold/10">
                           <Wand2 className="mr-2 h-4 w-4" />
                           Regenerate
                         </Button>
                         {document.document_type === 'aar' && (
-                          <Button variant="outline" onClick={() => runDocumentAction(document, 'publish')} className="border-emerald-500/20 bg-black/40 text-emerald-200 hover:bg-emerald-500/10">
+                          <Button variant="outline" onClick={() => runDocumentAction(document, 'publish')} className="border-emerald-500/20 bg-[#050a0e]/40 text-emerald-200 hover:bg-emerald-500/10">
                             <CheckCircle2 className="mr-2 h-4 w-4" />
                             Publish Drafts
                           </Button>
                         )}
                         {document.document_type === 'aar' && (
-                          <Button variant="outline" onClick={() => runDocumentAction(document, 'hide')} className="border-zinc-500/20 bg-black/40 text-zinc-200 hover:bg-white/5">
+                          <Button variant="outline" onClick={() => runDocumentAction(document, 'hide')} className="border-zinc-500/20 bg-[#050a0e]/40 text-zinc-200 hover:bg-white/5">
                             <EyeOff className="mr-2 h-4 w-4" />
                             Hide Drafts
                           </Button>
                         )}
-                        <Button variant="outline" onClick={() => handleExpand(document.id)} className="border-white/10 bg-black/40 text-gray-200 hover:bg-white/5 sm:col-span-1">
+                        <Button variant="outline" onClick={() => handleExpand(document.id)} className="border-white/10 bg-[#050a0e]/40 text-[#d0d8e0] hover:bg-white/5 sm:col-span-1">
                           {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
                           Review Drafts
                         </Button>
-                        <Button variant="outline" onClick={() => runDocumentAction(document, 'delete')} className="border-red-500/20 bg-black/40 text-red-200 hover:bg-red-500/10 sm:col-span-1">
+                        <Button variant="outline" onClick={() => runDocumentAction(document, 'delete')} className="border-red-500/20 bg-[#050a0e]/40 text-red-200 hover:bg-red-500/10 sm:col-span-1">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </Button>
@@ -453,11 +453,11 @@ export default function OperationalDocsManager() {
                           <p className="text-sm font-semibold text-white">Generated Event Drafts</p>
                         </div>
                         {docEvents.length === 0 ? (
-                          <p className="text-sm text-gray-500">No generated drafts are attached to this document yet.</p>
+                          <p className="text-sm text-[#4a6070]">No generated drafts are attached to this document yet.</p>
                         ) : (
                           <div className="space-y-3">
                             {docEvents.map((event) => (
-                              <div key={event.id} className="rounded-xl border border-white/8 bg-black/35 p-3">
+                              <div key={event.id} className="rounded-xl border border-white/8 bg-[#050a0e]/35 p-3">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <StatusBadge tone={event.generation_status || 'pending_generation'}>
                                     {event.generation_status || 'draft'}
@@ -468,8 +468,8 @@ export default function OperationalDocsManager() {
                                   <StatusBadge tone={event.threatLevel}>{event.threatLevel}</StatusBadge>
                                 </div>
                                 <p className="mt-3 text-base font-semibold text-white">{event.title}</p>
-                                <p className="mt-2 text-sm text-gray-400">{event.summary}</p>
-                                <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+                                <p className="mt-2 text-sm text-[#8a9aa8]">{event.summary}</p>
+                                <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#4a6070]">
                                   <span>{event.campaign_name || 'No campaign label'}</span>
                                   <span>{event.location?.placeName || event.location?.country || 'No location'}</span>
                                   <span>{event.generation_provider || 'heuristic'}</span>

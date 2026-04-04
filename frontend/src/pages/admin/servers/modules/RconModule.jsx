@@ -275,12 +275,12 @@ function RconModule() {
 
       <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
         <div className="flex flex-col gap-3">
-          <Card className="border-zinc-800 bg-black/80">
+          <Card className="border-zinc-800 bg-[#050a0e]/80">
             <CardContent className="p-0">
               <div ref={historyRef} className="h-[50vh] overflow-y-auto font-mono text-xs">
                 {history.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-gray-600">
-                    <Monitor className="mb-3 h-8 w-8 text-gray-700" />
+                  <div className="flex flex-col items-center justify-center py-16 text-[#4a6070]">
+                    <Monitor className="mb-3 h-8 w-8 text-[#4a6070]" />
                     <p>RCON console ready.</p>
                     <p className="mt-1 text-[10px]">Use quick commands or send a manual command when RCON is connected.</p>
                   </div>
@@ -291,12 +291,12 @@ function RconModule() {
                         <div className="flex items-center gap-2 text-tropic-gold">
                           <ChevronRight className="h-3 w-3" />
                           <span className="font-semibold">{entry.command}</span>
-                          <span className="ml-auto text-[10px] text-gray-600">{entry.ts.toLocaleTimeString()}</span>
+                          <span className="ml-auto text-[10px] text-[#4a6070]">{entry.ts.toLocaleTimeString()}</span>
                         </div>
-                        {entry.response && <div className="mt-1 whitespace-pre-wrap text-gray-300">{entry.response}</div>}
+                        {entry.response && <div className="mt-1 whitespace-pre-wrap text-[#8a9aa8]">{entry.response}</div>}
                         {entry.error && <div className="mt-1 text-red-400">{entry.error}</div>}
                         {!entry.response && !entry.error && (
-                          <div className="mt-1 text-gray-600">
+                          <div className="mt-1 text-[#4a6070]">
                             <Loader2 className="inline h-3 w-3 animate-spin" /> Executing...
                           </div>
                         )}
@@ -318,7 +318,7 @@ function RconModule() {
                 onKeyDown={handleKeyDown}
                 disabled={!canExecute || loading}
                 placeholder={canExecute ? 'Enter BattlEye RCON command...' : 'RCON unavailable'}
-                className="h-10 border-zinc-800 bg-black/80 pl-9 font-mono text-sm text-white placeholder:text-gray-600"
+                className="h-10 border-zinc-800 bg-[#050a0e]/80 pl-9 font-mono text-sm text-white placeholder:text-[#4a6070]"
               />
             </div>
             <Button
@@ -332,9 +332,9 @@ function RconModule() {
         </div>
 
         <div className="space-y-4">
-          <Card className="border-zinc-800 bg-black/60">
+          <Card className="border-zinc-800 bg-[#050a0e]/60">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+              <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
                 <Zap className="h-3.5 w-3.5 text-tropic-gold" /> QUICK COMMANDS
               </CardTitle>
             </CardHeader>
@@ -347,34 +347,34 @@ function RconModule() {
                   className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-zinc-800/50 disabled:opacity-50"
                 >
                   <code className="text-tropic-gold">{qc.label}</code>
-                  <span className="ml-auto text-[10px] text-gray-600">{qc.desc}</span>
+                  <span className="ml-auto text-[10px] text-[#4a6070]">{qc.desc}</span>
                 </button>
               ))}
             </CardContent>
           </Card>
 
-          <Card className="border-zinc-800 bg-black/60">
+          <Card className="border-zinc-800 bg-[#050a0e]/60">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+              <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
                 <BookOpen className="h-3.5 w-3.5 text-tropic-gold" /> SAVED SNIPPETS
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {savedSnippets.length === 0 ? (
-                <p className="text-[10px] text-gray-600">No saved snippets. Type a command and save it.</p>
+                <p className="text-[10px] text-[#4a6070]">No saved snippets. Type a command and save it.</p>
               ) : (
                 savedSnippets.map((snippet, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <button
                       onClick={() => sendCommand(snippet.command)}
                       disabled={!canExecute || loading}
-                      className="flex-1 rounded border border-zinc-800 px-2 py-1 text-left text-xs text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold disabled:opacity-50"
+                      className="flex-1 rounded border border-zinc-800 px-2 py-1 text-left text-xs text-[#8a9aa8] hover:border-tropic-gold-dark/30 hover:text-tropic-gold disabled:opacity-50"
                     >
                       <span className="font-medium">{snippet.name}</span>
-                      <span className="ml-1 text-gray-600">-&gt;</span>
-                      <code className="ml-1 text-[10px] text-gray-500">{snippet.command}</code>
+                      <span className="ml-1 text-[#4a6070]">-&gt;</span>
+                      <code className="ml-1 text-[10px] text-[#4a6070]">{snippet.command}</code>
                     </button>
-                    <button onClick={() => removeSnippet(index)} className="text-gray-600 hover:text-red-400">
+                    <button onClick={() => removeSnippet(index)} className="text-[#4a6070] hover:text-red-400">
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
@@ -386,9 +386,9 @@ function RconModule() {
                     value={newSnippetName}
                     onChange={(e) => setNewSnippetName(e.target.value)}
                     placeholder="Snippet name..."
-                    className="h-7 border-zinc-800 bg-black/60 text-[10px] text-white"
+                    className="h-7 border-zinc-800 bg-[#050a0e]/60 text-[10px] text-white"
                   />
-                  <Button size="sm" onClick={saveSnippet} disabled={!newSnippetName.trim()} className="h-7 bg-zinc-800 text-[10px] text-gray-300 hover:bg-zinc-700">
+                  <Button size="sm" onClick={saveSnippet} disabled={!newSnippetName.trim()} className="h-7 bg-zinc-800 text-[10px] text-[#8a9aa8] hover:bg-zinc-700">
                     Save
                   </Button>
                 </div>
@@ -396,22 +396,22 @@ function RconModule() {
             </CardContent>
           </Card>
 
-          <Card className="border-zinc-800 bg-black/60">
+          <Card className="border-zinc-800 bg-[#050a0e]/60">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+              <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
                 <Clock className="h-3.5 w-3.5 text-tropic-gold" /> COMMAND HISTORY
               </CardTitle>
             </CardHeader>
             <CardContent>
               {history.length === 0 ? (
-                <p className="text-[10px] text-gray-600">No commands sent this session.</p>
+                <p className="text-[10px] text-[#4a6070]">No commands sent this session.</p>
               ) : (
                 <div className="max-h-40 space-y-1 overflow-y-auto">
                   {[...history].reverse().slice(0, 20).map((entry) => (
                     <div key={entry.id} className="flex items-center gap-2 text-[10px]">
                       <span className={entry.error ? 'text-red-400' : 'text-green-400'}>*</span>
-                      <code className="text-gray-400">{entry.command}</code>
-                      <span className="ml-auto text-gray-600">{entry.ts.toLocaleTimeString()}</span>
+                      <code className="text-[#8a9aa8]">{entry.command}</code>
+                      <span className="ml-auto text-[#4a6070]">{entry.ts.toLocaleTimeString()}</span>
                     </div>
                   ))}
                 </div>

@@ -45,7 +45,7 @@ const EventCard = memo(function EventCard({ event, isSelected, onClick, style })
 
   return (
     <Card
-      className={`cursor-pointer transition-all duration-200 hover:bg-tropic-gold/5 border-tropic-gold-dark/15 bg-black/80 ${
+      className={`cursor-pointer transition-all duration-200 hover:bg-tropic-gold/5 border-tropic-gold-dark/15 bg-[#050a0e]/80 ${
         isSelected ? 'ring-2 ring-tropic-gold bg-tropic-gold/10' : ''
       }`}
       style={style}
@@ -70,11 +70,11 @@ const EventCard = memo(function EventCard({ event, isSelected, onClick, style })
               </Badge>
             </div>
 
-            <div className="mt-1 text-xs text-gray-400 line-clamp-2 break-words">
+            <div className="mt-1 text-xs text-[#8a9aa8] line-clamp-2 break-words">
               {stripUrls(event.summary)}
             </div>
 
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#4a6070]">
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {event.location?.placeName || event.location?.country || 'Unknown'}

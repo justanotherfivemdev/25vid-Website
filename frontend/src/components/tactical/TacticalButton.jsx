@@ -14,8 +14,8 @@ export function TacticalButton({
   const variants = {
     primary: 'border-[#c9a227] text-[#c9a227] bg-transparent hover:bg-[rgba(201,162,39,0.08)] hover:shadow-[0_0_20px_rgba(201,162,39,0.2)] active:bg-[rgba(201,162,39,0.12)]',
     danger: 'border-[#ff3333] text-[#ff3333] bg-transparent hover:bg-[rgba(255,51,51,0.08)] hover:shadow-[0_0_20px_rgba(255,51,51,0.2)] active:bg-[rgba(255,51,51,0.12)]',
-    ghost: 'border-[rgba(0,255,136,0.2)] text-[#d0d8e0] bg-transparent hover:border-[rgba(0,255,136,0.4)] hover:text-[#00ff88] active:bg-[rgba(0,255,136,0.05)]',
-    terminal: 'border-[#00ff88] text-[#00ff88] bg-transparent hover:bg-[rgba(0,255,136,0.08)] hover:shadow-[0_0_20px_rgba(0,255,136,0.15)] active:bg-[rgba(0,255,136,0.12)]',
+    ghost: 'border-[rgba(201,162,39,0.2)] text-[#d0d8e0] bg-transparent hover:border-[rgba(201,162,39,0.4)] hover:text-[#e8c547] active:bg-[rgba(201,162,39,0.05)]',
+    terminal: 'border-[#e8c547] text-[#e8c547] bg-transparent hover:bg-[rgba(201,162,39,0.08)] hover:shadow-[0_0_20px_rgba(201,162,39,0.15)] active:bg-[rgba(201,162,39,0.12)]',
     solid: 'border-[#c9a227] text-[#050a0e] bg-[#c9a227] hover:bg-[#e8c547] hover:shadow-[0_0_20px_rgba(201,162,39,0.3)] active:bg-[#a08420]',
   };
 

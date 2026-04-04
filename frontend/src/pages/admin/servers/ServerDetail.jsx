@@ -416,7 +416,7 @@ function ServerDetail() {
         <div className="flex items-center gap-3">
           <Link
             to="/admin/servers"
-            className="text-gray-400 hover:text-tropic-gold transition-colors"
+            className="text-[#8a9aa8] hover:text-tropic-gold transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -425,7 +425,7 @@ function ServerDetail() {
         <div className="h-16 w-full animate-pulse rounded-lg bg-zinc-800/50" />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="animate-pulse border-tropic-gold-dark/10 bg-black/60">
+            <Card key={i} className="animate-pulse border-tropic-gold-dark/10 bg-[#050a0e]/60">
               <CardContent className="space-y-3 p-6">
                 <div className="h-5 w-3/4 rounded bg-zinc-800" />
                 <div className="h-4 w-1/2 rounded bg-zinc-800" />
@@ -443,22 +443,22 @@ function ServerDetail() {
       <div className="space-y-6">
         <Link
           to="/admin/servers"
-          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-tropic-gold transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-[#8a9aa8] hover:text-tropic-gold transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Servers
         </Link>
-        <Card className="border-red-600/30 bg-black/60">
+        <Card className="border-red-600/30 bg-[#050a0e]/60">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <AlertTriangle className="mb-4 h-12 w-12 text-red-400" />
-            <p className="text-lg font-semibold text-gray-300">
+            <p className="text-lg font-semibold text-[#8a9aa8]">
               {error || 'Server not found'}
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => fetchServer()}
-              className="mt-4 border-gray-700 text-gray-300 hover:text-white"
+              className="mt-4 border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white"
             >
               <RefreshCw className="mr-1.5 h-4 w-4" />
               Retry
@@ -477,14 +477,14 @@ function ServerDetail() {
         <div className="flex items-center gap-3">
           <Link
             to="/admin/servers"
-            className="text-gray-400 hover:text-tropic-gold transition-colors"
+            className="text-[#8a9aa8] hover:text-tropic-gold transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
             <h1
               className="text-3xl font-bold tracking-widest text-tropic-gold"
-              style={{ fontFamily: 'Rajdhani, sans-serif' }}
+              style={{ fontFamily: "'Share Tech', sans-serif" }}
             >
               {server.name}
             </h1>
@@ -580,7 +580,7 @@ function ServerDetail() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-gray-900 border border-gray-800 flex-wrap h-auto gap-1 p-1">
+        <TabsList className="bg-[#0c1117] border border-[rgba(201,162,39,0.12)] flex-wrap h-auto gap-1 p-1">
           <TabsTrigger
             value="overview"
             className="data-[state=active]:bg-tropic-gold data-[state=active]:text-black"
@@ -643,7 +643,7 @@ function ServerDetail() {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Server details card */}
-            <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+            <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                   Server Details
@@ -720,15 +720,15 @@ function ServerDetail() {
             </Card>
 
             {/* Quick stats card */}
-            <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+            <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                   Quick Stats
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3">
-                  <span className="text-gray-400 text-sm">Status</span>
+                <div className="flex items-center justify-between rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-3">
+                  <span className="text-[#8a9aa8] text-sm">Status</span>
                   <Badge
                     variant="outline"
                     className={`text-[10px] font-bold tracking-wider uppercase ${statusBadge(server.status)}`}
@@ -736,14 +736,14 @@ function ServerDetail() {
                     {server.status?.replace('_', ' ')}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3">
-                  <span className="text-gray-400 text-sm">Auto-Restart</span>
+                <div className="flex items-center justify-between rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-3">
+                  <span className="text-[#8a9aa8] text-sm">Auto-Restart</span>
                   <span className="text-white text-sm font-medium">
                     {server.auto_restart ? 'Enabled' : 'Disabled'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3">
-                  <span className="text-gray-400 text-sm">
+                <div className="flex items-center justify-between rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-3">
+                  <span className="text-[#8a9aa8] text-sm">
                     Max Restart Attempts
                   </span>
                   <span className="text-white text-sm font-medium">
@@ -751,16 +751,16 @@ function ServerDetail() {
                   </span>
                 </div>
                 {server.last_started && (
-                  <div className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3">
-                    <span className="text-gray-400 text-sm">Last Started</span>
+                  <div className="flex items-center justify-between rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-3">
+                    <span className="text-[#8a9aa8] text-sm">Last Started</span>
                     <span className="text-white text-sm">
                       {new Date(server.last_started).toLocaleString()}
                     </span>
                   </div>
                 )}
                 {server.last_stopped && (
-                  <div className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3">
-                    <span className="text-gray-400 text-sm">Last Stopped</span>
+                  <div className="flex items-center justify-between rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-3">
+                    <span className="text-[#8a9aa8] text-sm">Last Stopped</span>
                     <span className="text-white text-sm">
                       {new Date(server.last_stopped).toLocaleString()}
                     </span>
@@ -771,7 +771,7 @@ function ServerDetail() {
           </div>
 
           {/* Auto-refresh indicator */}
-          <div className="flex items-center justify-end gap-2 text-xs text-gray-600">
+          <div className="flex items-center justify-end gap-2 text-xs text-[#4a6070]">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tropic-gold/60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-tropic-gold" />
@@ -782,7 +782,7 @@ function ServerDetail() {
 
         {/* ── Configuration Tab ─────────────────────────────────────────── */}
         <TabsContent value="configuration" className="space-y-4">
-          <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+          <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                 Current Configuration
@@ -791,7 +791,7 @@ function ServerDetail() {
                 {server.config_history_count != null && (
                   <Badge
                     variant="outline"
-                    className="bg-zinc-800 text-gray-400 border-gray-700 text-[10px]"
+                    className="bg-zinc-800 text-[#8a9aa8] border-[rgba(201,162,39,0.15)] text-[10px]"
                   >
                     <Clock className="w-3 h-3 mr-1" />
                     {server.config_history_count} revision
@@ -811,7 +811,7 @@ function ServerDetail() {
               </div>
             </CardHeader>
             <CardContent>
-              <pre className="rounded-lg bg-gray-900 border border-gray-800 p-4 overflow-x-auto">
+              <pre className="rounded-lg bg-[#0c1117] border border-[rgba(201,162,39,0.12)] p-4 overflow-x-auto">
                 <code className="text-sm text-green-400 font-mono">
                   {server.config
                     ? JSON.stringify(server.config, null, 2)
@@ -824,14 +824,14 @@ function ServerDetail() {
 
         {/* ── Mods Tab ──────────────────────────────────────────────────── */}
         <TabsContent value="mods" className="space-y-4">
-          <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+          <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                 Enabled Mods
               </CardTitle>
               <Badge
                 variant="outline"
-                className="bg-zinc-800 text-gray-400 border-gray-700 text-[10px]"
+                className="bg-zinc-800 text-[#8a9aa8] border-[rgba(201,162,39,0.15)] text-[10px]"
               >
                 <Puzzle className="w-3 h-3 mr-1" />
                 {server.mods?.length || 0} mod
@@ -844,7 +844,7 @@ function ServerDetail() {
                   {server.mods.map((mod, idx) => (
                     <div
                       key={mod.modId || idx}
-                      className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3"
+                      className="flex items-center justify-between rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-3"
                     >
                       <div className="flex items-center gap-3">
                         <Puzzle className="h-4 w-4 text-tropic-gold/60" />
@@ -853,7 +853,7 @@ function ServerDetail() {
                             {mod.name || mod.modId}
                           </span>
                           {mod.modId && mod.name && (
-                            <span className="ml-2 text-xs text-gray-500 font-mono">
+                            <span className="ml-2 text-xs text-[#4a6070] font-mono">
                               {mod.modId}
                             </span>
                           )}
@@ -862,7 +862,7 @@ function ServerDetail() {
                       {mod.version && (
                         <Badge
                           variant="outline"
-                          className="bg-zinc-800 text-gray-300 border-gray-700 text-[10px] font-mono"
+                          className="bg-zinc-800 text-[#8a9aa8] border-[rgba(201,162,39,0.15)] text-[10px] font-mono"
                         >
                           v{mod.version}
                         </Badge>
@@ -871,12 +871,12 @@ function ServerDetail() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm text-center py-8">
+                <p className="text-[#4a6070] text-sm text-center py-8">
                   No mods are currently enabled on this server.
                 </p>
               )}
               {canManage && (
-                <p className="mt-4 text-xs text-gray-600 text-center">
+                <p className="mt-4 text-xs text-[#4a6070] text-center">
                   Mod editing will be available in a future update.
                 </p>
               )}
@@ -886,26 +886,26 @@ function ServerDetail() {
 
         {/* ── Logs Tab ──────────────────────────────────────────────────── */}
         <TabsContent value="logs" className="space-y-4">
-          <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+          <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                 Server Logs
               </CardTitle>
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
+                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#4a6070]" />
                   <Input
                     value={logFilter}
                     onChange={(e) => setLogFilter(e.target.value)}
                     placeholder="Filter logs…"
-                    className="h-8 w-48 pl-8 bg-gray-900 border-gray-700 text-white text-xs placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
+                    className="h-8 w-48 pl-8 bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white text-xs placeholder:text-[#4a6070] focus-visible:ring-tropic-gold/40"
                   />
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setLogsPaused((p) => !p)}
-                  className={`border-gray-700 text-xs ${logsPaused ? 'text-amber-400 border-amber-600/40' : 'text-gray-300'}`}
+                  className={`border-[rgba(201,162,39,0.15)] text-xs ${logsPaused ? 'text-amber-400 border-amber-600/40' : 'text-[#8a9aa8]'}`}
                 >
                   {logsPaused ? (
                     <>
@@ -924,7 +924,7 @@ function ServerDetail() {
                   variant="outline"
                   onClick={fetchLogs}
                   disabled={logsLoading}
-                  className="border-gray-700 text-gray-300 text-xs"
+                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] text-xs"
                 >
                   {logsLoading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -938,14 +938,14 @@ function ServerDetail() {
               {/* Log viewer */}
               <div
                 ref={logContainerRef}
-                className="h-96 overflow-y-auto rounded-lg border border-gray-800 bg-gray-950 p-4 font-mono text-xs leading-relaxed"
+                className="h-96 overflow-y-auto rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#050a0e] p-4 font-mono text-xs leading-relaxed"
               >
                 {logsLoading && logs.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="h-6 w-6 animate-spin text-tropic-gold/40" />
                   </div>
                 ) : logs.length === 0 ? (
-                  <p className="text-gray-600 text-center mt-16">
+                  <p className="text-[#4a6070] text-center mt-16">
                     No logs available.
                   </p>
                 ) : (
@@ -959,8 +959,8 @@ function ServerDetail() {
                   ).map((line, idx) => {
                     const text = typeof line === 'string' ? line : line.message || JSON.stringify(line);
                     return (
-                      <div key={idx} className="text-green-400 hover:bg-gray-900/60 px-1 -mx-1 rounded">
-                        <span className="text-gray-600 select-none mr-3">{String(idx + 1).padStart(4, ' ')}</span>
+                      <div key={idx} className="text-green-400 hover:bg-[#0c1117]/60 px-1 -mx-1 rounded">
+                        <span className="text-[#4a6070] select-none mr-3">{String(idx + 1).padStart(4, ' ')}</span>
                         {text}
                       </div>
                     );
@@ -979,7 +979,7 @@ function ServerDetail() {
 
               {/* RCON Console — only visible when server is running */}
               {server.status === 'running' && (
-                <div className="space-y-3 pt-4 border-t border-gray-800">
+                <div className="space-y-3 pt-4 border-t border-[rgba(201,162,39,0.12)]">
                   <h3 className="text-tropic-gold text-sm font-semibold tracking-wider uppercase flex items-center gap-2">
                     <Terminal className="h-4 w-4" />
                     RCON Console
@@ -989,7 +989,7 @@ function ServerDetail() {
                       value={rconCommand}
                       onChange={(e) => setRconCommand(e.target.value)}
                       placeholder="Enter command…"
-                      className="flex-1 bg-gray-900 border-gray-700 text-white font-mono text-sm placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
+                      className="flex-1 bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white font-mono text-sm placeholder:text-[#4a6070] focus-visible:ring-tropic-gold/40"
                     />
                     <Button
                       type="submit"
@@ -1006,7 +1006,7 @@ function ServerDetail() {
                     </Button>
                   </form>
                   {rconResponse && (
-                    <pre className="rounded-lg bg-gray-950 border border-gray-800 p-3 overflow-x-auto">
+                    <pre className="rounded-lg bg-[#050a0e] border border-[rgba(201,162,39,0.12)] p-3 overflow-x-auto">
                       <code className="text-sm text-green-400 font-mono whitespace-pre-wrap">
                         {rconResponse}
                       </code>
@@ -1031,7 +1031,7 @@ function ServerDetail() {
                 className={
                   metricsPeriod === p
                     ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light'
-                    : 'border-gray-700 text-gray-300 hover:text-white'
+                    : 'border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white'
                 }
               >
                 {p}
@@ -1043,7 +1043,7 @@ function ServerDetail() {
                 variant="outline"
                 onClick={fetchMetrics}
                 disabled={metricsLoading}
-                className="border-gray-700 text-gray-300 text-xs"
+                className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] text-xs"
               >
                 {metricsLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1057,7 +1057,7 @@ function ServerDetail() {
           {metricsLoading && !metricsSummary ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="animate-pulse border-tropic-gold-dark/10 bg-black/60">
+                <Card key={i} className="animate-pulse border-tropic-gold-dark/10 bg-[#050a0e]/60">
                   <CardContent className="space-y-3 p-6">
                     <div className="h-4 w-1/2 rounded bg-zinc-800" />
                     <div className="h-8 w-3/4 rounded bg-zinc-800" />
@@ -1078,14 +1078,14 @@ function ServerDetail() {
               : null;
             return (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+              <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3">
                     <div className="rounded-lg bg-blue-600/20 p-2.5">
                       <Cpu className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 uppercase tracking-wider">CPU</p>
+                      <p className="text-xs text-[#8a9aa8] uppercase tracking-wider">CPU</p>
                       <p className="text-2xl font-bold text-white">
                         {cpuVal != null
                           ? `${Number(cpuVal).toFixed(1)}%`
@@ -1095,14 +1095,14 @@ function ServerDetail() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+              <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3">
                     <div className="rounded-lg bg-purple-600/20 p-2.5">
                       <MemoryStick className="h-5 w-5 text-purple-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 uppercase tracking-wider">Memory</p>
+                      <p className="text-xs text-[#8a9aa8] uppercase tracking-wider">Memory</p>
                       <p className="text-2xl font-bold text-white">
                         {memVal != null
                           ? `${Number(memVal).toFixed(0)} MB`
@@ -1112,14 +1112,14 @@ function ServerDetail() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+              <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3">
                     <div className="rounded-lg bg-green-600/20 p-2.5">
                       <Users className="h-5 w-5 text-green-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 uppercase tracking-wider">Players</p>
+                      <p className="text-xs text-[#8a9aa8] uppercase tracking-wider">Players</p>
                       <p className="text-2xl font-bold text-white">
                         {playerVal != null ? playerVal : '—'}
                       </p>
@@ -1127,14 +1127,14 @@ function ServerDetail() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+              <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3">
                     <div className="rounded-lg bg-tropic-gold/20 p-2.5">
                       <Timer className="h-5 w-5 text-tropic-gold" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 uppercase tracking-wider">Uptime</p>
+                      <p className="text-xs text-[#8a9aa8] uppercase tracking-wider">Uptime</p>
                       <p className="text-2xl font-bold text-white">
                         {uptimeStr || '—'}
                       </p>
@@ -1145,10 +1145,10 @@ function ServerDetail() {
             </div>
             );
           })() : (
-            <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+            <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
               <CardContent className="text-center py-12">
                 <BarChart3 className="mx-auto mb-4 h-12 w-12 text-tropic-gold-dark/40" />
-                <p className="text-gray-400 text-sm">
+                <p className="text-[#8a9aa8] text-sm">
                   No metrics available. Metrics will appear once the server has been running.
                 </p>
               </CardContent>
@@ -1157,7 +1157,7 @@ function ServerDetail() {
 
           {/* Timeseries data table */}
           {metrics.length > 0 && (
-            <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+            <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                   Metrics History
@@ -1167,7 +1167,7 @@ function ServerDetail() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-800 text-gray-400 text-xs uppercase tracking-wider">
+                      <tr className="border-b border-[rgba(201,162,39,0.12)] text-[#8a9aa8] text-xs uppercase tracking-wider">
                         <th className="text-left py-2 px-3">Time</th>
                         <th className="text-right py-2 px-3">CPU %</th>
                         <th className="text-right py-2 px-3">Memory MB</th>
@@ -1176,8 +1176,8 @@ function ServerDetail() {
                     </thead>
                     <tbody>
                       {metrics.slice(-20).map((m, idx) => (
-                        <tr key={idx} className="border-b border-gray-800/50 hover:bg-gray-900/30">
-                          <td className="py-2 px-3 text-gray-300 font-mono text-xs">
+                        <tr key={idx} className="border-b border-[rgba(201,162,39,0.06)] hover:bg-[#0c1117]/30">
+                          <td className="py-2 px-3 text-[#8a9aa8] font-mono text-xs">
                             {m.timestamp
                               ? new Date(m.timestamp).toLocaleTimeString()
                               : '—'}
@@ -1201,7 +1201,7 @@ function ServerDetail() {
           )}
 
           {/* Auto-refresh indicator */}
-          <div className="flex items-center justify-end gap-2 text-xs text-gray-600">
+          <div className="flex items-center justify-end gap-2 text-xs text-[#4a6070]">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tropic-gold/60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-tropic-gold" />
@@ -1212,7 +1212,7 @@ function ServerDetail() {
 
         {/* ── Backups Tab ───────────────────────────────────────────────── */}
         <TabsContent value="backups" className="space-y-4">
-          <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+          <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                 Backups
@@ -1248,7 +1248,7 @@ function ServerDetail() {
                   {backups.map((backup, idx) => (
                     <div
                       key={backup.id || idx}
-                      className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3"
+                      className="flex items-center justify-between rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-3"
                     >
                       <div className="flex items-center gap-3">
                         <HardDrive className="h-4 w-4 text-tropic-gold/60" />
@@ -1257,14 +1257,14 @@ function ServerDetail() {
                             {backup.name || backup.filename || `Backup #${idx + 1}`}
                           </span>
                           {backup.created_at && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-[#4a6070]">
                               {new Date(backup.created_at).toLocaleString()}
                             </p>
                           )}
                         </div>
                       </div>
                       {backup.size && (
-                        <span className="text-xs text-gray-500 font-mono">
+                        <span className="text-xs text-[#4a6070] font-mono">
                           {backup.size}
                         </span>
                       )}
@@ -1272,7 +1272,7 @@ function ServerDetail() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm text-center py-8">
+                <p className="text-[#4a6070] text-sm text-center py-8">
                   No backups found for this server.
                 </p>
               )}
@@ -1282,7 +1282,7 @@ function ServerDetail() {
 
         {/* ── Notes Tab ─────────────────────────────────────────────────── */}
         <TabsContent value="notes" className="space-y-4">
-          <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+          <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                 Admin Notes
@@ -1296,7 +1296,7 @@ function ServerDetail() {
                   onChange={(e) => setNewNote(e.target.value)}
                   placeholder="Add an admin note…"
                   rows={3}
-                  className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
+                  className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white placeholder:text-[#4a6070] focus-visible:ring-tropic-gold/40"
                 />
                 <div className="flex justify-end">
                   <Button
@@ -1330,26 +1330,26 @@ function ServerDetail() {
                   {notes.map((note, idx) => (
                     <div
                       key={note.id || idx}
-                      className="rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3"
+                      className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-3"
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-tropic-gold font-medium">
                           {note.author || note.created_by || 'Admin'}
                         </span>
                         {note.created_at && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-[#4a6070]">
                             {new Date(note.created_at).toLocaleString()}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-300 whitespace-pre-wrap">
+                      <p className="text-sm text-[#8a9aa8] whitespace-pre-wrap">
                         {note.content}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm text-center py-4">
+                <p className="text-[#4a6070] text-sm text-center py-4">
                   No notes yet.
                 </p>
               )}
@@ -1359,7 +1359,7 @@ function ServerDetail() {
 
         {/* ── Schedules Tab ──────────────────────────────────────────────── */}
         <TabsContent value="schedules" className="space-y-4">
-          <Card className="border-tropic-gold-dark/20 bg-black/60 backdrop-blur-sm">
+          <Card className="border-tropic-gold-dark/20 bg-[#050a0e]/60 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-tropic-gold text-sm font-semibold tracking-wider uppercase">
                 Scheduled Actions
@@ -1370,7 +1370,7 @@ function ServerDetail() {
                   variant="outline"
                   onClick={fetchSchedules}
                   disabled={schedulesLoading}
-                  className="border-gray-700 text-gray-300 text-xs"
+                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] text-xs"
                 >
                   {schedulesLoading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1405,7 +1405,7 @@ function ServerDetail() {
                   {schedules.map((sched, idx) => (
                     <div
                       key={sched.id || idx}
-                      className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-3"
+                      className="flex items-center justify-between rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-3"
                     >
                       <div className="flex items-center gap-3">
                         <Calendar className="h-4 w-4 text-tropic-gold/60" />
@@ -1421,19 +1421,19 @@ function ServerDetail() {
                               {sched.enabled ? 'Enabled' : 'Disabled'}
                             </Badge>
                           </div>
-                          <p className="text-xs text-gray-500 font-mono mt-0.5">
+                          <p className="text-xs text-[#4a6070] font-mono mt-0.5">
                             {sched.schedule || '—'}
                           </p>
                         </div>
                       </div>
                       <div className="text-right text-xs space-y-1">
                         {sched.last_run && (
-                          <p className="text-gray-500">
+                          <p className="text-[#4a6070]">
                             Last: {new Date(sched.last_run).toLocaleString()}
                           </p>
                         )}
                         {sched.next_run && (
-                          <p className="text-gray-400">
+                          <p className="text-[#8a9aa8]">
                             Next: {new Date(sched.next_run).toLocaleString()}
                           </p>
                         )}
@@ -1442,7 +1442,7 @@ function ServerDetail() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm text-center py-8">
+                <p className="text-[#4a6070] text-sm text-center py-8">
                   No scheduled actions configured for this server.
                 </p>
               )}
@@ -1453,23 +1453,23 @@ function ServerDetail() {
 
       {/* Schedule creation dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
-        <DialogContent className="bg-gray-900 border-gray-800">
+        <DialogContent className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
           <DialogHeader>
             <DialogTitle className="text-tropic-gold">Add Scheduled Action</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
-              <label className="text-sm text-gray-400">Action Type</label>
+              <label className="text-sm text-[#8a9aa8]">Action Type</label>
               <Select
                 value={newSchedule.action_type}
                 onValueChange={(val) =>
                   setNewSchedule((prev) => ({ ...prev, action_type: val }))
                 }
               >
-                <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
+                <SelectTrigger className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white">
                   <SelectValue placeholder="Select action…" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                   <SelectItem value="restart">Restart</SelectItem>
                   <SelectItem value="backup">Backup</SelectItem>
                   <SelectItem value="mod_update">Mod Update</SelectItem>
@@ -1477,7 +1477,7 @@ function ServerDetail() {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm text-gray-400">
+              <label className="text-sm text-[#8a9aa8]">
                 Cron Expression
               </label>
               <Input
@@ -1489,7 +1489,7 @@ function ServerDetail() {
                   }))
                 }
                 placeholder="e.g. 0 4 * * * (daily at 4 AM)"
-                className="bg-gray-900 border-gray-700 text-white font-mono placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
+                className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white font-mono placeholder:text-[#4a6070] focus-visible:ring-tropic-gold/40"
               />
             </div>
             <div className="flex items-center gap-3">
@@ -1499,14 +1499,14 @@ function ServerDetail() {
                   setNewSchedule((prev) => ({ ...prev, enabled: checked }))
                 }
               />
-              <label className="text-sm text-gray-300">Enabled</label>
+              <label className="text-sm text-[#8a9aa8]">Enabled</label>
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button
               variant="outline"
               onClick={() => setScheduleDialogOpen(false)}
-              className="border-gray-700"
+              className="border-[rgba(201,162,39,0.15)]"
             >
               Cancel
             </Button>
@@ -1528,11 +1528,11 @@ function ServerDetail() {
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="bg-gray-900 border-gray-800">
+        <DialogContent className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
           <DialogHeader>
             <DialogTitle className="text-red-400">Delete Server</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-[#8a9aa8]">
             Are you sure you want to delete{' '}
             <strong className="text-white">{server.name}</strong>? This action
             cannot be undone and will remove all associated data.
@@ -1541,7 +1541,7 @@ function ServerDetail() {
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
-              className="border-gray-700"
+              className="border-[rgba(201,162,39,0.15)]"
             >
               Cancel
             </Button>
@@ -1568,7 +1568,7 @@ function ServerDetail() {
 function DetailRow({ label, value, mono = false }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="text-gray-500 shrink-0">{label}</span>
+      <span className="text-[#4a6070] shrink-0">{label}</span>
       <span
         className={`text-right text-white ${mono ? 'font-mono text-xs break-all' : ''}`}
       >

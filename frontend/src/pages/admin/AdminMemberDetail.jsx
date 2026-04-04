@@ -153,8 +153,8 @@ const AdminMemberDetail = () => {
               else setMember({ ...member, [field]: v });
             }}
           >
-            <SelectTrigger className="bg-black border-gray-700 flex-1"><SelectValue placeholder={placeholder} /></SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-700 max-h-60">
+            <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] flex-1"><SelectValue placeholder={placeholder} /></SelectTrigger>
+            <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] max-h-60">
               <SelectItem value="__none__">— None —</SelectItem>
               {options?.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
               {isCustom && <SelectItem value="__custom__">{currentValue} (custom)</SelectItem>}
@@ -163,7 +163,7 @@ const AdminMemberDetail = () => {
           <Input 
             value={currentValue} 
             onChange={e => setMember({ ...member, [field]: e.target.value })} 
-            className="bg-black border-gray-700 w-full md:w-40" 
+            className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] w-full md:w-40" 
             placeholder="Or type custom..."
           />
         </div>
@@ -177,13 +177,13 @@ const AdminMemberDetail = () => {
   return (
     <>
       <div className="space-y-6 max-w-4xl">
-        <div className="flex flex-col gap-4 rounded-3xl border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(85,107,47,0.16),rgba(7,10,13,0.96)_58%)] px-6 py-6 shadow-2xl md:flex-row md:items-center md:justify-between">
+        <div className="relative corner-bracket flex flex-col gap-4 border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-6 shadow-2xl md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/admin/users"><Button size="sm" variant="outline" className="border-tropic-gold/25 bg-black/40 text-tropic-gold hover:bg-tropic-gold/10"><ArrowLeft className="w-4 h-4 mr-1" />Members</Button></Link>
+            <Link to="/admin/users"><Button size="sm" variant="outline" className="border-tropic-gold/25 bg-[#050a0e]/40 text-tropic-gold hover:bg-tropic-gold/10"><ArrowLeft className="w-4 h-4 mr-1" />Members</Button></Link>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-tropic-gold-dark">Member Workspace</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-wider text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="admin-member-title">{member.username}</h1>
-              <p className="text-sm text-gray-400">{member.email}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Member Workspace</p>
+              <h1 className="mt-2 text-3xl font-bold tracking-wider text-white" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="admin-member-title">{member.username}</h1>
+              <p className="text-sm text-[#8a9aa8]">{member.email}</p>
             </div>
           </div>
           {!isTrainingStaffOnly && <Button onClick={handleSaveProfile} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="admin-save-profile-btn"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Profile'}</Button>}
@@ -199,20 +199,20 @@ const AdminMemberDetail = () => {
             <CardContent className="space-y-4">
               {member.avatar_url && <img src={resolveImg(member.avatar_url)} alt="avatar" className="w-16 h-16 rounded-lg object-cover" />}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><Label className="text-gray-500">Username</Label><p className="text-sm">{member.username || '—'}</p></div>
-                <div><Label className="text-gray-500">Role</Label><p className="text-sm">{member.role || '—'}</p></div>
+                <div><Label className="text-[#4a6070]">Username</Label><p className="text-sm">{member.username || '—'}</p></div>
+                <div><Label className="text-[#4a6070]">Role</Label><p className="text-sm">{member.role || '—'}</p></div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><Label className="text-gray-500">Rank</Label><p className="text-sm">{member.rank || '—'}</p></div>
-                <div><Label className="text-gray-500">Specialization / MOS</Label><p className="text-sm">{member.specialization || '—'}</p></div>
+                <div><Label className="text-[#4a6070]">Rank</Label><p className="text-sm">{member.rank || '—'}</p></div>
+                <div><Label className="text-[#4a6070]">Specialization / MOS</Label><p className="text-sm">{member.specialization || '—'}</p></div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><Label className="text-gray-500">Status</Label><p className="text-sm">{member.status || '—'}</p></div>
-                <div><Label className="text-gray-500">Squad / Team</Label><p className="text-sm">{member.squad || '—'}</p></div>
-                <div><Label className="text-gray-500">Timezone</Label><p className="text-sm">{member.timezone || '—'}</p></div>
+                <div><Label className="text-[#4a6070]">Status</Label><p className="text-sm">{member.status || '—'}</p></div>
+                <div><Label className="text-[#4a6070]">Squad / Team</Label><p className="text-sm">{member.squad || '—'}</p></div>
+                <div><Label className="text-[#4a6070]">Timezone</Label><p className="text-sm">{member.timezone || '—'}</p></div>
               </div>
-              {member.favorite_role && <div><Label className="text-gray-500">Preferred Role / Loadout</Label><p className="text-sm">{member.favorite_role}</p></div>}
-              {member.bio && <div><Label className="text-gray-500">Bio</Label><p className="text-sm text-gray-400 whitespace-pre-wrap">{member.bio}</p></div>}
+              {member.favorite_role && <div><Label className="text-[#4a6070]">Preferred Role / Loadout</Label><p className="text-sm">{member.favorite_role}</p></div>}
+              {member.bio && <div><Label className="text-[#4a6070]">Bio</Label><p className="text-sm text-[#8a9aa8] whitespace-pre-wrap">{member.bio}</p></div>}
             </CardContent>
           </Card>
         ) : (
@@ -221,11 +221,11 @@ const AdminMemberDetail = () => {
           <CardContent className="space-y-4">
             <ImageUpload value={member.avatar_url || ''} onChange={url => setMember({ ...member, avatar_url: url })} label="Avatar" description="Profile photo. 300x300px recommended." previewClass="w-16 h-16 rounded-lg object-cover" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><Label>Username</Label><Input value={member.username || ''} onChange={e => setMember({ ...member, username: e.target.value })} className="bg-black border-gray-700" /></div>
+              <div><Label>Username</Label><Input value={member.username || ''} onChange={e => setMember({ ...member, username: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" /></div>
               <div><Label>Role</Label>
                 <Select value={member.role} onValueChange={v => setMember({ ...member, role: v })}>
-                  <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                     <SelectItem value="member">Member</SelectItem>
                     <SelectItem value="admin">Admin (S-1)</SelectItem>
                     <SelectItem value="s1_personnel">S-1 Personnel</SelectItem>
@@ -246,15 +246,15 @@ const AdminMemberDetail = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div><Label>Status</Label>
                 <Select value={member.status || 'recruit'} onValueChange={v => setMember({ ...member, status: v })}>
-                  <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">{(unitTags?.statuses || ['recruit', 'active', 'reserve', 'staff', 'command', 'inactive']).map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
+                  <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">{(unitTags?.statuses || ['recruit', 'active', 'reserve', 'staff', 'command', 'inactive']).map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               {renderTagSelect('squad', 'Squad / Team', unitTags?.squads, 'Select squad...')}
-              <div><Label>Timezone</Label><Input value={member.timezone || ''} onChange={e => setMember({ ...member, timezone: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., EST" /></div>
+              <div><Label>Timezone</Label><Input value={member.timezone || ''} onChange={e => setMember({ ...member, timezone: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., EST" /></div>
             </div>
-            <div><Label>Preferred Role / Loadout</Label><Input value={member.favorite_role || ''} onChange={e => setMember({ ...member, favorite_role: e.target.value })} className="bg-black border-gray-700" /></div>
-            <div><Label>Bio</Label><Textarea value={member.bio || ''} onChange={e => setMember({ ...member, bio: e.target.value })} rows={3} className="bg-black border-gray-700" /></div>
+            <div><Label>Preferred Role / Loadout</Label><Input value={member.favorite_role || ''} onChange={e => setMember({ ...member, favorite_role: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" /></div>
+            <div><Label>Bio</Label><Textarea value={member.bio || ''} onChange={e => setMember({ ...member, bio: e.target.value })} rows={3} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" /></div>
           </CardContent>
         </Card>
         )}
@@ -268,7 +268,7 @@ const AdminMemberDetail = () => {
             <CardTitle className="text-lg tracking-wider flex items-center gap-2">
               <Building2 className="w-5 h-5 text-tropic-gold" /> UNIT ASSIGNMENT
             </CardTitle>
-            <p className="text-xs text-gray-500 mt-1">Assign this member to a position in the unit hierarchy. Used for the organizational roster view.</p>
+            <p className="text-xs text-[#4a6070] mt-1">Assign this member to a position in the unit hierarchy. Used for the organizational roster view.</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -278,7 +278,7 @@ const AdminMemberDetail = () => {
             </div>
             <div>
               <Label>Billet Acronym</Label>
-              <Input value={member.billet_acronym || ''} onChange={e => setMember({...member, billet_acronym: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., SL, PL, PSG, CO" />
+              <Input value={member.billet_acronym || ''} onChange={e => setMember({...member, billet_acronym: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., SL, PL, PSG, CO" />
             </div>
           </CardContent>
         </Card>
@@ -289,32 +289,32 @@ const AdminMemberDetail = () => {
             <CardTitle className="text-lg tracking-wider flex items-center gap-2">
               <Link2 className="w-5 h-5 text-tropic-gold" /> DISCORD INTEGRATION PREP
             </CardTitle>
-            <p className="text-xs text-gray-500 mt-1">These fields prepare the account for future Discord OAuth linking. They are not active OAuth controls — values here will be overwritten when Discord linking goes live.</p>
+            <p className="text-xs text-[#4a6070] mt-1">These fields prepare the account for future Discord OAuth linking. They are not active OAuth controls — values here will be overwritten when Discord linking goes live.</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Discord ID</Label>
-                <Input value={member.discord_id || ''} onChange={e => setMember({ ...member, discord_id: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., 123456789012345678" data-testid="discord-id-input" />
+                <Input value={member.discord_id || ''} onChange={e => setMember({ ...member, discord_id: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., 123456789012345678" data-testid="discord-id-input" />
               </div>
               <div>
                 <Label>Discord Username</Label>
-                <Input value={member.discord_username || ''} onChange={e => setMember({ ...member, discord_username: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., operator#1234" data-testid="discord-username-input" />
+                <Input value={member.discord_username || ''} onChange={e => setMember({ ...member, discord_username: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., operator#1234" data-testid="discord-username-input" />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Discord Avatar URL</Label>
-                <Input value={member.discord_avatar || ''} disabled className="bg-black/40 border-gray-800 text-gray-500 cursor-not-allowed" placeholder="Auto-populated by Discord OAuth" data-testid="discord-avatar-input" />
-                <p className="text-[10px] text-gray-600 mt-1">Read-only — set automatically during Discord linking</p>
+                <Input value={member.discord_avatar || ''} disabled className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.12)] text-[#4a6070] cursor-not-allowed" placeholder="Auto-populated by Discord OAuth" data-testid="discord-avatar-input" />
+                <p className="text-[10px] text-[#4a6070] mt-1">Read-only — set automatically during Discord linking</p>
               </div>
               <div>
                 <Label>Discord Linked</Label>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge className={`${member.discord_linked ? 'bg-green-700' : 'bg-gray-700'} text-white`} data-testid="discord-linked-badge">
+                  <Badge className={`${member.discord_linked ? 'bg-green-700' : 'bg-[#111a24]'} text-white`} data-testid="discord-linked-badge">
                     {member.discord_linked ? 'LINKED' : 'NOT LINKED'}
                   </Badge>
-                  <p className="text-[10px] text-gray-600">Status managed by the OAuth flow</p>
+                  <p className="text-[10px] text-[#4a6070]">Status managed by the OAuth flow</p>
                 </div>
               </div>
             </div>
@@ -331,24 +331,24 @@ const AdminMemberDetail = () => {
         <DialogContent className="bg-[#0b1016] text-white border-tropic-gold/15">
                   <DialogHeader><DialogTitle>Add Mission Record</DialogTitle></DialogHeader>
                   <form onSubmit={addMission} className="space-y-3">
-                    <div><Label>Operation Name</Label><Input required value={missionForm.operation_name} onChange={e => setMissionForm({...missionForm, operation_name: e.target.value})} className="bg-black border-gray-700" data-testid="mission-name-input" /></div>
+                    <div><Label>Operation Name</Label><Input required value={missionForm.operation_name} onChange={e => setMissionForm({...missionForm, operation_name: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" data-testid="mission-name-input" /></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div><Label>Date</Label><Input required value={missionForm.date} onChange={e => setMissionForm({...missionForm, date: e.target.value})} className="bg-black border-gray-700" placeholder="2026-01-15" /></div>
-                      <div><Label>Role Performed</Label><Input required value={missionForm.role_performed} onChange={e => setMissionForm({...missionForm, role_performed: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Squad Lead" /></div>
+                      <div><Label>Date</Label><Input required value={missionForm.date} onChange={e => setMissionForm({...missionForm, date: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="2026-01-15" /></div>
+                      <div><Label>Role Performed</Label><Input required value={missionForm.role_performed} onChange={e => setMissionForm({...missionForm, role_performed: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., Squad Lead" /></div>
                     </div>
-                    <div><Label>Notes</Label><Input value={missionForm.notes} onChange={e => setMissionForm({...missionForm, notes: e.target.value})} className="bg-black border-gray-700" /></div>
-                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setMissionDialogOpen(false)} className="border-gray-700">Cancel</Button><Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="mission-submit-btn">Add</Button></div>
+                    <div><Label>Notes</Label><Input value={missionForm.notes} onChange={e => setMissionForm({...missionForm, notes: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" /></div>
+                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setMissionDialogOpen(false)} className="border-[rgba(201,162,39,0.15)]">Cancel</Button><Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="mission-submit-btn">Add</Button></div>
                   </form>
                 </DialogContent>
               </Dialog>
             </div>
           </CardHeader>
           <CardContent>
-            {(!member.mission_history?.length) ? <p className="text-sm text-gray-600">No mission records.</p> : (
+            {(!member.mission_history?.length) ? <p className="text-sm text-[#4a6070]">No mission records.</p> : (
               <div className="space-y-2">
                 {member.mission_history.map((m, i) => (
-                  <div key={m.id || i} className="flex items-center justify-between bg-black/30 rounded p-3 border border-gray-800/50">
-                    <div><div className="font-medium text-sm">{m.operation_name}</div><div className="text-xs text-gray-500">{m.date} — {m.role_performed}{m.notes ? ` — ${m.notes}` : ''}</div></div>
+                  <div key={m.id || i} className="flex items-center justify-between bg-[#050a0e]/30 rounded p-3 border border-[rgba(201,162,39,0.06)]">
+                    <div><div className="font-medium text-sm">{m.operation_name}</div><div className="text-xs text-[#4a6070]">{m.date} — {m.role_performed}{m.notes ? ` — ${m.notes}` : ''}</div></div>
                     <Button size="sm" variant="ghost" onClick={() => removeMission(m.id)} className="text-tropic-red hover:bg-tropic-red/10 shrink-0"><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 ))}
@@ -369,24 +369,24 @@ const AdminMemberDetail = () => {
         <DialogContent className="bg-[#0b1016] text-white border-tropic-gold/15">
                   <DialogHeader><DialogTitle>Add Training Record</DialogTitle></DialogHeader>
                   <form onSubmit={addTraining} className="space-y-3">
-                    <div><Label>Course / Training Name</Label><Input required value={trainingForm.course_name} onChange={e => setTrainingForm({...trainingForm, course_name: e.target.value})} className="bg-black border-gray-700" data-testid="training-name-input" /></div>
+                    <div><Label>Course / Training Name</Label><Input required value={trainingForm.course_name} onChange={e => setTrainingForm({...trainingForm, course_name: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" data-testid="training-name-input" /></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div><Label>Completion Date</Label><Input required value={trainingForm.completion_date} onChange={e => setTrainingForm({...trainingForm, completion_date: e.target.value})} className="bg-black border-gray-700" placeholder="2026-01-15" /></div>
-                      <div><Label>Instructor</Label><Input value={trainingForm.instructor} onChange={e => setTrainingForm({...trainingForm, instructor: e.target.value})} className="bg-black border-gray-700" /></div>
+                      <div><Label>Completion Date</Label><Input required value={trainingForm.completion_date} onChange={e => setTrainingForm({...trainingForm, completion_date: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="2026-01-15" /></div>
+                      <div><Label>Instructor</Label><Input value={trainingForm.instructor} onChange={e => setTrainingForm({...trainingForm, instructor: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" /></div>
                     </div>
-                    <div><Label>Notes / Certification</Label><Input value={trainingForm.notes} onChange={e => setTrainingForm({...trainingForm, notes: e.target.value})} className="bg-black border-gray-700" /></div>
-                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setTrainingDialogOpen(false)} className="border-gray-700">Cancel</Button><Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="training-submit-btn">Add</Button></div>
+                    <div><Label>Notes / Certification</Label><Input value={trainingForm.notes} onChange={e => setTrainingForm({...trainingForm, notes: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" /></div>
+                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setTrainingDialogOpen(false)} className="border-[rgba(201,162,39,0.15)]">Cancel</Button><Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="training-submit-btn">Add</Button></div>
                   </form>
                 </DialogContent>
               </Dialog>
             </div>
           </CardHeader>
           <CardContent>
-            {(!member.training_history?.length) ? <p className="text-sm text-gray-600">No training records.</p> : (
+            {(!member.training_history?.length) ? <p className="text-sm text-[#4a6070]">No training records.</p> : (
               <div className="space-y-2">
                 {member.training_history.map((t, i) => (
-                  <div key={t.id || i} className="flex items-center justify-between bg-black/30 rounded p-3 border border-gray-800/50">
-                    <div><div className="font-medium text-sm">{t.course_name}</div><div className="text-xs text-gray-500">{t.completion_date}{t.instructor ? ` — ${t.instructor}` : ''}{t.notes ? ` — ${t.notes}` : ''}</div></div>
+                  <div key={t.id || i} className="flex items-center justify-between bg-[#050a0e]/30 rounded p-3 border border-[rgba(201,162,39,0.06)]">
+                    <div><div className="font-medium text-sm">{t.course_name}</div><div className="text-xs text-[#4a6070]">{t.completion_date}{t.instructor ? ` — ${t.instructor}` : ''}{t.notes ? ` — ${t.notes}` : ''}</div></div>
                     <Button size="sm" variant="ghost" onClick={() => removeTraining(t.id)} className="text-tropic-red hover:bg-tropic-red/10 shrink-0"><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 ))}
@@ -405,22 +405,22 @@ const AdminMemberDetail = () => {
         <DialogContent className="bg-[#0b1016] text-white border-tropic-gold/15">
                   <DialogHeader><DialogTitle>Add Award / Qualification</DialogTitle></DialogHeader>
                   <form onSubmit={addAward} className="space-y-3">
-                    <div><Label>Award Name</Label><Input required value={awardForm.name} onChange={e => setAwardForm({...awardForm, name: e.target.value})} className="bg-black border-gray-700" data-testid="award-name-input" /></div>
-                    <div><Label>Date</Label><Input value={awardForm.date} onChange={e => setAwardForm({...awardForm, date: e.target.value})} className="bg-black border-gray-700" placeholder="2026-01-15" /></div>
-                    <div><Label>Description</Label><Input value={awardForm.description} onChange={e => setAwardForm({...awardForm, description: e.target.value})} className="bg-black border-gray-700" /></div>
-                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setAwardDialogOpen(false)} className="border-gray-700">Cancel</Button><Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="award-submit-btn">Add</Button></div>
+                    <div><Label>Award Name</Label><Input required value={awardForm.name} onChange={e => setAwardForm({...awardForm, name: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" data-testid="award-name-input" /></div>
+                    <div><Label>Date</Label><Input value={awardForm.date} onChange={e => setAwardForm({...awardForm, date: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="2026-01-15" /></div>
+                    <div><Label>Description</Label><Input value={awardForm.description} onChange={e => setAwardForm({...awardForm, description: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" /></div>
+                    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setAwardDialogOpen(false)} className="border-[rgba(201,162,39,0.15)]">Cancel</Button><Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="award-submit-btn">Add</Button></div>
                   </form>
                 </DialogContent>
               </Dialog>
             </div>
           </CardHeader>
           <CardContent>
-            {(!member.awards?.length) ? <p className="text-sm text-gray-600">No awards.</p> : (
+            {(!member.awards?.length) ? <p className="text-sm text-[#4a6070]">No awards.</p> : (
               <div className="space-y-2">
                 {member.awards.map((a, i) => (
-                  <div key={a.id || i} className="flex items-center justify-between bg-black/30 rounded p-3 border border-gray-800/50">
-                    <div className="flex items-center gap-2"><Award className="w-4 h-4 text-yellow-600 shrink-0" /><div><div className="font-medium text-sm">{a.name}</div>{a.description && <div className="text-xs text-gray-500">{a.description}</div>}</div></div>
-                    <div className="flex items-center gap-2">{a.date && <span className="text-xs text-gray-600">{a.date}</span>}<Button size="sm" variant="ghost" onClick={() => removeAward(a.id)} className="text-tropic-red hover:bg-tropic-red/10"><Trash2 className="w-4 h-4" /></Button></div>
+                  <div key={a.id || i} className="flex items-center justify-between bg-[#050a0e]/30 rounded p-3 border border-[rgba(201,162,39,0.06)]">
+                    <div className="flex items-center gap-2"><Award className="w-4 h-4 text-yellow-600 shrink-0" /><div><div className="font-medium text-sm">{a.name}</div>{a.description && <div className="text-xs text-[#4a6070]">{a.description}</div>}</div></div>
+                    <div className="flex items-center gap-2">{a.date && <span className="text-xs text-[#4a6070]">{a.date}</span>}<Button size="sm" variant="ghost" onClick={() => removeAward(a.id)} className="text-tropic-red hover:bg-tropic-red/10"><Trash2 className="w-4 h-4" /></Button></div>
                   </div>
                 ))}
               </div>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Radio, ExternalLink } from 'lucide-react';
 
 const CLASSIFICATION_COLORS = {
-  routine: 'bg-gray-700/40 text-gray-300',
+  routine: 'bg-[#111a24]/40 text-[#8a9aa8]',
   priority: 'bg-tropic-gold/15 text-tropic-gold',
   immediate: 'bg-orange-700/15 text-orange-400',
   flash: 'bg-tropic-red/15 text-tropic-red',
@@ -33,25 +33,25 @@ export default function IntelPopup({ intel }) {
       </div>
 
       {intel.description && (
-        <p className="text-xs text-gray-400 mb-2 line-clamp-3">{intel.description}</p>
+        <p className="text-xs text-[#8a9aa8] mb-2 line-clamp-3">{intel.description}</p>
       )}
 
-      <div className="flex flex-col gap-1 text-xs text-gray-400">
+      <div className="flex flex-col gap-1 text-xs text-[#8a9aa8]">
         {intel.region_label && (
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-500 text-[10px] uppercase tracking-wider">Region</span>
+            <span className="text-[#4a6070] text-[10px] uppercase tracking-wider">Region</span>
             <span className="font-mono text-[11px]">{intel.region_label}</span>
           </div>
         )}
         {intel.theater && (
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-500 text-[10px] uppercase tracking-wider">Theater</span>
+            <span className="text-[#4a6070] text-[10px] uppercase tracking-wider">Theater</span>
             <span className="font-mono text-[11px]">{intel.theater}</span>
           </div>
         )}
         {intel.severity && (
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-500 text-[10px] uppercase tracking-wider">Severity</span>
+            <span className="text-[#4a6070] text-[10px] uppercase tracking-wider">Severity</span>
             <span className="capitalize font-mono text-[11px]">{intel.severity}</span>
           </div>
         )}

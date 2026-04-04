@@ -1,8 +1,8 @@
 /**
  * Centralized theme constants for 25th Infantry Division website.
  *
- * Military command-center terminal aesthetic — "TROPIC THUNDER COMMAND"
- * Deep navy-black backgrounds, tactical gold accents, terminal green data readouts.
+ * Military command-center terminal aesthetic — "TROPIC LIGHTNING COMMAND"
+ * Deep navy-black backgrounds, 25th ID Gold & dark accents throughout.
  */
 
 // ---------------------------------------------------------------------------
@@ -24,10 +24,6 @@ export const colors = {
   tropicRedLight: '#ff5555',
   tropicOlive: '#556B2F',
 
-  // Terminal green
-  terminalGreen: '#00ff88',
-  terminalGreenDark: '#00cc6a',
-
   // HUD blue
   hudBlue: '#00aaff',
   hudBlueDark: '#0088cc',
@@ -42,13 +38,11 @@ export const colors = {
   // Borders
   border: '#1a2a3a',
   borderGold: 'rgba(201, 162, 39, 0.2)',
-  borderGreen: 'rgba(0, 255, 136, 0.15)',
 
   // Text
   textPrimary: '#d0d8e0',
   textMuted: '#4a6070',
   textGold: '#e8c547',
-  textGreen: '#00ff88',
 
   // Map marker colors
   markerExternal: '#ff3333',
@@ -60,21 +54,21 @@ export const colors = {
   threatCritical: '#ff3333',
   threatHigh: '#ff6600',
   threatMedium: '#ffaa00',
-  threatLow: '#00ff88',
+  threatLow: '#e8c547',
   threatInfo: '#00aaff',
 
   // Grid/Lines
-  gridLine: 'rgba(0, 255, 136, 0.06)',
+  gridLine: 'rgba(201, 162, 39, 0.06)',
 };
 
 // ---------------------------------------------------------------------------
 // Typography
 // ---------------------------------------------------------------------------
 export const fonts = {
-  heading: "'Orbitron', 'Rajdhani', 'Segoe UI', system-ui, sans-serif",
+  heading: "'Share Tech', 'Oswald', 'Segoe UI', system-ui, sans-serif",
   body: "'Inter', 'Roboto', 'Segoe UI', system-ui, sans-serif",
   mono: "'JetBrains Mono', 'Fira Code', 'Roboto Mono', 'Courier New', monospace",
-  condensed: "'Oswald', 'Rajdhani', 'Segoe UI', system-ui, sans-serif",
+  condensed: "'Oswald', 'Barlow Condensed', 'Segoe UI', system-ui, sans-serif",
 };
 
 // ---------------------------------------------------------------------------
@@ -95,15 +89,15 @@ export const button = {
   },
   secondary: {
     background: 'transparent',
-    color: colors.terminalGreen,
-    border: `1px solid ${colors.borderGreen}`,
-    hoverBackground: 'rgba(0, 255, 136, 0.08)',
+    color: colors.goldLight,
+    border: `1px solid ${colors.borderGold}`,
+    hoverBackground: 'rgba(201, 162, 39, 0.08)',
   },
 };
 
 export const table = {
   headerBg: colors.bgElevated,
-  rowHoverBg: 'rgba(0, 255, 136, 0.04)',
+  rowHoverBg: 'rgba(201, 162, 39, 0.04)',
   borderColor: colors.border,
 };
 
@@ -127,7 +121,7 @@ export const cssVars = {
   '--brand-border': colors.border,
   '--brand-text': colors.textPrimary,
   '--brand-muted': colors.textMuted,
-  '--terminal-green': colors.terminalGreen,
+  '--accent-color': colors.gold,
   '--hud-blue': colors.hudBlue,
 };
 

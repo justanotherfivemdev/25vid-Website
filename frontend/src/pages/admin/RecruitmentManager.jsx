@@ -185,24 +185,27 @@ const RecruitmentManager = () => {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="recruitment-title">
-              RECRUITMENT PIPELINE
-            </h1>
-            <p className="text-sm text-gray-500">Manage open positions and review applications</p>
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>S-1 Personnel</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="recruitment-title">
+                RECRUITMENT PIPELINE
+              </h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Manage open positions and review applications</p>
+            </div>
+            <a href="/join" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10">
+                <ExternalLink className="w-4 h-4 mr-2" />View Public Page
+              </Button>
+            </a>
           </div>
-          <a href="/join" target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" className="border-tropic-gold/50 text-tropic-gold hover:bg-tropic-gold/10">
-              <ExternalLink className="w-4 h-4 mr-2" />View Public Page
-            </Button>
-          </a>
         </div>
 
         {feedback && (
           <Alert
             variant={feedback.type === 'error' ? 'destructive' : 'default'}
-            className={feedback.type === 'success' ? 'border-green-500/30 bg-green-500/10 text-green-100 [&>svg]:text-green-300' : 'bg-gray-950 border-red-500/40'}
+            className={feedback.type === 'success' ? 'border-green-500/30 bg-green-500/10 text-green-100 [&>svg]:text-green-300' : 'bg-[#050a0e] border-red-500/40'}
           >
             <AlertDescription>{feedback.message}</AlertDescription>
           </Alert>
@@ -211,34 +214,34 @@ const RecruitmentManager = () => {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Card className="bg-gray-900 border-gray-800">
+            <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
               <CardContent className="py-4 text-center">
                 <div className="text-2xl font-bold text-tropic-gold">{stats.open_billets}</div>
-                <div className="text-xs text-gray-500">Open Billets</div>
+                <div className="text-xs text-[#4a6070]">Open Billets</div>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900 border-gray-800">
+            <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
               <CardContent className="py-4 text-center">
                 <div className="text-2xl font-bold text-tropic-gold">{stats.pending}</div>
-                <div className="text-xs text-gray-500">Pending</div>
+                <div className="text-xs text-[#4a6070]">Pending</div>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900 border-gray-800">
+            <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
               <CardContent className="py-4 text-center">
                 <div className="text-2xl font-bold text-tropic-gold">{stats.reviewing}</div>
-                <div className="text-xs text-gray-500">Reviewing</div>
+                <div className="text-xs text-[#4a6070]">Reviewing</div>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900 border-gray-800">
+            <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
               <CardContent className="py-4 text-center">
                 <div className="text-2xl font-bold text-green-400">{stats.accepted}</div>
-                <div className="text-xs text-gray-500">Accepted</div>
+                <div className="text-xs text-[#4a6070]">Accepted</div>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900 border-gray-800">
+            <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
               <CardContent className="py-4 text-center">
-                <div className="text-2xl font-bold text-gray-400">{stats.total_applications}</div>
-                <div className="text-xs text-gray-500">Total Apps</div>
+                <div className="text-2xl font-bold text-[#8a9aa8]">{stats.total_applications}</div>
+                <div className="text-xs text-[#4a6070]">Total Apps</div>
               </CardContent>
             </Card>
           </div>
@@ -246,7 +249,7 @@ const RecruitmentManager = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="bg-gray-900 border border-gray-800">
+          <TabsList className="bg-[#0c1117] border border-[rgba(201,162,39,0.12)]">
             <TabsTrigger value="applications" className="data-[state=active]:bg-tropic-red">
               <UserPlus className="w-4 h-4 mr-2" />Applications ({applications.length})
             </TabsTrigger>
@@ -259,10 +262,10 @@ const RecruitmentManager = () => {
           <TabsContent value="applications" className="space-y-4">
             <div className="flex items-center justify-between">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="bg-black border-gray-700 w-full sm:w-[180px]">
+                <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] w-full sm:w-[180px]">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                   <SelectItem value="all">All Applications</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="reviewing">Reviewing</SelectItem>
@@ -273,15 +276,15 @@ const RecruitmentManager = () => {
             </div>
 
             {filteredApps.length === 0 ? (
-              <Card className="bg-gray-900 border-gray-800">
-                <CardContent className="py-12 text-center text-gray-500">
+              <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
+                <CardContent className="py-12 text-center text-[#4a6070]">
                   No applications found.
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
                 {filteredApps.map(app => (
-                  <Card key={app.id} className="bg-gray-900 border-gray-800 hover:border-tropic-red/30 transition-colors" data-testid={`app-${app.id}`}>
+                  <Card key={app.id} className="bg-[#0c1117] border-[rgba(201,162,39,0.12)] hover:border-tropic-red/30 transition-colors" data-testid={`app-${app.id}`}>
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -289,17 +292,17 @@ const RecruitmentManager = () => {
                             <span className="font-bold">{app.applicant_name}</span>
                             <Badge className={STATUS_COLORS[app.status]}>{app.status.toUpperCase()}</Badge>
                             {app.billet_id && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-[#4a6070]">
                                 → {billets.find(b => b.id === app.billet_id)?.title || 'Position'}
                               </span>
                             )}
                           </div>
-                          <div className="text-sm text-gray-400 flex items-center gap-4">
+                          <div className="text-sm text-[#8a9aa8] flex items-center gap-4">
                             <span>{app.applicant_email}</span>
                             {app.discord_username && <span className="text-tropic-gold">{app.discord_username}</span>}
-                            {app.timezone && <span className="text-gray-500">{app.timezone}</span>}
+                            {app.timezone && <span className="text-[#4a6070]">{app.timezone}</span>}
                           </div>
-                          <div className="text-xs text-gray-600 mt-1">
+                          <div className="text-xs text-[#4a6070] mt-1">
                             Submitted: {new Date(app.submitted_at).toLocaleDateString()}
                             {app.reviewed_by && <span> · Reviewed by {app.reviewed_by}</span>}
                           </div>
@@ -338,21 +341,21 @@ const RecruitmentManager = () => {
                     <Plus className="w-4 h-4 mr-2" />Add Billet
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-gray-900 text-white border-gray-800">
+                <DialogContent className="bg-[#0c1117] text-white border-[rgba(201,162,39,0.12)]">
                   <DialogHeader>
                     <DialogTitle className="text-tropic-gold">{editingBillet ? 'EDIT BILLET' : 'NEW BILLET'}</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleSaveBillet} className="space-y-4">
                     <div>
                       <Label>Position Title *</Label>
-                      <Input required value={billetForm.title} onChange={e => setBilletForm({...billetForm, title: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Squad Leader" data-testid="billet-title" />
+                      <Input required value={billetForm.title} onChange={e => setBilletForm({...billetForm, title: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., Squad Leader" data-testid="billet-title" />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <Label>Company</Label>
                         <Select value={billetForm.company || '__none__'} onValueChange={v => setBilletForm({...billetForm, company: v === '__none__' ? '' : v})}>
-                          <SelectTrigger className="bg-black border-gray-700"><SelectValue placeholder="Select..." /></SelectTrigger>
-                          <SelectContent className="bg-gray-900 border-gray-700">
+                          <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue placeholder="Select..." /></SelectTrigger>
+                          <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                             <SelectItem value="__none__">— None —</SelectItem>
                             {unitTags?.companies?.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                           </SelectContent>
@@ -361,8 +364,8 @@ const RecruitmentManager = () => {
                       <div>
                         <Label>Platoon</Label>
                         <Select value={billetForm.platoon || '__none__'} onValueChange={v => setBilletForm({...billetForm, platoon: v === '__none__' ? '' : v})}>
-                          <SelectTrigger className="bg-black border-gray-700"><SelectValue placeholder="Select..." /></SelectTrigger>
-                          <SelectContent className="bg-gray-900 border-gray-700">
+                          <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue placeholder="Select..." /></SelectTrigger>
+                          <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                             <SelectItem value="__none__">— None —</SelectItem>
                             {unitTags?.platoons?.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                           </SelectContent>
@@ -371,18 +374,18 @@ const RecruitmentManager = () => {
                     </div>
                     <div>
                       <Label>Description *</Label>
-                      <Textarea required value={billetForm.description} onChange={e => setBilletForm({...billetForm, description: e.target.value})} rows={3} className="bg-black border-gray-700" placeholder="Describe the role and responsibilities..." data-testid="billet-desc" />
+                      <Textarea required value={billetForm.description} onChange={e => setBilletForm({...billetForm, description: e.target.value})} rows={3} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Describe the role and responsibilities..." data-testid="billet-desc" />
                     </div>
                     <div>
                       <Label>Requirements</Label>
-                      <Input value={billetForm.requirements} onChange={e => setBilletForm({...billetForm, requirements: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Must have leadership experience" />
+                      <Input value={billetForm.requirements} onChange={e => setBilletForm({...billetForm, requirements: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., Must have leadership experience" />
                     </div>
                     <div className="flex items-center gap-2">
                       <input type="checkbox" id="is_open" checked={billetForm.is_open} onChange={e => setBilletForm({...billetForm, is_open: e.target.checked})} className="w-4 h-4" />
                       <Label htmlFor="is_open" className="cursor-pointer">Position is open for applications</Label>
                     </div>
                     <div className="flex gap-3">
-                      <Button type="button" variant="outline" onClick={() => setBilletDialogOpen(false)} className="border-gray-700 flex-1">Cancel</Button>
+                      <Button type="button" variant="outline" onClick={() => setBilletDialogOpen(false)} className="border-[rgba(201,162,39,0.15)] flex-1">Cancel</Button>
                       <Button type="submit" className="bg-tropic-red hover:bg-tropic-red-dark flex-1" data-testid="billet-save">{editingBillet ? 'Save Changes' : 'Create Billet'}</Button>
                     </div>
                   </form>
@@ -391,19 +394,19 @@ const RecruitmentManager = () => {
             </div>
 
             {billets.length === 0 ? (
-              <Card className="bg-gray-900 border-gray-800">
-                <CardContent className="py-12 text-center text-gray-500">
+              <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
+                <CardContent className="py-12 text-center text-[#4a6070]">
                   No billets created yet. Add your first open position.
                 </CardContent>
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
                 {billets.map(billet => (
-                  <Card key={billet.id} className={`bg-gray-900 border-gray-800 ${!billet.is_open ? 'opacity-60' : ''}`} data-testid={`billet-card-${billet.id}`}>
+                  <Card key={billet.id} className={`bg-[#0c1117] border-[rgba(201,162,39,0.12)] ${!billet.is_open ? 'opacity-60' : ''}`} data-testid={`billet-card-${billet.id}`}>
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base">{billet.title}</CardTitle>
-                        <Badge className={billet.is_open ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}>
+                        <Badge className={billet.is_open ? 'bg-green-500/20 text-green-400' : 'bg-[#4a6070]/20 text-[#8a9aa8]'}>
                           {billet.is_open ? 'OPEN' : 'CLOSED'}
                         </Badge>
                       </div>
@@ -414,9 +417,9 @@ const RecruitmentManager = () => {
                       )}
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-gray-400 mb-3 whitespace-pre-wrap line-clamp-3">{billet.description}</p>
+                      <p className="text-sm text-[#8a9aa8] mb-3 whitespace-pre-wrap line-clamp-3">{billet.description}</p>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEditBillet(billet)} className="border-gray-700 flex-1">
+                        <Button size="sm" variant="outline" onClick={() => handleEditBillet(billet)} className="border-[rgba(201,162,39,0.15)] flex-1">
                           <Edit className="w-3 h-3 mr-1" />Edit
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => handleDeleteBillet(billet.id)} className="border-red-700/50 text-red-400 hover:bg-red-700/10">
@@ -433,7 +436,7 @@ const RecruitmentManager = () => {
 
         {/* Application Review Dialog */}
         <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
-          <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-[#0c1117] text-white border-[rgba(201,162,39,0.12)] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-tropic-gold">APPLICATION REVIEW</DialogTitle>
             </DialogHeader>
@@ -441,43 +444,43 @@ const RecruitmentManager = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-500">Applicant</Label>
+                    <Label className="text-[#4a6070]">Applicant</Label>
                     <div className="font-medium">{selectedApp.applicant_name}</div>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Email</Label>
+                    <Label className="text-[#4a6070]">Email</Label>
                     <div className="text-sm">{selectedApp.applicant_email}</div>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Discord</Label>
+                    <Label className="text-[#4a6070]">Discord</Label>
                     <div className="text-sm text-tropic-gold">{selectedApp.discord_username || '—'}</div>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Timezone</Label>
+                    <Label className="text-[#4a6070]">Timezone</Label>
                     <div className="text-sm">{selectedApp.timezone || '—'}</div>
                   </div>
                 </div>
 
                 {selectedApp.billet_id && (
                   <div>
-                    <Label className="text-gray-500">Applied For</Label>
+                    <Label className="text-[#4a6070]">Applied For</Label>
                     <div className="text-sm text-tropic-gold">{billets.find(b => b.id === selectedApp.billet_id)?.title || 'Position'}</div>
                   </div>
                 )}
 
                 <div>
-                  <Label className="text-gray-500">Experience</Label>
-                  <div className="text-sm text-gray-300 bg-black/30 rounded p-3 whitespace-pre-wrap">{selectedApp.experience}</div>
+                  <Label className="text-[#4a6070]">Experience</Label>
+                  <div className="text-sm text-[#8a9aa8] bg-[#050a0e]/30 rounded p-3 whitespace-pre-wrap">{selectedApp.experience}</div>
                 </div>
 
                 <div>
-                  <Label className="text-gray-500">Availability</Label>
-                  <div className="text-sm text-gray-300 bg-black/30 rounded p-3 whitespace-pre-wrap">{selectedApp.availability}</div>
+                  <Label className="text-[#4a6070]">Availability</Label>
+                  <div className="text-sm text-[#8a9aa8] bg-[#050a0e]/30 rounded p-3 whitespace-pre-wrap">{selectedApp.availability}</div>
                 </div>
 
                 <div>
-                  <Label className="text-gray-500">Why Join</Label>
-                  <div className="text-sm text-gray-300 bg-black/30 rounded p-3 whitespace-pre-wrap">{selectedApp.why_join}</div>
+                  <Label className="text-[#4a6070]">Why Join</Label>
+                  <div className="text-sm text-[#8a9aa8] bg-[#050a0e]/30 rounded p-3 whitespace-pre-wrap">{selectedApp.why_join}</div>
                 </div>
 
                 <div>
@@ -486,17 +489,17 @@ const RecruitmentManager = () => {
                     value={selectedApp.admin_notes || ''} 
                     onChange={e => setSelectedApp({...selectedApp, admin_notes: e.target.value})} 
                     rows={2} 
-                    className="bg-black border-gray-700" 
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" 
                     placeholder="Add internal notes about this applicant..."
                     data-testid="admin-notes"
                   />
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button onClick={() => handleUpdateAppStatus('pending')} variant="outline" className={`flex-1 ${selectedApp.status === 'pending' ? 'border-tropic-gold text-tropic-gold' : 'border-gray-700'}`}>
+                  <Button onClick={() => handleUpdateAppStatus('pending')} variant="outline" className={`flex-1 ${selectedApp.status === 'pending' ? 'border-tropic-gold text-tropic-gold' : 'border-[rgba(201,162,39,0.15)]'}`}>
                     <Clock className="w-4 h-4 mr-1" />Pending
                   </Button>
-                  <Button onClick={() => handleUpdateAppStatus('reviewing')} variant="outline" className={`flex-1 ${selectedApp.status === 'reviewing' ? 'border-tropic-gold text-tropic-gold' : 'border-gray-700'}`}>
+                  <Button onClick={() => handleUpdateAppStatus('reviewing')} variant="outline" className={`flex-1 ${selectedApp.status === 'reviewing' ? 'border-tropic-gold text-tropic-gold' : 'border-[rgba(201,162,39,0.15)]'}`}>
                     <Eye className="w-4 h-4 mr-1" />Reviewing
                   </Button>
                   <Button onClick={() => handleUpdateAppStatus('accepted')} className="flex-1 bg-green-700 hover:bg-green-600" data-testid="accept-app">

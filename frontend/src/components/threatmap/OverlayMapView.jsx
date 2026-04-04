@@ -71,10 +71,10 @@ export default function OverlayMapView() {
           <h2 className="mb-3 text-lg font-bold" style={{ color: '#FFD700' }}>
             World Monitor Not Configured
           </h2>
-          <p className="mb-4 text-sm text-gray-400">
+          <p className="mb-4 text-sm text-[#8a9aa8]">
             The World Monitor view requires the dashboard to be running.
-            Set the <code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs" style={{ color: '#FFD700' }}>REACT_APP_WORLDMONITOR_URL</code> environment
-            variable in your frontend <code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-300">.env</code> file.
+            Set the <code className="rounded bg-[#111a24] px-1.5 py-0.5 text-xs" style={{ color: '#FFD700' }}>REACT_APP_WORLDMONITOR_URL</code> environment
+            variable in your frontend <code className="rounded bg-[#111a24] px-1.5 py-0.5 text-xs text-[#8a9aa8]">.env</code> file.
           </p>
           <div
             className="rounded border p-3 text-left text-xs"
@@ -85,13 +85,13 @@ export default function OverlayMapView() {
               fontFamily: 'monospace',
             }}
           >
-            <div className="mb-1 text-gray-500"># frontend/.env</div>
+            <div className="mb-1 text-[#4a6070]"># frontend/.env</div>
             <div><span style={{ color: '#FFD700' }}>REACT_APP_WORLDMONITOR_URL</span>=http://localhost:3000</div>
-            <div className="mt-2 text-gray-500"># Then start the worldmonitor dev server:</div>
+            <div className="mt-2 text-[#4a6070]"># Then start the worldmonitor dev server:</div>
             <div>cd worldmonitor &amp;&amp; npm install &amp;&amp; npm run dev</div>
           </div>
-          <p className="mt-4 text-xs text-gray-500">
-            See <code className="text-gray-400">worldmonitor/README.md</code> and the
+          <p className="mt-4 text-xs text-[#4a6070]">
+            See <code className="text-[#8a9aa8]">worldmonitor/README.md</code> and the
             project README for full setup instructions.
           </p>
         </div>
@@ -109,7 +109,7 @@ export default function OverlayMapView() {
               className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
               style={{ borderColor: 'rgba(255,215,0,0.3)', borderTopColor: 'transparent' }}
             />
-            <span className="text-xs text-gray-500">Loading World Monitor…</span>
+            <span className="text-xs text-[#4a6070]">Loading World Monitor…</span>
           </div>
         </div>
       )}
@@ -122,9 +122,9 @@ export default function OverlayMapView() {
             <p className="text-sm font-medium" style={{ color: '#FFD700' }}>
               Failed to load World Monitor
             </p>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-[#4a6070]">
               Check that the dashboard is running at{' '}
-              <code className="rounded bg-gray-800 px-1 py-0.5 text-gray-400">{WORLDMONITOR_URL}</code>
+              <code className="rounded bg-[#111a24] px-1 py-0.5 text-[#8a9aa8]">{WORLDMONITOR_URL}</code>
             </p>
           </div>
         </div>

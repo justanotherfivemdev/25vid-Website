@@ -33,19 +33,19 @@ export default function CampaignPopup({ campaign }) {
       </div>
 
       {campaign.description && (
-        <p className="text-xs text-gray-400 mb-2 line-clamp-3">{campaign.description}</p>
+        <p className="text-xs text-[#8a9aa8] mb-2 line-clamp-3">{campaign.description}</p>
       )}
 
-      <div className="flex flex-col gap-1 text-xs text-gray-400">
+      <div className="flex flex-col gap-1 text-xs text-[#8a9aa8]">
         {campaign.theater && (
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-500 text-[10px] uppercase tracking-wider">Theater</span>
+            <span className="text-[#4a6070] text-[10px] uppercase tracking-wider">Theater</span>
             <span className="font-mono text-[11px]">{campaign.theater}</span>
           </div>
         )}
         {campaign.status && (
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-500 text-[10px] uppercase tracking-wider">Status</span>
+            <span className="text-[#4a6070] text-[10px] uppercase tracking-wider">Status</span>
             <span className="capitalize font-mono text-[11px]">{campaign.status}</span>
           </div>
         )}

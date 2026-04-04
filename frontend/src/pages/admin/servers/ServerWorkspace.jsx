@@ -47,7 +47,7 @@ import {
 const SUMMARY_REFRESH_MS = 15_000;
 
 const STATUS_CONFIG = {
-  running: { label: 'ONLINE', cls: 'bg-[rgba(0,255,136,0.08)] text-[#00ff88] border-[rgba(0,255,136,0.3)]', dotCls: 'status-dot status-dot-online', icon: CheckCircle },
+  running: { label: 'ONLINE', cls: 'bg-[rgba(201,162,39,0.08)] text-[#e8c547] border-[rgba(201,162,39,0.3)]', dotCls: 'status-dot status-dot-online', icon: CheckCircle },
   degraded: { label: 'DEGRADED', cls: 'bg-[rgba(255,170,0,0.08)] text-[#ffaa00] border-[rgba(255,170,0,0.3)]', dotCls: 'status-dot status-dot-degraded', icon: AlertTriangle },
   starting: { label: 'STARTING', cls: 'bg-[rgba(255,170,0,0.08)] text-[#ffaa00] border-[rgba(255,170,0,0.3)]', dotCls: 'status-dot status-dot-degraded', icon: Loader2, spin: true },
   initializing: { label: 'INITIALIZING', cls: 'bg-[rgba(255,170,0,0.08)] text-[#ffaa00] border-[rgba(255,170,0,0.3)]', dotCls: 'status-dot status-dot-degraded', icon: Loader2, spin: true },
@@ -202,7 +202,7 @@ function ServerWorkspace() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#00ff88]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#e8c547]" />
       </div>
     );
   }
@@ -212,7 +212,7 @@ function ServerWorkspace() {
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
         <AlertTriangle className="h-12 w-12 text-[#ff3333]" />
         <p className="text-lg text-[#ff3333]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{error || 'Server not found'}</p>
-        <Link to="/admin/servers" className="tactical-button inline-flex items-center px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }}>
+        <Link to="/admin/servers" className="tactical-button inline-flex items-center px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }}>
           <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Servers
         </Link>
       </div>
@@ -221,18 +221,18 @@ function ServerWorkspace() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-[#050a0e]">
-      <div className="border-b border-[rgba(0,255,136,0.1)] bg-[#0c1117] px-4 py-3 backdrop-blur-sm lg:px-6">
+      <div className="border-b border-[rgba(201,162,39,0.1)] bg-[#0c1117] px-4 py-3 backdrop-blur-sm lg:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/admin/servers" className="text-[#4a6070] transition-colors hover:text-[#00ff88]">
+            <Link to="/admin/servers" className="text-[#4a6070] transition-colors hover:text-[#e8c547]">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-[rgba(0,255,136,0.2)] bg-[rgba(0,255,136,0.05)]">
-                <Server className="h-5 w-5 text-[#00ff88]" />
+              <div className="flex h-10 w-10 items-center justify-center border border-[rgba(201,162,39,0.2)] bg-[rgba(201,162,39,0.05)]">
+                <Server className="h-5 w-5 text-[#e8c547]" />
               </div>
               <div>
-                <h1 className="text-lg font-black uppercase tracking-[0.08em] text-[#e8c547]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+                <h1 className="text-lg font-black uppercase tracking-[0.08em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                   {server.name}
                 </h1>
                 <div className="flex items-center gap-2 text-xs text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
@@ -260,7 +260,7 @@ function ServerWorkspace() {
                 <button
                   disabled={!!actionLoading}
                   onClick={() => handleAction('start')}
-                  className="h-8 px-2 border border-[rgba(0,255,136,0.3)] text-[#00ff88] hover:bg-[rgba(0,255,136,0.08)] disabled:opacity-40 transition-colors"
+                  className="h-8 px-2 border border-[rgba(201,162,39,0.3)] text-[#e8c547] hover:bg-[rgba(201,162,39,0.08)] disabled:opacity-40 transition-colors"
                 >
                   {actionLoading === 'start' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
                 </button>
@@ -285,7 +285,7 @@ function ServerWorkspace() {
               )}
               <button
                 onClick={() => fetchServer(true)}
-                className="h-8 px-2 text-[#4a6070] hover:text-[#00ff88] transition-colors"
+                className="h-8 px-2 text-[#4a6070] hover:text-[#e8c547] transition-colors"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
               </button>
@@ -345,14 +345,14 @@ function ServerWorkspace() {
                 {Object.values(server.provisioning_stages).map((stage) => (
                   <div key={stage.name} className="flex items-center gap-2">
                     {stage.status === 'success' ? (
-                      <CheckCircle className="h-3 w-3 text-[#00ff88]" />
+                      <CheckCircle className="h-3 w-3 text-[#e8c547]" />
                     ) : stage.status === 'failed' ? (
                       <AlertTriangle className="h-3 w-3 text-[#ff3333]" />
                     ) : (
                       <Circle className="h-3 w-3 text-[#4a6070]" />
                     )}
                     <span className={
-                      stage.status === 'success' ? 'text-[#00ff88]' :
+                      stage.status === 'success' ? 'text-[#e8c547]' :
                       stage.status === 'failed' ? 'text-[#ff3333]' :
                       'text-[#4a6070]'
                     }>
@@ -386,7 +386,7 @@ function ServerWorkspace() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <nav className={`hidden flex-col border-r border-[rgba(0,255,136,0.1)] bg-[#050a0e] transition-all lg:flex ${sidebarCollapsed ? 'w-14' : 'w-52'}`}>
+        <nav className={`hidden flex-col border-r border-[rgba(201,162,39,0.1)] bg-[#050a0e] transition-all lg:flex ${sidebarCollapsed ? 'w-14' : 'w-52'}`}>
           <div className="flex-1 overflow-y-auto py-2">
             {NAV_SECTIONS.map((section) => (
               <div key={section.label} className="mb-1">
@@ -405,7 +405,7 @@ function ServerWorkspace() {
                       className={({ isActive }) => (
                         `flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
                           isActive
-                            ? 'border-r-2 border-[#00ff88] bg-[rgba(0,255,136,0.05)] text-[#00ff88]'
+                            ? 'border-r-2 border-[#e8c547] bg-[rgba(201,162,39,0.05)] text-[#e8c547]'
                             : 'text-[#8a9aa8] hover:bg-[#111a24] hover:text-[#d0d8e0]'
                         } ${sidebarCollapsed ? 'justify-center px-0' : ''}`
                       )}
@@ -422,14 +422,14 @@ function ServerWorkspace() {
           <button
             type="button"
             onClick={() => setSidebarCollapsed((prev) => !prev)}
-            className="border-t border-[rgba(0,255,136,0.1)] px-3 py-2 text-xs text-[#4a6070] hover:text-[#00ff88] transition-colors"
+            className="border-t border-[rgba(201,162,39,0.1)] px-3 py-2 text-xs text-[#4a6070] hover:text-[#e8c547] transition-colors"
             style={{ fontFamily: "'JetBrains Mono', monospace" }}
           >
             {sidebarCollapsed ? '>' : '< Collapse'}
           </button>
         </nav>
 
-        <div className="flex overflow-x-auto border-b border-[rgba(0,255,136,0.1)] bg-[#050a0e] lg:hidden">
+        <div className="flex overflow-x-auto border-b border-[rgba(201,162,39,0.1)] bg-[#050a0e] lg:hidden">
           {NAV_SECTIONS.flatMap((section) => section.items).map((item) => {
             const Icon = item.icon;
             return (
@@ -440,7 +440,7 @@ function ServerWorkspace() {
                 className={({ isActive }) => (
                   `flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-xs transition-colors ${
                     isActive
-                      ? 'border-[#00ff88] text-[#00ff88]'
+                      ? 'border-[#e8c547] text-[#e8c547]'
                       : 'border-transparent text-[#8a9aa8] hover:text-[#d0d8e0]'
                   }`
                 )}
@@ -461,7 +461,7 @@ function ServerWorkspace() {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="border-[rgba(255,51,51,0.3)] bg-[#0c1117] text-[#d0d8e0] rounded-none">
           <DialogHeader>
-            <DialogTitle className="text-[#ff3333] uppercase tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>Delete Server</DialogTitle>
+            <DialogTitle className="text-[#ff3333] uppercase tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>Delete Server</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>
             Are you sure you want to delete <strong className="text-[#d0d8e0]">{server.name}</strong>? This action cannot be undone.
@@ -469,7 +469,7 @@ function ServerWorkspace() {
           <div className="flex justify-end gap-2 pt-4">
             <button
               onClick={() => setDeleteOpen(false)}
-              className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#8a9aa8] border border-[rgba(0,255,136,0.15)] hover:text-[#d0d8e0] transition-colors"
+              className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#8a9aa8] border border-[rgba(201,162,39,0.15)] hover:text-[#d0d8e0] transition-colors"
               style={{ fontFamily: "'Oswald', sans-serif" }}
             >
               Cancel

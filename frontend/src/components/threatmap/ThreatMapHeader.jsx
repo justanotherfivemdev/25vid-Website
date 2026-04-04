@@ -81,7 +81,7 @@ export default function ThreatMapHeader({ onRefresh, isLoading, mapStatus, isAdm
       {/* Center — map toggle + tagline */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
         <MapViewToggle />
-        <div className="text-[11px] text-gray-600 hidden lg:flex items-center gap-1.5">
+        <div className="text-[11px] text-[#4a6070] hidden lg:flex items-center gap-1.5">
           <span>Intelligence powered by</span>
           <a
             href="https://www.valyu.ai"
@@ -92,7 +92,7 @@ export default function ThreatMapHeader({ onRefresh, isLoading, mapStatus, isAdm
           >
             Valyu
           </a>
-          <span className="text-gray-700">+ Community</span>
+          <span className="text-[#4a6070]">+ Community</span>
         </div>
       </div>
 

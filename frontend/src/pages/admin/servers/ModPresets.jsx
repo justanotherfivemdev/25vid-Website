@@ -93,13 +93,13 @@ const ModPresets = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-[0.15em] text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h1 className="text-2xl font-bold tracking-[0.15em] text-tropic-gold" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             MOD PRESETS
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Saved mod configurations for quick server setup</p>
+          <p className="text-sm text-[#4a6070] mt-1">Saved mod configurations for quick server setup</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={fetchPresets} variant="outline" size="sm" className="border-gray-700 text-gray-400 hover:text-white">
+          <Button onClick={fetchPresets} variant="outline" size="sm" className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white">
             <RefreshCw className="w-4 h-4 mr-1" /> Refresh
           </Button>
           <Button onClick={openCreate} size="sm" className="bg-tropic-gold text-black hover:bg-tropic-gold/80">
@@ -112,11 +112,11 @@ const ModPresets = () => {
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => <div key={i} className="h-48 bg-gray-900/50 rounded-lg animate-pulse" />)}
+          {[1, 2, 3].map(i => <div key={i} className="h-48 bg-[#0c1117]/50 rounded-lg animate-pulse" />)}
         </div>
       ) : presets.length === 0 ? (
-        <Card className="bg-gray-900/50 border-gray-800">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-gray-500">
+        <Card className="bg-[#0c1117]/50 border-[rgba(201,162,39,0.12)]">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-[#4a6070]">
             <Layers className="w-12 h-12 mb-4 opacity-30" />
             <p className="text-lg font-medium">No presets yet</p>
             <p className="text-sm mt-1">Create a mod preset to quickly configure servers</p>
@@ -125,7 +125,7 @@ const ModPresets = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {presets.map(preset => (
-            <Card key={preset.id} className="bg-gray-900/50 border-gray-800 hover:border-tropic-gold/30 transition-colors">
+            <Card key={preset.id} className="bg-[#0c1117]/50 border-[rgba(201,162,39,0.12)] hover:border-tropic-gold/30 transition-colors">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-base text-white">{preset.name}</CardTitle>
@@ -136,15 +136,15 @@ const ModPresets = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {preset.description && <p className="text-sm text-gray-400 line-clamp-2">{preset.description}</p>}
+                {preset.description && <p className="text-sm text-[#8a9aa8] line-clamp-2">{preset.description}</p>}
                 {preset.scenario_id && (
-                  <p className="text-xs text-gray-500 font-mono truncate">Scenario: {preset.scenario_id}</p>
+                  <p className="text-xs text-[#4a6070] font-mono truncate">Scenario: {preset.scenario_id}</p>
                 )}
                 <div className="flex gap-2 pt-2">
-                  <Button onClick={() => openEdit(preset)} variant="outline" size="sm" className="border-gray-700 text-gray-400 hover:text-white flex-1">
+                  <Button onClick={() => openEdit(preset)} variant="outline" size="sm" className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white flex-1">
                     <Edit className="w-3 h-3 mr-1" /> Edit
                   </Button>
-                  <Button onClick={() => handleDuplicate(preset)} variant="outline" size="sm" className="border-gray-700 text-gray-400 hover:text-white">
+                  <Button onClick={() => handleDuplicate(preset)} variant="outline" size="sm" className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white">
                     <Copy className="w-3 h-3" />
                   </Button>
                   <Button onClick={() => handleDelete(preset.id)} variant="outline" size="sm" className="border-red-800/50 text-red-400 hover:text-red-300 hover:bg-red-900/20">
@@ -158,29 +158,29 @@ const ModPresets = () => {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-gray-950 border-gray-800 text-white max-w-lg">
+        <DialogContent className="bg-[#050a0e] border-[rgba(201,162,39,0.12)] text-white max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-tropic-gold">{editingPreset ? 'Edit Preset' : 'Create Preset'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Name *</label>
-              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="bg-gray-900 border-gray-700 text-white" placeholder="e.g., Standard Ops" />
+              <label className="text-sm text-[#8a9aa8] mb-1 block">Name *</label>
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white" placeholder="e.g., Standard Ops" />
             </div>
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Description</label>
-              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="bg-gray-900 border-gray-700 text-white" rows={2} />
+              <label className="text-sm text-[#8a9aa8] mb-1 block">Description</label>
+              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white" rows={2} />
             </div>
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Scenario ID</label>
-              <Input value={form.scenario_id} onChange={e => setForm(f => ({ ...f, scenario_id: e.target.value }))} className="bg-gray-900 border-gray-700 text-white font-mono text-sm" />
+              <label className="text-sm text-[#8a9aa8] mb-1 block">Scenario ID</label>
+              <Input value={form.scenario_id} onChange={e => setForm(f => ({ ...f, scenario_id: e.target.value }))} className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white font-mono text-sm" />
             </div>
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Mods (JSON array)</label>
-              <Textarea value={form.mods} onChange={e => setForm(f => ({ ...f, mods: e.target.value }))} className="bg-gray-900 border-gray-700 text-white font-mono text-sm" rows={6} placeholder='[{"modId":"...","name":"...","version":"..."}]' />
+              <label className="text-sm text-[#8a9aa8] mb-1 block">Mods (JSON array)</label>
+              <Textarea value={form.mods} onChange={e => setForm(f => ({ ...f, mods: e.target.value }))} className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white font-mono text-sm" rows={6} placeholder='[{"modId":"...","name":"...","version":"..."}]' />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-gray-700 text-gray-400">Cancel</Button>
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8]">Cancel</Button>
               <Button onClick={handleSubmit} disabled={!form.name} className="bg-tropic-gold text-black hover:bg-tropic-gold/80">
                 {editingPreset ? 'Update' : 'Create'}
               </Button>

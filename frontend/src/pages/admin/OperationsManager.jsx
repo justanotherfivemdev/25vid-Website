@@ -38,10 +38,10 @@ const FormSection = ({ title, defaultOpen = false, children }) => {
       <CollapsibleTrigger asChild>
         <button
           type="button"
-          className="flex items-center justify-between w-full text-left text-sm font-semibold text-gray-300 py-2 border-b border-gray-800 hover:text-white transition"
+          className="flex items-center justify-between w-full text-left text-sm font-semibold text-[#8a9aa8] py-2 border-b border-[rgba(201,162,39,0.12)] hover:text-white transition"
         >
           {title}
-          {open ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+          {open ? <ChevronUp className="w-4 h-4 text-[#4a6070]" /> : <ChevronDown className="w-4 h-4 text-[#4a6070]" />}
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-3 space-y-3">
@@ -62,28 +62,28 @@ const RosterPanel = ({ operationId }) => {
       .finally(() => setLoading(false));
   }, [operationId]);
 
-  if (loading) return <div className="text-sm text-gray-500 py-3 text-center">Loading roster...</div>;
-  if (!data) return <div className="text-sm text-gray-600 py-3 text-center">Failed to load roster</div>;
+  if (loading) return <div className="text-sm text-[#4a6070] py-3 text-center">Loading roster...</div>;
+  if (!data) return <div className="text-sm text-[#4a6070] py-3 text-center">Failed to load roster</div>;
 
   const { rsvps, counts, mos_summary } = data;
 
   return (
     <div className="space-y-4 pt-2" data-testid={`roster-panel-${operationId}`}>
       {/* Summary Bar */}
-      <div className="flex items-center gap-6 bg-black/40 rounded-lg p-3 border border-gray-800/50">
-        <div className="text-center"><div className="text-xl font-bold text-green-400">{counts.attending}</div><div className="text-[9px] text-gray-500 tracking-wider">ATTENDING</div></div>
-        <div className="text-center"><div className="text-xl font-bold text-yellow-400">{counts.tentative}</div><div className="text-[9px] text-gray-500 tracking-wider">TENTATIVE</div></div>
-        <div className="text-center"><div className="text-xl font-bold text-orange-400">{counts.waitlisted}</div><div className="text-[9px] text-gray-500 tracking-wider">WAITLISTED</div></div>
-        <div className="text-center ml-auto"><div className="text-xl font-bold text-gray-300">{counts.total}</div><div className="text-[9px] text-gray-500 tracking-wider">TOTAL</div></div>
+      <div className="flex items-center gap-6 bg-[#050a0e]/40 rounded-lg p-3 border border-[rgba(201,162,39,0.06)]">
+        <div className="text-center"><div className="text-xl font-bold text-green-400">{counts.attending}</div><div className="text-[9px] text-[#4a6070] tracking-wider">ATTENDING</div></div>
+        <div className="text-center"><div className="text-xl font-bold text-yellow-400">{counts.tentative}</div><div className="text-[9px] text-[#4a6070] tracking-wider">TENTATIVE</div></div>
+        <div className="text-center"><div className="text-xl font-bold text-orange-400">{counts.waitlisted}</div><div className="text-[9px] text-[#4a6070] tracking-wider">WAITLISTED</div></div>
+        <div className="text-center ml-auto"><div className="text-xl font-bold text-[#8a9aa8]">{counts.total}</div><div className="text-[9px] text-[#4a6070] tracking-wider">TOTAL</div></div>
       </div>
 
       {/* MOS Summary */}
       {mos_summary && Object.keys(mos_summary).length > 0 && (
-        <div className="bg-black/40 rounded-lg p-3 border border-gray-800/50">
+        <div className="bg-[#050a0e]/40 rounded-lg p-3 border border-[rgba(201,162,39,0.06)]">
           <div className="text-[10px] text-tropic-gold tracking-wider font-bold mb-2">MANPOWER BY MOS</div>
           <div className="flex flex-wrap gap-2">
             {Object.entries(mos_summary).sort((a, b) => b[1] - a[1]).map(([mos, count]) => (
-              <div key={mos} className="bg-black/40 border border-gray-800 rounded px-3 py-1.5 text-xs">
+              <div key={mos} className="bg-[#050a0e]/40 border border-[rgba(201,162,39,0.12)] rounded px-3 py-1.5 text-xs">
                 <span className="font-mono text-tropic-gold">{mos}</span>
                 <span className="text-white ml-2 font-bold">{count}</span>
               </div>
@@ -107,7 +107,7 @@ const RosterPanel = ({ operationId }) => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-[10px] text-gray-600 tracking-wider border-b border-gray-800">
+                  <tr className="text-[10px] text-[#4a6070] tracking-wider border-b border-[rgba(201,162,39,0.12)]">
                     <th className="text-left py-1.5 px-2">OPERATOR</th>
                     <th className="text-left py-1.5 px-2">RANK</th>
                     <th className="text-left py-1.5 px-2">MOS</th>
@@ -120,26 +120,26 @@ const RosterPanel = ({ operationId }) => {
                 </thead>
                 <tbody>
                   {list.map((r, i) => (
-                    <tr key={r.user_id || i} className="border-b border-gray-800/30 hover:bg-gray-800/30 transition-colors" data-testid={`roster-row-${r.user_id}`}>
+                    <tr key={r.user_id || i} className="border-b border-[rgba(201,162,39,0.036)] hover:bg-[#111a24]/30 transition-colors" data-testid={`roster-row-${r.user_id}`}>
                       <td className="py-2 px-2">
                         <div className="flex items-center gap-2">
                           {r.avatar_url ? (
-                            <img src={resolveImg(r.avatar_url)} alt="" className="w-6 h-6 rounded object-cover border border-gray-700" />
+                            <img src={resolveImg(r.avatar_url)} alt="" className="w-6 h-6 rounded object-cover border border-[rgba(201,162,39,0.15)]" />
                           ) : (
-                            <div className="w-6 h-6 rounded bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-500">{r.username?.[0]?.toUpperCase()}</div>
+                            <div className="w-6 h-6 rounded bg-[#111a24] flex items-center justify-center text-[10px] font-bold text-[#4a6070]">{r.username?.[0]?.toUpperCase()}</div>
                           )}
                           <Link to={`/admin/users/${r.user_id}`} className="hover:text-tropic-gold transition-colors font-medium">{r.username}</Link>
                         </div>
                       </td>
-                      <td className="py-2 px-2 text-gray-400">{r.rank || '—'}</td>
-                      <td className="py-2 px-2">{r.mos_code ? <span className="text-[10px] text-tropic-gold bg-tropic-gold/10 border border-tropic-gold/30 px-1.5 py-0.5 rounded font-mono">{r.mos_code}</span> : <span className="text-gray-700">—</span>}</td>
+                      <td className="py-2 px-2 text-[#8a9aa8]">{r.rank || '—'}</td>
+                      <td className="py-2 px-2">{r.mos_code ? <span className="text-[10px] text-tropic-gold bg-tropic-gold/10 border border-tropic-gold/30 px-1.5 py-0.5 rounded font-mono">{r.mos_code}</span> : <span className="text-[#4a6070]">—</span>}</td>
                       <td className="py-2 px-2 text-tropic-gold">{r.company || '—'}</td>
                       <td className="py-2 px-2 text-green-400">{r.platoon || '—'}</td>
                       <td className="py-2 px-2 text-tropic-gold">{r.billet || '—'}</td>
                       <td className="py-2 px-2">
-                        {r.role_notes ? <Badge variant="outline" className="border-tropic-gold/40 text-tropic-gold text-[10px]">{r.role_notes}</Badge> : <span className="text-gray-700">—</span>}
+                        {r.role_notes ? <Badge variant="outline" className="border-tropic-gold/40 text-tropic-gold text-[10px]">{r.role_notes}</Badge> : <span className="text-[#4a6070]">—</span>}
                       </td>
-                      <td className="py-2 px-2 text-gray-500 capitalize text-xs">{r.member_status || '—'}</td>
+                      <td className="py-2 px-2 text-[#4a6070] capitalize text-xs">{r.member_status || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -312,7 +312,7 @@ const OperationsManager = () => {
       recon: 'bg-green-600',
       support: 'bg-yellow-600'
     };
-    return colors[type] || 'bg-gray-600';
+    return colors[type] || 'bg-[#4a6070]';
   };
 
   const previewLat = formData.lat === '' ? null : Number(formData.lat);
@@ -340,30 +340,33 @@ const OperationsManager = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-              OPERATIONS MANAGEMENT
-            </h1>
-            <p className="text-gray-400 mt-2">Create and manage tactical operations</p>
-          </div>
+        {/* Hero banner */}
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Tactical Operations</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
+                OPERATIONS MANAGEMENT
+              </h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Create and manage tactical operations</p>
+            </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black">
-                <Plus className="w-4 h-4 mr-2" />
-                New Operation
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-              <DialogHeader className="shrink-0">
-                <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-                  {editingOp ? 'Edit Operation' : 'Create New Operation'}
-                </DialogTitle>
-              </DialogHeader>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="tactical-button bg-[#c9a227] hover:bg-[#e8c547] text-[#050a0e] font-bold text-xs tracking-[0.15em]" style={{ fontFamily: "'Oswald', sans-serif" }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Operation
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-[#0c1117] text-[#d0d8e0] border-[rgba(201,162,39,0.2)] max-w-2xl max-h-[85vh] flex flex-col overflow-hidden rounded-none">
+                <DialogHeader className="shrink-0">
+                  <DialogTitle className="text-[#e8c547] uppercase tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>
+                    {editingOp ? 'Edit Operation' : 'Create New Operation'}
+                  </DialogTitle>
+                </DialogHeader>
               
               <ScrollArea className="flex-1 -mx-6 px-6">
                 <form onSubmit={handleSubmit} className="space-y-4 pb-2">
@@ -374,7 +377,7 @@ const OperationsManager = () => {
                       required
                       value={formData.title}
                       onChange={(e) => setFormData({...formData, title: e.target.value})}
-                      className="bg-black border-gray-700"
+                      className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                       placeholder="e.g., Operation Night Storm"
                     />
                   </div>
@@ -386,7 +389,7 @@ const OperationsManager = () => {
                       rows={2}
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
-                      className="bg-black border-gray-700"
+                      className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                       placeholder="Brief description of the operation"
                     />
                   </div>
@@ -398,10 +401,10 @@ const OperationsManager = () => {
                         value={formData.operation_type}
                         onValueChange={(value) => setFormData({...formData, operation_type: value})}
                       >
-                        <SelectTrigger className="bg-black border-gray-700">
+                        <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-gray-900 border-gray-700">
+                        <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                           <SelectItem value="combat">Combat</SelectItem>
                           <SelectItem value="training">Training</SelectItem>
                           <SelectItem value="recon">Recon</SelectItem>
@@ -417,7 +420,7 @@ const OperationsManager = () => {
                         required
                         value={formData.date}
                         onChange={(e) => setFormData({...formData, date: e.target.value})}
-                        className="bg-black border-gray-700"
+                        className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                       />
                     </div>
 
@@ -428,7 +431,7 @@ const OperationsManager = () => {
                         required
                         value={formData.time}
                         onChange={(e) => setFormData({...formData, time: e.target.value})}
-                        className="bg-black border-gray-700"
+                        className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                       />
                     </div>
                   </div>
@@ -437,8 +440,8 @@ const OperationsManager = () => {
                     <div>
                       <Label>Activity State</Label>
                       <Select value={formData.activity_state} onValueChange={(value) => setFormData({...formData, activity_state: value})}>
-                        <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                        <SelectContent className="bg-gray-900 border-gray-700">
+                        <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                           <SelectItem value="planned">Planned</SelectItem>
                           <SelectItem value="ongoing">Ongoing</SelectItem>
                           <SelectItem value="completed">Completed</SelectItem>
@@ -452,7 +455,7 @@ const OperationsManager = () => {
                         type="number"
                         value={formData.max_participants}
                         onChange={(e) => setFormData({...formData, max_participants: e.target.value})}
-                        className="bg-black border-gray-700"
+                        className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                         placeholder="Optional"
                       />
                     </div>
@@ -476,25 +479,25 @@ const OperationsManager = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <Label>Theater Label</Label>
-                        <Input value={formData.theater} onChange={(e) => setFormData({...formData, theater: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Pacific AO" />
+                        <Input value={formData.theater} onChange={(e) => setFormData({...formData, theater: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., Pacific AO" />
                       </div>
                       <div>
                         <Label>Region Label</Label>
-                        <Input value={formData.region_label} onChange={(e) => setFormData({...formData, region_label: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Manila Corridor" />
+                        <Input value={formData.region_label} onChange={(e) => setFormData({...formData, region_label: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., Manila Corridor" />
                       </div>
                     </div>
                     <div>
                       <Label>Grid Reference</Label>
-                      <Input value={formData.grid_ref} onChange={(e) => setFormData({...formData, grid_ref: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., H7-22" />
+                      <Input value={formData.grid_ref} onChange={(e) => setFormData({...formData, grid_ref: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., H7-22" />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <Label>Campaign ID (optional)</Label>
-                        <Input value={formData.campaign_id} onChange={(e) => setFormData({...formData, campaign_id: e.target.value})} className="bg-black border-gray-700" placeholder="Campaign UUID" />
+                        <Input value={formData.campaign_id} onChange={(e) => setFormData({...formData, campaign_id: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Campaign UUID" />
                       </div>
                       <div>
                         <Label>Objective ID (optional)</Label>
-                        <Input value={formData.objective_id} onChange={(e) => setFormData({...formData, objective_id: e.target.value})} className="bg-black border-gray-700" placeholder="Objective UUID" />
+                        <Input value={formData.objective_id} onChange={(e) => setFormData({...formData, objective_id: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Objective UUID" />
                       </div>
                     </div>
                   </FormSection>
@@ -504,19 +507,19 @@ const OperationsManager = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <Label>Latitude</Label>
-                        <Input value={formData.lat} onChange={(e) => setFormData({...formData, lat: e.target.value})} className="bg-black border-gray-700" placeholder="14.5995" />
+                        <Input value={formData.lat} onChange={(e) => setFormData({...formData, lat: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="14.5995" />
                       </div>
                       <div>
                         <Label>Longitude</Label>
-                        <Input value={formData.lng} onChange={(e) => setFormData({...formData, lng: e.target.value})} className="bg-black border-gray-700" placeholder="120.9842" />
+                        <Input value={formData.lng} onChange={(e) => setFormData({...formData, lng: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="120.9842" />
                       </div>
                       <div>
                         <Label>Threat Severity</Label>
                         <Select value={formData.severity} onValueChange={(value) => setFormData({...formData, severity: value})}>
-                          <SelectTrigger className="bg-black border-gray-700">
+                          <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-gray-900 border-gray-700">
+                          <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                             <SelectItem value="low">Low</SelectItem>
                             <SelectItem value="medium">Medium</SelectItem>
                             <SelectItem value="high">High</SelectItem>
@@ -525,10 +528,10 @@ const OperationsManager = () => {
                         </Select>
                       </div>
                     </div>
-                    <div className="border border-gray-800 rounded-lg p-3 bg-black/30 space-y-2">
+                    <div className="border border-[rgba(201,162,39,0.12)] rounded-lg p-3 bg-[#050a0e]/30 space-y-2">
                       <div className="flex items-center justify-between gap-3 flex-wrap">
                         <Label className="text-tropic-gold">Campaign Map Placement Preview</Label>
-                        <span className="text-[11px] text-gray-500">Click map to set coordinates or enter lat/lng manually.</span>
+                        <span className="text-[11px] text-[#4a6070]">Click map to set coordinates or enter lat/lng manually.</span>
                       </div>
                       <ThreatMap
                         markers={previewMarkers}
@@ -537,25 +540,25 @@ const OperationsManager = () => {
                         height="220px"
                       />
                       {hasPreviewCoords ? (
-                        <p className="text-[11px] text-gray-500">Preview marker: {previewLat.toFixed(6)}, {previewLng.toFixed(6)}</p>
+                        <p className="text-[11px] text-[#4a6070]">Preview marker: {previewLat.toFixed(6)}, {previewLng.toFixed(6)}</p>
                       ) : (
-                        <p className="text-[11px] text-gray-600">No valid coordinates yet. Click the map to place a marker.</p>
+                        <p className="text-[11px] text-[#4a6070]">No valid coordinates yet. Click the map to place a marker.</p>
                       )}
                     </div>
                   </FormSection>
 
                   {/* ── Settings ──────────────────────────────────────── */}
-                  <label className="flex items-center gap-2 text-sm text-gray-300">
+                  <label className="flex items-center gap-2 text-sm text-[#8a9aa8]">
                     <input type="checkbox" checked={formData.is_public_recruiting} onChange={(e) => setFormData({...formData, is_public_recruiting: e.target.checked})} />
                     Allow recruiting/public map visibility for this operation
                   </label>
                   
-                  <div className="flex justify-end space-x-3 pt-4 sticky bottom-0 bg-gray-900 pb-1">
+                  <div className="flex justify-end space-x-3 pt-4 sticky bottom-0 bg-[#0c1117] pb-1">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setIsDialogOpen(false)}
-                      className="border-gray-700"
+                      className="border-[rgba(201,162,39,0.15)]"
                     >
                       Cancel
                     </Button>
@@ -567,13 +570,14 @@ const OperationsManager = () => {
               </ScrollArea>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {loading ? (
           <div className="text-center py-12">Loading operations...</div>
         ) : operations.length === 0 ? (
-          <Card className="bg-gray-900 border-gray-800">
-            <CardContent className="py-12 text-center text-gray-400">
+          <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
+            <CardContent className="py-12 text-center text-[#8a9aa8]">
               No operations yet. Create your first operation!
             </CardContent>
           </Card>
@@ -587,7 +591,7 @@ const OperationsManager = () => {
                 : (op.rsvps?.filter(r => r.status === 'attending').length || 0);
               const isExpanded = expandedOp === op.id;
               return (
-                <Card key={op.id} className="bg-gray-900 border-gray-800" data-testid={`op-card-${op.id}`}>
+                <Card key={op.id} className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]" data-testid={`op-card-${op.id}`}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -595,34 +599,34 @@ const OperationsManager = () => {
                           <span className={`${getTypeColor(op.operation_type)} px-3 py-1 rounded text-xs font-bold uppercase`}>
                             {op.operation_type}
                           </span>
-                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${op.activity_state === 'ongoing' ? 'bg-tropic-red/20 text-tropic-red border border-tropic-red/40' : op.activity_state === 'completed' ? 'bg-green-700/20 text-green-400 border border-green-700/40' : 'bg-gray-700/40 text-gray-300 border border-gray-700/40'}`}>
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${op.activity_state === 'ongoing' ? 'bg-tropic-red/20 text-tropic-red border border-tropic-red/40' : op.activity_state === 'completed' ? 'bg-green-700/20 text-green-400 border border-green-700/40' : 'bg-[#111a24]/40 text-[#8a9aa8] border border-[rgba(201,162,39,0.06)]'}`}>
                             {op.activity_state || 'planned'}
                           </span>
                           {isDiscordSynced ? (
-                            <span className="text-sm text-gray-400">
+                            <span className="text-sm text-[#8a9aa8]">
                               <Users className="inline w-4 h-4 mr-1" />
                               {attendingCount} accepted
-                              <span className="text-gray-600 ml-1">({(op.attendees || []).length} total)</span>
+                              <span className="text-[#4a6070] ml-1">({(op.attendees || []).length} total)</span>
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-400">
+                            <span className="text-sm text-[#8a9aa8]">
                               <Users className="inline w-4 h-4 mr-1" />
                               {attendingCount}{op.max_participants ? `/${op.max_participants}` : ''} attending
-                              {rsvpCount > attendingCount && <span className="text-gray-600"> ({rsvpCount} total RSVPs)</span>}
+                              {rsvpCount > attendingCount && <span className="text-[#4a6070]"> ({rsvpCount} total RSVPs)</span>}
                             </span>
                           )}
                           {isDiscordSynced && (
                             <span className="text-[10px] text-blue-400 bg-blue-900/30 border border-blue-700/40 px-2 py-0.5 rounded">DISCORD</span>
                           )}
                         </div>
-                        <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                        <CardTitle className="text-2xl" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                           {op.title}
                         </CardTitle>
-                        <p className="text-gray-400 mt-2 whitespace-pre-wrap line-clamp-2">{op.description}</p>
+                        <p className="text-[#8a9aa8] mt-2 whitespace-pre-wrap line-clamp-2">{op.description}</p>
                         {(op.theater || op.region_label || op.grid_ref) && (
-                          <p className="text-xs text-gray-500 mt-2">{op.theater || 'Theater'}{op.region_label ? ` • ${op.region_label}` : ''}{op.grid_ref ? ` • Grid ${op.grid_ref}` : ''}</p>
+                          <p className="text-xs text-[#4a6070] mt-2">{op.theater || 'Theater'}{op.region_label ? ` • ${op.region_label}` : ''}{op.grid_ref ? ` • Grid ${op.grid_ref}` : ''}</p>
                         )}
-                        <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
+                        <div className="flex items-center space-x-4 mt-3 text-sm text-[#4a6070]">
                           <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" />{op.date}</span>
                           <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{op.time}</span>
                         </div>
@@ -655,7 +659,7 @@ const OperationsManager = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => setExpandedOp(isExpanded ? null : op.id)}
-                          className={`border-gray-700 ${isExpanded ? 'bg-tropic-gold/10 text-tropic-gold border-tropic-gold/40' : ''}`}
+                          className={`border-[rgba(201,162,39,0.15)] ${isExpanded ? 'bg-tropic-gold/10 text-tropic-gold border-tropic-gold/40' : ''}`}
                           data-testid={`toggle-roster-${op.id}`}
                         >
                           <Users className="w-4 h-4 mr-1" />
@@ -665,7 +669,7 @@ const OperationsManager = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleEdit(op)}
-                          className="border-gray-700"
+                          className="border-[rgba(201,162,39,0.15)]"
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -681,7 +685,7 @@ const OperationsManager = () => {
                     </div>
                   </CardHeader>
                   {isExpanded && (
-                    <CardContent className="border-t border-gray-800 pt-4">
+                    <CardContent className="border-t border-[rgba(201,162,39,0.12)] pt-4">
                       <RosterPanel operationId={op.id} />
                     </CardContent>
                   )}

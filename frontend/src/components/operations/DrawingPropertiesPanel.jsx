@@ -37,8 +37,8 @@ export default function DrawingPropertiesPanel({
 }) {
   if (!drawing) {
     return (
-      <div className="p-4 text-center text-gray-600 text-sm">
-        <Pencil className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+      <div className="p-4 text-center text-[#4a6070] text-sm">
+        <Pencil className="w-8 h-8 mx-auto mb-2 text-[#4a6070]" />
         Select a drawing to edit its properties.
       </div>
     );
@@ -57,46 +57,46 @@ export default function DrawingPropertiesPanel({
 
       {/* Label */}
       <div>
-        <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+        <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
           Label
         </label>
         {isViewOnly ? (
-          <p className="text-sm text-gray-300">{drawing.label || '—'}</p>
+          <p className="text-sm text-[#8a9aa8]">{drawing.label || '—'}</p>
         ) : (
           <Input
             value={drawing.label || ''}
             onChange={(e) => onUpdate(drawing.id, { label: e.target.value })}
             placeholder="Drawing label…"
-            className="bg-gray-900 border-gray-700 text-sm"
+            className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
           />
         )}
       </div>
 
       {/* Notes */}
       <div>
-        <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+        <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
           Notes
         </label>
         {isViewOnly ? (
-          <p className="text-sm text-gray-300">{drawing.notes || '—'}</p>
+          <p className="text-sm text-[#8a9aa8]">{drawing.notes || '—'}</p>
         ) : (
           <Textarea
             value={drawing.notes || ''}
             onChange={(e) => onUpdate(drawing.id, { notes: e.target.value })}
             rows={2}
-            className="bg-gray-900 border-gray-700 text-sm"
+            className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
           />
         )}
       </div>
 
       {/* Style */}
       {!isViewOnly && (
-        <div className="pt-2 border-t border-gray-800 space-y-2">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">Style</p>
+        <div className="pt-2 border-t border-[rgba(201,162,39,0.12)] space-y-2">
+          <p className="text-[10px] text-[#4a6070] uppercase tracking-wider">Style</p>
 
           {/* Color */}
           <div>
-            <label className="text-[9px] text-gray-500 block mb-1">Stroke Color</label>
+            <label className="text-[9px] text-[#4a6070] block mb-1">Stroke Color</label>
             <div className="flex flex-wrap gap-1">
               {COLOR_PRESETS.map((c) => (
                 <button
@@ -104,7 +104,7 @@ export default function DrawingPropertiesPanel({
                   className={`w-5 h-5 rounded border transition ${
                     style.color === c
                       ? 'border-white scale-110'
-                      : 'border-gray-700 hover:border-gray-500'
+                      : 'border-[rgba(201,162,39,0.15)] hover:border-[rgba(201,162,39,0.3)]'
                   }`}
                   style={{ backgroundColor: c }}
                   onClick={() =>
@@ -117,7 +117,7 @@ export default function DrawingPropertiesPanel({
 
           {/* Stroke Width */}
           <div>
-            <label className="text-[9px] text-gray-500 block mb-1">
+            <label className="text-[9px] text-[#4a6070] block mb-1">
               Width: {style.stroke_width || 2}px
             </label>
             <input
@@ -137,7 +137,7 @@ export default function DrawingPropertiesPanel({
 
           {/* Opacity */}
           <div>
-            <label className="text-[9px] text-gray-500 block mb-1">
+            <label className="text-[9px] text-[#4a6070] block mb-1">
               Opacity: {Math.round((style.opacity || 1) * 100)}%
             </label>
             <input
@@ -158,8 +158,8 @@ export default function DrawingPropertiesPanel({
       )}
 
       {/* Coordinates info */}
-      <div className="pt-2 border-t border-gray-800">
-        <p className="text-[9px] text-gray-500 font-mono">
+      <div className="pt-2 border-t border-[rgba(201,162,39,0.12)]">
+        <p className="text-[9px] text-[#4a6070] font-mono">
           {drawing.coordinates?.length || 0} vertices
           {drawing.radius != null && ` • r=${drawing.radius.toFixed(4)}`}
         </p>

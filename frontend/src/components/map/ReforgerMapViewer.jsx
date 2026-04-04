@@ -323,18 +323,18 @@ export default function ReforgerMapViewer({
     <div className={`flex flex-col bg-[#060a14] ${className}`}>
       {/* Toolbar */}
       {showToolbar && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-[#0c1322] border-b border-gray-800 flex-wrap">
+        <div className="flex items-center gap-2 px-3 py-2 bg-[#0c1322] border-b border-[rgba(201,162,39,0.12)] flex-wrap">
           <Badge className="bg-[#C9A227]/20 text-[#C9A227] border border-[#C9A227]/40 text-[10px]">
             {name}
           </Badge>
 
-          <div className="w-px h-5 bg-gray-700 mx-1" />
+          <div className="w-px h-5 bg-[#111a24] mx-1" />
 
           {/* Tool buttons */}
           <Button
             size="sm"
             variant={activeTool === 'pan' ? 'default' : 'outline'}
-            className={`h-7 text-xs ${activeTool === 'pan' ? 'bg-[#C9A227] text-black' : 'border-gray-700 text-gray-400'}`}
+            className={`h-7 text-xs ${activeTool === 'pan' ? 'bg-[#C9A227] text-black' : 'border-[rgba(201,162,39,0.15)] text-[#8a9aa8]'}`}
             onClick={() => setActiveTool('pan')}
           >
             <Navigation className="w-3 h-3 mr-1" /> Pan
@@ -344,7 +344,7 @@ export default function ReforgerMapViewer({
             <Button
               size="sm"
               variant={activeTool === 'marker' ? 'default' : 'outline'}
-              className={`h-7 text-xs ${activeTool === 'marker' ? 'bg-[#C9A227] text-black' : 'border-gray-700 text-gray-400'}`}
+              className={`h-7 text-xs ${activeTool === 'marker' ? 'bg-[#C9A227] text-black' : 'border-[rgba(201,162,39,0.15)] text-[#8a9aa8]'}`}
               onClick={() => setActiveTool('marker')}
             >
               <MapPin className="w-3 h-3 mr-1" /> Marker
@@ -354,7 +354,7 @@ export default function ReforgerMapViewer({
           <Button
             size="sm"
             variant={activeTool === 'measure' ? 'default' : 'outline'}
-            className={`h-7 text-xs ${activeTool === 'measure' ? 'bg-[#C9A227] text-black' : 'border-gray-700 text-gray-400'}`}
+            className={`h-7 text-xs ${activeTool === 'measure' ? 'bg-[#C9A227] text-black' : 'border-[rgba(201,162,39,0.15)] text-[#8a9aa8]'}`}
             onClick={() => { setActiveTool('measure'); clearMeasure(); }}
           >
             <Ruler className="w-3 h-3 mr-1" /> Measure
@@ -363,12 +363,12 @@ export default function ReforgerMapViewer({
           {/* Marker options */}
           {activeTool === 'marker' && !readOnly && (
             <>
-              <div className="w-px h-5 bg-gray-700 mx-1" />
+              <div className="w-px h-5 bg-[#111a24] mx-1" />
               <div className="flex gap-1">
                 {MARKER_COLORS.map((c) => (
                   <button
                     key={c}
-                    className={`w-5 h-5 rounded-full border-2 transition ${markerColor === c ? 'border-white scale-110' : 'border-gray-600'}`}
+                    className={`w-5 h-5 rounded-full border-2 transition ${markerColor === c ? 'border-white scale-110' : 'border-[rgba(201,162,39,0.2)]'}`}
                     style={{ background: c }}
                     onClick={() => setMarkerColor(c)}
                   />
@@ -378,7 +378,7 @@ export default function ReforgerMapViewer({
                 value={markerLabel}
                 onChange={(e) => setMarkerLabel(e.target.value)}
                 placeholder="Label…"
-                className="bg-gray-900 border-gray-700 h-7 w-24 text-xs"
+                className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] h-7 w-24 text-xs"
               />
             </>
           )}
@@ -386,13 +386,13 @@ export default function ReforgerMapViewer({
           {/* Measure result */}
           {measureDistance != null && (
             <>
-              <div className="w-px h-5 bg-gray-700 mx-1" />
+              <div className="w-px h-5 bg-[#111a24] mx-1" />
               <Badge className="bg-yellow-900/40 text-yellow-400 border border-yellow-700/40 text-xs font-mono">
                 {measureDistance >= 1000
                   ? `${(measureDistance / 1000).toFixed(2)} km`
                   : `${Math.round(measureDistance)} m`}
               </Badge>
-              <button onClick={clearMeasure} className="text-gray-500 hover:text-white">
+              <button onClick={clearMeasure} className="text-[#4a6070] hover:text-white">
                 <X className="w-3 h-3" />
               </button>
             </>
@@ -420,11 +420,11 @@ export default function ReforgerMapViewer({
 
         {/* Coordinate readout */}
         {cursorCoords && (
-          <div className="absolute bottom-3 left-3 z-[1000] bg-black/80 border border-gray-700 rounded px-2 py-1 text-[11px] font-mono text-gray-300 pointer-events-none">
+          <div className="absolute bottom-3 left-3 z-[1000] bg-[#050a0e]/80 border border-[rgba(201,162,39,0.15)] rounded px-2 py-1 text-[11px] font-mono text-[#8a9aa8] pointer-events-none">
             <Crosshair className="w-3 h-3 inline mr-1 text-[#C9A227]" />
             X: {cursorCoords.x} | Y: {cursorCoords.y}
             {cursorCoords.x != null && (
-              <span className="ml-2 text-gray-500">
+              <span className="ml-2 text-[#4a6070]">
                 Grid {String(Math.floor(cursorCoords.x / (gridSize || 1000))).padStart(2, '0')}
                 {String(Math.floor(cursorCoords.y / (gridSize || 1000))).padStart(2, '0')}
               </span>
@@ -434,18 +434,18 @@ export default function ReforgerMapViewer({
 
         {/* Marker list overlay */}
         {markers.length > 0 && (
-          <div className="absolute top-3 right-3 z-[1000] bg-black/80 border border-gray-700 rounded max-h-48 overflow-y-auto w-48">
-            <div className="px-2 py-1 border-b border-gray-700 text-[10px] text-gray-500 uppercase tracking-wider">
+          <div className="absolute top-3 right-3 z-[1000] bg-[#050a0e]/80 border border-[rgba(201,162,39,0.15)] rounded max-h-48 overflow-y-auto w-48">
+            <div className="px-2 py-1 border-b border-[rgba(201,162,39,0.15)] text-[10px] text-[#4a6070] uppercase tracking-wider">
               Markers ({markers.length})
             </div>
             {markers.map((m) => {
               const gx = Math.round(m.lng);
               const gy = Math.round(yMax - m.lat);
               return (
-                <div key={m.id} className="flex items-center gap-2 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800/50">
+                <div key={m.id} className="flex items-center gap-2 px-2 py-1 text-xs text-[#8a9aa8] hover:bg-[#111a24]/50">
                   <span className="w-3 h-3 rounded-full shrink-0" style={{ background: m.color }} />
                   <span className="truncate flex-1">{m.label}</span>
-                  <span className="text-gray-500 font-mono text-[10px]">{gx},{gy}</span>
+                  <span className="text-[#4a6070] font-mono text-[10px]">{gx},{gy}</span>
                   {!readOnly && (
                     <button onClick={() => removeMarker(m.id)} className="text-red-500 hover:text-red-300">
                       <X className="w-3 h-3" />

@@ -121,7 +121,7 @@ function TriggerExecModule() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+      <h2 className="text-sm font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
         TRIGGER / EXEC
       </h2>
 
@@ -131,18 +131,18 @@ function TriggerExecModule() {
           const Icon = task.icon;
           const isRunning = executing === task.id;
           return (
-            <Card key={task.id} className={`${task.border} bg-black/60 hover:border-tropic-gold-dark/30 transition-colors`}>
+            <Card key={task.id} className={`${task.border} bg-[#050a0e]/60 hover:border-tropic-gold-dark/30 transition-colors`}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg border ${task.border} bg-black/40`}>
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg border ${task.border} bg-[#050a0e]/40`}>
                     <Icon className={`h-4 w-4 ${task.color}`} />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-200">{task.label}</div>
-                    <div className="mt-0.5 text-[10px] text-gray-500">{task.desc}</div>
+                    <div className="text-sm font-medium text-[#d0d8e0]">{task.label}</div>
+                    <div className="mt-0.5 text-[10px] text-[#4a6070]">{task.desc}</div>
                   </div>
                 </div>
-                <Button size="sm" className="mt-3 w-full h-7 bg-zinc-800 text-xs text-gray-300 hover:bg-zinc-700"
+                <Button size="sm" className="mt-3 w-full h-7 bg-zinc-800 text-xs text-[#8a9aa8] hover:bg-zinc-700"
                   disabled={isRunning || !canManage}
                   onClick={() => task.confirm ? setConfirmTask(task) : executeTask(task)}>
                   {isRunning ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Zap className="mr-1 h-3 w-3" />}
@@ -156,17 +156,17 @@ function TriggerExecModule() {
 
       {/* Execution results */}
       {results.length > 0 && (
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">EXECUTION LOG</CardTitle>
+            <CardTitle className="text-xs font-semibold tracking-wider text-[#8a9aa8]">EXECUTION LOG</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5 max-h-60 overflow-y-auto">
             {results.map((r, i) => (
               <div key={i} className="flex items-center gap-2 text-xs">
                 {r.success ? <CheckCircle className="h-3.5 w-3.5 text-green-400" /> : <AlertTriangle className="h-3.5 w-3.5 text-red-400" />}
-                <span className="text-gray-300">{r.task}</span>
-                <span className="flex-1 text-gray-500">{r.message}</span>
-                <span className="text-[10px] text-gray-600">{r.ts.toLocaleTimeString()}</span>
+                <span className="text-[#8a9aa8]">{r.task}</span>
+                <span className="flex-1 text-[#4a6070]">{r.message}</span>
+                <span className="text-[10px] text-[#4a6070]">{r.ts.toLocaleTimeString()}</span>
               </div>
             ))}
           </CardContent>
@@ -179,12 +179,12 @@ function TriggerExecModule() {
           <DialogHeader>
             <DialogTitle className="text-amber-400">Confirm Action</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-[#8a9aa8]">
             Are you sure you want to execute <strong className="text-white">{confirmTask?.label}</strong>?
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" size="sm" onClick={() => setConfirmTask(null)}
-              className="border-zinc-700 text-gray-400">Cancel</Button>
+              className="border-zinc-700 text-[#8a9aa8]">Cancel</Button>
             <Button size="sm" onClick={() => executeTask(confirmTask)}
               className="bg-amber-600 text-white hover:bg-amber-700">Execute</Button>
           </div>

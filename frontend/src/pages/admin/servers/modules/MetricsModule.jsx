@@ -91,12 +91,12 @@ function formatTick(timestamp, period) {
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded border border-zinc-800 bg-black/95 px-3 py-2 text-xs shadow-xl">
-      <div className="mb-2 text-gray-400">{label}</div>
+    <div className="rounded border border-zinc-800 bg-[#050a0e]/95 px-3 py-2 text-xs shadow-xl">
+      <div className="mb-2 text-[#8a9aa8]">{label}</div>
       {payload.map((entry) => (
         <div key={entry.dataKey} className="flex items-center justify-between gap-4">
           <span style={{ color: entry.color }}>{entry.name}</span>
-          <span className="text-gray-200">
+          <span className="text-[#d0d8e0]">
             {entry.value == null ? 'N/A' : entry.value}
           </span>
         </div>
@@ -126,13 +126,13 @@ function getPaddedDomain(values, { floor = 0, minimumSpan = 1 } = {}) {
 
 function ChartShell({ title, subtitle, icon: Icon, children }) {
   return (
-    <Card className="border-zinc-800 bg-black/60">
+    <Card className="border-zinc-800 bg-[#050a0e]/60">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-[#8a9aa8]">
           <Icon className="h-4 w-4 text-tropic-gold" />
           {title}
         </CardTitle>
-        {subtitle ? <p className="text-xs text-gray-600">{subtitle}</p> : null}
+        {subtitle ? <p className="text-xs text-[#4a6070]">{subtitle}</p> : null}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -141,8 +141,8 @@ function ChartShell({ title, subtitle, icon: Icon, children }) {
 
 function EmptyChartState({ loading }) {
   return (
-    <div className="flex h-[280px] flex-col items-center justify-center text-gray-600">
-      {loading ? <Loader2 className="mb-3 h-6 w-6 animate-spin text-tropic-gold" /> : <BarChart3 className="mb-3 h-8 w-8 text-gray-700" />}
+    <div className="flex h-[280px] flex-col items-center justify-center text-[#4a6070]">
+      {loading ? <Loader2 className="mb-3 h-6 w-6 animate-spin text-tropic-gold" /> : <BarChart3 className="mb-3 h-8 w-8 text-[#4a6070]" />}
       <p className="text-sm">{loading ? 'Loading metrics...' : 'No metrics available yet'}</p>
       <p className="mt-1 text-xs">Metrics are collected while the server is running.</p>
     </div>
@@ -151,8 +151,8 @@ function EmptyChartState({ loading }) {
 
 function SparseChartState({ label }) {
   return (
-    <div className="flex h-[280px] flex-col items-center justify-center text-gray-600">
-      <BarChart3 className="mb-3 h-8 w-8 text-gray-700" />
+    <div className="flex h-[280px] flex-col items-center justify-center text-[#4a6070]">
+      <BarChart3 className="mb-3 h-8 w-8 text-[#4a6070]" />
       <p className="text-sm">More telemetry is needed for {label.toLowerCase()}.</p>
       <p className="mt-1 text-xs">The summary cards show the current sample, but the chart waits for a usable series.</p>
     </div>
@@ -311,7 +311,7 @@ function MetricsModule() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <h2 className="text-sm font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
           PERFORMANCE METRICS
         </h2>
         <div className="flex items-center gap-2">
@@ -324,13 +324,13 @@ function MetricsModule() {
               className={`h-7 text-xs ${
                 period === option.value
                   ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light'
-                  : 'border-zinc-800 text-gray-400 hover:text-white'
+                  : 'border-zinc-800 text-[#8a9aa8] hover:text-white'
               }`}
             >
               {option.label}
             </Button>
           ))}
-          <Button size="sm" variant="outline" onClick={fetchMetrics} className="h-7 border-zinc-800 text-xs text-gray-400">
+          <Button size="sm" variant="outline" onClick={fetchMetrics} className="h-7 border-zinc-800 text-xs text-[#8a9aa8]">
             <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
@@ -343,13 +343,13 @@ function MetricsModule() {
             <Card key={card.label} className={`${card.border} ${card.bg}`}>
               <CardContent className="p-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500">{card.label}</span>
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-[#4a6070]">{card.label}</span>
                   <Icon className={`h-3.5 w-3.5 ${card.color}`} />
                 </div>
-                <div className="mt-1.5 text-xl font-bold text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                <div className="mt-1.5 text-xl font-bold text-white" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                   {loading ? <div className="h-6 w-12 animate-pulse rounded bg-zinc-800" /> : card.value}
                 </div>
-                {card.avg ? <div className="mt-0.5 text-[10px] text-gray-600">{card.avg}</div> : null}
+                {card.avg ? <div className="mt-0.5 text-[10px] text-[#4a6070]">{card.avg}</div> : null}
               </CardContent>
             </Card>
           );
@@ -467,7 +467,7 @@ function MetricsModule() {
         </ChartShell>
       </div>
 
-      <div className="flex items-center justify-end text-xs text-gray-600">
+      <div className="flex items-center justify-end text-xs text-[#4a6070]">
         {chartData.length} data points - {PERIODS.find((option) => option.value === period)?.label || period}
       </div>
     </div>

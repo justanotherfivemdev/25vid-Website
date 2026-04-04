@@ -17,7 +17,7 @@ function ServerOfflinePanel({
             <AlertTriangle className="h-4 w-4" />
             {title}
           </div>
-          <p className="text-xs text-gray-300">{description}</p>
+          <p className="text-xs text-[#8a9aa8]">{description}</p>
         </div>
         {onStart && (
           <Button

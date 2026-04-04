@@ -36,7 +36,7 @@ const MediaFrame = ({ src, alt }) => {
   }
   if (kind === 'audio') {
     return (
-      <div className="w-full h-full bg-black/70 p-3 flex items-center justify-center">
+      <div className="w-full h-full bg-[#050a0e]/70 p-3 flex items-center justify-center">
         <audio src={src} controls className="w-full" />
       </div>
     );
@@ -113,23 +113,23 @@ const GalleryHub = () => {
   };
 
   return (
-    <div className={inLayout ? '' : 'min-h-screen bg-black text-white'}>
+    <div className={inLayout ? '' : 'min-h-screen bg-[#050a0e] text-white'}>
       {!inLayout && (
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="member-gallery-nav">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#050a0e]/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="member-gallery-nav">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
-            <h1 className="text-xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>25TH ID GALLERY</h1>
+            <h1 className="text-xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: "'Share Tech', sans-serif" }}>25TH ID GALLERY</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-gray-700"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
-            <Link to="/roster"><Button size="sm" variant="outline" className="border-gray-700"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
-            <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><LayoutDashboard className="w-4 h-4 mr-1" />Hub</Button></Link>
+            <Link to="/hub/profile"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><User className="w-4 h-4 mr-1" />Profile</Button></Link>
+            <Link to="/roster"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><Users className="w-4 h-4 mr-1" />Roster</Button></Link>
+            <Link to="/hub"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><LayoutDashboard className="w-4 h-4 mr-1" />Hub</Button></Link>
             {isStaff(user?.role) && (
               <Link to="/admin"><Button size="sm" variant="outline" className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Shield className="w-4 h-4 mr-1" />Admin</Button></Link>
             )}
-            <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4 mr-1" />Home</Button></Link>
-            <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700" data-testid="member-gallery-logout"><LogOut className="w-4 h-4" /></Button>
+            <Link to="/"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><Home className="w-4 h-4 mr-1" />Home</Button></Link>
+            <Button size="sm" variant="outline" onClick={handleLogout} className="border-[rgba(201,162,39,0.15)]" data-testid="member-gallery-logout"><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>
       </nav>
@@ -137,25 +137,25 @@ const GalleryHub = () => {
 
       <div className={`${inLayout ? 'pt-4' : 'pt-24'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-7xl space-y-6">
-          <Card className="bg-gradient-to-r from-tropic-red/20 to-gray-900 border border-tropic-red/30" data-testid="gallery-hero-card">
+          <Card className="bg-gradient-to-r from-tropic-red/20 to-[#0c1117] border border-tropic-red/30" data-testid="gallery-hero-card">
             <CardHeader>
-              <CardTitle className="text-3xl text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>UNIT MEDIA FEED</CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardTitle className="text-3xl text-tropic-gold" style={{ fontFamily: "'Share Tech', sans-serif" }}>UNIT MEDIA FEED</CardTitle>
+              <CardDescription className="text-[#8a9aa8]">
                 A combined stream of Gallery Manager uploads and Command Center showcase images for all logged-in personnel.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-300">
+              <div className="flex items-center gap-2 text-sm text-[#8a9aa8]">
                 <ImageIcon className="w-4 h-4 text-tropic-gold" />
                 <span>{allImages.length} media assets available</span>
               </div>
               <div className="w-full md:w-64">
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="bg-black border-gray-700" data-testid="gallery-filter-select">
-                    <Filter className="w-4 h-4 mr-2 text-gray-400" />
+                  <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" data-testid="gallery-filter-select">
+                    <Filter className="w-4 h-4 mr-2 text-[#8a9aa8]" />
                     <SelectValue placeholder="Filter by category" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-white">
                     {categories.map((cat) => (
                       <SelectItem key={cat} value={cat} className="capitalize">{cat}</SelectItem>
                     ))}
@@ -166,23 +166,23 @@ const GalleryHub = () => {
           </Card>
 
           {loading ? (
-            <div className="text-center text-gray-400 py-16">Loading gallery...</div>
+            <div className="text-center text-[#8a9aa8] py-16">Loading gallery...</div>
           ) : filteredImages.length === 0 ? (
-            <Card className="bg-gray-900 border-gray-800">
-              <CardContent className="py-12 text-center text-gray-500">No media assets are available for this filter yet.</CardContent>
+            <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
+              <CardContent className="py-12 text-center text-[#4a6070]">No media assets are available for this filter yet.</CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" data-testid="member-gallery-grid">
               {filteredImages.map((img) => (
-                <Card key={img.id} className="bg-gray-900 border-gray-800 overflow-hidden group hover:border-tropic-gold/40 transition-colors">
+                <Card key={img.id} className="bg-[#0c1117] border-[rgba(201,162,39,0.12)] overflow-hidden group hover:border-tropic-gold/40 transition-colors">
                   <div className="aspect-square overflow-hidden">
                     <MediaFrame src={resolveImg(img.image_url)} alt={img.title || 'Gallery media'} />
                   </div>
                   <CardHeader className="p-3 space-y-2">
                     <CardTitle className="text-sm line-clamp-1">{img.title || 'Untitled'}</CardTitle>
                     <div className="flex items-center justify-between gap-2">
-                      <Badge variant="outline" className="text-[10px] border-gray-700 text-gray-300 capitalize">{img.category || 'general'}</Badge>
-                      {img.uploaded_by && <span className="text-[10px] text-gray-500 line-clamp-1">{img.uploaded_by}</span>}
+                      <Badge variant="outline" className="text-[10px] border-[rgba(201,162,39,0.15)] text-[#8a9aa8] capitalize">{img.category || 'general'}</Badge>
+                      {img.uploaded_by && <span className="text-[10px] text-[#4a6070] line-clamp-1">{img.uploaded_by}</span>}
                     </div>
                   </CardHeader>
                 </Card>

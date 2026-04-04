@@ -53,7 +53,7 @@ export default function ExportControls({
 
     // Title
     ctx.fillStyle = '#C9A227';
-    ctx.font = 'bold 24px Rajdhani, sans-serif';
+    ctx.font = 'bold 24px Share Tech, sans-serif';
     ctx.fillText(planTitle, 20, 35);
 
     // Metadata
@@ -192,7 +192,7 @@ export default function ExportControls({
       <Button
         size="sm"
         variant="outline"
-        className="border-gray-600 text-gray-300 hover:border-[#C9A227] hover:text-[#C9A227]"
+        className="border-[rgba(201,162,39,0.2)] text-[#8a9aa8] hover:border-[#C9A227] hover:text-[#C9A227]"
         onClick={() => setShowDialog(true)}
         disabled={exporting}
       >
@@ -201,18 +201,18 @@ export default function ExportControls({
       </Button>
 
       {showDialog && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <Card className="w-full max-w-sm bg-[#0c1322] border-gray-800">
+        <div className="fixed inset-0 z-50 bg-[#050a0e]/70 flex items-center justify-center p-4">
+          <Card className="w-full max-w-sm bg-[#0c1322] border-[rgba(201,162,39,0.12)]">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[#C9A227]">Export Plan</CardTitle>
                 <button onClick={() => setShowDialog(false)}>
-                  <X className="w-5 h-5 text-gray-400 hover:text-white" />
+                  <X className="w-5 h-5 text-[#8a9aa8] hover:text-white" />
                 </button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-[#8a9aa8]">
                 Export "{planTitle}" as an image or PDF document.
               </p>
 
@@ -242,7 +242,7 @@ export default function ExportControls({
                 Export as PDF
               </Button>
 
-              <p className="text-[10px] text-gray-600 text-center">
+              <p className="text-[10px] text-[#4a6070] text-center">
                 Export includes map, all symbols, title, and metadata.
               </p>
             </CardContent>

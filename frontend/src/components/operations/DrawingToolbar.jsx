@@ -73,7 +73,7 @@ export default function DrawingToolbar({
       className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-left text-xs transition ${
         isActive(tool.id)
           ? 'bg-[#C9A227]/20 text-[#C9A227] border border-[#C9A227]/40'
-          : 'text-gray-400 hover:bg-gray-800/60 hover:text-gray-200'
+          : 'text-[#8a9aa8] hover:bg-[#111a24]/60 hover:text-[#d0d8e0]'
       }`}
       title={tool.label}
     >
@@ -85,7 +85,7 @@ export default function DrawingToolbar({
   const renderSection = (title, tools, groupId) => (
     <div key={groupId}>
       <button
-        className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1 w-full text-left hover:text-gray-300 transition"
+        className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1 w-full text-left hover:text-[#8a9aa8] transition"
         onClick={() => setExpandedGroup(expandedGroup === groupId ? '' : groupId)}
       >
         {title}
@@ -111,14 +111,14 @@ export default function DrawingToolbar({
 
       {/* Style Controls */}
       {activeTool && activeTool !== 'select' && (
-        <div className="pt-2 border-t border-gray-800 space-y-2">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">
+        <div className="pt-2 border-t border-[rgba(201,162,39,0.12)] space-y-2">
+          <p className="text-[10px] text-[#4a6070] uppercase tracking-wider">
             Style
           </p>
 
           {/* Color */}
           <div>
-            <label className="text-[9px] text-gray-500 block mb-1">Color</label>
+            <label className="text-[9px] text-[#4a6070] block mb-1">Color</label>
             <div className="flex flex-wrap gap-1">
               {COLOR_PRESETS.map((c) => (
                 <button
@@ -126,7 +126,7 @@ export default function DrawingToolbar({
                   className={`w-5 h-5 rounded border transition ${
                     drawStyle.color === c
                       ? 'border-white scale-110'
-                      : 'border-gray-700 hover:border-gray-500'
+                      : 'border-[rgba(201,162,39,0.15)] hover:border-[rgba(201,162,39,0.3)]'
                   }`}
                   style={{ backgroundColor: c }}
                   onClick={() => onStyleChange({ ...drawStyle, color: c })}
@@ -137,7 +137,7 @@ export default function DrawingToolbar({
 
           {/* Stroke Width */}
           <div>
-            <label className="text-[9px] text-gray-500 block mb-1">
+            <label className="text-[9px] text-[#4a6070] block mb-1">
               Width: {drawStyle.stroke_width}px
             </label>
             <input
@@ -155,7 +155,7 @@ export default function DrawingToolbar({
 
           {/* Opacity */}
           <div>
-            <label className="text-[9px] text-gray-500 block mb-1">
+            <label className="text-[9px] text-[#4a6070] block mb-1">
               Opacity: {Math.round(drawStyle.opacity * 100)}%
             </label>
             <input

@@ -315,7 +315,7 @@ export default function OperationsPlanView() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh] text-gray-400">
+      <div className="flex items-center justify-center h-[60vh] text-[#8a9aa8]">
         Loading plan…
       </div>
     );
@@ -323,10 +323,10 @@ export default function OperationsPlanView() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4 text-gray-400">
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4 text-[#8a9aa8]">
         <p>{error}</p>
         <Link to="/hub">
-          <Button variant="outline" className="border-gray-700">
+          <Button variant="outline" className="border-[rgba(201,162,39,0.15)]">
             Back to Hub
           </Button>
         </Link>
@@ -340,12 +340,12 @@ export default function OperationsPlanView() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link to="/hub" className="text-gray-400 hover:text-[#C9A227]">
+        <Link to="/hub" className="text-[#8a9aa8] hover:text-[#C9A227]">
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <h1
           className="text-xl font-bold tracking-wider text-[#C9A227] uppercase"
-          style={{ fontFamily: 'Rajdhani, sans-serif' }}
+          style={{ fontFamily: "'Share Tech', sans-serif" }}
         >
           {plan.title}
         </h1>
@@ -353,7 +353,7 @@ export default function OperationsPlanView() {
           className={
             plan.is_published
               ? 'bg-green-900/40 text-green-400 border border-green-700'
-              : 'bg-gray-800 text-gray-500 border border-gray-700'
+              : 'bg-[#111a24] text-[#4a6070] border border-[rgba(201,162,39,0.15)]'
           }
         >
           {plan.is_published ? 'Published' : 'Draft'}
@@ -370,7 +370,7 @@ export default function OperationsPlanView() {
         <Button
           size="sm"
           variant="outline"
-          className={`${replayMode ? 'border-[#C9A227] text-[#C9A227] bg-[#C9A227]/10' : 'border-gray-600 text-gray-400'}`}
+          className={`${replayMode ? 'border-[#C9A227] text-[#C9A227] bg-[#C9A227]/10' : 'border-[rgba(201,162,39,0.2)] text-[#8a9aa8]'}`}
           onClick={() => setReplayMode(!replayMode)}
         >
           <Play className="w-4 h-4 mr-1" /> {replayMode ? 'Exit Replay' : 'Replay'}
@@ -399,7 +399,7 @@ export default function OperationsPlanView() {
       </div>
 
       {/* Metadata */}
-      <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+      <div className="flex items-center gap-4 text-xs text-[#4a6070] flex-wrap">
         <span className="flex items-center gap-1">
           <User className="w-3 h-3" /> {plan.created_by_username || 'Unknown'}
         </span>
@@ -418,21 +418,21 @@ export default function OperationsPlanView() {
       </div>
 
       {plan.description && (
-        <p className="text-sm text-gray-400 max-w-prose">{plan.description}</p>
+        <p className="text-sm text-[#8a9aa8] max-w-prose">{plan.description}</p>
       )}
 
       {/* Map + Unit Info */}
       <div className="flex gap-4 flex-col xl:flex-row">
         {/* Map */}
-        <div className="flex-1 relative bg-[#060a14] rounded border border-gray-800 overflow-hidden" style={{ minHeight: '400px' }}>
+        <div className="flex-1 relative bg-[#060a14] rounded border border-[rgba(201,162,39,0.12)] overflow-hidden" style={{ minHeight: '400px' }}>
           <div ref={mapContainerRef} className="absolute inset-0" />
         </div>
 
         {/* Selected unit panel */}
         <div className="w-full xl:w-72 shrink-0">
-          <Card className="bg-[#0c1322] border-gray-800">
+          <Card className="bg-[#0c1322] border-[rgba(201,162,39,0.12)]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-400 uppercase tracking-wider">
+              <CardTitle className="text-sm text-[#8a9aa8] uppercase tracking-wider">
                 {selectedUnit ? 'Unit Info' : 'Select a Unit'}
               </CardTitle>
             </CardHeader>
@@ -448,11 +448,11 @@ export default function OperationsPlanView() {
                     })()}
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase">Name</p>
-                    <p className="text-sm text-gray-200">{selectedUnit.name || '—'}</p>
+                    <p className="text-[10px] text-[#4a6070] uppercase">Name</p>
+                    <p className="text-sm text-[#d0d8e0]">{selectedUnit.name || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase">Affiliation</p>
+                    <p className="text-[10px] text-[#4a6070] uppercase">Affiliation</p>
                     <Badge
                       className="border"
                       style={{
@@ -465,25 +465,25 @@ export default function OperationsPlanView() {
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase">SIDC</p>
-                    <p className="text-xs text-gray-500 font-mono">{selectedUnit.symbol_code}</p>
+                    <p className="text-[10px] text-[#4a6070] uppercase">SIDC</p>
+                    <p className="text-xs text-[#4a6070] font-mono">{selectedUnit.symbol_code}</p>
                   </div>
                   {selectedUnit.notes && (
                     <div>
-                      <p className="text-[10px] text-gray-500 uppercase">Notes</p>
-                      <p className="text-sm text-gray-300">{selectedUnit.notes}</p>
+                      <p className="text-[10px] text-[#4a6070] uppercase">Notes</p>
+                      <p className="text-sm text-[#8a9aa8]">{selectedUnit.notes}</p>
                     </div>
                   )}
                   {(selectedUnit.location_name || selectedUnit.geo_lat != null || selectedUnit.geo_lng != null) && (
-                    <div className="pt-2 border-t border-gray-800">
-                      <p className="text-[10px] text-gray-500 uppercase mb-1">
+                    <div className="pt-2 border-t border-[rgba(201,162,39,0.12)]">
+                      <p className="text-[10px] text-[#4a6070] uppercase mb-1">
                         <Globe2 className="w-3 h-3 inline mr-1" />Geo Location
                       </p>
                       {selectedUnit.location_name && (
-                        <p className="text-sm text-gray-300">{selectedUnit.location_name}</p>
+                        <p className="text-sm text-[#8a9aa8]">{selectedUnit.location_name}</p>
                       )}
                       {(selectedUnit.geo_lat != null || selectedUnit.geo_lng != null) && (
-                        <p className="text-xs text-gray-500 font-mono mt-1">
+                        <p className="text-xs text-[#4a6070] font-mono mt-1">
                           {selectedUnit.geo_lat != null ? selectedUnit.geo_lat : '—'}, {selectedUnit.geo_lng != null ? selectedUnit.geo_lng : '—'}
                         </p>
                       )}
@@ -491,8 +491,8 @@ export default function OperationsPlanView() {
                   )}
                 </div>
               ) : (
-                <div className="text-center text-gray-600 py-4">
-                  <Crosshair className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+                <div className="text-center text-[#4a6070] py-4">
+                  <Crosshair className="w-8 h-8 mx-auto mb-2 text-[#4a6070]" />
                   <p className="text-sm">Click a unit on the map to view its details.</p>
                 </div>
               )}
@@ -500,9 +500,9 @@ export default function OperationsPlanView() {
           </Card>
 
           {/* Comms Channel */}
-          <Card className="bg-[#0c1322] border-gray-800">
+          <Card className="bg-[#0c1322] border-[rgba(201,162,39,0.12)]">
             <CardHeader className="pb-1">
-              <CardTitle className="text-sm text-gray-400 uppercase tracking-wider">
+              <CardTitle className="text-sm text-[#8a9aa8] uppercase tracking-wider">
                 Comms Channel
               </CardTitle>
             </CardHeader>
@@ -517,7 +517,7 @@ export default function OperationsPlanView() {
 
           {/* Threat map link */}
           {plan.threat_map_link && (
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5 text-xs text-[#4a6070]">
               <Globe2 className="w-3 h-3 text-[#C9A227]" />
               <span>Linked to threat map: {plan.threat_map_link}</span>
             </div>

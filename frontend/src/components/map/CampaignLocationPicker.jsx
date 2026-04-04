@@ -60,7 +60,7 @@ export default function CampaignLocationPicker({
   if (!MAPBOX_TOKEN) {
     return (
       <div
-        className="flex items-center justify-center bg-black border border-gray-800 rounded-lg text-gray-500 text-sm"
+        className="flex items-center justify-center bg-[#050a0e] border border-[rgba(201,162,39,0.12)] rounded-lg text-[#4a6070] text-sm"
         style={{ height }}
       >
         Map preview unavailable – REACT_APP_MAPBOX_TOKEN not set
@@ -72,7 +72,7 @@ export default function CampaignLocationPicker({
 
   return (
     <div
-      className="rounded-lg overflow-hidden border border-gray-800"
+      className="rounded-lg overflow-hidden border border-[rgba(201,162,39,0.12)]"
       style={{ height }}
       data-testid="campaign-location-picker"
     >

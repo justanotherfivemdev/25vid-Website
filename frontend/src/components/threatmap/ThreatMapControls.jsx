@@ -21,7 +21,7 @@ export default function ThreatMapControls() {
         className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
           expanded
             ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light shadow-tropic-gold/30'
-            : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+            : 'bg-[#050a0e]/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
         } backdrop-blur-md`}
         title={expanded ? 'Collapse controls' : 'Map controls'}
       >
@@ -35,7 +35,7 @@ export default function ThreatMapControls() {
             className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
               showClusters
                 ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light shadow-tropic-gold/30'
-                : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+                : 'bg-[#050a0e]/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
             } backdrop-blur-md`}
             title={showClusters ? 'Hide Event Markers' : 'Show Event Markers'}
           >
@@ -47,7 +47,7 @@ export default function ThreatMapControls() {
             className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
               showHeatmap
                 ? 'bg-tropic-red text-white hover:bg-tropic-red-light shadow-tropic-red/30'
-                : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+                : 'bg-[#050a0e]/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
             } backdrop-blur-md`}
             title={showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
           >
@@ -59,7 +59,7 @@ export default function ThreatMapControls() {
             className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
               showMilitaryBases
                 ? 'bg-tropic-gold-dark text-white hover:bg-tropic-gold shadow-tropic-gold-dark/30'
-                : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+                : 'bg-[#050a0e]/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
             } backdrop-blur-md`}
             title={showMilitaryBases ? `Hide Military Bases (${militaryBases.length})` : 'Show Military Bases'}
           >
@@ -73,7 +73,7 @@ export default function ThreatMapControls() {
               className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
                 showADSB
                   ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light shadow-tropic-gold/30'
-                  : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+                  : 'bg-[#050a0e]/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
               } backdrop-blur-md`}
               title={showADSB ? 'Hide Military Air Traffic' : 'Show Military Air Traffic'}
             >

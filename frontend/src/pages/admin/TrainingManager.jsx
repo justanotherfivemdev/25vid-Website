@@ -69,63 +69,70 @@ const TrainingManager = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="training-manager-title">TRAINING MANAGEMENT</h1>
-            <p className="text-gray-400 mt-2">Create and manage training programs</p>
+        {/* Hero banner */}
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Training Programs</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="training-manager-title">TRAINING MANAGEMENT</h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Create and manage training programs</p>
+            </div>
+            <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) resetForm(); }}>
+              <DialogTrigger asChild>
+                <Button className="tactical-button bg-[#c9a227] hover:bg-[#e8c547] text-[#050a0e] font-bold text-xs tracking-[0.15em]" style={{ fontFamily: "'Oswald', sans-serif" }} data-testid="new-training-btn"><Plus className="w-4 h-4 mr-2" />New Training</Button>
+              </DialogTrigger>
+              <DialogContent className="bg-[#0c1117] text-[#d0d8e0] border-[rgba(201,162,39,0.2)] max-w-2xl max-h-[90vh] overflow-y-auto rounded-none">
+                <DialogHeader>
+                  <DialogTitle className="text-[#e8c547] uppercase tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>{editing ? 'Edit Training' : 'Create Training Program'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Title</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" placeholder="e.g., Advanced CQB Training" data-testid="training-title-input" /></div>
+                  <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Description</Label><Textarea required rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" data-testid="training-desc-input" /></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Instructor</Label><Input required value={form.instructor} onChange={(e) => setForm({ ...form, instructor: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" placeholder="e.g., SGT Miller" data-testid="training-instructor-input" /></div>
+                    <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Duration</Label><Input required value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" placeholder="e.g., 2 hours" data-testid="training-duration-input" /></div>
+                  </div>
+                  <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Schedule</Label><Input required value={form.schedule} onChange={(e) => setForm({ ...form, schedule: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" placeholder="e.g., Every Saturday 1800 UTC" data-testid="training-schedule-input" /></div>
+                  <div className="border border-[rgba(201,162,39,0.3)] p-4 bg-[rgba(201,162,39,0.04)]">
+                    <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Training Image (Optional)" description="Shown on training card. Recommended: 800x450px landscape." previewClass="w-full h-32 object-cover" />
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8]">Cancel</Button>
+                    <button type="submit" className="tactical-button px-6 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] hover:border-[rgba(201,162,39,0.5)] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }} data-testid="training-submit-btn">{editing ? 'Update' : 'Create'}</button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
-          <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="new-training-btn"><Plus className="w-4 h-4 mr-2" />New Training</Button>
-            </DialogTrigger>
-            <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>{editing ? 'Edit Training' : 'Create Training Program'}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div><Label>Title</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Advanced CQB Training" data-testid="training-title-input" /></div>
-                <div><Label>Description</Label><Textarea required rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="bg-black border-gray-700" data-testid="training-desc-input" /></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><Label>Instructor</Label><Input required value={form.instructor} onChange={(e) => setForm({ ...form, instructor: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., SGT Miller" data-testid="training-instructor-input" /></div>
-                  <div><Label>Duration</Label><Input required value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., 2 hours" data-testid="training-duration-input" /></div>
-                </div>
-                <div><Label>Schedule</Label><Input required value={form.schedule} onChange={(e) => setForm({ ...form, schedule: e.target.value })} className="bg-black border-gray-700" placeholder="e.g., Every Saturday 1800 UTC" data-testid="training-schedule-input" /></div>
-                <div className="border border-tropic-gold/50 p-4 rounded-lg bg-tropic-gold/10">
-                  <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Training Image (Optional)" description="Shown on training card. Recommended: 800x450px landscape." previewClass="w-full h-32 object-cover" />
-                </div>
-                <div className="flex justify-end space-x-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
-                  <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="training-submit-btn">{editing ? 'Update' : 'Create'}</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
         </div>
 
-        {loading ? <div className="text-center py-12">Loading...</div> : items.length === 0 ? (
-          <Card className="bg-gray-900 border-gray-800"><CardContent className="py-12 text-center text-gray-400">No training programs. Create your first one!</CardContent></Card>
+        {loading ? (
+          <div className="text-center py-12 text-[#e8c547]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <span className="animate-pulse">■</span> Loading training programs...
+          </div>
+        ) : items.length === 0 ? (
+          <div className="border border-[rgba(201,162,39,0.12)] bg-[#0c1117] p-12 text-center text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>No training programs. Create your first one!</div>
         ) : (
           <div className="grid gap-4">
             {items.map((t) => (
-              <Card key={t.id} className="bg-gray-900 border-gray-800" data-testid={`training-item-${t.id}`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{t.title}</CardTitle>
-                      <p className="text-gray-400 mt-2 whitespace-pre-wrap">{t.description}</p>
-                      <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500">
-                        <span className="flex items-center"><User className="w-4 h-4 mr-1" />{t.instructor}</span>
-                        <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{t.duration}</span>
-                        <span>{t.schedule}</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2 ml-4">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(t)} className="border-gray-700"><Edit className="w-4 h-4" /></Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(t.id)} className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10"><Trash2 className="w-4 h-4" /></Button>
+              <div key={t.id} className="relative border border-[rgba(201,162,39,0.12)] bg-[#0c1117] shadow-xl p-5 hover:border-[rgba(201,162,39,0.3)] transition-colors" data-testid={`training-item-${t.id}`}>
+                <div className="corner-bracket" />
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-[#e8c547] uppercase tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>{t.title}</h3>
+                    <p className="text-[#8a9aa8] mt-2 whitespace-pre-wrap text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>{t.description}</p>
+                    <div className="flex flex-wrap gap-4 mt-3 text-sm text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span className="flex items-center"><User className="w-4 h-4 mr-1 text-[#e8c547]" />{t.instructor}</span>
+                      <span className="flex items-center"><Clock className="w-4 h-4 mr-1 text-[#e8c547]" />{t.duration}</span>
+                      <span>{t.schedule}</span>
                     </div>
                   </div>
-                </CardHeader>
-              </Card>
+                  <div className="flex space-x-2 ml-4">
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(t)} className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-[#e8c547] hover:border-[rgba(201,162,39,0.3)]"><Edit className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="outline" onClick={() => handleDelete(t.id)} className="border-[rgba(255,51,51,0.3)] text-[#ff3333] hover:bg-[rgba(255,51,51,0.08)]"><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         )}

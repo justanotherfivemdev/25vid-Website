@@ -235,18 +235,18 @@ function WatchersModule() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h2 className="text-sm font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             WATCHERS
           </h2>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-[#4a6070]">
             Essential Arma coverage is installed here for health, mod failures, BattlEye/RCON, admin actions, and performance drift.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={fetchData} className="h-7 border-zinc-800 text-xs text-gray-400">
+          <Button size="sm" variant="outline" onClick={fetchData} className="h-7 border-zinc-800 text-xs text-[#8a9aa8]">
             <RefreshCw className={`mr-1 h-3 w-3 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
-          <Button size="sm" variant="outline" onClick={restoreEssentials} className="h-7 border-zinc-800 text-xs text-gray-300">
+          <Button size="sm" variant="outline" onClick={restoreEssentials} className="h-7 border-zinc-800 text-xs text-[#8a9aa8]">
             <ShieldPlus className="mr-1 h-3 w-3" /> Restore Essentials
           </Button>
           <Button size="sm" onClick={() => setDialogOpen(true)} className="h-7 bg-tropic-gold text-xs text-black hover:bg-tropic-gold-light">
@@ -256,25 +256,25 @@ function WatchersModule() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardContent className="p-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Coverage</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#4a6070]">Coverage</div>
             <div className="mt-2 text-2xl font-semibold text-white">{watchers.length}</div>
-            <div className="mt-1 text-xs text-gray-500">{enabledWatchers} enabled, {systemManagedWatchers} essential</div>
+            <div className="mt-1 text-xs text-[#4a6070]">{enabledWatchers} enabled, {systemManagedWatchers} essential</div>
           </CardContent>
         </Card>
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardContent className="p-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Live Alerts</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#4a6070]">Live Alerts</div>
             <div className="mt-2 text-2xl font-semibold text-white">{activeDetections}</div>
-            <div className="mt-1 text-xs text-gray-500">{detections.length} detections on record</div>
+            <div className="mt-1 text-xs text-[#4a6070]">{detections.length} detections on record</div>
           </CardContent>
         </Card>
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardContent className="p-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Auto Cycle</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#4a6070]">Auto Cycle</div>
             <div className="mt-2 text-2xl font-semibold text-white">30s</div>
-            <div className="mt-1 text-xs text-gray-500">Watcher evaluation and UI refresh cadence</div>
+            <div className="mt-1 text-xs text-[#4a6070]">Watcher evaluation and UI refresh cadence</div>
           </CardContent>
         </Card>
       </div>
@@ -296,11 +296,11 @@ function WatchersModule() {
           <Loader2 className="h-5 w-5 animate-spin text-tropic-gold" />
         </div>
       ) : watchers.length === 0 ? (
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <ShieldCheck className="mb-2 h-8 w-8 text-gray-700" />
-            <p className="text-sm text-gray-500">No watchers configured</p>
-            <p className="mt-1 text-xs text-gray-600">Restore the essential coverage pack or add a custom watcher.</p>
+            <ShieldCheck className="mb-2 h-8 w-8 text-[#4a6070]" />
+            <p className="text-sm text-[#4a6070]">No watchers configured</p>
+            <p className="mt-1 text-xs text-[#4a6070]">Restore the essential coverage pack or add a custom watcher.</p>
           </CardContent>
         </Card>
       ) : (
@@ -308,20 +308,20 @@ function WatchersModule() {
           {watchers.map((watcher) => {
             const watcherDetections = detectionsByWatcher[watcher.id] || [];
             return (
-              <Card key={watcher.id} className={`border-zinc-800 bg-black/60 ${!watcher.enabled ? 'opacity-60' : ''}`}>
+              <Card key={watcher.id} className={`border-zinc-800 bg-[#050a0e]/60 ${!watcher.enabled ? 'opacity-60' : ''}`}>
                 <CardContent className="space-y-3 p-4">
                   <div className="flex items-start gap-3">
                     <div className="pt-0.5">{watcherIcon(watcher.type)}</div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-gray-200">{watcher.name}</span>
-                        <Badge variant="outline" className="border-zinc-700 text-[10px] text-gray-400">
+                        <span className="text-sm font-medium text-[#d0d8e0]">{watcher.name}</span>
+                        <Badge variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">
                           {watcher.type}
                         </Badge>
                         <Badge variant="outline" className={`text-[10px] ${severityTone(watcher.severity)}`}>
                           {watcher.severity}
                         </Badge>
-                        <Badge variant="outline" className="border-zinc-700 text-[10px] text-gray-400">
+                        <Badge variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">
                           {sourceCategoryLabel(watcher.source_category)}
                         </Badge>
                         {watcher.system_managed ? (
@@ -329,11 +329,11 @@ function WatchersModule() {
                             essential
                           </Badge>
                         ) : null}
-                        {watcher.notify ? <Bell className="h-3 w-3 text-gray-500" /> : null}
+                        {watcher.notify ? <Bell className="h-3 w-3 text-[#4a6070]" /> : null}
                       </div>
-                      <div className="mt-1 text-[11px] text-gray-500">
+                      <div className="mt-1 text-[11px] text-[#4a6070]">
                         {watcher.type === 'log' && watcher.pattern ? (
-                          <span>Pattern: <code className="text-gray-400">{watcher.pattern}</code></span>
+                          <span>Pattern: <code className="text-[#8a9aa8]">{watcher.pattern}</code></span>
                         ) : null}
                         {watcher.type === 'threshold' ? (
                           <span>{watcher.metric} {comparisonLabel(watcher.comparison)} {watcher.threshold}</span>
@@ -342,8 +342,8 @@ function WatchersModule() {
                           <span>Monitoring deployment state, runtime health, and degraded readiness.</span>
                         ) : null}
                       </div>
-                      {watcher.description ? <p className="mt-2 text-xs text-gray-400">{watcher.description}</p> : null}
-                      <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-gray-600">
+                      {watcher.description ? <p className="mt-2 text-xs text-[#8a9aa8]">{watcher.description}</p> : null}
+                      <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-[#4a6070]">
                         <span>Triggers: {watcher.trigger_count || 0}</span>
                         <span>Recent detections: {watcherDetections.length}</span>
                         {watcher.last_triggered_at ? <span>Last triggered: {new Date(watcher.last_triggered_at).toLocaleString()}</span> : null}
@@ -351,7 +351,7 @@ function WatchersModule() {
                     </div>
                     <Switch checked={watcher.enabled} onCheckedChange={() => updateWatcher(watcher.id, { enabled: !watcher.enabled })} className="h-4 w-7" />
                     {!watcher.system_managed ? (
-                      <button onClick={() => removeWatcher(watcher.id)} className="text-gray-600 hover:text-red-400">
+                      <button onClick={() => removeWatcher(watcher.id)} className="text-[#4a6070] hover:text-red-400">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     ) : null}
@@ -359,12 +359,12 @@ function WatchersModule() {
 
                   {watcher.recommended_actions?.length > 0 ? (
                     <div className="rounded-lg border border-zinc-800/70 bg-zinc-950/60 p-3">
-                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#4a6070]">
                         Recommended Response
                       </div>
                       <div className="space-y-1">
                         {watcher.recommended_actions.map((action, index) => (
-                          <div key={`${watcher.id}-action-${index}`} className="text-xs text-gray-400">
+                          <div key={`${watcher.id}-action-${index}`} className="text-xs text-[#8a9aa8]">
                             {action}
                           </div>
                         ))}
@@ -374,23 +374,23 @@ function WatchersModule() {
 
                   {watcherDetections.length > 0 ? (
                     <div className="rounded-lg border border-zinc-800/70 bg-zinc-950/60 p-3">
-                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#4a6070]">
                         Recent Detections
                       </div>
                       <div className="space-y-2">
                         {watcherDetections.slice(0, 3).map((detection) => (
-                          <div key={detection.id} className="rounded border border-zinc-800 bg-black/40 p-2">
+                          <div key={detection.id} className="rounded border border-zinc-800 bg-[#050a0e]/40 p-2">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs font-medium text-gray-200">{detection.title}</span>
+                              <span className="text-xs font-medium text-[#d0d8e0]">{detection.title}</span>
                               <Badge variant="outline" className={`text-[10px] ${verdictTone(detection.status)}`}>
                                 {detection.status}
                               </Badge>
-                              <Badge variant="outline" className="border-zinc-700 text-[10px] text-gray-400">
+                              <Badge variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">
                                 {sourceCategoryLabel(detection.source_category)}
                               </Badge>
                             </div>
-                            <p className="mt-1 text-xs text-gray-400">{detection.summary}</p>
-                            <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-gray-600">
+                            <p className="mt-1 text-xs text-[#8a9aa8]">{detection.summary}</p>
+                            <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-[#4a6070]">
                               <span>{detection.occurrence_count || 0} observations</span>
                               {detection.last_seen ? <span>Last seen: {new Date(detection.last_seen).toLocaleString()}</span> : null}
                             </div>
@@ -401,7 +401,7 @@ function WatchersModule() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => updateDetectionVerdict(detection.id, status)}
-                                  className={`h-6 text-[10px] ${detection.status === status ? 'border-tropic-gold/40 text-tropic-gold' : 'border-zinc-800 text-gray-400'}`}
+                                  className={`h-6 text-[10px] ${detection.status === status ? 'border-tropic-gold/40 text-tropic-gold' : 'border-zinc-800 text-[#8a9aa8]'}`}
                                 >
                                   {status.replace(/_/g, ' ')}
                                 </Button>
@@ -420,9 +420,9 @@ function WatchersModule() {
       )}
 
       {detections.length > 0 ? (
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+            <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-[#d0d8e0]">
               <ShieldCheck className="h-4 w-4 text-tropic-gold" /> DETECTION FEED
             </CardTitle>
           </CardHeader>
@@ -430,7 +430,7 @@ function WatchersModule() {
             {detections.slice(0, 8).map((detection) => (
               <div key={detection.id} className="rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-gray-200">{detection.title}</span>
+                  <span className="text-sm text-[#d0d8e0]">{detection.title}</span>
                   <Badge variant="outline" className={`text-[10px] ${verdictTone(detection.status)}`}>
                     {detection.status}
                   </Badge>
@@ -438,7 +438,7 @@ function WatchersModule() {
                     {detection.severity}
                   </Badge>
                 </div>
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-[#4a6070]">
                   {(detection.source_streams || []).join(', ') || 'No source streams recorded'}
                 </div>
               </div>
@@ -454,17 +454,17 @@ function WatchersModule() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-gray-400">Name</label>
+              <label className="text-xs text-[#8a9aa8]">Name</label>
               <Input
                 value={newWatcher.name}
                 onChange={(e) => setNewWatcher((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g. Peak-hour ping guard"
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
+                className="mt-1 border-zinc-800 bg-[#050a0e]/60 text-sm text-white"
               />
             </div>
 
             <div>
-              <label className="text-xs text-gray-400">Type</label>
+              <label className="text-xs text-[#8a9aa8]">Type</label>
               <div className="mt-1 grid grid-cols-3 gap-2">
                 {WATCHER_TYPES.map((watcherType) => (
                   <button
@@ -473,7 +473,7 @@ function WatchersModule() {
                     className={`rounded border p-2 text-left text-xs transition-colors ${
                       newWatcher.type === watcherType.value
                         ? 'border-tropic-gold/30 bg-tropic-gold/10 text-tropic-gold'
-                        : 'border-zinc-800 text-gray-500 hover:border-zinc-700'
+                        : 'border-zinc-800 text-[#4a6070] hover:border-zinc-700'
                     }`}
                   >
                     <div className="font-medium">{watcherType.label}</div>
@@ -485,11 +485,11 @@ function WatchersModule() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs text-gray-400">Severity</label>
+                <label className="text-xs text-[#8a9aa8]">Severity</label>
                 <select
                   value={newWatcher.severity}
                   onChange={(e) => setNewWatcher((prev) => ({ ...prev, severity: e.target.value }))}
-                  className="mt-1 w-full rounded border border-zinc-800 bg-black/60 px-3 py-2 text-sm text-white"
+                  className="mt-1 w-full rounded border border-zinc-800 bg-[#050a0e]/60 px-3 py-2 text-sm text-white"
                 >
                   {SEVERITY_OPTIONS.map((severity) => (
                     <option key={severity} value={severity}>{severity}</option>
@@ -497,11 +497,11 @@ function WatchersModule() {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-400">Category</label>
+                <label className="text-xs text-[#8a9aa8]">Category</label>
                 <select
                   value={newWatcher.source_category}
                   onChange={(e) => setNewWatcher((prev) => ({ ...prev, source_category: e.target.value }))}
-                  className="mt-1 w-full rounded border border-zinc-800 bg-black/60 px-3 py-2 text-sm text-white"
+                  className="mt-1 w-full rounded border border-zinc-800 bg-[#050a0e]/60 px-3 py-2 text-sm text-white"
                 >
                   {WATCHER_CATEGORIES.map((category) => (
                     <option key={category.value} value={category.value}>{category.label}</option>
@@ -510,32 +510,32 @@ function WatchersModule() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-black/40 px-4 py-3">
+            <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-[#050a0e]/40 px-4 py-3">
               <div>
-                <div className="text-sm text-gray-300">Notify on trigger</div>
-                <div className="text-[10px] text-gray-600">Keep this enabled for anything you want surfaced in reports.</div>
+                <div className="text-sm text-[#8a9aa8]">Notify on trigger</div>
+                <div className="text-[10px] text-[#4a6070]">Keep this enabled for anything you want surfaced in reports.</div>
               </div>
               <Switch checked={newWatcher.notify} onCheckedChange={(value) => setNewWatcher((prev) => ({ ...prev, notify: value }))} className="h-4 w-7" />
             </div>
 
             <div>
-              <label className="text-xs text-gray-400">Description</label>
+              <label className="text-xs text-[#8a9aa8]">Description</label>
               <Input
                 value={newWatcher.description}
                 onChange={(e) => setNewWatcher((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="What should operators understand about this watcher?"
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
+                className="mt-1 border-zinc-800 bg-[#050a0e]/60 text-sm text-white"
               />
             </div>
 
             {newWatcher.type === 'log' ? (
               <div>
-                <label className="text-xs text-gray-400">Regex Pattern</label>
+                <label className="text-xs text-[#8a9aa8]">Regex Pattern</label>
                 <Input
                   value={newWatcher.pattern}
                   onChange={(e) => setNewWatcher((prev) => ({ ...prev, pattern: e.target.value }))}
                   placeholder="error|fatal|crash"
-                  className="mt-1 border-zinc-800 bg-black/60 font-mono text-sm text-white"
+                  className="mt-1 border-zinc-800 bg-[#050a0e]/60 font-mono text-sm text-white"
                 />
               </div>
             ) : null}
@@ -543,11 +543,11 @@ function WatchersModule() {
             {newWatcher.type === 'threshold' ? (
               <div className="grid gap-3 sm:grid-cols-3">
                 <div>
-                  <label className="text-xs text-gray-400">Metric</label>
+                  <label className="text-xs text-[#8a9aa8]">Metric</label>
                   <select
                     value={newWatcher.metric}
                     onChange={(e) => setNewWatcher((prev) => ({ ...prev, metric: e.target.value }))}
-                    className="mt-1 w-full rounded border border-zinc-800 bg-black/60 px-3 py-2 text-sm text-white"
+                    className="mt-1 w-full rounded border border-zinc-800 bg-[#050a0e]/60 px-3 py-2 text-sm text-white"
                   >
                     <option value="cpu_percent">CPU %</option>
                     <option value="memory_mb">Memory MB</option>
@@ -557,11 +557,11 @@ function WatchersModule() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400">Comparison</label>
+                  <label className="text-xs text-[#8a9aa8]">Comparison</label>
                   <select
                     value={newWatcher.comparison}
                     onChange={(e) => setNewWatcher((prev) => ({ ...prev, comparison: e.target.value }))}
-                    className="mt-1 w-full rounded border border-zinc-800 bg-black/60 px-3 py-2 text-sm text-white"
+                    className="mt-1 w-full rounded border border-zinc-800 bg-[#050a0e]/60 px-3 py-2 text-sm text-white"
                   >
                     {THRESHOLD_COMPARISONS.map((comparison) => (
                       <option key={comparison.value} value={comparison.value}>{comparison.label}</option>
@@ -569,12 +569,12 @@ function WatchersModule() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400">Threshold</label>
+                  <label className="text-xs text-[#8a9aa8]">Threshold</label>
                   <Input
                     type="number"
                     value={newWatcher.threshold}
                     onChange={(e) => setNewWatcher((prev) => ({ ...prev, threshold: Number(e.target.value) || 0 }))}
-                    className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
+                    className="mt-1 border-zinc-800 bg-[#050a0e]/60 text-sm text-white"
                   />
                 </div>
               </div>
@@ -582,7 +582,7 @@ function WatchersModule() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)} className="border-zinc-700 text-gray-400">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)} className="border-zinc-700 text-[#8a9aa8]">
               Cancel
             </Button>
             <Button size="sm" onClick={addWatcher} disabled={!newWatcher.name.trim() || saving} className="bg-tropic-gold text-black hover:bg-tropic-gold-light">

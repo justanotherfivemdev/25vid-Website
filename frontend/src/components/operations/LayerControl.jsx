@@ -21,7 +21,7 @@ export default function LayerControl({ layerVisibility, onToggleLayer }) {
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 mb-2">
         <Layers className="w-3.5 h-3.5 text-[#C9A227]" />
-        <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">
+        <span className="text-[10px] text-[#4a6070] uppercase tracking-wider font-bold">
           Map Layers
         </span>
       </div>
@@ -32,8 +32,8 @@ export default function LayerControl({ layerVisibility, onToggleLayer }) {
             key={layer.id}
             className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-left text-xs transition ${
               visible
-                ? 'text-gray-300 hover:bg-gray-800/60'
-                : 'text-gray-600 hover:bg-gray-800/30'
+                ? 'text-[#8a9aa8] hover:bg-[#111a24]/60'
+                : 'text-[#4a6070] hover:bg-[#111a24]/30'
             }`}
             onClick={() => onToggleLayer(layer.id)}
           >
@@ -46,9 +46,9 @@ export default function LayerControl({ layerVisibility, onToggleLayer }) {
             />
             <span className="flex-1 truncate">{layer.label}</span>
             {visible ? (
-              <Eye className="w-3.5 h-3.5 text-gray-500" />
+              <Eye className="w-3.5 h-3.5 text-[#4a6070]" />
             ) : (
-              <EyeOff className="w-3.5 h-3.5 text-gray-600" />
+              <EyeOff className="w-3.5 h-3.5 text-[#4a6070]" />
             )}
           </button>
         );

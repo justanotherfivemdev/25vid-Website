@@ -161,15 +161,15 @@ function NotificationsModule() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h2 className="text-sm font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             NOTIFICATIONS
           </h2>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-[#4a6070]">
             Provisioning follow-up, runtime faults, and delivery webhooks live here.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 rounded border border-zinc-800 bg-black/40 px-3 py-1.5 text-xs text-gray-400">
+          <div className="flex items-center gap-2 rounded border border-zinc-800 bg-[#050a0e]/40 px-3 py-1.5 text-xs text-[#8a9aa8]">
             <span>Show cleared</span>
             <Switch checked={showCleared} onCheckedChange={setShowCleared} className="h-4 w-7" />
           </div>
@@ -189,9 +189,9 @@ function NotificationsModule() {
         </div>
       ) : (
         <>
-          <Card className="border-zinc-800 bg-black/60">
+          <Card className="border-zinc-800 bg-[#050a0e]/60">
             <CardContent className="p-4">
-              <div className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-gray-500">
+              <div className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-[#4a6070]">
                 <ClipboardList className="h-4 w-4 text-tropic-gold" />
                 ACTIVE SERVER NOTIFICATIONS
               </div>
@@ -199,8 +199,8 @@ function NotificationsModule() {
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <CheckCircle2 className="mb-2 h-8 w-8 text-green-500/60" />
-                  <p className="text-sm text-gray-400">No actionable server notifications.</p>
-                  <p className="mt-1 text-xs text-gray-600">
+                  <p className="text-sm text-[#8a9aa8]">No actionable server notifications.</p>
+                  <p className="mt-1 text-xs text-[#4a6070]">
                     When provisioning or runtime checks need attention, they will appear here.
                   </p>
                 </div>
@@ -216,7 +216,7 @@ function NotificationsModule() {
                             <div className="space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-sm font-semibold text-white">{notification.title}</span>
-                                <Badge variant="outline" className="border-white/10 text-[10px] uppercase tracking-wider text-gray-200">
+                                <Badge variant="outline" className="border-white/10 text-[10px] uppercase tracking-wider text-[#d0d8e0]">
                                   {notification.severity}
                                 </Badge>
                                 {notification.acknowledged && (
@@ -225,30 +225,30 @@ function NotificationsModule() {
                                   </Badge>
                                 )}
                                 {notification.status === 'cleared' && (
-                                  <Badge variant="outline" className="border-zinc-700 text-[10px] text-gray-400">
+                                  <Badge variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">
                                     Cleared
                                   </Badge>
                                 )}
                               </div>
 
                               {notification.message && (
-                                <p className="text-sm text-gray-300">{notification.message}</p>
+                                <p className="text-sm text-[#8a9aa8]">{notification.message}</p>
                               )}
 
                               {Array.isArray(notification.checklist) && notification.checklist.length > 0 && (
-                                <div className="space-y-1 rounded border border-zinc-800/80 bg-black/40 p-3">
-                                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+                                <div className="space-y-1 rounded border border-zinc-800/80 bg-[#050a0e]/40 p-3">
+                                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4a6070]">
                                     Follow-Up Checklist
                                   </div>
                                   {notification.checklist.map((item, index) => (
-                                    <div key={`${notification.id}-${index}`} className="text-xs text-gray-400">
-                                      <span className="font-medium text-gray-300">{item.stage || 'check'}:</span> {item.message}
+                                    <div key={`${notification.id}-${index}`} className="text-xs text-[#8a9aa8]">
+                                      <span className="font-medium text-[#8a9aa8]">{item.stage || 'check'}:</span> {item.message}
                                     </div>
                                   ))}
                                 </div>
                               )}
 
-                              <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-600">
+                              <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#4a6070]">
                                 <span>{notification.source || 'system'}</span>
                                 {notification.created_at && <span>{new Date(notification.created_at).toLocaleString()}</span>}
                                 {notification.acknowledged_at && (
@@ -265,7 +265,7 @@ function NotificationsModule() {
                                     variant="outline"
                                     disabled={isBusy || notification.acknowledged}
                                     onClick={() => acknowledgeNotification(notification.id)}
-                                    className="h-8 border-zinc-800 text-xs text-gray-300"
+                                    className="h-8 border-zinc-800 text-xs text-[#8a9aa8]"
                                   >
                                     {isBusy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
                                     Acknowledge
@@ -292,15 +292,15 @@ function NotificationsModule() {
             </CardContent>
           </Card>
 
-          <Card className="border-zinc-800 bg-black/60">
+          <Card className="border-zinc-800 bg-[#050a0e]/60">
             <CardContent className="p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-gray-500">
+                  <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-[#4a6070]">
                     <Bell className="h-4 w-4 text-tropic-gold" />
                     DELIVERY WEBHOOKS
                   </div>
-                  <p className="mt-1 text-xs text-gray-600">
+                  <p className="mt-1 text-xs text-[#4a6070]">
                     Configure outbound notifications for schedules, crashes, and server events.
                   </p>
                 </div>
@@ -316,30 +316,30 @@ function NotificationsModule() {
 
               {webhooks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <Webhook className="mb-2 h-8 w-8 text-gray-700" />
-                  <p className="text-sm text-gray-500">No webhooks configured</p>
+                  <Webhook className="mb-2 h-8 w-8 text-[#4a6070]" />
+                  <p className="text-sm text-[#4a6070]">No webhooks configured</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {webhooks.map((wh) => (
-                    <Card key={wh.id} className="border-zinc-800 bg-black/40">
+                    <Card key={wh.id} className="border-zinc-800 bg-[#050a0e]/40">
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <Webhook className="h-4 w-4 text-tropic-gold" />
-                              <span className="text-sm font-medium text-gray-200">{wh.name}</span>
+                              <span className="text-sm font-medium text-[#d0d8e0]">{wh.name}</span>
                               <Badge
                                 variant="outline"
-                                className={`text-[10px] ${wh.enabled ? 'border-green-600/30 text-green-400' : 'border-zinc-600/30 text-gray-500'}`}
+                                className={`text-[10px] ${wh.enabled ? 'border-green-600/30 text-green-400' : 'border-zinc-600/30 text-[#4a6070]'}`}
                               >
                                 {wh.enabled ? 'Active' : 'Disabled'}
                               </Badge>
                             </div>
-                            <div className="mt-1 truncate font-mono text-xs text-gray-500">{wh.url}</div>
+                            <div className="mt-1 truncate font-mono text-xs text-[#4a6070]">{wh.url}</div>
                             <div className="mt-2 flex flex-wrap gap-1">
                               {(wh.events || []).map((ev) => (
-                                <Badge key={ev} variant="outline" className="border-zinc-700 text-[9px] text-gray-400">
+                                <Badge key={ev} variant="outline" className="border-zinc-700 text-[9px] text-[#8a9aa8]">
                                   {ev}
                                 </Badge>
                               ))}
@@ -351,7 +351,7 @@ function NotificationsModule() {
                               variant="outline"
                               onClick={() => testWebhook(wh)}
                               disabled={testing === wh.id}
-                              className="h-7 border-zinc-800 text-[10px] text-gray-400"
+                              className="h-7 border-zinc-800 text-[10px] text-[#8a9aa8]"
                             >
                               {testing === wh.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                             </Button>
@@ -359,7 +359,7 @@ function NotificationsModule() {
                               size="sm"
                               variant="ghost"
                               onClick={() => deleteWebhook(wh.id)}
-                              className="h-7 text-gray-500 hover:text-red-400"
+                              className="h-7 text-[#4a6070] hover:text-red-400"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -388,25 +388,25 @@ function NotificationsModule() {
               </div>
             )}
             <div>
-              <label className="text-xs text-gray-400">Name</label>
+              <label className="text-xs text-[#8a9aa8]">Name</label>
               <Input
                 value={newWebhook.name}
                 onChange={(e) => setNewWebhook((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Discord Alerts"
-                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
+                className="mt-1 border-zinc-800 bg-[#050a0e]/60 text-sm text-white"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-400">URL</label>
+              <label className="text-xs text-[#8a9aa8]">URL</label>
               <Input
                 value={newWebhook.url}
                 onChange={(e) => setNewWebhook((prev) => ({ ...prev, url: e.target.value }))}
                 placeholder="https://discord.com/api/webhooks/..."
-                className="mt-1 border-zinc-800 bg-black/60 font-mono text-sm text-white"
+                className="mt-1 border-zinc-800 bg-[#050a0e]/60 font-mono text-sm text-white"
               />
             </div>
             <div>
-              <label className="mb-2 block text-xs text-gray-400">Events</label>
+              <label className="mb-2 block text-xs text-[#8a9aa8]">Events</label>
               <div className="grid grid-cols-2 gap-1.5">
                 {EVENT_TYPES.map((ev) => (
                   <button
@@ -415,7 +415,7 @@ function NotificationsModule() {
                     className={`rounded border px-2 py-1.5 text-left text-[10px] transition-colors ${
                       newWebhook.events.includes(ev)
                         ? 'border-tropic-gold/30 bg-tropic-gold/10 text-tropic-gold'
-                        : 'border-zinc-800 text-gray-500 hover:border-zinc-700'
+                        : 'border-zinc-800 text-[#4a6070] hover:border-zinc-700'
                     }`}
                   >
                     {ev}
@@ -429,7 +429,7 @@ function NotificationsModule() {
                 onCheckedChange={(value) => setNewWebhook((prev) => ({ ...prev, enabled: value }))}
                 className="h-4 w-7"
               />
-              <span className="text-xs text-gray-400">Enabled</span>
+              <span className="text-xs text-[#8a9aa8]">Enabled</span>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -437,7 +437,7 @@ function NotificationsModule() {
               variant="outline"
               size="sm"
               onClick={() => setDialogOpen(false)}
-              className="border-zinc-700 text-gray-400"
+              className="border-zinc-700 text-[#8a9aa8]"
             >
               Cancel
             </Button>

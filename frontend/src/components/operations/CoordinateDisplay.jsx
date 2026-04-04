@@ -35,32 +35,32 @@ export default function CoordinateDisplay({
   const ny = mapDimensions.w > 0 ? (y / mapDimensions.h).toFixed(4) : '—';
 
   return (
-    <div className="absolute bottom-2 left-2 z-20 flex items-center gap-3 bg-black/80 backdrop-blur-sm border border-gray-700/60 rounded px-3 py-1.5 text-[11px] font-mono text-gray-300 pointer-events-none select-none">
+    <div className="absolute bottom-2 left-2 z-20 flex items-center gap-3 bg-[#050a0e]/80 backdrop-blur-sm border border-[rgba(201,162,39,0.09)] rounded px-3 py-1.5 text-[11px] font-mono text-[#8a9aa8] pointer-events-none select-none">
       <Crosshair className="w-3.5 h-3.5 text-[#C9A227] shrink-0" />
       {isReforgerMap && reforgerMapConfig ? (
         <>
           <span>
-            <span className="text-gray-500 mr-1">X:</span>
+            <span className="text-[#4a6070] mr-1">X:</span>
             {Math.round(x)}m
           </span>
           <span>
-            <span className="text-gray-500 mr-1">Y:</span>
+            <span className="text-[#4a6070] mr-1">Y:</span>
             {Math.round(reforgerMapConfig.yMax - y)}m
           </span>
           <span className="text-[#C9A227]">
-            <span className="text-gray-500 mr-1">Grid:</span>
+            <span className="text-[#4a6070] mr-1">Grid:</span>
             {toGridRef(x, reforgerMapConfig.yMax - y)}
           </span>
         </>
       ) : (
         <>
           <span>
-            <span className="text-gray-500 mr-1">X:</span>{nx}
+            <span className="text-[#4a6070] mr-1">X:</span>{nx}
           </span>
           <span>
-            <span className="text-gray-500 mr-1">Y:</span>{ny}
+            <span className="text-[#4a6070] mr-1">Y:</span>{ny}
           </span>
-          <span className="text-gray-500">
+          <span className="text-[#4a6070]">
             ({Math.round(x)}px, {Math.round(y)}px)
           </span>
         </>

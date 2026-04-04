@@ -15,9 +15,9 @@ import {
 
 function TroubleshootRow({ label, value }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded border border-zinc-800/50 bg-black/40 px-3 py-2">
-      <span className="text-xs text-gray-500">{label}</span>
-      <span className="break-all text-right font-mono text-xs text-gray-300">{value || '-'}</span>
+    <div className="flex items-start justify-between gap-4 rounded border border-zinc-800/50 bg-[#050a0e]/40 px-3 py-2">
+      <span className="text-xs text-[#4a6070]">{label}</span>
+      <span className="break-all text-right font-mono text-xs text-[#8a9aa8]">{value || '-'}</span>
     </div>
   );
 }
@@ -54,17 +54,17 @@ function FileManagerModule() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <h2 className="text-sm font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
           TROUBLESHOOTING
         </h2>
-        <Button size="sm" variant="outline" onClick={fetchDiagnostics} className="h-7 border-zinc-800 text-xs text-gray-400">
+        <Button size="sm" variant="outline" onClick={fetchDiagnostics} className="h-7 border-zinc-800 text-xs text-[#8a9aa8]">
           <RefreshCw className="mr-1 h-3 w-3" /> Refresh
         </Button>
       </div>
 
-      <Card className="border-zinc-800 bg-black/60">
+      <Card className="border-zinc-800 bg-[#050a0e]/60">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+          <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
             <Server className="h-3.5 w-3.5 text-tropic-gold" /> CONTAINER CONTEXT
           </CardTitle>
         </CardHeader>
@@ -77,9 +77,9 @@ function FileManagerModule() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
               <Folder className="h-3.5 w-3.5 text-tropic-gold" /> MANAGED DATA PATHS
             </CardTitle>
           </CardHeader>
@@ -91,27 +91,27 @@ function FileManagerModule() {
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
               <Terminal className="h-3.5 w-3.5 text-tropic-gold" /> WHAT TO CHECK
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-xs text-gray-400">
-            <div className="rounded border border-zinc-800/50 bg-black/40 px-3 py-2">
+          <CardContent className="space-y-2 text-xs text-[#8a9aa8]">
+            <div className="rounded border border-zinc-800/50 bg-[#050a0e]/40 px-3 py-2">
               Confirm the container is running before using RCON or viewing live logs.
             </div>
-            <div className="rounded border border-zinc-800/50 bg-black/40 px-3 py-2">
+            <div className="rounded border border-zinc-800/50 bg-[#050a0e]/40 px-3 py-2">
               The mounted profile path is where Server Admin Tools files will appear after first boot.
             </div>
-            <div className="rounded border border-zinc-800/50 bg-black/40 px-3 py-2">
+            <div className="rounded border border-zinc-800/50 bg-[#050a0e]/40 px-3 py-2">
               Workshop and config paths are isolated per server and should never overlap.
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="rounded border border-zinc-800/70 bg-black/40 px-3 py-2 text-xs text-gray-500">
+      <div className="rounded border border-zinc-800/70 bg-[#050a0e]/40 px-3 py-2 text-xs text-[#4a6070]">
         <Wrench className="mr-2 inline h-3.5 w-3.5 text-tropic-gold" />
         This area is diagnostics-only. Infrastructure files and Docker mounts are owned by the backend service.
       </div>

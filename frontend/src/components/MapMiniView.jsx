@@ -36,7 +36,7 @@ export default function MapMiniView({
         className={`flex items-center justify-center bg-[#111] border border-[#1f1f1f] rounded-lg ${className}`}
         style={{ height }}
       >
-        <span className="text-gray-500 text-sm">Map unavailable – missing token</span>
+        <span className="text-[#4a6070] text-sm">Map unavailable – missing token</span>
       </div>
     );
   }

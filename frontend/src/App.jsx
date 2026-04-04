@@ -13,6 +13,7 @@ import { defaultSiteContent } from '@/config/siteContent';
 import { applyBrowserMetadata } from '@/utils/browserMetadata';
 import { isStaff, STAFF_ROLES, hasPermission, PERMISSIONS } from '@/utils/permissions';
 import { BootSequence } from '@/components/tactical/BootSequence';
+import { LoginTransition } from '@/components/tactical/LoginTransition';
 
 const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'));
 const OperationsManager = lazy(() => import('@/pages/admin/OperationsManager'));
@@ -135,7 +136,7 @@ const MediaFrame = ({ src, alt, className = 'w-full h-full object-cover', imgCla
   }
   if (kind === 'audio') {
     return (
-      <div className="w-full h-full bg-black/60 flex items-center justify-center p-4">
+      <div className="w-full h-full bg-[#050a0e]/60 flex items-center justify-center p-4">
         <audio src={src} controls className="w-full max-w-xs" />
       </div>
     );
@@ -241,7 +242,7 @@ const ProtectedRoute = ({ children, adminOnly = false, allowedRoles = null, staf
   if (authState.loading) {
     return <div className="min-h-screen bg-[#050a0e] flex items-center justify-center text-[#d0d8e0]">
       <div className="text-center">
-        <div className="mx-auto mb-4 h-8 w-8 rounded-full border-2 border-[#00ff88] border-t-transparent animate-spin" />
+        <div className="mx-auto mb-4 h-8 w-8 rounded-full border-2 border-[#e8c547] border-t-transparent animate-spin" />
         <p className="text-xs tracking-[0.2em] text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>AUTHENTICATING...</p>
       </div>
     </div>;
@@ -292,36 +293,36 @@ const Navigation = ({ scrollToSection, content }) => {
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-[#050a0e]/95 backdrop-blur-xl border-b border-[rgba(0,255,136,0.1)]' : 'bg-transparent'}`} data-testid="main-nav">
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-[#050a0e]/95 backdrop-blur-xl border-b border-[rgba(201,162,39,0.1)]' : 'bg-transparent'}`} data-testid="main-nav">
       <div className="container mx-auto px-4 md:px-6 py-3">
         <div className="flex items-center justify-between">
           {/* Brand */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-1.5 h-6 bg-[#00ff88] opacity-60 group-hover:opacity-100 transition-opacity" />
-            <span className="text-sm font-bold tracking-[0.2em] text-[#e8c547] group-hover:text-white transition-colors" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+            <div className="w-1.5 h-6 bg-[#e8c547] opacity-60 group-hover:opacity-100 transition-opacity" />
+            <span className="text-sm font-bold tracking-[0.2em] text-[#e8c547] group-hover:text-white transition-colors" style={{ fontFamily: "'Share Tech', sans-serif" }}>
               {brandName}
             </span>
           </Link>
 
           {/* Mobile toggle */}
-          <button className="md:hidden text-[#d0d8e0] hover:text-[#00ff88] transition-colors" onClick={() => setMenuOpen(!menuOpen)} data-testid="mobile-menu-btn">
+          <button className="md:hidden text-[#d0d8e0] hover:text-[#e8c547] transition-colors" onClick={() => setMenuOpen(!menuOpen)} data-testid="mobile-menu-btn">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} /></svg>
           </button>
 
           {/* Desktop nav */}
-          <div className={`${menuOpen ? 'flex flex-col absolute top-full left-0 right-0 bg-[#050a0e]/98 backdrop-blur-xl p-6 space-y-4 border-b border-[rgba(0,255,136,0.1)]' : 'hidden'} md:flex md:flex-row md:static md:bg-transparent md:p-0 md:space-y-0 md:border-0 items-center md:space-x-1`}>
+          <div className={`${menuOpen ? 'flex flex-col absolute top-full left-0 right-0 bg-[#050a0e]/98 backdrop-blur-xl p-6 space-y-4 border-b border-[rgba(201,162,39,0.1)]' : 'hidden'} md:flex md:flex-row md:static md:bg-transparent md:p-0 md:space-y-0 md:border-0 items-center md:space-x-1`}>
             {navLinks.map(link => (
               <button
                 key={link.id}
                 onClick={() => { scrollToSection(link.id); setMenuOpen(false); }}
-                className="text-xs tracking-[0.2em] text-[#4a6070] hover:text-[#00ff88] transition-all px-3 py-2 hover:bg-[rgba(0,255,136,0.04)]"
+                className="text-xs tracking-[0.2em] text-[#4a6070] hover:text-[#e8c547] transition-all px-3 py-2 hover:bg-[rgba(201,162,39,0.04)]"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 data-testid={`nav-${link.id}`}
               >
                 [ {link.label} ]
               </button>
             ))}
-            <div className="hidden md:block h-5 w-px bg-[rgba(0,255,136,0.15)] mx-2" />
+            <div className="hidden md:block h-5 w-px bg-[rgba(201,162,39,0.15)] mx-2" />
             <Link to="/login" onClick={() => setMenuOpen(false)}>
               <Button className="bg-[#c9a227] hover:bg-[#e8c547] text-[#050a0e] px-5 py-2 tactical-button font-bold tracking-[0.15em] text-xs" style={{ fontFamily: "'JetBrains Mono', monospace" }} data-testid="nav-join-button">{btnText}</Button>
             </Link>
@@ -375,27 +376,26 @@ const HeroSection = ({ content }) => {
       <div className="hero-aurora hero-aurora-right" />
 
       <div className="relative z-10 text-center px-4 md:px-6">
-        {/* Unit patch with glow */}
-        <div className="mb-8 compass-logo" data-testid="unit-logo">
+        {/* Unit patch — clean, no glow animation */}
+        <div className="mb-4" data-testid="unit-logo">
           <img
             src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`}
             alt="25th Infantry Division"
-            className="w-40 h-40 sm:w-52 sm:h-52 mx-auto object-contain animate-pulse-gold"
-            style={{ animationDuration: '4s' }}
+            className="w-52 h-52 sm:w-64 sm:h-64 mx-auto object-contain"
           />
         </div>
 
         {/* Classification bar */}
         <div className="mb-6 flex items-center justify-center gap-3">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-[rgba(0,255,136,0.3)]" />
-          <span className="text-[10px] tracking-[0.4em] text-[#00ff88] opacity-50" style={{ fontFamily: "'Oswald', sans-serif" }}>
+          <div className="h-px w-12 bg-gradient-to-r from-transparent to-[rgba(201,162,39,0.3)]" />
+          <span className="text-[10px] tracking-[0.4em] text-[#e8c547] opacity-50" style={{ fontFamily: "'Oswald', sans-serif" }}>
             DIGITAL COMMAND CENTER
           </span>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-[rgba(0,255,136,0.3)]" />
+          <div className="h-px w-12 bg-gradient-to-l from-transparent to-[rgba(201,162,39,0.3)]" />
         </div>
 
         {/* Main title — typewriter effect */}
-        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-[0.12em] leading-tight" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="hero-tagline">
+        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-[0.12em] leading-tight" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="hero-tagline">
           <span className="block text-[#e8c547]">
             {typedText}
             {typedText.length < heroLine1.length && (
@@ -409,42 +409,6 @@ const HeroSection = ({ content }) => {
           )}
         </h1>
 
-        {/* Intel cards — HUD panels */}
-        {showContent && (
-          <div className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3 animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}>
-            <div className="hero-intel-card corner-bracket text-left">
-              <div className="flex items-center gap-3">
-                <div className="hero-intel-icon"><Globe className="h-4 w-4" /></div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#00ff88] opacity-60" style={{ fontFamily: "'Oswald', sans-serif" }}>Campaign Theater</p>
-                  <p className="mt-1 text-base font-bold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '0.85rem' }}>GLOBAL OPS BOARD</p>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-[#4a6070] leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>Live recruiting theaters, campaign hotspots, and global threat visualization.</p>
-            </div>
-            <div className="hero-intel-card corner-bracket text-left">
-              <div className="flex items-center gap-3">
-                <div className="hero-intel-icon"><Calendar className="h-4 w-4" /></div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#00ff88] opacity-60" style={{ fontFamily: "'Oswald', sans-serif" }}>Weekly Rhythm</p>
-                  <p className="mt-1 text-base font-bold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '0.85rem' }}>OPERATION CYCLE</p>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-[#4a6070] leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>Training blocks, deployments, and live missions surfaced through a command-centered experience.</p>
-            </div>
-            <div className="hero-intel-card corner-bracket text-left">
-              <div className="flex items-center gap-3">
-                <div className="hero-intel-icon"><Users className="h-4 w-4" /></div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#00ff88] opacity-60" style={{ fontFamily: "'Oswald', sans-serif" }}>Tropic Lightning</p>
-                  <p className="mt-1 text-base font-bold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '0.85rem' }}>MEMBER PIPELINE</p>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-[#4a6070] leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>From first contact to campaign deployment — a flagship operations platform.</p>
-            </div>
-          </div>
-        )}
-
         {/* CTA Buttons */}
         {showContent && (
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row animate-slide-up-fade" style={{ animationDelay: '0.4s', animationFillMode: 'backwards' }}>
@@ -454,7 +418,7 @@ const HeroSection = ({ content }) => {
               </Button>
             </Link>
             <Link to="/login">
-              <Button variant="outline" className="border-[rgba(0,255,136,0.2)] bg-transparent px-8 py-5 text-sm tracking-[0.2em] text-[#00ff88] hover:bg-[rgba(0,255,136,0.05)] hover:border-[rgba(0,255,136,0.4)]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <Button variant="outline" className="border-[rgba(201,162,39,0.2)] bg-transparent px-8 py-5 text-sm tracking-[0.2em] text-[#e8c547] hover:bg-[rgba(201,162,39,0.05)] hover:border-[rgba(201,162,39,0.4)]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                 [ MEMBER ACCESS ]
               </Button>
             </Link>
@@ -463,9 +427,9 @@ const HeroSection = ({ content }) => {
 
         {/* Scroll indicator */}
         <div className="mt-10 flex items-center justify-center gap-2 text-[10px] tracking-[0.3em] text-[#4a6070] uppercase" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-          <span className="w-8 h-px bg-gradient-to-r from-transparent to-[rgba(0,255,136,0.2)]" />
+          <span className="w-8 h-px bg-gradient-to-r from-transparent to-[rgba(201,162,39,0.2)]" />
           SCROLL TO EXPLORE
-          <span className="w-8 h-px bg-gradient-to-l from-transparent to-[rgba(0,255,136,0.2)]" />
+          <span className="w-8 h-px bg-gradient-to-l from-transparent to-[rgba(201,162,39,0.2)]" />
         </div>
       </div>
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050a0e] to-transparent" />
@@ -488,10 +452,10 @@ const AboutSection = ({ content }) => {
           <div className="space-y-8">
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-[#00ff88] text-xs">▶</span>
-                <span className="text-[10px] tracking-[0.3em] text-[#00ff88] opacity-60" style={{ fontFamily: "'Oswald', sans-serif" }}>BRIEFING</span>
+                <span className="text-[#e8c547] text-xs">▶</span>
+                <span className="text-[10px] tracking-[0.3em] text-[#e8c547] opacity-60" style={{ fontFamily: "'Oswald', sans-serif" }}>BRIEFING</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold section-underline tracking-[0.1em] text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="about-heading">{aboutHeading}</h2>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold section-underline tracking-[0.1em] text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="about-heading">{aboutHeading}</h2>
               {aboutSubtext && <p className="text-sm text-[#4a6070] tracking-wide" data-testid="about-subtext">{aboutSubtext}</p>}
             </div>
             {content.about?.logoImage && (
@@ -507,7 +471,7 @@ const AboutSection = ({ content }) => {
           </div>
           <div className="space-y-8 text-base leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
             <p className="text-[#8a9aa8]" data-testid="about-description-1">{content.about?.paragraph1}</p>
-            <div className="h-px bg-gradient-to-r from-transparent via-[rgba(0,255,136,0.15)] to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-[rgba(201,162,39,0.15)] to-transparent" />
             <p className="text-[#8a9aa8]" data-testid="about-description-2">{content.about?.paragraph2}</p>
             {/* Quote block */}
             <div className="mt-12 relative overflow-hidden corner-bracket" style={{ minHeight: '280px' }}>
@@ -516,7 +480,7 @@ const AboutSection = ({ content }) => {
                 : <div className="absolute inset-0" style={{ backgroundImage: `url('${resolveImg(quote.backgroundImage)}')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />}
               <div className="absolute inset-0 bg-gradient-to-br from-[#050a0e]/92 via-[#050a0e]/80 to-[rgba(201,162,39,0.1)]" />
               <div className="relative z-10 p-10 md:p-14 flex items-center justify-center min-h-[280px]">
-                <div className="border-l-2 border-[#00ff88] pl-8 max-w-xl">
+                <div className="border-l-2 border-[#e8c547] pl-8 max-w-xl">
                   <p className="text-lg md:text-xl italic text-[#8a9aa8] mb-5 font-light leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }} data-testid="founder-quote">{quote.text}</p>
                   <p className="text-sm text-[#e8c547] font-bold tracking-[0.15em]" style={{ fontFamily: "'Oswald', sans-serif" }} data-testid="founder-name">{quote.author}</p>
                 </div>
@@ -539,14 +503,14 @@ const HistoryQuickTab = ({ onNavigate }) => (
       <button
         type="button"
         onClick={onNavigate}
-        className="w-full md:w-auto inline-flex items-center gap-3 border border-[rgba(0,255,136,0.15)] bg-[#050a0e] hover:bg-[#0c1117] px-6 py-3 tracking-[0.15em] text-xs text-[#4a6070] hover:text-[#00ff88] transition-all duration-300 hover:border-[rgba(0,255,136,0.3)]"
+        className="w-full md:w-auto inline-flex items-center gap-3 border border-[rgba(201,162,39,0.15)] bg-[#050a0e] hover:bg-[#0c1117] px-6 py-3 tracking-[0.15em] text-xs text-[#4a6070] hover:text-[#e8c547] transition-all duration-300 hover:border-[rgba(201,162,39,0.3)]"
         style={{ fontFamily: "'JetBrains Mono', monospace" }}
         data-testid="history-quick-scroll"
       >
-        <span className="text-[#00ff88] font-bold">HISTORY</span>
-        <span className="h-3 w-px bg-[rgba(0,255,136,0.2)]" />
+        <span className="text-[#e8c547] font-bold">HISTORY</span>
+        <span className="h-3 w-px bg-[rgba(201,162,39,0.2)]" />
         <span>JUMP TO TIMELINE</span>
-        <span aria-hidden="true" className="text-[#00ff88]">↓</span>
+        <span aria-hidden="true" className="text-[#e8c547]">↓</span>
       </button>
     </div>
   </section>
@@ -632,7 +596,7 @@ const UnitHistorySection = ({ content }) => {
   const typeAccent = (t) => ({
     campaign: 'border-[#e8c547] bg-[#c9a227]',
     operation: 'border-[#ff3333] bg-[#ff3333]',
-    milestone: 'border-[#00ff88] bg-[#00ff88]',
+    milestone: 'border-[#e8c547] bg-[#e8c547]',
   }[t] || 'border-[#e8c547] bg-[#c9a227]');
 
   if (loading || entries.length === 0) return null;
@@ -642,14 +606,14 @@ const UnitHistorySection = ({ content }) => {
       <div className="section-divider absolute top-0 left-0 right-0" />
       <div className="container mx-auto max-w-5xl">
         <div className="section-label mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="unit-history-heading">{historyHeading}</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="unit-history-heading">{historyHeading}</h2>
           <p>{historySubtext}</p>
         </div>
 
         {/* Timeline */}
         <div className="relative">
           {/* Center line */}
-          <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-[rgba(0,255,136,0.4)] via-[rgba(0,255,136,0.15)] to-transparent" aria-hidden="true" />
+          <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-[rgba(201,162,39,0.4)] via-[rgba(201,162,39,0.15)] to-transparent" aria-hidden="true" />
 
           <div className="space-y-12 md:space-y-16">
             {entries.map((entry, idx) => {
@@ -670,12 +634,12 @@ const UnitHistorySection = ({ content }) => {
               return (
                 <div key={entry.id} className="relative" data-testid={`history-timeline-${idx}`}>
                   {/* Dot on the line */}
-                  <div className={`absolute left-6 md:left-1/2 w-3 h-3 rounded-full ${accent.split(' ')[1]} border-2 border-[#050a0e] -translate-x-1/2 z-10 shadow-[0_0_8px_rgba(0,255,136,0.3)]`} />
+                  <div className={`absolute left-6 md:left-1/2 w-3 h-3 rounded-full ${accent.split(' ')[1]} border-2 border-[#050a0e] -translate-x-1/2 z-10 shadow-[0_0_8px_rgba(201,162,39,0.3)]`} />
 
                   {/* Content card */}
                   <div className={`ml-14 md:ml-0 md:w-[calc(50%-2.5rem)] ${isLeft ? 'md:mr-auto md:pr-0' : 'md:ml-auto md:pl-0'}`}>
                     <div
-                      className={`group relative border ${accent.split(' ')[0]}/30 overflow-hidden ${hasImage ? '' : 'bg-[#0c1117]'} p-6 hover:border-[rgba(0,255,136,0.3)] transition-all duration-500 corner-bracket`}
+                      className={`group relative border ${accent.split(' ')[0]}/30 overflow-hidden ${hasImage ? '' : 'bg-[#0c1117]'} p-6 hover:border-[rgba(201,162,39,0.3)] transition-all duration-500 corner-bracket`}
                       style={hasImage ? {
                         backgroundImage: `url('${imageSrc}')`,
                         backgroundSize: 'cover',
@@ -693,16 +657,16 @@ const UnitHistorySection = ({ content }) => {
                         </>
                       )}
 
-                      <div className={`relative z-10 ${useDarkText ? 'text-gray-900' : 'text-white'}`}>
+                      <div className={`relative z-10 ${useDarkText ? 'text-[#d0d8e0]' : 'text-white'}`}>
                       {/* Year badge */}
                       <div className="flex items-center gap-3 mb-3">
-                        <span className={`${useDarkText ? 'text-gray-900' : 'text-[#00ff88]'} font-bold text-lg tracking-wider`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>{entry.year}</span>
+                        <span className={`${useDarkText ? 'text-[#d0d8e0]' : 'text-[#e8c547]'} font-bold text-lg tracking-wider`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>{entry.year}</span>
                         <span className={`text-[10px] tracking-widest px-2 py-0.5 rounded ${accent.split(' ')[1]} text-white/90`}>{entry.campaign_type.toUpperCase()}</span>
                       </div>
 
-                      <h3 className="text-xl md:text-2xl font-bold tracking-wide mb-3" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.title}</h3>
+                      <h3 className="text-xl md:text-2xl font-bold tracking-wide mb-3" style={{ fontFamily: "'Share Tech', sans-serif" }}>{entry.title}</h3>
 
-                      <p className={`${useDarkText ? 'text-gray-800' : 'text-gray-200'} text-sm leading-relaxed`}>{entry.description}</p>
+                      <p className={`${useDarkText ? 'text-[#8a9aa8]' : 'text-[#d0d8e0]'} text-sm leading-relaxed`}>{entry.description}</p>
                       </div>
                     </div>
                   </div>
@@ -729,21 +693,21 @@ const OperationalSuperioritySection = ({ content }) => {
       <div className="section-divider absolute top-0 left-0 right-0" />
       <div className="container mx-auto max-w-7xl">
         <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
-          <h2 className="text-3xl sm:text-4xl lg:text-6xl font-bold leading-tight text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="ops-superiority-heading">
+          <h2 className="text-3xl sm:text-4xl lg:text-6xl font-bold leading-tight text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="ops-superiority-heading">
             {heading.split(' ').map((w, i) => <span key={i} className="block">{w}</span>)}
           </h2>
           <div className="relative">
-            <div className="absolute -left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#00ff88] via-[rgba(0,255,136,0.3)] to-transparent" />
+            <div className="absolute -left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#e8c547] via-[rgba(201,162,39,0.3)] to-transparent" />
             <div className="pl-8 space-y-3">
-              {subtext && <p className="text-[10px] uppercase tracking-[0.25em] text-[#00ff88] opacity-60" style={{ fontFamily: "'Oswald', sans-serif" }} data-testid="ops-superiority-subtext">{subtext}</p>}
+              {subtext && <p className="text-[10px] uppercase tracking-[0.25em] text-[#e8c547] opacity-60" style={{ fontFamily: "'Oswald', sans-serif" }} data-testid="ops-superiority-subtext">{subtext}</p>}
               <p className="text-base leading-relaxed text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }} data-testid="ops-superiority-description">{content.operationalSuperiority?.description}</p>
             </div>
           </div>
         </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-[rgba(0,255,136,0.15)] to-transparent mb-16" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[rgba(201,162,39,0.15)] to-transparent mb-16" />
         <div className="grid md:grid-cols-3 gap-6">
           {(content.operationalSuperiority?.images || []).map((img, idx) => (
-            <div key={idx} className="aspect-[3/4] overflow-hidden border border-[rgba(0,255,136,0.1)] hover:border-[rgba(0,255,136,0.3)] transition-all duration-500 shadow-2xl shadow-black/40 group corner-bracket" data-testid={`ops-image-${idx + 1}`}>
+            <div key={idx} className="aspect-[3/4] overflow-hidden border border-[rgba(201,162,39,0.1)] hover:border-[rgba(201,162,39,0.3)] transition-all duration-500 shadow-2xl shadow-black/40 group corner-bracket" data-testid={`ops-image-${idx + 1}`}>
               <MediaFrame src={resolveImg(img)} alt={`Tactical ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
@@ -768,30 +732,30 @@ const LethalitySection = ({ content }) => {
       <div className="container mx-auto max-w-7xl space-y-20">
         <div className="space-y-3">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[#00ff88] text-xs">▶</span>
-            <span className="text-[10px] tracking-[0.3em] text-[#00ff88] opacity-60" style={{ fontFamily: "'Oswald', sans-serif" }}>TRAINING PROTOCOL</span>
+            <span className="text-[#e8c547] text-xs">▶</span>
+            <span className="text-[10px] tracking-[0.3em] text-[#e8c547] opacity-60" style={{ fontFamily: "'Oswald', sans-serif" }}>TRAINING PROTOCOL</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-wider text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="lethality-heading">{heading}</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-wider text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="lethality-heading">{heading}</h2>
           {subtext && <p className="text-sm text-[#4a6070]" data-testid="lethality-subtext">{subtext}</p>}
         </div>
         {/* Logistics */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <h3 className="text-2xl font-bold tracking-wide text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="logistics-heading">{logisticsHeading}</h3>
+            <h3 className="text-2xl font-bold tracking-wide text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="logistics-heading">{logisticsHeading}</h3>
             <p className="text-sm leading-relaxed text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }} data-testid="logistics-description">{content.lethality?.logistics?.description}</p>
           </div>
-          <div className="aspect-video overflow-hidden border border-[rgba(0,255,136,0.1)] shadow-2xl shadow-black/40 group corner-bracket">
+          <div className="aspect-video overflow-hidden border border-[rgba(201,162,39,0.1)] shadow-2xl shadow-black/40 group corner-bracket">
             <MediaFrame src={resolveImg(content.lethality?.logistics?.image)} alt="Logistics" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
         </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-[rgba(0,255,136,0.15)] to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[rgba(201,162,39,0.15)] to-transparent" />
         {/* Training */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="order-2 md:order-1 aspect-video overflow-hidden border border-[rgba(0,255,136,0.1)] shadow-2xl shadow-black/40 group corner-bracket">
+          <div className="order-2 md:order-1 aspect-video overflow-hidden border border-[rgba(201,162,39,0.1)] shadow-2xl shadow-black/40 group corner-bracket">
             <MediaFrame src={resolveImg(content.lethality?.training?.image)} alt="Training" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
           <div className="order-1 md:order-2 space-y-6">
-            <h3 className="text-2xl font-bold tracking-wide text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="training-heading">{trainingHeading}</h3>
+            <h3 className="text-2xl font-bold tracking-wide text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="training-heading">{trainingHeading}</h3>
             <p className="text-sm leading-relaxed text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }} data-testid="training-description">{content.lethality?.training?.description}</p>
           </div>
         </div>
@@ -814,7 +778,7 @@ const UpcomingOperationsSection = ({ content }) => {
 
   const typeConfig = {
     combat:   { bg: 'bg-[#ff3333]/80', border: 'border-[rgba(255,51,51,0.25)]', glow: 'shadow-[0_0_15px_rgba(255,51,51,0.1)]' },
-    training: { bg: 'bg-[#556B2F]/80', border: 'border-[rgba(0,255,136,0.2)]', glow: 'shadow-[0_0_15px_rgba(0,255,136,0.08)]' },
+    training: { bg: 'bg-[#556B2F]/80', border: 'border-[rgba(201,162,39,0.2)]', glow: 'shadow-[0_0_15px_rgba(201,162,39,0.08)]' },
     recon:    { bg: 'bg-[#c9a227]/80', border: 'border-[rgba(201,162,39,0.25)]', glow: 'shadow-[0_0_15px_rgba(201,162,39,0.1)]' },
     support:  { bg: 'bg-[#00aaff]/80', border: 'border-[rgba(0,170,255,0.25)]', glow: 'shadow-[0_0_15px_rgba(0,170,255,0.08)]' },
   };
@@ -825,11 +789,11 @@ const UpcomingOperationsSection = ({ content }) => {
       <div className="section-divider absolute top-0 left-0 right-0" />
       <div className="container mx-auto max-w-7xl">
         <div className="section-label">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="upcoming-ops-heading">{sh.heading || 'ACTIVE OPERATIONS'}</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="upcoming-ops-heading">{sh.heading || 'ACTIVE OPERATIONS'}</h2>
           <p>{sh.subtext || 'Join the next tactical mission'}</p>
         </div>
         {loading ? <div className="text-center text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>LOADING OPERATIONS...</div> : operations.length === 0 ? (
-          <div className="text-center text-[#4a6070] py-12 border border-dashed border-[rgba(0,255,136,0.1)]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>NO OPERATIONS CURRENTLY SCHEDULED. CHECK BACK SOON.</div>
+          <div className="text-center text-[#4a6070] py-12 border border-dashed border-[rgba(201,162,39,0.1)]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>NO OPERATIONS CURRENTLY SCHEDULED. CHECK BACK SOON.</div>
         ) : (
           <div className="grid md:grid-cols-3 gap-6">
             {operations.map((op, idx) => {
@@ -841,14 +805,14 @@ const UpcomingOperationsSection = ({ content }) => {
                       <Badge className={`${tc.bg} text-white text-[10px] tracking-[0.2em] px-3 py-0.5`} style={{ fontFamily: "'Oswald', sans-serif" }}>{op.operation_type.toUpperCase()}</Badge>
                       {op.logo_url && <img src={resolveImg(op.logo_url)} alt="" className="w-7 h-7 object-contain opacity-70" />}
                     </div>
-                    <CardTitle className="text-lg tracking-wide text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }}>{op.title}</CardTitle>
+                    <CardTitle className="text-lg tracking-wide text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }}>{op.title}</CardTitle>
                     <CardDescription className="text-[#4a6070] text-xs mt-1 line-clamp-2" style={{ fontFamily: "'Inter', sans-serif" }}>{op.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2 text-xs mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      <div className="flex items-center text-[#8a9aa8]"><Calendar className="w-3.5 h-3.5 mr-2 text-[#00ff88] shrink-0"/>{op.date}</div>
-                      <div className="flex items-center text-[#8a9aa8]"><Clock className="w-3.5 h-3.5 mr-2 text-[#00ff88] shrink-0"/>{op.time}</div>
-                      {op.max_participants && <div className="flex items-center text-[#4a6070]"><Users className="w-3.5 h-3.5 mr-2 text-[#00ff88] shrink-0"/><span>{op.rsvps?.length || 0} / {op.max_participants} operators</span></div>}
+                      <div className="flex items-center text-[#8a9aa8]"><Calendar className="w-3.5 h-3.5 mr-2 text-[#e8c547] shrink-0"/>{op.date}</div>
+                      <div className="flex items-center text-[#8a9aa8]"><Clock className="w-3.5 h-3.5 mr-2 text-[#e8c547] shrink-0"/>{op.time}</div>
+                      {op.max_participants && <div className="flex items-center text-[#4a6070]"><Users className="w-3.5 h-3.5 mr-2 text-[#e8c547] shrink-0"/><span>{op.rsvps?.length || 0} / {op.max_participants} operators</span></div>}
                     </div>
                     <Link to="/login"><Button className="w-full bg-[#c9a227] hover:bg-[#e8c547] text-[#050a0e] text-xs tracking-[0.15em] tactical-button" style={{ fontFamily: "'JetBrains Mono', monospace" }} data-testid={`operation-rsvp-${idx}`}>RSVP NOW <ChevronRight className="w-3.5 h-3.5 ml-1" /></Button></Link>
                   </CardContent>
@@ -887,17 +851,17 @@ const AnnouncementsSection = ({ content }) => {
       <div className="section-divider absolute top-0 left-0 right-0" />
       <div className="container mx-auto max-w-7xl">
         <div className="section-label">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="announcements-heading">{sh.heading || 'LATEST INTEL'}</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="announcements-heading">{sh.heading || 'LATEST INTEL'}</h2>
           <p>{sh.subtext || 'Stay informed with our latest updates'}</p>
         </div>
         {loading ? <div className="text-center text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>LOADING INTEL...</div> : announcements.length === 0 ? (
-          <div className="text-center text-[#4a6070] py-12 border border-dashed border-[rgba(0,255,136,0.1)]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>NO ACTIVE INTEL BRIEFINGS.</div>
+          <div className="text-center text-[#4a6070] py-12 border border-dashed border-[rgba(201,162,39,0.1)]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>NO ACTIVE INTEL BRIEFINGS.</div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {announcements.map((ann, idx) => {
               const pc = getPriority(ann.priority);
               return (
-                <Card key={ann.id} className={`intel-card bg-[#0c1117] backdrop-blur border border-[rgba(0,255,136,0.08)] ${pc.class}`} data-testid={`announcement-card-${idx}`}>
+                <Card key={ann.id} className={`intel-card bg-[#0c1117] backdrop-blur border border-[rgba(201,162,39,0.08)] ${pc.class}`} data-testid={`announcement-card-${idx}`}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -906,12 +870,12 @@ const AnnouncementsSection = ({ content }) => {
                       </div>
                       <span className="text-[10px] text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{new Date(ann.created_at).toLocaleDateString()}</span>
                     </div>
-                    <CardTitle className="text-lg mt-2 tracking-wide text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }}>{ann.title}</CardTitle>
+                    <CardTitle className="text-lg mt-2 tracking-wide text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }}>{ann.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-[#4a6070] text-xs leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{ann.content}</p>
                     <div className="mt-4 flex items-center justify-between">
-                      <span className="text-[10px] text-[#4a6070] flex items-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}><Megaphone className="w-3 h-3 mr-1.5 text-[#00ff88] opacity-40"/>{ann.author_name}</span>
+                      <span className="text-[10px] text-[#4a6070] flex items-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}><Megaphone className="w-3 h-3 mr-1.5 text-[#e8c547] opacity-40"/>{ann.author_name}</span>
                       {ann.badge_url && <img src={resolveImg(ann.badge_url)} alt="badge" className="w-7 h-7 object-contain opacity-70" />}
                     </div>
                   </CardContent>
@@ -935,16 +899,16 @@ const GallerySection = ({ content }) => {
       <div className="section-divider absolute top-0 left-0 right-0" />
       <div className="container mx-auto max-w-7xl">
         <div className="section-label">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="gallery-heading">{sh.heading || 'SIGNAL INTELLIGENCE'}</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="gallery-heading">{sh.heading || 'SIGNAL INTELLIGENCE'}</h2>
           <p>{sh.subtext || 'Moments from the field'}</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
           {(content.gallery?.showcaseImages || []).map((img, idx) => (
-            <div key={idx} className="aspect-square overflow-hidden border border-[rgba(0,255,136,0.1)] hover:border-[rgba(0,255,136,0.3)] transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30 corner-bracket relative" data-testid={`gallery-image-${idx}`}>
+            <div key={idx} className="aspect-square overflow-hidden border border-[rgba(201,162,39,0.1)] hover:border-[rgba(201,162,39,0.3)] transition-all duration-500 cursor-pointer group shadow-xl shadow-black/30 corner-bracket relative" data-testid={`gallery-image-${idx}`}>
               <MediaFrame src={resolveImg(img)} alt={`Mission ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
               <div className="absolute inset-0 bg-[#050a0e]/20 group-hover:bg-transparent transition-all duration-500" />
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span className="text-[8px] tracking-[0.3em] text-[#00ff88] bg-[#050a0e]/80 px-2 py-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>VIEWING</span>
+                <span className="text-[8px] tracking-[0.3em] text-[#e8c547] bg-[#050a0e]/80 px-2 py-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>VIEWING</span>
               </div>
             </div>
           ))}
@@ -965,13 +929,13 @@ const JoinUsSection = ({ content }) => {
       <div className="section-divider absolute top-0 left-0 right-0" />
       <div className="container mx-auto max-w-3xl text-center">
         <div className="section-label">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }} data-testid="join-heading">{sh.heading || 'ENLISTMENT PROTOCOL'}</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="join-heading">{sh.heading || 'ENLISTMENT PROTOCOL'}</h2>
           <p>{sh.subtext || 'Become part of the Tropic Lightning legacy'}</p>
         </div>
         {/* Status readout */}
         <div className="mb-8 flex items-center justify-center gap-2">
           <span className="status-dot status-dot-online" />
-          <span className="text-[10px] tracking-[0.3em] text-[#00ff88]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>RECRUITMENT STATUS: ACTIVE</span>
+          <span className="text-[10px] tracking-[0.3em] text-[#e8c547]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>RECRUITMENT STATUS: ACTIVE</span>
         </div>
         <Card className="glass-card corner-bracket">
           <CardContent className="p-8 md:p-12 space-y-6">
@@ -994,7 +958,7 @@ const JoinUsSection = ({ content }) => {
                 </Link>
                 {content.footer?.discord && (
                   <a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="w-full sm:col-span-2 lg:col-span-1">
-                    <Button variant="outline" className="border-[rgba(0,255,136,0.2)] text-[#00ff88] hover:bg-[rgba(0,255,136,0.05)] px-4 py-3 text-xs tracking-[0.15em] w-full" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    <Button variant="outline" className="border-[rgba(201,162,39,0.2)] text-[#e8c547] hover:bg-[rgba(201,162,39,0.05)] px-4 py-3 text-xs tracking-[0.15em] w-full" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                       JOIN OUR DISCORD
                     </Button>
                   </a>
@@ -1012,32 +976,32 @@ const JoinUsSection = ({ content }) => {
 // FOOTER
 // ============================================================================
 const Footer = ({ content }) => (
-  <footer className="bg-[#050a0e] border-t border-[rgba(0,255,136,0.08)] py-14 px-4 md:px-6" data-testid="footer">
+  <footer className="bg-[#050a0e] border-t border-[rgba(201,162,39,0.08)] py-14 px-4 md:px-6" data-testid="footer">
     <div className="container mx-auto max-w-7xl">
       {/* Classification banner */}
       <div className="classification-banner mb-10">UNCLASSIFIED // FOR OFFICIAL USE ONLY</div>
 
       <div className="grid md:grid-cols-3 gap-10 mb-10">
         <div>
-          <h3 className="text-sm font-bold mb-3 tracking-[0.15em] text-[#e8c547]" style={{ fontFamily: "'Orbitron', sans-serif" }}>{content.nav?.brandName || '25TH INFANTRY DIVISION'}</h3>
+          <h3 className="text-sm font-bold mb-3 tracking-[0.15em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>{content.nav?.brandName || '25TH INFANTRY DIVISION'}</h3>
           <p className="text-xs text-[#4a6070] leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{content.footer?.tagline || 'Tropic Lightning — Ready to Strike'}</p>
         </div>
         <div>
-          <h4 className="text-[10px] font-bold mb-3 tracking-[0.3em] text-[#00ff88] opacity-50" style={{ fontFamily: "'Oswald', sans-serif" }}>QUICK LINKS</h4>
-          <div className="h-px w-12 bg-[rgba(0,255,136,0.15)] mb-3" />
+          <h4 className="text-[10px] font-bold mb-3 tracking-[0.3em] text-[#e8c547] opacity-50" style={{ fontFamily: "'Oswald', sans-serif" }}>QUICK LINKS</h4>
+          <div className="h-px w-12 bg-[rgba(201,162,39,0.15)] mb-3" />
           <ul className="space-y-2 text-xs text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            <li><a href="#about" className="hover:text-[#00ff88] transition-colors">[ BRIEFING ]</a></li>
-            <li><a href="#history" className="hover:text-[#00ff88] transition-colors">[ HISTORY ]</a></li>
-            <li><a href="#training" className="hover:text-[#00ff88] transition-colors">[ TRAINING ]</a></li>
-            <li><a href="#operations" className="hover:text-[#00ff88] transition-colors">[ OPERATIONS ]</a></li>
-            <li><Link to="/login" className="hover:text-[#00ff88] transition-colors">[ MEMBER PORTAL ]</Link></li>
+            <li><a href="#about" className="hover:text-[#e8c547] transition-colors">[ BRIEFING ]</a></li>
+            <li><a href="#history" className="hover:text-[#e8c547] transition-colors">[ HISTORY ]</a></li>
+            <li><a href="#training" className="hover:text-[#e8c547] transition-colors">[ TRAINING ]</a></li>
+            <li><a href="#operations" className="hover:text-[#e8c547] transition-colors">[ OPERATIONS ]</a></li>
+            <li><Link to="/login" className="hover:text-[#e8c547] transition-colors">[ MEMBER PORTAL ]</Link></li>
           </ul>
         </div>
         <div>
-          <h4 className="text-[10px] font-bold mb-3 tracking-[0.3em] text-[#00ff88] opacity-50" style={{ fontFamily: "'Oswald', sans-serif" }}>COMMUNICATIONS</h4>
-          <div className="h-px w-12 bg-[rgba(0,255,136,0.15)] mb-3" />
+          <h4 className="text-[10px] font-bold mb-3 tracking-[0.3em] text-[#e8c547] opacity-50" style={{ fontFamily: "'Oswald', sans-serif" }}>COMMUNICATIONS</h4>
+          <div className="h-px w-12 bg-[rgba(201,162,39,0.15)] mb-3" />
           <div className="space-y-2 text-xs text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            {content.footer?.discord && <p><a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="hover:text-[#00ff88] transition-colors">[ DISCORD SERVER ]</a></p>}
+            {content.footer?.discord && <p><a href={content.footer.discord} target="_blank" rel="noopener noreferrer" className="hover:text-[#e8c547] transition-colors">[ DISCORD SERVER ]</a></p>}
             {(content.footer?.contact?.email || content.footer?.email) && <p>EMAIL: {content.footer?.contact?.email || content.footer?.email}</p>}
           </div>
         </div>
@@ -1103,6 +1067,7 @@ const LoginPage = () => {
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimChecked, setClaimChecked] = useState(false);
   const [claimUsername, setClaimUsername] = useState('');
+  const [loginTransition, setLoginTransition] = useState(null);
   const navigate = useNavigate();
 
   // If already authenticated, send the user to the correct destination immediately
@@ -1154,7 +1119,8 @@ const LoginPage = () => {
         .then(res => {
           login(res.data);
           window.history.replaceState({}, '', '/login');
-          navigate(getPostAuthRoute(res.data), { replace: true });
+          const dest = getPostAuthRoute(res.data);
+          setLoginTransition({ username: res.data.username, dest });
         })
         .catch(() => {
           setError('Discord login failed. Please try again.');
@@ -1188,7 +1154,8 @@ const LoginPage = () => {
       const response = await axios.post(`${API}${endpoint}`, payload);
       if (isLogin) {
         login(response.data.user);
-        navigate(getPostAuthRoute(response.data.user), { replace: true });
+        const dest = getPostAuthRoute(response.data.user);
+        setLoginTransition({ username: response.data.user.username, dest });
         return;
       }
 
@@ -1260,7 +1227,8 @@ const LoginPage = () => {
     try {
       const res = await axios.post(`${API}/auth/claim-account`, { email: formData.email, password: formData.password });
       login(res.data.user);
-      navigate(getPostAuthRoute(res.data.user), { replace: true });
+      const dest = getPostAuthRoute(res.data.user);
+      setLoginTransition({ username: res.data.user.username, dest });
     } catch (err) {
       setError(err.response?.data?.detail || 'Claim failed.');
     } finally { setSubmitting(false); }
@@ -1284,14 +1252,23 @@ const LoginPage = () => {
     backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed'
   } : {};
 
-  if (discordLoading) {
+  if (discordLoading && !loginTransition) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#050a0e]">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-[#00ff88] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-[#e8c547] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-[#4a6070] tracking-[0.2em] text-xs" style={{ fontFamily: "'JetBrains Mono', monospace" }}>AUTHENTICATING WITH DISCORD...</p>
         </div>
       </div>
+    );
+  }
+
+  if (loginTransition) {
+    return (
+      <LoginTransition
+        username={loginTransition.username}
+        onComplete={() => navigate(loginTransition.dest, { replace: true })}
+      />
     );
   }
 
@@ -1300,52 +1277,52 @@ const LoginPage = () => {
       {content.login?.showBackground && <div className="absolute inset-0 bg-[#050a0e]" style={{ opacity: content.login.overlayOpacity || 0.85 }} />}
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2 tracking-[0.15em] text-[#e8c547]" style={{ fontFamily: "'Orbitron', sans-serif" }}>25TH INFANTRY DIVISION</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 tracking-[0.15em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>25TH INFANTRY DIVISION</h1>
           <p className="text-[#4a6070] text-[10px] tracking-[0.3em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>// MEMBER ACCESS TERMINAL</p>
         </div>
         <Card className="glass-card corner-bracket">
-          <CardHeader><CardTitle className="text-lg text-center tracking-[0.15em] text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }}>{isClaiming ? 'CLAIM ACCOUNT' : isLogin ? 'MEMBER LOGIN' : 'NEW RECRUIT'}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-lg text-center tracking-[0.15em] text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }}>{isClaiming ? 'CLAIM ACCOUNT' : isLogin ? 'MEMBER LOGIN' : 'NEW RECRUIT'}</CardTitle></CardHeader>
           <CardContent>
             {isClaiming ? (
               <div className="space-y-4">
                 {!claimChecked ? (
                   <>
-                    <div><label className="block text-sm font-medium mb-2">Email</label><Input type="email" required className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] focus:border-[rgba(0,255,136,0.3)] text-[#d0d8e0]" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
-                    {notice && <div className="text-[#00ff88] text-sm text-center">{notice}</div>}
+                    <div><label className="block text-sm font-medium mb-2">Email</label><Input type="email" required className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] focus:border-[rgba(201,162,39,0.3)] text-[#d0d8e0]" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
+                    {notice && <div className="text-[#e8c547] text-sm text-center">{notice}</div>}
                     {error && <div className="text-[#e8c547] text-sm text-center">{error}</div>}
                     <Button onClick={handleCheckClaim} disabled={submitting} className="w-full bg-[#c9a227] hover:bg-[#e8c547] text-[#050a0e] py-5 tracking-[0.15em] tactical-button" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{submitting ? 'Checking...' : 'FIND MY ACCOUNT'}</Button>
                   </>
                 ) : (
                   <form onSubmit={handleClaimSubmit} className="space-y-4">
                     <div className="text-center text-sm text-[#4a6070] mb-2">Welcome back, <span className="text-[#e8c547] font-bold">{claimUsername}</span></div>
-                    <div><label className="block text-sm font-medium mb-2">Set Password</label><Input type="password" required minLength={8} className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0]" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="Min 8 characters" /></div>
-                    {notice && <div className="text-[#00ff88] text-sm text-center">{notice}</div>}
+                    <div><label className="block text-sm font-medium mb-2">Set Password</label><Input type="password" required minLength={8} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0]" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="Min 8 characters" /></div>
+                    {notice && <div className="text-[#e8c547] text-sm text-center">{notice}</div>}
                     {error && <div className="text-[#e8c547] text-sm text-center">{error}</div>}
                     <Button type="submit" disabled={submitting} className="w-full bg-[#c9a227] hover:bg-[#e8c547] text-[#050a0e] py-5 tracking-[0.15em] tactical-button" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{submitting ? 'Activating...' : 'ACTIVATE ACCOUNT'}</Button>
                   </form>
                 )}
                 <div className="text-center mt-4">
-                  <button onClick={() => { setIsClaiming(false); setClaimChecked(false); setClaimUsername(''); setError(''); setNotice(''); }} className="text-sm text-[#4a6070] hover:text-[#00ff88] transition-colors">← Back to Login</button>
+                  <button onClick={() => { setIsClaiming(false); setClaimChecked(false); setClaimUsername(''); setError(''); setNotice(''); }} className="text-sm text-[#4a6070] hover:text-[#e8c547] transition-colors">← Back to Login</button>
                 </div>
               </div>
             ) : (
             <>
             <form onSubmit={handleSubmit} className="space-y-4" data-testid="auth-form">
-              {!isLogin && <div><label className="block text-sm font-medium mb-2">Username</label><Input type="text" required className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0]" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} data-testid="auth-username-input" /></div>}
-              <div><label className="block text-sm font-medium mb-2">Email</label><Input type="email" required className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0]" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} data-testid="auth-email-input" /></div>
-              <div><label className="block text-sm font-medium mb-2">Password</label><Input type="password" required className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0]" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} data-testid="auth-password-input" /></div>
+              {!isLogin && <div><label className="block text-sm font-medium mb-2">Username</label><Input type="text" required className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0]" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} data-testid="auth-username-input" /></div>}
+              <div><label className="block text-sm font-medium mb-2">Email</label><Input type="email" required className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0]" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} data-testid="auth-email-input" /></div>
+              <div><label className="block text-sm font-medium mb-2">Password</label><Input type="password" required className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0]" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} data-testid="auth-password-input" /></div>
               {!isLogin && <>
-                <div><label className="block text-sm font-medium mb-2">Rank (Optional)</label><Input type="text" className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0]" value={formData.rank} onChange={(e) => setFormData({...formData, rank: e.target.value})} data-testid="auth-rank-input" /></div>
-                <div><label className="block text-sm font-medium mb-2">Specialization (Optional)</label><Input type="text" placeholder="e.g., Assault, Recon, Support" className="bg-[#050a0e] border-[rgba(0,255,136,0.15)] text-[#d0d8e0]" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} data-testid="auth-specialization-input" /></div>
+                <div><label className="block text-sm font-medium mb-2">Rank (Optional)</label><Input type="text" className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0]" value={formData.rank} onChange={(e) => setFormData({...formData, rank: e.target.value})} data-testid="auth-rank-input" /></div>
+                <div><label className="block text-sm font-medium mb-2">Specialization (Optional)</label><Input type="text" placeholder="e.g., Assault, Recon, Support" className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0]" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} data-testid="auth-specialization-input" /></div>
               </>}
-              {notice && <div className="text-[#00ff88] text-sm text-center" data-testid="auth-notice">{notice}</div>}
+              {notice && <div className="text-[#e8c547] text-sm text-center" data-testid="auth-notice">{notice}</div>}
               {error && <div className="text-[#e8c547] text-sm text-center" data-testid="auth-error">{error}</div>}
               {isLogin && pendingVerificationEmail && (
                 <button
                   type="button"
                   onClick={handleResendVerification}
                   disabled={resendingVerification}
-                  className="w-full text-sm text-[#8a9aa8] hover:text-[#00ff88] transition-colors disabled:opacity-60"
+                  className="w-full text-sm text-[#8a9aa8] hover:text-[#e8c547] transition-colors disabled:opacity-60"
                   data-testid="auth-resend-verification-button"
                 >
                   {resendingVerification ? 'Sending verification email...' : `Resend verification email to ${pendingVerificationEmail}`}
@@ -1374,11 +1351,11 @@ const LoginPage = () => {
               </div>
             )}
             <div className="mt-6 text-center">
-              <button onClick={() => { setIsLogin(!isLogin); setError(''); setNotice(''); }} className="text-sm text-[#4a6070] hover:text-[#00ff88] transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
+              <button onClick={() => { setIsLogin(!isLogin); setError(''); setNotice(''); }} className="text-sm text-[#4a6070] hover:text-[#e8c547] transition-colors" data-testid="auth-toggle-button">{isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}</button>
             </div>
             {isLogin && (
               <div className="mt-3 text-center">
-                <button onClick={() => { setIsClaiming(true); setError(''); setNotice(''); }} className="text-sm text-[#4a6070] hover:text-[#00ff88] transition-colors">Already a member? Claim your pre-created account</button>
+                <button onClick={() => { setIsClaiming(true); setError(''); setNotice(''); }} className="text-sm text-[#4a6070] hover:text-[#e8c547] transition-colors">Already a member? Claim your pre-created account</button>
               </div>
             )}
             </>
@@ -1386,13 +1363,13 @@ const LoginPage = () => {
           </CardContent>
         </Card>
         <div className="mt-6 text-center space-y-3">
-          <Link to="/" className="text-sm text-[#4a6070] hover:text-[#00ff88] transition-colors block">&larr; Back to Home</Link>
-          <div className="border-t border-[rgba(0,255,136,0.08)] pt-4 mt-4">
+          <Link to="/" className="text-sm text-[#4a6070] hover:text-[#e8c547] transition-colors block">&larr; Back to Home</Link>
+          <div className="border-t border-[rgba(201,162,39,0.08)] pt-4 mt-4">
             <p className="text-[10px] text-[#4a6070] mb-2 tracking-[0.2em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>PARTNER UNIT ACCESS</p>
-            <Link to="/partner-login" className="inline-flex items-center gap-2 px-4 py-2 border border-[rgba(0,255,136,0.2)] text-[#00ff88] hover:bg-[rgba(0,255,136,0.05)] hover:border-[rgba(0,255,136,0.4)] transition-all text-xs" style={{ fontFamily: "'JetBrains Mono', monospace" }} data-testid="partner-login-link">
+            <Link to="/partner-login" className="inline-flex items-center gap-2 px-4 py-2 border border-[rgba(201,162,39,0.2)] text-[#e8c547] hover:bg-[rgba(201,162,39,0.05)] hover:border-[rgba(201,162,39,0.4)] transition-all text-xs" style={{ fontFamily: "'JetBrains Mono', monospace" }} data-testid="partner-login-link">
               <Shield className="w-4 h-4" /> [ S-5 LIAISON / PARTNER ]
             </Link>
-            <Link to="/partner-apply" className="block mt-2 text-[10px] text-[#4a6070] hover:text-[#00ff88] transition-colors" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <Link to="/partner-apply" className="block mt-2 text-[10px] text-[#4a6070] hover:text-[#e8c547] transition-colors" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               Apply as a Partner Unit →
             </Link>
           </div>
@@ -1416,8 +1393,8 @@ function RouteFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#050a0e] text-[#d0d8e0]">
       <div className="text-center">
-        <div className="mx-auto mb-4 h-10 w-10 rounded-full border-2 border-[#00ff88] border-t-transparent animate-spin" />
-        <p className="text-xs tracking-[0.2em] text-[#00ff88] opacity-60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>LOADING MODULE</p>
+        <div className="mx-auto mb-4 h-10 w-10 rounded-full border-2 border-[#e8c547] border-t-transparent animate-spin" />
+        <p className="text-xs tracking-[0.2em] text-[#e8c547] opacity-60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>LOADING MODULE</p>
       </div>
     </div>
   );

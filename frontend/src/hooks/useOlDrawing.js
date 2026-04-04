@@ -99,7 +99,7 @@ function createDrawingStyle(drawing) {
       new Style({
         text: new OlText({
           text: drawing.label,
-          font: 'bold 11px Rajdhani, sans-serif',
+          font: 'bold 11px Share Tech, sans-serif',
           fill: new Fill({ color: hexToRgba(color, opacity) }),
           stroke: new Stroke({ color: 'rgba(0,0,0,0.7)', width: 3 }),
           offsetY: -12,

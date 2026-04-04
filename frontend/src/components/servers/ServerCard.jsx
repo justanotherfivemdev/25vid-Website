@@ -55,7 +55,7 @@ function formatGraphTime(timestamp) {
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded border border-tropic-gold-dark/30 bg-black/95 px-3 py-2 text-xs shadow-lg">
+    <div className="rounded border border-tropic-gold-dark/30 bg-[#050a0e]/95 px-3 py-2 text-xs shadow-lg">
       <p className="mb-1 text-tropic-gold-dark">{label}</p>
       {payload.map((entry) => (
         <p key={entry.dataKey} style={{ color: entry.color }}>
@@ -91,7 +91,7 @@ function StatBox({ icon: Icon, label, value }) {
       <Icon className="h-3.5 w-3.5 shrink-0 text-tropic-gold-dark" />
       <div className="min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-tropic-gold-dark">{label}</p>
-        <p className="truncate text-sm font-semibold text-gray-200">{value ?? '-'}</p>
+        <p className="truncate text-sm font-semibold text-[#d0d8e0]">{value ?? '-'}</p>
       </div>
     </div>
   );
@@ -104,7 +104,7 @@ function MetricSparkline({ label, value, data, dataKey, color, emptyLabel }) {
   return (
     <div className="grid grid-cols-[64px_72px_1fr] items-center gap-3 rounded-lg bg-zinc-950/60 px-3 py-2">
       <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-tropic-gold-dark">{label}</span>
-      <span className="text-sm font-semibold text-gray-200">{value}</span>
+      <span className="text-sm font-semibold text-[#d0d8e0]">{value}</span>
       {numericValues.length < 2 ? (
         <div className="flex h-10 items-center justify-end text-[11px] text-zinc-500">
           {emptyLabel}
@@ -161,7 +161,7 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
 
   return (
     <Card
-      className={`group flex flex-col border-tropic-gold-dark/15 bg-black/80 backdrop-blur-sm transition-all duration-200 hover:border-tropic-gold/30 hover:bg-black/90 ${glow}`}
+      className={`group flex flex-col border-tropic-gold-dark/15 bg-[#050a0e]/80 backdrop-blur-sm transition-all duration-200 hover:border-tropic-gold/30 hover:bg-[#050a0e]/90 ${glow}`}
     >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-3">
@@ -174,7 +174,7 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
           <span className="sr-only">Server status: {displayStatus}</span>
         </div>
         {description && (
-          <p className="mt-1 line-clamp-1 text-xs text-gray-500">{description}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-[#4a6070]">{description}</p>
         )}
       </CardHeader>
 

@@ -46,7 +46,7 @@ export default function TimelineScrubber() {
         className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
           isAutoPlaying
             ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light shadow-tropic-gold/30'
-            : 'bg-black/95 text-tropic-gold hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+            : 'bg-[#050a0e]/95 text-tropic-gold hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
         } backdrop-blur-sm`}
         title={isAutoPlaying ? 'Pause auto-pan' : 'Start auto-pan'}
       >

@@ -1098,16 +1098,16 @@ export default function GlobalThreatMap({
   if (!MAPBOX_TOKEN) {
     return (
       <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,#223012_0%,#0a0d12_52%,#040506_100%)] text-tropic-gold-dark">
-        <div className="max-w-lg rounded-2xl border border-tropic-gold/20 bg-black/80 p-8 text-center shadow-2xl">
+        <div className="max-w-lg rounded-2xl border border-tropic-gold/20 bg-[#050a0e]/80 p-8 text-center shadow-2xl">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-tropic-gold-dark">Threat Map Offline</p>
           <p className="mt-3 text-2xl font-semibold text-tropic-gold">Mapbox token required</p>
-          <p className="mt-3 text-sm text-gray-400">
+          <p className="mt-3 text-sm text-[#8a9aa8]">
             The intelligence feed is still available, but the globe cannot render until
-            <code className="mx-1 rounded border border-tropic-gold/20 bg-black px-2 py-1 text-tropic-gold-light">REACT_APP_MAPBOX_TOKEN</code>
+            <code className="mx-1 rounded border border-tropic-gold/20 bg-[#050a0e] px-2 py-1 text-tropic-gold-light">REACT_APP_MAPBOX_TOKEN</code>
             is configured.
           </p>
           {isAdmin && (
-            <p className="mt-4 text-xs text-gray-500">
+            <p className="mt-4 text-xs text-[#4a6070]">
               Admin diagnostic: verify the token, map style access, and outbound tile connectivity.
             </p>
           )}
@@ -1119,21 +1119,21 @@ export default function GlobalThreatMap({
   return (
     <div className="relative h-full w-full">
       {!mapReady && !mapError && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/35 backdrop-blur-[1px]">
-          <div className="rounded-xl border border-tropic-gold/20 bg-black/75 px-4 py-3 text-sm text-tropic-gold-light">
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-[#050a0e]/35 backdrop-blur-[1px]">
+          <div className="rounded-xl border border-tropic-gold/20 bg-[#050a0e]/75 px-4 py-3 text-sm text-tropic-gold-light">
             Initializing globe...
           </div>
         </div>
       )}
       {mapError && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/75 backdrop-blur-sm">
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#050a0e]/75 backdrop-blur-sm">
           <div className="max-w-xl rounded-2xl border border-red-500/25 bg-[#091018] p-6 text-center shadow-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-red-300">Map Rendering Degraded</p>
             <p className="mt-3 text-xl font-semibold text-tropic-gold">Global threat map unavailable</p>
-            <p className="mt-3 text-sm text-gray-300">
+            <p className="mt-3 text-sm text-[#8a9aa8]">
               The sidebar feed and search remain active while the globe recovers.
             </p>
-            <p className="mt-4 text-xs text-gray-500">
+            <p className="mt-4 text-xs text-[#4a6070]">
               {isAdmin ? mapError : 'A map style, token, or tile-loading error prevented the globe from rendering.'}
             </p>
           </div>
@@ -1318,7 +1318,7 @@ export default function GlobalThreatMap({
                     </div>
                   )}
                   {startedTime && (
-                    <div className="text-[7px] text-gray-500 leading-tight font-mono">
+                    <div className="text-[7px] text-[#4a6070] leading-tight font-mono">
                       {startedTime}
                     </div>
                   )}
@@ -1742,16 +1742,16 @@ export default function GlobalThreatMap({
                     <span className="text-[9px] font-black tracking-[0.15em] uppercase px-2 py-0.5 bg-blue-800/30 text-blue-300 border border-blue-700/30 rounded-sm">
                       {deploymentPopup.data.affiliation}
                     </span>
-                    <span className="text-[9px] tracking-wider uppercase px-2 py-0.5 bg-gray-800 text-gray-400 border border-gray-700/40 rounded-sm">
+                    <span className="text-[9px] tracking-wider uppercase px-2 py-0.5 bg-[#111a24] text-[#8a9aa8] border border-[rgba(201,162,39,0.06)] rounded-sm">
                       {deploymentPopup.data.symbol_type?.replace(/_/g, ' ')}
                     </span>
                   </div>
                   <h3 className="font-bold text-tropic-gold text-sm tracking-wide">{deploymentPopup.data.title}</h3>
                   {deploymentPopup.data.designator && (
-                    <p className="text-[11px] text-gray-400 mt-1 font-mono">{deploymentPopup.data.designator}</p>
+                    <p className="text-[11px] text-[#8a9aa8] mt-1 font-mono">{deploymentPopup.data.designator}</p>
                   )}
                   {deploymentPopup.data.description && (
-                    <p className="text-[11px] text-gray-300 mt-1 leading-snug">{deploymentPopup.data.description}</p>
+                    <p className="text-[11px] text-[#8a9aa8] mt-1 leading-snug">{deploymentPopup.data.description}</p>
                   )}
                 </>
               ) : (
@@ -1763,7 +1763,7 @@ export default function GlobalThreatMap({
                       deploymentPopup.data.status === 'deployed'  ? 'bg-green-900/30 text-green-300 border-green-700/30' :
                       deploymentPopup.data.status === 'endex'     ? 'bg-orange-900/30 text-orange-300 border-orange-700/30' :
                       deploymentPopup.data.status === 'rtb'       ? 'bg-blue-900/30 text-blue-300 border-blue-700/30' :
-                      'bg-gray-800/50 text-gray-300 border-gray-700/30'
+                      'bg-[#111a24]/50 text-[#8a9aa8] border-[rgba(201,162,39,0.045)]'
                     }`}>
                       {deploymentPopup.data.status}
                     </span>
@@ -1793,10 +1793,10 @@ export default function GlobalThreatMap({
                     const lastName = rps.length > 1 ? rps[rps.length - 1].name : '';
                     if (firstName && lastName) {
                       return (
-                        <p className="text-[11px] text-gray-300 mt-1 flex items-center gap-1">
-                          <span className="text-gray-500 font-mono">{firstName}</span>
+                        <p className="text-[11px] text-[#8a9aa8] mt-1 flex items-center gap-1">
+                          <span className="text-[#4a6070] font-mono">{firstName}</span>
                           <span className="text-tropic-gold/60">→</span>
-                          <span className="text-gray-300 font-mono">{lastName}</span>
+                          <span className="text-[#8a9aa8] font-mono">{lastName}</span>
                         </p>
                       );
                     }
@@ -1817,7 +1817,7 @@ export default function GlobalThreatMap({
 
                   {/* Start time */}
                   {deploymentPopup.data.started_at && (
-                    <p className="text-[10px] text-gray-500 mt-1 font-mono">
+                    <p className="text-[10px] text-[#4a6070] mt-1 font-mono">
                       {new Date(deploymentPopup.data.started_at).toLocaleString(undefined, {
                         month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
                       })}
@@ -1834,7 +1834,7 @@ export default function GlobalThreatMap({
                         {[...deploymentPopup.data.route_points]
                           .sort((a, b) => a.order - b.order)
                           .map((rp, i, arr) => (
-                            <li key={i} className="text-[10px] text-gray-300 flex items-center gap-1.5">
+                            <li key={i} className="text-[10px] text-[#8a9aa8] flex items-center gap-1.5">
                               <span
                                 className="shrink-0"
                                 style={{
@@ -1847,7 +1847,7 @@ export default function GlobalThreatMap({
                               />
                               <span className="font-mono">{rp.name || `WP${i + 1}`}</span>
                               {rp.stop_duration_hours != null && rp.stop_duration_hours > 0 && (
-                                <span className="text-gray-600 ml-auto text-[9px]">{rp.stop_duration_hours}h</span>
+                                <span className="text-[#4a6070] ml-auto text-[9px]">{rp.stop_duration_hours}h</span>
                               )}
                             </li>
                           ))}
@@ -1909,7 +1909,7 @@ export default function GlobalThreatMap({
                   >
                     {entry.title}
                   </div>
-                  <div className="text-[7px] text-gray-500 leading-tight">
+                  <div className="text-[7px] text-[#4a6070] leading-tight">
                     {entry.label} · {entry.category}
                   </div>
                 </div>
@@ -1931,7 +1931,7 @@ export default function GlobalThreatMap({
           className={`flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
             trackDeployment
               ? 'bg-tropic-gold text-black hover:bg-tropic-gold-light shadow-tropic-gold/30'
-              : 'bg-black/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
+              : 'bg-[#050a0e]/90 text-tropic-gold-light hover:bg-tropic-gold/10 border border-tropic-gold-dark/30'
           } backdrop-blur-md`}
           title={trackDeployment ? 'Stop Tracking Deployment' : 'Track Active Deployment'}
         >

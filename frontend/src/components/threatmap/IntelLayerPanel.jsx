@@ -107,7 +107,7 @@ export default function IntelLayerPanel() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-lg border bg-black/90 text-tropic-gold hover:bg-tropic-gold/10 backdrop-blur-md"
+          className="h-9 w-9 rounded-lg border bg-[#050a0e]/90 text-tropic-gold hover:bg-tropic-gold/10 backdrop-blur-md"
           style={{ borderColor: 'rgba(255,215,0,0.4)' }}
           onClick={() => setIsCollapsed(false)}
           title="Show intelligence layers"
@@ -140,7 +140,7 @@ export default function IntelLayerPanel() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-5 w-5 text-gray-500 hover:text-tropic-gold"
+          className="h-5 w-5 text-[#4a6070] hover:text-tropic-gold"
           onClick={() => setIsCollapsed(true)}
         >
           <ChevronLeft className="h-3 w-3" />
@@ -152,7 +152,7 @@ export default function IntelLayerPanel() {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-1.5">
             <AlertTriangle className="h-3 w-3" style={{ color: riskColor }} />
-            <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+            <span className="text-[10px] text-[#8a9aa8] font-medium uppercase tracking-wider">
               Threat Level
             </span>
           </div>
@@ -160,14 +160,14 @@ export default function IntelLayerPanel() {
             {riskLevel}
           </span>
         </div>
-        <div className="h-1.5 rounded-full bg-gray-800 overflow-hidden">
+        <div className="h-1.5 rounded-full bg-[#111a24] overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${riskScore}%`, backgroundColor: riskColor }}
           />
         </div>
         <div className="flex items-center justify-between mt-1">
-          <span className="text-[8px] text-gray-600">{filteredEvents.length} events tracked</span>
+          <span className="text-[8px] text-[#4a6070]">{filteredEvents.length} events tracked</span>
           <span className="text-[8px] font-mono" style={{ color: riskColor }}>{riskScore}/100</span>
         </div>
       </div>
@@ -175,8 +175,8 @@ export default function IntelLayerPanel() {
       {/* Data source filter */}
       <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
         <div className="flex items-center gap-1.5 mb-1.5">
-          <Database className="h-3 w-3 text-gray-500" />
-          <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+          <Database className="h-3 w-3 text-[#4a6070]" />
+          <span className="text-[10px] text-[#8a9aa8] font-medium uppercase tracking-wider">
             Data Source
           </span>
         </div>
@@ -188,7 +188,7 @@ export default function IntelLayerPanel() {
               className={`flex-1 text-[9px] py-1 rounded font-medium transition-all ${
                 dataSourceFilter === opt.id
                   ? 'bg-tropic-gold/20 text-tropic-gold border border-tropic-gold/40'
-                  : 'text-gray-500 hover:text-gray-300 border border-transparent hover:border-gray-700'
+                  : 'text-[#4a6070] hover:text-[#8a9aa8] border border-transparent hover:border-[rgba(201,162,39,0.15)]'
               }`}
             >
               {opt.label}
@@ -225,14 +225,14 @@ export default function IntelLayerPanel() {
                 <div className="text-[10px] font-medium" style={{ color: isActive ? '#e2e8f0' : '#9ca3af' }}>
                   {layer.label}
                 </div>
-                <div className="text-[8px] text-gray-600 truncate">
+                <div className="text-[8px] text-[#4a6070] truncate">
                   {layer.description}
                 </div>
               </div>
               {isActive ? (
                 <Eye className="h-3 w-3 shrink-0" style={{ color: layer.color }} />
               ) : (
-                <EyeOff className="h-3 w-3 text-gray-700 shrink-0" />
+                <EyeOff className="h-3 w-3 text-[#4a6070] shrink-0" />
               )}
             </button>
           );
@@ -243,7 +243,7 @@ export default function IntelLayerPanel() {
       <div className="px-3 py-1.5 border-t text-center" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
         <div className="flex items-center justify-center gap-1.5">
           <Activity className="h-3 w-3 text-green-500" />
-          <span className="text-[8px] text-gray-600 uppercase tracking-wider">
+          <span className="text-[8px] text-[#4a6070] uppercase tracking-wider">
             {mapViewMode === 'globe' ? '🌍 Globe View' : '🗺️ World Monitor'} • Live
           </span>
         </div>

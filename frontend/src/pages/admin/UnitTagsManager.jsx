@@ -39,12 +39,12 @@ const TagCategoryCard = ({ category, tags, customTags, onAddTag, onRemoveCustomT
   };
 
   return (
-    <Card className="bg-gray-900 border-gray-800">
+    <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
       <CardHeader className="pb-3">
         <CardTitle className={`text-lg tracking-wider flex items-center gap-2 ${category.color}`}>
           <Icon className="w-5 h-5" /> {category.label}
         </CardTitle>
-        <p className="text-xs text-gray-500">{category.description}</p>
+        <p className="text-xs text-[#4a6070]">{category.description}</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Add new tag */}
@@ -54,7 +54,7 @@ const TagCategoryCard = ({ category, tags, customTags, onAddTag, onRemoveCustomT
             onChange={e => setNewTag(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={`Add new ${category.label.toLowerCase().slice(0, -1)}...`}
-            className="bg-black border-gray-700 flex-1"
+            className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] flex-1"
             data-testid={`add-${category.key}-input`}
           />
           <Button 
@@ -75,7 +75,7 @@ const TagCategoryCard = ({ category, tags, customTags, onAddTag, onRemoveCustomT
               <Badge 
                 key={tag} 
                 variant="outline" 
-                className={`${isCustom ? 'bg-tropic-gold/20 border-tropic-gold/40 text-tropic-gold' : 'bg-gray-800/50 border-gray-700 text-gray-300'} px-2 py-1 text-xs flex items-center gap-1`}
+                className={`${isCustom ? 'bg-tropic-gold/20 border-tropic-gold/40 text-tropic-gold' : 'bg-[#111a24]/50 border-[rgba(201,162,39,0.15)] text-[#8a9aa8]'} px-2 py-1 text-xs flex items-center gap-1`}
               >
                 {tag}
                 {isCustom && (
@@ -93,9 +93,9 @@ const TagCategoryCard = ({ category, tags, customTags, onAddTag, onRemoveCustomT
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 text-[10px] text-gray-600 pt-2 border-t border-gray-800">
+        <div className="flex items-center gap-4 text-[10px] text-[#4a6070] pt-2 border-t border-[rgba(201,162,39,0.12)]">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-gray-600"></span> Default
+            <span className="w-2 h-2 rounded-full bg-[#4a6070]"></span> Default
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-tropic-gold"></span> Custom (removable)
@@ -198,19 +198,18 @@ const UnitTagsManager = () => {
     <>
       <div className="space-y-6 max-w-4xl">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="unit-tags-title">
-              UNIT CONFIGURATION
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Manage ranks, units, billets, and other organizational tags. Custom tags extend the defaults.
-            </p>
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Organization Structure</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="unit-tags-title">UNIT CONFIGURATION</h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>Manage ranks, units, billets, and other organizational tags</p>
+            </div>
+            <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="save-tags-btn">
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="save-tags-btn">
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Changes'}
-          </Button>
         </div>
 
         {/* Message */}
@@ -224,7 +223,7 @@ const UnitTagsManager = () => {
         {/* Info box */}
         <div className="bg-tropic-gold/10 border border-tropic-gold/30 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-tropic-gold mb-1">How Unit Tags Work</h3>
-          <ul className="text-xs text-gray-400 space-y-1 list-disc list-inside">
+          <ul className="text-xs text-[#8a9aa8] space-y-1 list-disc list-inside">
             <li>Default tags (gray) are built-in and cannot be removed</li>
             <li>Custom tags (amber) that you add can be removed anytime</li>
             <li>These options appear in dropdown menus when editing member profiles</li>

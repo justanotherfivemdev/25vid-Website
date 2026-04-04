@@ -63,18 +63,18 @@ export default function ReforgerMapPage() {
   if (!selectedMap) {
     return (
       <div className="min-h-screen bg-[#060a14] text-white">
-        <header className="border-b border-gray-800 bg-[#0c1322] px-4 py-3 flex items-center gap-3">
-          <Link to="/hub" className="text-gray-400 hover:text-white transition">
+        <header className="border-b border-[rgba(201,162,39,0.12)] bg-[#0c1322] px-4 py-3 flex items-center gap-3">
+          <Link to="/hub" className="text-[#8a9aa8] hover:text-white transition">
             <ChevronLeft className="w-5 h-5" />
           </Link>
           <Globe2 className="w-5 h-5 text-[#C9A227]" />
-          <h1 className="text-lg font-bold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h1 className="text-lg font-bold tracking-wide" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             REFORGER MAPS
           </h1>
         </header>
 
         <div className="max-w-4xl mx-auto p-6">
-          <p className="text-gray-400 mb-6">
+          <p className="text-[#8a9aa8] mb-6">
             Select an Arma Reforger map to open an interactive viewer with zoom, markers, and distance measurement.
           </p>
 
@@ -82,26 +82,26 @@ export default function ReforgerMapPage() {
             {REFORGER_MAPS.map((m) => (
               <Card
                 key={m.id}
-                className="bg-gray-900/60 border-gray-800 hover:border-[#C9A227]/50 transition cursor-pointer group"
+                className="bg-[#0c1117]/60 border-[rgba(201,162,39,0.12)] hover:border-[#C9A227]/50 transition cursor-pointer group"
                 onClick={() => { setSelectedMap(m); setMarkers([]); }}
               >
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-white group-hover:text-[#C9A227] transition" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                    <h3 className="text-lg font-bold text-white group-hover:text-[#C9A227] transition" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                       {m.name}
                     </h3>
-                    <Badge className="bg-gray-800 text-gray-400 text-[10px]">
+                    <Badge className="bg-[#111a24] text-[#8a9aa8] text-[10px]">
                       {(m.xMax / 1000).toFixed(1)} × {(m.yMax / 1000).toFixed(1)} km
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-500">{m.description}</p>
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <p className="text-sm text-[#4a6070]">{m.description}</p>
+                  <div className="flex items-center gap-2 text-xs text-[#4a6070]">
                     <Crosshair className="w-3 h-3" />
                     Grid: {m.gridSize}m squares
                   </div>
 
                   {/* Preview thumbnail */}
-                  <div className="h-32 bg-gray-800 rounded overflow-hidden">
+                  <div className="h-32 bg-[#111a24] rounded overflow-hidden">
                     <img
                       src={m.imageUrl}
                       alt={m.name}
@@ -122,18 +122,18 @@ export default function ReforgerMapPage() {
   return (
     <div className="flex flex-col h-screen bg-[#060a14] text-white">
       {/* Top bar */}
-      <header className="shrink-0 border-b border-gray-800 bg-[#0c1322] px-4 py-2 flex items-center gap-3 flex-wrap">
+      <header className="shrink-0 border-b border-[rgba(201,162,39,0.12)] bg-[#0c1322] px-4 py-2 flex items-center gap-3 flex-wrap">
         <button
           onClick={() => setSelectedMap(null)}
-          className="text-gray-400 hover:text-white transition"
+          className="text-[#8a9aa8] hover:text-white transition"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <Map className="w-5 h-5 text-[#C9A227]" />
-        <h1 className="text-lg font-bold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <h1 className="text-lg font-bold tracking-wide" style={{ fontFamily: "'Share Tech', sans-serif" }}>
           {selectedMap.name.toUpperCase()}
         </h1>
-        <Badge className="bg-gray-800 text-gray-400 text-[10px]">
+        <Badge className="bg-[#111a24] text-[#8a9aa8] text-[10px]">
           {(selectedMap.xMax / 1000).toFixed(1)} × {(selectedMap.yMax / 1000).toFixed(1)} km
         </Badge>
 
@@ -143,7 +143,7 @@ export default function ReforgerMapPage() {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs border-gray-700 text-gray-400"
+                className="h-7 text-xs border-[rgba(201,162,39,0.15)] text-[#8a9aa8]"
                 onClick={handleExportMarkers}
               >
                 <Download className="w-3 h-3 mr-1" /> Export Markers

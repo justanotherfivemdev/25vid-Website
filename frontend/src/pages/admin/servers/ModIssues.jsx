@@ -22,7 +22,7 @@ const VERDICT_OPTIONS = ['active', 'monitoring', 'resolved', 'false_positive'];
 function confidenceColor(score) {
   if (score >= 0.8) return 'bg-red-600 text-white';
   if (score >= 0.5) return 'bg-yellow-600 text-black';
-  return 'bg-gray-600 text-white';
+  return 'bg-[#4a6070] text-white';
 }
 
 function severityColor(severity) {
@@ -40,9 +40,9 @@ function statusColor(status) {
     active: 'bg-red-900/40 text-red-300 border-red-700/50',
     monitoring: 'bg-yellow-900/40 text-yellow-300 border-yellow-700/50',
     resolved: 'bg-green-900/40 text-green-300 border-green-700/50',
-    false_positive: 'bg-gray-800 text-gray-400 border-gray-700',
+    false_positive: 'bg-[#111a24] text-[#8a9aa8] border-[rgba(201,162,39,0.15)]',
   };
-  return map[status] || 'bg-gray-800 text-gray-400 border-gray-700';
+  return map[status] || 'bg-[#111a24] text-[#8a9aa8] border-[rgba(201,162,39,0.15)]';
 }
 
 function sourceTone(category) {
@@ -120,14 +120,14 @@ function ModIssues() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-[0.15em] text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h1 className="text-2xl font-bold tracking-[0.15em] text-tropic-gold" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             MOD ISSUES
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-[#4a6070]">
             Structured issue analysis across engine, config, workshop, runtime, BattlEye/RCON, network, and performance sources.
           </p>
         </div>
-        <Button onClick={fetchIssues} variant="outline" size="sm" className="border-gray-700 text-gray-400 hover:text-white">
+        <Button onClick={fetchIssues} variant="outline" size="sm" className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white">
           <RefreshCw className="mr-1 h-4 w-4" /> Refresh
         </Button>
       </div>
@@ -140,18 +140,18 @@ function ModIssues() {
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4a6070]" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by mod, category, stream, summary, or signature..."
-            className="border-gray-700 bg-gray-900 pl-10 text-white"
+            className="border-[rgba(201,162,39,0.15)] bg-[#0c1117] pl-10 text-white"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+          className="rounded-md border border-[rgba(201,162,39,0.15)] bg-[#0c1117] px-3 py-2 text-sm text-white"
         >
           <option value="">All Statuses</option>
           <option value="active">Active</option>
@@ -164,12 +164,12 @@ function ModIssues() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((item) => (
-            <div key={item} className="h-28 animate-pulse rounded-lg bg-gray-900/50" />
+            <div key={item} className="h-28 animate-pulse rounded-lg bg-[#0c1117]/50" />
           ))}
         </div>
       ) : filteredIssues.length === 0 ? (
-        <Card className="border-gray-800 bg-gray-900/50">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-gray-500">
+        <Card className="border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-[#4a6070]">
             <CheckCircle2 className="mb-4 h-12 w-12 opacity-30" />
             <p className="text-lg font-medium">No mod issues detected</p>
             <p className="mt-1 text-sm">
@@ -203,17 +203,17 @@ function ModIssues() {
                         </Badge>
                       )}
                       {issue.issue_type && (
-                        <Badge variant="outline" className="border-zinc-700 text-xs text-gray-300">
+                        <Badge variant="outline" className="border-zinc-700 text-xs text-[#8a9aa8]">
                           {issue.issue_type}
                         </Badge>
                       )}
                     </div>
 
-                    <p className="mt-2 text-sm text-gray-200">
+                    <p className="mt-2 text-sm text-[#d0d8e0]">
                       {issue.impact_summary || issue.error_pattern || issue.error_signature || 'No interpreted summary available.'}
                     </p>
 
-                    <div className="mt-2 flex flex-wrap gap-4 text-xs text-gray-400">
+                    <div className="mt-2 flex flex-wrap gap-4 text-xs text-[#8a9aa8]">
                       <span>{issue.occurrence_count || 0} occurrences</span>
                       <span>{(issue.affected_servers || []).length} servers affected</span>
                       {(issue.source_streams || []).length > 0 && <span>Streams: {(issue.source_streams || []).join(', ')}</span>}
@@ -222,7 +222,7 @@ function ModIssues() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button onClick={() => setSelectedIssue(issue)} variant="outline" size="sm" className="border-gray-700 text-gray-400 hover:text-white">
+                    <Button onClick={() => setSelectedIssue(issue)} variant="outline" size="sm" className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white">
                       <Eye className="mr-1 h-3 w-3" /> Details
                     </Button>
                   </div>
@@ -235,7 +235,7 @@ function ModIssues() {
                       size="sm"
                       variant="outline"
                       onClick={() => updateIssueStatus(issue.id, status)}
-                      className={`h-7 text-[11px] ${issue.status === status ? 'border-tropic-gold/40 text-tropic-gold' : 'border-zinc-700 text-gray-400'}`}
+                      className={`h-7 text-[11px] ${issue.status === status ? 'border-tropic-gold/40 text-tropic-gold' : 'border-zinc-700 text-[#8a9aa8]'}`}
                     >
                       {status.replace(/_/g, ' ')}
                     </Button>
@@ -248,7 +248,7 @@ function ModIssues() {
       )}
 
       <Dialog open={!!selectedIssue} onOpenChange={() => setSelectedIssue(null)}>
-        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto border-gray-800 bg-gray-950 text-white">
+        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto border-[rgba(201,162,39,0.12)] bg-[#050a0e] text-white">
           {selectedIssue && (
             <>
               <DialogHeader>
@@ -259,22 +259,22 @@ function ModIssues() {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-                  <div><span className="text-gray-500">Mod ID:</span> <span className="font-mono text-gray-300">{selectedIssue.mod_id || 'unattributed'}</span></div>
-                  <div><span className="text-gray-500">Status:</span> <Badge variant="outline" className="ml-1 text-xs">{selectedIssue.status}</Badge></div>
-                  <div><span className="text-gray-500">Severity:</span> <span className="text-gray-300">{selectedIssue.severity || 'unknown'}</span></div>
-                  <div><span className="text-gray-500">Method:</span> <span className="text-gray-300">{selectedIssue.attribution_method || 'unknown'}</span></div>
-                  <div><span className="text-gray-500">Source category:</span> <span className="text-gray-300">{selectedIssue.source_category || 'unknown'}</span></div>
-                  <div><span className="text-gray-500">Issue type:</span> <span className="text-gray-300">{selectedIssue.issue_type || 'unknown'}</span></div>
-                  <div><span className="text-gray-500">Confidence:</span> <Badge className={`ml-1 text-xs ${confidenceColor(selectedIssue.confidence_score || 0)}`}>{Math.round((selectedIssue.confidence_score || 0) * 100)}%</Badge></div>
-                  <div><span className="text-gray-500">Occurrences:</span> <span className="text-gray-300">{selectedIssue.occurrence_count || 0}</span></div>
+                  <div><span className="text-[#4a6070]">Mod ID:</span> <span className="font-mono text-[#8a9aa8]">{selectedIssue.mod_id || 'unattributed'}</span></div>
+                  <div><span className="text-[#4a6070]">Status:</span> <Badge variant="outline" className="ml-1 text-xs">{selectedIssue.status}</Badge></div>
+                  <div><span className="text-[#4a6070]">Severity:</span> <span className="text-[#8a9aa8]">{selectedIssue.severity || 'unknown'}</span></div>
+                  <div><span className="text-[#4a6070]">Method:</span> <span className="text-[#8a9aa8]">{selectedIssue.attribution_method || 'unknown'}</span></div>
+                  <div><span className="text-[#4a6070]">Source category:</span> <span className="text-[#8a9aa8]">{selectedIssue.source_category || 'unknown'}</span></div>
+                  <div><span className="text-[#4a6070]">Issue type:</span> <span className="text-[#8a9aa8]">{selectedIssue.issue_type || 'unknown'}</span></div>
+                  <div><span className="text-[#4a6070]">Confidence:</span> <Badge className={`ml-1 text-xs ${confidenceColor(selectedIssue.confidence_score || 0)}`}>{Math.round((selectedIssue.confidence_score || 0) * 100)}%</Badge></div>
+                  <div><span className="text-[#4a6070]">Occurrences:</span> <span className="text-[#8a9aa8]">{selectedIssue.occurrence_count || 0}</span></div>
                 </div>
 
                 {(selectedIssue.source_streams || []).length > 0 && (
-                  <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
-                    <p className="mb-2 text-xs text-gray-500">Source Streams</p>
+                  <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+                    <p className="mb-2 text-xs text-[#4a6070]">Source Streams</p>
                     <div className="flex flex-wrap gap-2">
                       {(selectedIssue.source_streams || []).map((stream) => (
-                        <Badge key={stream} variant="outline" className="border-zinc-700 text-gray-300">
+                        <Badge key={stream} variant="outline" className="border-zinc-700 text-[#8a9aa8]">
                           {stream}
                         </Badge>
                       ))}
@@ -282,27 +282,27 @@ function ModIssues() {
                   </div>
                 )}
 
-                <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
-                  <p className="mb-2 text-xs text-gray-500">Impact Summary</p>
-                  <p className="text-sm text-gray-200">
+                <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+                  <p className="mb-2 text-xs text-[#4a6070]">Impact Summary</p>
+                  <p className="text-sm text-[#d0d8e0]">
                     {selectedIssue.impact_summary || 'No interpreted impact summary is available for this issue yet.'}
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
-                  <p className="mb-2 flex items-center gap-1 text-xs text-gray-500">
+                <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+                  <p className="mb-2 flex items-center gap-1 text-xs text-[#4a6070]">
                     <Clock className="h-3 w-3" /> Timeline
                   </p>
-                  <div className="flex flex-wrap gap-4 text-xs text-gray-300">
+                  <div className="flex flex-wrap gap-4 text-xs text-[#8a9aa8]">
                     {selectedIssue.first_seen && (
                       <div>
-                        <span className="text-gray-500">First seen: </span>
+                        <span className="text-[#4a6070]">First seen: </span>
                         <span>{new Date(selectedIssue.first_seen).toLocaleString()}</span>
                       </div>
                     )}
                     {selectedIssue.last_seen && (
                       <div>
-                        <span className="text-gray-500">Last seen: </span>
+                        <span className="text-[#4a6070]">Last seen: </span>
                         <span>{new Date(selectedIssue.last_seen).toLocaleString()}</span>
                       </div>
                     )}
@@ -316,8 +316,8 @@ function ModIssues() {
                 </div>
 
                 {(selectedIssue.affected_servers || []).length > 0 && (
-                  <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
-                    <p className="mb-2 flex items-center gap-1 text-xs text-gray-500">
+                  <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+                    <p className="mb-2 flex items-center gap-1 text-xs text-[#4a6070]">
                       <Server className="h-3 w-3" /> Affected Servers
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -333,14 +333,14 @@ function ModIssues() {
 
                 {selectedIssue.error_pattern && (
                   <div>
-                    <p className="mb-1 text-sm text-gray-500">Error Pattern</p>
-                    <pre className="overflow-x-auto rounded bg-gray-900 p-3 text-xs text-gray-300">{selectedIssue.error_pattern}</pre>
+                    <p className="mb-1 text-sm text-[#4a6070]">Error Pattern</p>
+                    <pre className="overflow-x-auto rounded bg-[#0c1117] p-3 text-xs text-[#8a9aa8]">{selectedIssue.error_pattern}</pre>
                   </div>
                 )}
 
                 {(selectedIssue.recommended_actions || []).length > 0 && (
                   <div>
-                    <p className="mb-1 text-sm text-gray-500">Recommended Actions</p>
+                    <p className="mb-1 text-sm text-[#4a6070]">Recommended Actions</p>
                     <div className="flex flex-wrap gap-2">
                       {selectedIssue.recommended_actions.map((action, index) => (
                         <Badge key={index} variant="outline" className="border-tropic-gold/30 text-xs text-tropic-gold">
@@ -353,10 +353,10 @@ function ModIssues() {
 
                 {(selectedIssue.evidence || []).length > 0 && (
                   <div>
-                    <p className="mb-1 text-sm text-gray-500">Evidence ({selectedIssue.evidence.length})</p>
+                    <p className="mb-1 text-sm text-[#4a6070]">Evidence ({selectedIssue.evidence.length})</p>
                     <div className="max-h-48 space-y-2 overflow-y-auto">
                       {selectedIssue.evidence.slice(0, 8).map((evidence, index) => (
-                        <pre key={index} className="rounded bg-gray-900 p-2 text-xs text-gray-400">
+                        <pre key={index} className="rounded bg-[#0c1117] p-2 text-xs text-[#8a9aa8]">
                           {evidence.log_excerpt || JSON.stringify(evidence, null, 2)}
                         </pre>
                       ))}
@@ -364,8 +364,8 @@ function ModIssues() {
                   </div>
                 )}
 
-                <div className="border-t border-gray-800 pt-4">
-                  <p className="mb-2 text-sm text-gray-400">Operator verdict</p>
+                <div className="border-t border-[rgba(201,162,39,0.12)] pt-4">
+                  <p className="mb-2 text-sm text-[#8a9aa8]">Operator verdict</p>
                   <div className="flex flex-wrap gap-2">
                     {VERDICT_OPTIONS.map((status) => (
                       <Button
@@ -373,7 +373,7 @@ function ModIssues() {
                         size="sm"
                         variant="outline"
                         onClick={() => updateIssueStatus(selectedIssue.id, status, resolutionNotes)}
-                        className={`text-xs ${selectedIssue.status === status ? 'border-tropic-gold/40 text-tropic-gold' : 'border-zinc-700 text-gray-400'}`}
+                        className={`text-xs ${selectedIssue.status === status ? 'border-tropic-gold/40 text-tropic-gold' : 'border-zinc-700 text-[#8a9aa8]'}`}
                       >
                         {status.replace(/_/g, ' ')}
                       </Button>
@@ -382,7 +382,7 @@ function ModIssues() {
                   <Textarea
                     value={resolutionNotes}
                     onChange={(e) => setResolutionNotes(e.target.value)}
-                    className="mt-3 border-gray-700 bg-gray-900 text-white"
+                    className="mt-3 border-[rgba(201,162,39,0.15)] bg-[#0c1117] text-white"
                     rows={3}
                     placeholder="Resolution or operator notes..."
                   />
