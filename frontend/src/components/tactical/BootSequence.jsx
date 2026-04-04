@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BOOT_LINES = [
@@ -17,6 +17,8 @@ export function BootSequence({ onComplete, skipIfReturning = true }) {
   const [visible, setVisible] = useState(false);
   const [lines, setLines] = useState([]);
   const [phase, setPhase] = useState('booting');
+  const skippedRef = useRef(false);
+  const fadeTimerRef = useRef(null);
 
   useEffect(() => {
     if (skipIfReturning) {
@@ -39,14 +41,25 @@ export function BootSequence({ onComplete, skipIfReturning = true }) {
       setTimeout(() => setLines(prev => [...prev, line]), line.delay)
     );
     const completeTimer = setTimeout(() => {
+      if (skippedRef.current) return;
       setPhase('done');
       try { sessionStorage.setItem('25vid_boot_done', '1'); } catch { /* ignore */ }
-      setTimeout(() => { setPhase('hidden'); onComplete?.(); }, 600);
+      fadeTimerRef.current = setTimeout(() => {
+        if (skippedRef.current) return;
+        setPhase('hidden');
+        onComplete?.();
+      }, 600);
     }, 3200);
-    return () => { timers.forEach(clearTimeout); clearTimeout(completeTimer); };
+    return () => {
+      timers.forEach(clearTimeout);
+      clearTimeout(completeTimer);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+    };
   }, [visible, onComplete]);
 
   const handleSkip = useCallback(() => {
+    skippedRef.current = true;
+    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     setPhase('hidden');
     try { sessionStorage.setItem('25vid_boot_done', '1'); } catch { /* ignore */ }
     onComplete?.();

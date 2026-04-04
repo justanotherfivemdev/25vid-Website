@@ -110,8 +110,7 @@ const IntelBoard = () => {
       <div className={`${inLayout ? 'pt-4' : 'pt-20'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-5xl space-y-6">
           {/* Header Banner */}
-          <div className="relative border border-[rgba(0,255,136,0.15)] bg-[radial-gradient(circle_at_top,rgba(0,255,136,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl" data-testid="intel-board-header">
-            <div className="corner-bracket" />
+          <div className="relative corner-bracket border border-[rgba(0,255,136,0.15)] bg-[radial-gradient(circle_at_top,rgba(0,255,136,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl" data-testid="intel-board-header">
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>S2/S3 Combined Intelligence Feed</p>
             <h2 className="mt-3 text-3xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
               CLASSIFIED INTELLIGENCE BRIEFINGS

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, NavLink, Outlet, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Badge } from '@/components/ui/badge';
+
 import {
   Dialog,
   DialogContent,
@@ -212,10 +212,8 @@ function ServerWorkspace() {
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
         <AlertTriangle className="h-12 w-12 text-[#ff3333]" />
         <p className="text-lg text-[#ff3333]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{error || 'Server not found'}</p>
-        <Link to="/admin/servers">
-          <button className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }}>
-            <ArrowLeft className="mr-1.5 h-4 w-4 inline-block" /> Back to Servers
-          </button>
+        <Link to="/admin/servers" className="tactical-button inline-flex items-center px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }}>
+          <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Servers
         </Link>
       </div>
     );

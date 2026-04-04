@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -354,8 +354,7 @@ function ServerDashboard() {
   return (
     <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <div className="relative border border-[rgba(0,255,136,0.15)] bg-[radial-gradient(circle_at_top,rgba(0,255,136,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
-        <div className="corner-bracket" />
+      <div className="relative corner-bracket border border-[rgba(0,255,136,0.15)] bg-[radial-gradient(circle_at_top,rgba(0,255,136,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Server Nerve Center</p>
