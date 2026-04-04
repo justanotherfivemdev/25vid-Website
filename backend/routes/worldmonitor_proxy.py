@@ -131,7 +131,7 @@ _PIZZINT_PATH_RE = re.compile(r"^[A-Za-z0-9/_\-\.]+$")
 @router.get("/pizzint/{path:path}")
 async def pizzint_proxy(path: str, request: Request):
     """Proxy PizzINT dashboard and GDELT tension data."""
-    if not _PIZZINT_PATH_RE.match(path):
+    if not _PIZZINT_PATH_RE.match(path) or ".." in path or "//" in path:
         raise HTTPException(status_code=400, detail="Invalid path")
 
     params = dict(request.query_params)
@@ -171,7 +171,7 @@ async def fred_data_proxy(
     if not _FRED_SERIES_RE.match(series_id):
         raise HTTPException(status_code=400, detail="Invalid series_id")
 
-    params: dict[str, str] = {
+    params = {
         "series_id": series_id,
         "api_key": api_key,
         "file_type": "json",
