@@ -57,7 +57,7 @@ function SectionHeader({ label, open, onToggle }) {
   return (
     <button
       onClick={onToggle}
-      className="flex w-full items-center gap-2 py-2 text-[10px] font-bold tracking-[0.25em] text-[#4a6070] hover:text-[#00ff88] transition-colors"
+      className="flex w-full items-center gap-2 py-2 text-[10px] font-bold tracking-[0.25em] text-[#4a6070] hover:text-[#e8c547] transition-colors"
       style={{ fontFamily: "'Oswald', sans-serif" }}
     >
       {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
@@ -317,8 +317,8 @@ function ServerDashboard() {
       label: 'Active Servers',
       value: stats.running,
       icon: Activity,
-      color: 'text-[#00ff88]',
-      glow: 'shadow-[0_0_10px_rgba(0,255,136,0.1)]',
+      color: 'text-[#e8c547]',
+      glow: 'shadow-[0_0_10px_rgba(201,162,39,0.1)]',
     },
     {
       label: 'Issues',
@@ -331,7 +331,7 @@ function ServerDashboard() {
       label: 'Avg FPS',
       value: dashboardAverages.fps != null ? `${dashboardAverages.fps.toFixed(1)}` : '\u2014',
       icon: Gauge,
-      color: 'text-[#00ff88]',
+      color: 'text-[#e8c547]',
       glow: '',
     },
     {
@@ -354,13 +354,13 @@ function ServerDashboard() {
   return (
     <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <div className="relative corner-bracket border border-[rgba(0,255,136,0.15)] bg-[radial-gradient(circle_at_top,rgba(0,255,136,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+      <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Server Nerve Center</p>
             <h1
               className="mt-2 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]"
-              style={{ fontFamily: "'Orbitron', sans-serif" }}
+              style={{ fontFamily: "'Share Tech', sans-serif" }}
             >
               DASHBOARD
             </h1>
@@ -373,7 +373,7 @@ function ServerDashboard() {
             <button
               disabled={refreshing}
               onClick={() => fetchServers({ silent: true })}
-              className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] hover:border-[rgba(0,255,136,0.5)] disabled:opacity-40 transition-colors"
+              className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] hover:border-[rgba(201,162,39,0.5)] disabled:opacity-40 transition-colors"
               style={{ fontFamily: "'Oswald', sans-serif" }}
             >
               <RefreshCw className={`mr-1.5 h-4 w-4 inline-block ${refreshing ? 'animate-spin' : ''}`} />
@@ -428,7 +428,7 @@ function ServerDashboard() {
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="relative animate-pulse border border-[rgba(0,255,136,0.08)] bg-[#0c1117] p-0">
+              <div key={i} className="relative animate-pulse border border-[rgba(201,162,39,0.08)] bg-[#0c1117] p-0">
                 <div className="px-5 pt-4 pb-2">
                   <div className="h-4 w-20 bg-[#111a24]" />
                 </div>
@@ -440,7 +440,7 @@ function ServerDashboard() {
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="relative animate-pulse border border-[rgba(0,255,136,0.08)] bg-[#0c1117] p-6 space-y-3">
+              <div key={i} className="relative animate-pulse border border-[rgba(201,162,39,0.08)] bg-[#0c1117] p-6 space-y-3">
                 <div className="h-5 w-3/4 bg-[#111a24]" />
                 <div className="h-4 w-1/2 bg-[#111a24]" />
                 <div className="h-4 w-2/3 bg-[#111a24]" />
@@ -472,7 +472,7 @@ function ServerDashboard() {
                 return (
                   <div
                     key={stat.label}
-                    className={`relative border border-[rgba(0,255,136,0.1)] bg-[#0c1117] shadow-xl ${stat.glow}`}
+                    className={`relative border border-[rgba(201,162,39,0.1)] bg-[#0c1117] shadow-xl ${stat.glow}`}
                   >
                     <div className="corner-bracket" />
                     <div className="flex items-center justify-between px-5 pt-4 pb-2">
@@ -482,13 +482,13 @@ function ServerDashboard() {
                       >
                         {stat.label}
                       </span>
-                      <div className="border border-[rgba(0,255,136,0.15)] bg-[#050a0e] p-2">
+                      <div className="border border-[rgba(201,162,39,0.15)] bg-[#050a0e] p-2">
                         <Icon className={`h-4 w-4 ${stat.color}`} />
                       </div>
                     </div>
                     <div className="px-5 pb-5">
                       <div
-                        className="text-2xl font-bold text-[#00ff88]"
+                        className="text-2xl font-bold text-[#e8c547]"
                         style={{ fontFamily: "'JetBrains Mono', monospace" }}
                       >
                         {stat.value}
@@ -520,7 +520,7 @@ function ServerDashboard() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search servers by name..."
-                className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] pl-10 text-[#d0d8e0] placeholder:text-[#4a6070] focus-visible:ring-[rgba(0,255,136,0.3)] rounded-none"
+                className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] pl-10 text-[#d0d8e0] placeholder:text-[#4a6070] focus-visible:ring-[rgba(201,162,39,0.3)] rounded-none"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               />
             </div>
@@ -542,11 +542,11 @@ function ServerDashboard() {
                 ))}
               </div>
             ) : (
-              <div className="relative border border-[rgba(0,255,136,0.1)] bg-[#0c1117]">
+              <div className="relative border border-[rgba(201,162,39,0.1)] bg-[#0c1117]">
                 <div className="corner-bracket" />
                 <div className="flex flex-col items-center justify-center py-16 text-center px-5">
                   <Activity className="mb-4 h-12 w-12 text-[#4a6070]" />
-                  <p className="text-lg font-semibold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+                  <p className="text-lg font-semibold text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                     {searchQuery ? 'No servers match your search' : 'No servers configured'}
                   </p>
                   <p className="mt-1 text-sm text-[#4a6070]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -577,11 +577,11 @@ function ServerDashboard() {
 
       {/* ── Create Server Modal ─────────────────────────────────────── */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="border-[rgba(0,255,136,0.15)] bg-[#0c1117] rounded-none sm:max-w-lg">
+        <DialogContent className="border-[rgba(201,162,39,0.15)] bg-[#0c1117] rounded-none sm:max-w-lg">
           <DialogHeader>
             <DialogTitle
               className="text-xl font-black uppercase tracking-[0.12em] text-[#e8c547]"
-              style={{ fontFamily: "'Orbitron', sans-serif" }}
+              style={{ fontFamily: "'Share Tech', sans-serif" }}
             >
               NEW SERVER
             </DialogTitle>
@@ -601,7 +601,7 @@ function ServerDashboard() {
                 value={form.name}
                 onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                 placeholder="e.g. US East #1"
-                className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
+                className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               />
             </div>
@@ -616,14 +616,14 @@ function ServerDashboard() {
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Optional server description..."
-                className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
+                className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 rows={3}
               />
             </div>
 
             {/* Auto Restart toggle */}
-            <div className="flex items-center justify-between border border-[rgba(0,255,136,0.1)] bg-[#050a0e] px-4 py-3">
+            <div className="flex items-center justify-between border border-[rgba(201,162,39,0.1)] bg-[#050a0e] px-4 py-3">
               <Label htmlFor="srv-autorestart" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                 Auto Restart
               </Label>
@@ -652,14 +652,14 @@ function ServerDashboard() {
                       max_restart_attempts: parseInt(e.target.value, 10) || 1,
                     }))
                   }
-                  className="w-24 border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] rounded-none"
+                  className="w-24 border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-[#d0d8e0] rounded-none"
                   style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 />
               </div>
             )}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="flex items-center justify-between border border-[rgba(0,255,136,0.1)] bg-[#050a0e] px-4 py-3">
+              <div className="flex items-center justify-between border border-[rgba(201,162,39,0.1)] bg-[#050a0e] px-4 py-3">
                 <Label htmlFor="srv-logstats" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                   Enable logStats
                 </Label>
@@ -680,7 +680,7 @@ function ServerDashboard() {
                   max={240}
                   value={form.max_fps}
                   onChange={(e) => setForm((prev) => ({ ...prev, max_fps: parseInt(e.target.value, 10) || 120 }))}
-                  className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] rounded-none"
+                  className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-[#d0d8e0] rounded-none"
                   style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 />
               </div>
@@ -695,12 +695,12 @@ function ServerDashboard() {
                 value={form.startup_parameters}
                 onChange={(e) => setForm((prev) => ({ ...prev, startup_parameters: e.target.value }))}
                 placeholder="-profileVerbose&#10;-SomeFlag value"
-                className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
+                className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 rows={3}
               />
               <p className="text-xs text-[#4a6070]" style={{ fontFamily: "'Inter', sans-serif" }}>
-                One parameter per line. <code className="text-[#00ff88]">-logstats</code> and the default telemetry flags are managed separately so the dashboard stays ready by default.
+                One parameter per line. <code className="text-[#e8c547]">-logstats</code> and the default telemetry flags are managed separately so the dashboard stays ready by default.
               </p>
             </div>
 
@@ -715,13 +715,13 @@ function ServerDashboard() {
                     if (e.key === 'Enter') { e.preventDefault(); addTag(); }
                   }}
                   placeholder="Add tag and press Enter"
-                  className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
+                  className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
                   style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 />
                 <button
                   type="button"
                   onClick={addTag}
-                  className="tactical-button px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] transition-colors"
+                  className="tactical-button px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] transition-colors"
                   style={{ fontFamily: "'Oswald', sans-serif" }}
                 >
                   Add
@@ -732,7 +732,7 @@ function ServerDashboard() {
                   {form.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1 border border-[rgba(0,255,136,0.2)] bg-[rgba(0,255,136,0.06)] px-2 py-0.5 text-xs text-[#00ff88]"
+                      className="inline-flex items-center gap-1 border border-[rgba(201,162,39,0.2)] bg-[rgba(201,162,39,0.06)] px-2 py-0.5 text-xs text-[#e8c547]"
                       style={{ fontFamily: "'JetBrains Mono', monospace" }}
                     >
                       {tag}
@@ -768,7 +768,7 @@ function ServerDashboard() {
             <button
               onClick={handleCreate}
               disabled={creating || !form.name.trim()}
-              className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] hover:border-[rgba(0,255,136,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] hover:border-[rgba(201,162,39,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               style={{ fontFamily: "'Oswald', sans-serif" }}
             >
               {creating ? (

@@ -13,13 +13,13 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		fontFamily: {
-  			heading: ['Orbitron', 'Rajdhani', 'sans-serif'],
+  			heading: ['Share Tech', 'Oswald', 'sans-serif'],
   			body: ['Inter', 'Roboto', 'sans-serif'],
   			mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-  			condensed: ['Oswald', 'Rajdhani', 'sans-serif'],
+  			condensed: ['Oswald', 'Barlow Condensed', 'sans-serif'],
   		},
   		colors: {
-  			// 25th Infantry Division "Tropic Lightning" — Military Terminal palette
+  			// 25th Infantry Division "Tropic Lightning" — Gold, Black & Dark palette
   			'tropic': {
   				red: '#ff3333',
   				gold: '#c9a227',
@@ -29,11 +29,6 @@ module.exports = {
   				'gold-light': '#e8c547',
   				olive: '#556B2F',
   				'olive-light': '#738C43',
-  			},
-  			'terminal': {
-  				green: '#00ff88',
-  				'green-dark': '#00cc6a',
-  				'green-muted': '#00994d',
   			},
   			'hud': {
   				blue: '#00aaff',
@@ -97,8 +92,8 @@ module.exports = {
   				to: { height: '0' }
   			},
   			'pulse-glow': {
-  				'0%, 100%': { boxShadow: '0 0 8px rgba(0, 255, 136, 0.3)' },
-  				'50%': { boxShadow: '0 0 20px rgba(0, 255, 136, 0.6)' }
+  				'0%, 100%': { boxShadow: '0 0 8px rgba(201, 162, 39, 0.3)' },
+  				'50%': { boxShadow: '0 0 20px rgba(201, 162, 39, 0.6)' }
   			},
   			'pulse-gold': {
   				'0%, 100%': { boxShadow: '0 0 8px rgba(201, 162, 39, 0.3)' },

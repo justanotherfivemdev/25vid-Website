@@ -32,12 +32,12 @@ export function DataReadout({
   }, [isInView, numericValue, duration]);
 
   const colorClass = {
-    green: 'text-[#00ff88]',
+    green: 'text-[#e8c547]',
     gold: 'text-[#e8c547]',
     red: 'text-[#ff3333]',
     blue: 'text-[#00aaff]',
     white: 'text-[#d0d8e0]',
-  }[color] || 'text-[#00ff88]';
+  }[color] || 'text-[#e8c547]';
 
   return (
     <div ref={ref} className={`data-readout ${className}`}>

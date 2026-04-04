@@ -54,7 +54,7 @@ const SidebarGroup = ({ group, collapsed, location, onNavigate, open, onToggle }
       {!collapsed && (
         <button
           onClick={() => onToggle(group.id)}
-          className="flex w-full items-center justify-between px-4 py-2 text-[10px] font-bold tracking-[0.2em] text-[#8a9aa8] hover:text-[#00ff88] transition-colors uppercase"
+          className="flex w-full items-center justify-between px-4 py-2 text-[10px] font-bold tracking-[0.2em] text-[#8a9aa8] hover:text-[#e8c547] transition-colors uppercase"
           style={{ fontFamily: "'Oswald', sans-serif" }}
         >
           {group.label}
@@ -89,8 +89,8 @@ const SidebarGroup = ({ group, collapsed, location, onNavigate, open, onToggle }
                     collapsed ? 'justify-center px-2 py-2.5' : 'space-x-3 px-3 py-2.5 min-h-[44px]'
                   } ${
                     isActive
-                      ? 'bg-[rgba(0,255,136,0.07)] text-[#00ff88] border-l-2 border-[#00ff88]'
-                      : 'text-[#4a6070] hover:bg-[rgba(0,255,136,0.04)] hover:text-[#00ff88]'
+                      ? 'bg-[rgba(201,162,39,0.07)] text-[#e8c547] border-l-2 border-[#e8c547]'
+                      : 'text-[#4a6070] hover:bg-[rgba(201,162,39,0.04)] hover:text-[#e8c547]'
                   }`}
                   style={{ fontFamily: "'JetBrains Mono', monospace" }}
                   title={collapsed ? item.label : undefined}
@@ -192,13 +192,13 @@ const AdminLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-[#050a0e] text-[#d0d8e0]">
       {/* ── Top Bar ─────────────────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#050a0e]/95 backdrop-blur-xl border-b border-[rgba(0,255,136,0.1)]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#050a0e]/95 backdrop-blur-xl border-b border-[rgba(201,162,39,0.1)]">
         <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 h-14">
           {/* Left: hamburger (mobile) + branding */}
           <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden text-[#00ff88] p-2 -ml-1 active:bg-[rgba(0,255,136,0.1)] transition-colors"
+              className="md:hidden text-[#e8c547] p-2 -ml-1 active:bg-[rgba(201,162,39,0.1)] transition-colors"
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -211,7 +211,7 @@ const AdminLayout = ({ children }) => {
               />
               <span
                 className="text-base sm:text-lg font-bold tracking-[0.15em] text-[#e8c547] truncate"
-                style={{ fontFamily: "'Orbitron', sans-serif" }}
+                style={{ fontFamily: "'Share Tech', sans-serif" }}
               >
                 <span className="hidden sm:inline">{getCommandCenterTitle(role)}</span>
                 <span className="sm:hidden">{getCommandCenterTitleShort(role)}</span>
@@ -222,13 +222,13 @@ const AdminLayout = ({ children }) => {
           {/* Right: minimal actions */}
           <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
             <span className="text-xs text-[#4a6070] hidden lg:block" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              Welcome, <span className="text-[#00ff88] font-semibold">{authUser?.username}</span>
+              Welcome, <span className="text-[#e8c547] font-semibold">{authUser?.username}</span>
             </span>
             <Link to="/hub">
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-[#4a6070] hover:text-[#00ff88] h-9 w-9 sm:w-auto sm:h-auto p-0 sm:px-3 sm:py-1.5"
+                className="text-[#4a6070] hover:text-[#e8c547] h-9 w-9 sm:w-auto sm:h-auto p-0 sm:px-3 sm:py-1.5"
                 data-testid="admin-back-to-hub"
               >
                 <Shield className="w-4 h-4 sm:mr-1.5" />
@@ -239,7 +239,7 @@ const AdminLayout = ({ children }) => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-[#4a6070] hover:text-[#00ff88] hidden sm:inline-flex"
+                className="text-[#4a6070] hover:text-[#e8c547] hidden sm:inline-flex"
               >
                 <Home className="w-4 h-4 md:mr-1.5" />
                 <span className="hidden md:inline text-xs" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Home</span>
@@ -266,21 +266,21 @@ const AdminLayout = ({ children }) => {
             onClick={closeMobileSidebar}
           />
           <div
-            className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-[#0c1117] border-r border-[rgba(0,255,136,0.1)] overflow-y-auto command-center-scroll overscroll-contain pt-14"
+            className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-[#0c1117] border-r border-[rgba(201,162,39,0.1)] overflow-y-auto command-center-scroll overscroll-contain pt-14"
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
           >
-            <div className="flex items-center justify-between p-3 border-b border-[rgba(0,255,136,0.1)]">
+            <div className="flex items-center justify-between p-3 border-b border-[rgba(201,162,39,0.1)]">
               <span
-                className="text-[10px] font-bold tracking-[0.25em] text-[#00ff88]"
-                style={{ fontFamily: "'Orbitron', sans-serif" }}
+                className="text-[10px] font-bold tracking-[0.25em] text-[#e8c547]"
+                style={{ fontFamily: "'Share Tech', sans-serif" }}
               >
                 COMMAND CENTER
               </span>
               <button
                 onClick={closeMobileSidebar}
-                className="text-[#4a6070] hover:text-[#00ff88] p-1.5 -mr-1 active:bg-[rgba(0,255,136,0.1)]"
+                className="text-[#4a6070] hover:text-[#e8c547] p-1.5 -mr-1 active:bg-[rgba(201,162,39,0.1)]"
                 aria-label="Close menu"
               >
                 <X className="w-4 h-4" />
@@ -300,11 +300,11 @@ const AdminLayout = ({ children }) => {
               ))}
             </div>
             {/* Mobile sidebar quick actions */}
-            <div className="border-t border-[rgba(0,255,136,0.1)] p-3 space-y-1">
+            <div className="border-t border-[rgba(201,162,39,0.1)] p-3 space-y-1">
               <Link
                 to="/hub"
                 onClick={closeMobileSidebar}
-                className="flex items-center space-x-3 px-3 py-2.5 min-h-[44px] text-[#4a6070] hover:bg-[rgba(0,255,136,0.04)] hover:text-[#00ff88] transition-colors"
+                className="flex items-center space-x-3 px-3 py-2.5 min-h-[44px] text-[#4a6070] hover:bg-[rgba(201,162,39,0.04)] hover:text-[#e8c547] transition-colors"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
                 <Shield style={{ width: 18, height: 18 }} className="shrink-0" />
@@ -313,7 +313,7 @@ const AdminLayout = ({ children }) => {
               <Link
                 to="/"
                 onClick={closeMobileSidebar}
-                className="flex items-center space-x-3 px-3 py-2.5 min-h-[44px] text-[#4a6070] hover:bg-[rgba(0,255,136,0.04)] hover:text-[#00ff88] transition-colors"
+                className="flex items-center space-x-3 px-3 py-2.5 min-h-[44px] text-[#4a6070] hover:bg-[rgba(201,162,39,0.04)] hover:text-[#e8c547] transition-colors"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
                 <Home style={{ width: 18, height: 18 }} className="shrink-0" />
@@ -326,13 +326,13 @@ const AdminLayout = ({ children }) => {
 
       {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
       <aside
-        className={`hidden md:flex flex-col fixed left-0 top-14 bottom-0 ${sidebarWidth} bg-[#0c1117] border-r border-[rgba(0,255,136,0.1)] overflow-y-auto command-center-scroll transition-all duration-200 z-40`}
+        className={`hidden md:flex flex-col fixed left-0 top-14 bottom-0 ${sidebarWidth} bg-[#0c1117] border-r border-[rgba(201,162,39,0.1)] overflow-y-auto command-center-scroll transition-all duration-200 z-40`}
       >
         {/* Collapse toggle */}
-        <div className="flex items-center justify-end p-2 border-b border-[rgba(0,255,136,0.08)]">
+        <div className="flex items-center justify-end p-2 border-b border-[rgba(201,162,39,0.08)]">
           <button
             onClick={toggleCollapsed}
-            className="text-[#4a6070] hover:text-[#00ff88] p-1 transition-colors"
+            className="text-[#4a6070] hover:text-[#e8c547] p-1 transition-colors"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? (
@@ -359,7 +359,7 @@ const AdminLayout = ({ children }) => {
 
         {/* Sidebar footer */}
         {!collapsed && (
-          <div className="p-3 border-t border-[rgba(0,255,136,0.08)]">
+          <div className="p-3 border-t border-[rgba(201,162,39,0.08)]">
             <p
               className="text-[9px] text-[#4a6070] tracking-wider text-center"
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
