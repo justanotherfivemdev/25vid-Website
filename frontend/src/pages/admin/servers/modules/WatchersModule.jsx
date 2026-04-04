@@ -16,20 +16,36 @@ import {
   Activity,
   AlertTriangle,
   Bell,
-  Eye,
   FileText,
   Loader2,
   Plus,
   RefreshCw,
   ShieldCheck,
+  ShieldPlus,
   Trash2,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 
 const WATCHER_TYPES = [
-  { value: 'health', label: 'Health Watcher', desc: 'Watch server state and readiness' },
-  { value: 'log', label: 'Log Watcher', desc: 'Match log output with a regex pattern' },
-  { value: 'threshold', label: 'Threshold Watcher', desc: 'Alert when a metric exceeds a limit' },
+  { value: 'health', label: 'Health Watcher', desc: 'Watch crash loops, readiness, and degraded state' },
+  { value: 'log', label: 'Log Watcher', desc: 'Match merged logs with a regex pattern' },
+  { value: 'threshold', label: 'Threshold Watcher', desc: 'Alert when a metric crosses a threshold' },
+];
+
+const WATCHER_CATEGORIES = [
+  { value: 'runtime-script', label: 'Runtime' },
+  { value: 'mod_issue', label: 'Mod / Workshop' },
+  { value: 'battleye_rcon', label: 'BattlEye / RCON' },
+  { value: 'admin_action', label: 'Admin / Moderation' },
+  { value: 'performance', label: 'Performance' },
+  { value: 'engine', label: 'Engine / Health' },
+];
+
+const THRESHOLD_COMPARISONS = [
+  { value: 'gt', label: '>' },
+  { value: 'gte', label: '>=' },
+  { value: 'lt', label: '<' },
+  { value: 'lte', label: '<=' },
 ];
 
 const SEVERITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
@@ -59,6 +75,30 @@ function verdictTone(status) {
   }[status] || 'border-zinc-700 text-zinc-300';
 }
 
+function comparisonLabel(value) {
+  return THRESHOLD_COMPARISONS.find((item) => item.value === value)?.label || '>';
+}
+
+function sourceCategoryLabel(value) {
+  return WATCHER_CATEGORIES.find((item) => item.value === value)?.label || value || 'Unclassified';
+}
+
+function defaultWatcherState() {
+  return {
+    name: '',
+    type: 'health',
+    pattern: '',
+    metric: 'cpu_percent',
+    comparison: 'gt',
+    threshold: 90,
+    enabled: true,
+    notify: true,
+    severity: 'medium',
+    source_category: 'runtime-script',
+    description: '',
+  };
+}
+
 function WatchersModule() {
   const { serverId } = useOutletContext();
   const [watchers, setWatchers] = useState([]);
@@ -67,16 +107,8 @@ function WatchersModule() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [newWatcher, setNewWatcher] = useState({
-    name: '',
-    type: 'health',
-    pattern: '',
-    metric: 'cpu_percent',
-    threshold: 90,
-    enabled: true,
-    notify: true,
-    severity: 'medium',
-  });
+  const [message, setMessage] = useState('');
+  const [newWatcher, setNewWatcher] = useState(defaultWatcherState);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -103,6 +135,11 @@ function WatchersModule() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    const intervalId = setInterval(fetchData, 30_000);
+    return () => clearInterval(intervalId);
+  }, [fetchData]);
+
   const detectionsByWatcher = useMemo(() => detections.reduce((map, detection) => {
     const watcherId = detection.watcher_id || 'unassigned';
     if (!map[watcherId]) map[watcherId] = [];
@@ -114,28 +151,24 @@ function WatchersModule() {
     if (!newWatcher.name.trim()) return;
     setSaving(true);
     setError('');
+    setMessage('');
     try {
       await axios.post(`${API}/servers/${serverId}/watchers`, {
         name: newWatcher.name.trim(),
         type: newWatcher.type,
         pattern: newWatcher.pattern,
         metric: newWatcher.metric,
+        comparison: newWatcher.comparison,
         threshold: Number(newWatcher.threshold) || 0,
         enabled: newWatcher.enabled,
         notify: newWatcher.notify,
         severity: newWatcher.severity,
+        source_category: newWatcher.source_category,
+        description: newWatcher.description.trim(),
       });
       setDialogOpen(false);
-      setNewWatcher({
-        name: '',
-        type: 'health',
-        pattern: '',
-        metric: 'cpu_percent',
-        threshold: 90,
-        enabled: true,
-        notify: true,
-        severity: 'medium',
-      });
+      setNewWatcher(defaultWatcherState());
+      setMessage('Watcher created.');
       await fetchData();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create watcher.');
@@ -143,6 +176,20 @@ function WatchersModule() {
       setSaving(false);
     }
   }, [fetchData, newWatcher, serverId]);
+
+  const restoreEssentials = useCallback(async () => {
+    setError('');
+    setMessage('');
+    try {
+      const res = await axios.post(`${API}/servers/${serverId}/watchers/seed-defaults`);
+      const createdCount = res.data?.created_count || 0;
+      setMessage(createdCount > 0 ? `Installed ${createdCount} essential watcher(s).` : 'Essential watcher coverage is already installed.');
+      setWatchers(Array.isArray(res.data?.watchers) ? res.data.watchers : []);
+      await fetchData();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to restore essential watcher coverage.');
+    }
+  }, [fetchData, serverId]);
 
   const updateWatcher = useCallback(async (watcherId, updates) => {
     try {
@@ -171,32 +218,69 @@ function WatchersModule() {
     }
   }, [fetchData]);
 
+  const enabledWatchers = watchers.filter((watcher) => watcher.enabled !== false).length;
+  const systemManagedWatchers = watchers.filter((watcher) => watcher.system_managed).length;
+  const activeDetections = detections.filter((detection) => detection.status === 'active').length;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
             WATCHERS
           </h2>
           <p className="mt-1 text-xs text-gray-500">
-            Backend watchers now evaluate health state, log patterns, and metric thresholds on a schedule.
+            Essential Arma coverage is installed here for health, mod failures, BattlEye/RCON, admin actions, and performance drift.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={fetchData} className="h-7 border-zinc-800 text-xs text-gray-400">
             <RefreshCw className={`mr-1 h-3 w-3 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
-          <Button size="sm" onClick={() => setDialogOpen(true)} className="h-7 bg-tropic-gold text-black hover:bg-tropic-gold-light text-xs">
+          <Button size="sm" variant="outline" onClick={restoreEssentials} className="h-7 border-zinc-800 text-xs text-gray-300">
+            <ShieldPlus className="mr-1 h-3 w-3" /> Restore Essentials
+          </Button>
+          <Button size="sm" onClick={() => setDialogOpen(true)} className="h-7 bg-tropic-gold text-xs text-black hover:bg-tropic-gold-light">
             <Plus className="mr-1 h-3 w-3" /> Add Watcher
           </Button>
         </div>
       </div>
 
-      {error && (
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="border-zinc-800 bg-black/60">
+          <CardContent className="p-4">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Coverage</div>
+            <div className="mt-2 text-2xl font-semibold text-white">{watchers.length}</div>
+            <div className="mt-1 text-xs text-gray-500">{enabledWatchers} enabled, {systemManagedWatchers} essential</div>
+          </CardContent>
+        </Card>
+        <Card className="border-zinc-800 bg-black/60">
+          <CardContent className="p-4">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Live Alerts</div>
+            <div className="mt-2 text-2xl font-semibold text-white">{activeDetections}</div>
+            <div className="mt-1 text-xs text-gray-500">{detections.length} detections on record</div>
+          </CardContent>
+        </Card>
+        <Card className="border-zinc-800 bg-black/60">
+          <CardContent className="p-4">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Auto Cycle</div>
+            <div className="mt-2 text-2xl font-semibold text-white">30s</div>
+            <div className="mt-1 text-xs text-gray-500">Watcher evaluation and UI refresh cadence</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {message ? (
+        <div className="rounded border border-green-600/30 bg-green-600/10 px-3 py-2 text-xs text-green-300">
+          {message}
+        </div>
+      ) : null}
+
+      {error ? (
         <div className="rounded border border-red-600/30 bg-red-600/10 px-3 py-2 text-xs text-red-400">
           {error}
         </div>
-      )}
+      ) : null}
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -205,9 +289,9 @@ function WatchersModule() {
       ) : watchers.length === 0 ? (
         <Card className="border-zinc-800 bg-black/60">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Eye className="mb-2 h-8 w-8 text-gray-700" />
+            <ShieldCheck className="mb-2 h-8 w-8 text-gray-700" />
             <p className="text-sm text-gray-500">No watchers configured</p>
-            <p className="mt-1 text-xs text-gray-600">Set up health, log, or threshold watchers for this server.</p>
+            <p className="mt-1 text-xs text-gray-600">Restore the essential coverage pack or add a custom watcher.</p>
           </CardContent>
         </Card>
       ) : (
@@ -228,30 +312,58 @@ function WatchersModule() {
                         <Badge variant="outline" className={`text-[10px] ${severityTone(watcher.severity)}`}>
                           {watcher.severity}
                         </Badge>
-                        {watcher.notify && <Bell className="h-3 w-3 text-gray-500" />}
+                        <Badge variant="outline" className="border-zinc-700 text-[10px] text-gray-400">
+                          {sourceCategoryLabel(watcher.source_category)}
+                        </Badge>
+                        {watcher.system_managed ? (
+                          <Badge variant="outline" className="border-tropic-gold/30 text-[10px] text-tropic-gold">
+                            essential
+                          </Badge>
+                        ) : null}
+                        {watcher.notify ? <Bell className="h-3 w-3 text-gray-500" /> : null}
                       </div>
                       <div className="mt-1 text-[11px] text-gray-500">
-                        {watcher.type === 'log' && watcher.pattern && (
+                        {watcher.type === 'log' && watcher.pattern ? (
                           <span>Pattern: <code className="text-gray-400">{watcher.pattern}</code></span>
-                        )}
-                        {watcher.type === 'threshold' && (
-                          <span>{watcher.metric} &gt; {watcher.threshold}</span>
-                        )}
-                        {watcher.type === 'health' && <span>Monitoring deployment state, runtime health, and degraded readiness.</span>}
+                        ) : null}
+                        {watcher.type === 'threshold' ? (
+                          <span>{watcher.metric} {comparisonLabel(watcher.comparison)} {watcher.threshold}</span>
+                        ) : null}
+                        {watcher.type === 'health' ? (
+                          <span>Monitoring deployment state, runtime health, and degraded readiness.</span>
+                        ) : null}
                       </div>
+                      {watcher.description ? <p className="mt-2 text-xs text-gray-400">{watcher.description}</p> : null}
                       <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-gray-600">
                         <span>Triggers: {watcher.trigger_count || 0}</span>
                         <span>Recent detections: {watcherDetections.length}</span>
-                        {watcher.last_triggered_at && <span>Last triggered: {new Date(watcher.last_triggered_at).toLocaleString()}</span>}
+                        {watcher.last_triggered_at ? <span>Last triggered: {new Date(watcher.last_triggered_at).toLocaleString()}</span> : null}
                       </div>
                     </div>
                     <Switch checked={watcher.enabled} onCheckedChange={() => updateWatcher(watcher.id, { enabled: !watcher.enabled })} className="h-4 w-7" />
-                    <button onClick={() => removeWatcher(watcher.id)} className="text-gray-600 hover:text-red-400">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    {!watcher.system_managed ? (
+                      <button onClick={() => removeWatcher(watcher.id)} className="text-gray-600 hover:text-red-400">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
                   </div>
 
-                  {watcherDetections.length > 0 && (
+                  {watcher.recommended_actions?.length > 0 ? (
+                    <div className="rounded-lg border border-zinc-800/70 bg-zinc-950/60 p-3">
+                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+                        Recommended Response
+                      </div>
+                      <div className="space-y-1">
+                        {watcher.recommended_actions.map((action, index) => (
+                          <div key={`${watcher.id}-action-${index}`} className="text-xs text-gray-400">
+                            {action}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {watcherDetections.length > 0 ? (
                     <div className="rounded-lg border border-zinc-800/70 bg-zinc-950/60 p-3">
                       <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
                         Recent Detections
@@ -265,13 +377,13 @@ function WatchersModule() {
                                 {detection.status}
                               </Badge>
                               <Badge variant="outline" className="border-zinc-700 text-[10px] text-gray-400">
-                                {detection.source_category}
+                                {sourceCategoryLabel(detection.source_category)}
                               </Badge>
                             </div>
                             <p className="mt-1 text-xs text-gray-400">{detection.summary}</p>
                             <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-gray-600">
                               <span>{detection.occurrence_count || 0} observations</span>
-                              {detection.last_seen && <span>Last seen: {new Date(detection.last_seen).toLocaleString()}</span>}
+                              {detection.last_seen ? <span>Last seen: {new Date(detection.last_seen).toLocaleString()}</span> : null}
                             </div>
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               {VERDICT_OPTIONS.map((status) => (
@@ -290,7 +402,7 @@ function WatchersModule() {
                         ))}
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </CardContent>
               </Card>
             );
@@ -298,11 +410,11 @@ function WatchersModule() {
         </div>
       )}
 
-      {detections.length > 0 && (
+      {detections.length > 0 ? (
         <Card className="border-zinc-800 bg-black/60">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
-              <ShieldCheck className="h-4 w-4 text-tropic-gold" /> DETECTIONS
+              <ShieldCheck className="h-4 w-4 text-tropic-gold" /> DETECTION FEED
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -313,6 +425,9 @@ function WatchersModule() {
                   <Badge variant="outline" className={`text-[10px] ${verdictTone(detection.status)}`}>
                     {detection.status}
                   </Badge>
+                  <Badge variant="outline" className={`text-[10px] ${severityTone(detection.severity)}`}>
+                    {detection.severity}
+                  </Badge>
                 </div>
                 <div className="mt-1 text-xs text-gray-500">
                   {(detection.source_streams || []).join(', ') || 'No source streams recorded'}
@@ -321,10 +436,10 @@ function WatchersModule() {
             ))}
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md border-zinc-800 bg-zinc-950 text-white">
+        <DialogContent className="max-w-lg border-zinc-800 bg-zinc-950 text-white">
           <DialogHeader>
             <DialogTitle className="text-tropic-gold">Add Watcher</DialogTitle>
           </DialogHeader>
@@ -334,7 +449,7 @@ function WatchersModule() {
               <Input
                 value={newWatcher.name}
                 onChange={(e) => setNewWatcher((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g. High CPU Alert"
+                placeholder="e.g. Peak-hour ping guard"
                 className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
               />
             </div>
@@ -372,13 +487,39 @@ function WatchersModule() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-black/40 px-4 py-3">
-                <span className="text-sm text-gray-300">Notify on trigger</span>
-                <Switch checked={newWatcher.notify} onCheckedChange={(value) => setNewWatcher((prev) => ({ ...prev, notify: value }))} className="h-4 w-7" />
+              <div>
+                <label className="text-xs text-gray-400">Category</label>
+                <select
+                  value={newWatcher.source_category}
+                  onChange={(e) => setNewWatcher((prev) => ({ ...prev, source_category: e.target.value }))}
+                  className="mt-1 w-full rounded border border-zinc-800 bg-black/60 px-3 py-2 text-sm text-white"
+                >
+                  {WATCHER_CATEGORIES.map((category) => (
+                    <option key={category.value} value={category.value}>{category.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            {newWatcher.type === 'log' && (
+            <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-black/40 px-4 py-3">
+              <div>
+                <div className="text-sm text-gray-300">Notify on trigger</div>
+                <div className="text-[10px] text-gray-600">Keep this enabled for anything you want surfaced in reports.</div>
+              </div>
+              <Switch checked={newWatcher.notify} onCheckedChange={(value) => setNewWatcher((prev) => ({ ...prev, notify: value }))} className="h-4 w-7" />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400">Description</label>
+              <Input
+                value={newWatcher.description}
+                onChange={(e) => setNewWatcher((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="What should operators understand about this watcher?"
+                className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
+              />
+            </div>
+
+            {newWatcher.type === 'log' ? (
               <div>
                 <label className="text-xs text-gray-400">Regex Pattern</label>
                 <Input
@@ -388,10 +529,10 @@ function WatchersModule() {
                   className="mt-1 border-zinc-800 bg-black/60 font-mono text-sm text-white"
                 />
               </div>
-            )}
+            ) : null}
 
-            {newWatcher.type === 'threshold' && (
-              <>
+            {newWatcher.type === 'threshold' ? (
+              <div className="grid gap-3 sm:grid-cols-3">
                 <div>
                   <label className="text-xs text-gray-400">Metric</label>
                   <select
@@ -407,6 +548,18 @@ function WatchersModule() {
                   </select>
                 </div>
                 <div>
+                  <label className="text-xs text-gray-400">Comparison</label>
+                  <select
+                    value={newWatcher.comparison}
+                    onChange={(e) => setNewWatcher((prev) => ({ ...prev, comparison: e.target.value }))}
+                    className="mt-1 w-full rounded border border-zinc-800 bg-black/60 px-3 py-2 text-sm text-white"
+                  >
+                    {THRESHOLD_COMPARISONS.map((comparison) => (
+                      <option key={comparison.value} value={comparison.value}>{comparison.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="text-xs text-gray-400">Threshold</label>
                   <Input
                     type="number"
@@ -415,8 +568,8 @@ function WatchersModule() {
                     className="mt-1 border-zinc-800 bg-black/60 text-sm text-white"
                   />
                 </div>
-              </>
-            )}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

@@ -188,7 +188,7 @@ function ServerSettingsModule() {
       if (histRes.status === 'fulfilled') setConfigHistory(histRes.value.data?.history || histRes.value.data || []);
       else setConfigHistory([]);
     }).finally(() => setLoading(false));
-  }, [initializeEditors, server, serverId]);
+  }, [initializeEditors, serverId]);
 
   useEffect(() => {
     if (activeTab === 'json' && config) {
@@ -229,12 +229,15 @@ function ServerSettingsModule() {
     setSaveError(null);
     try {
       if (createBackup) await axios.post(`${API}/servers/${serverId}/backups`).catch(() => {});
-      await axios.put(`${API}/servers/${serverId}`, {
+      const res = await axios.put(`${API}/servers/${serverId}`, {
         config,
         log_stats_enabled: runtime.log_stats_enabled,
         max_fps: Math.max(30, parseInt(runtime.max_fps, 10) || 120),
         startup_parameters: parseListInput(textEditors.startupParameters),
       });
+      initializeEditors(res.data?.config || config, res.data || server);
+      const historyRes = await axios.get(`${API}/servers/${serverId}/config/history`).catch(() => null);
+      setConfigHistory(historyRes?.data?.history || historyRes?.data || []);
       setDirty(false);
       await fetchServer(true);
     } catch (error) {

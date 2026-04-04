@@ -61,7 +61,9 @@ from services.server_logs import (
     stream_server_log_entries,
 )
 from services.rcon_bridge import bercon_client
+from services.server_runtime_host import get_server_runtime_host
 from services.sat_config_service import discover_sat_config, load_sat_config, overlay_baseline_if_configured, save_sat_config
+from services.server_watchers import ensure_default_watchers
 from models.server import (
     ManagedServer, ServerCreate, ServerUpdate,
     WorkshopMod, WorkshopModCreate,
@@ -98,6 +100,21 @@ def _redact_env(env: dict) -> dict:
         k: ("***" if k.lower() in _SENSITIVE_ENV_KEYS else v)
         for k, v in env.items()
     }
+
+
+def _clean_string_list(values: list[str] | None) -> list[str]:
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for value in values or []:
+        item = str(value or "").strip()
+        if not item:
+            continue
+        marker = item.lower()
+        if marker in seen:
+            continue
+        seen.add(marker)
+        cleaned.append(item)
+    return cleaned
 
 
 def _normalize_server_contract(server: dict) -> dict:
@@ -1263,7 +1280,7 @@ async def add_sat_ban(
     live_sync = {"executed": False, "response": "Server is offline"}
     if server.get("status") == "running":
         live_sync["executed"], live_sync["response"] = await bercon_client.execute(
-            host="127.0.0.1",
+            host=get_server_runtime_host(),
             port=int((server.get("ports") or {}).get("rcon", 19999)),
             password=str(((server.get("config") or {}).get("rcon") or {}).get("password") or ""),
             command=f"#ban {body.player_id}",
@@ -1308,7 +1325,7 @@ async def sync_sat_bans(server_id: str, current_user: dict = Depends(_require_se
             responses.append({"player_id": player_id, "executed": False, "response": f"Skipped: {exc}"})
             continue
         success, response = await bercon_client.execute(
-            host="127.0.0.1",
+            host=get_server_runtime_host(),
             port=int((server.get("ports") or {}).get("rcon", 19999)),
             password=str(((server.get("config") or {}).get("rcon") or {}).get("password") or ""),
             command=f"#ban {player_id}",
@@ -1924,8 +1941,26 @@ async def resolve_mod_issue(
 
 @router.get("/servers/{server_id}/watchers")
 async def list_watchers(server_id: str, current_user: dict = Depends(_require_servers)):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0, "id": 1})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    await ensure_default_watchers(server_id, created_by=current_user["id"])
     watchers = await db.server_watchers.find({"server_id": server_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return _serialize_doc(watchers)
+
+
+@router.post("/servers/{server_id}/watchers/seed-defaults", status_code=201)
+async def seed_default_watchers(server_id: str, current_user: dict = Depends(_require_servers)):
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0, "id": 1})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    created = await ensure_default_watchers(server_id, created_by=current_user["id"])
+    watchers = await db.server_watchers.find({"server_id": server_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return _serialize_doc({
+        "created": created,
+        "created_count": len(created),
+        "watchers": watchers,
+    })
 
 
 @router.post("/servers/{server_id}/watchers", status_code=201)
@@ -1946,8 +1981,14 @@ async def create_watcher(
         notify=body.notify,
         pattern=body.pattern,
         metric=body.metric,
+        comparison=body.comparison,
         threshold=body.threshold,
         severity=body.severity,
+        source_category=body.source_category,
+        description=body.description,
+        template_key=body.template_key,
+        system_managed=body.system_managed,
+        recommended_actions=_clean_string_list(body.recommended_actions),
         created_by=current_user["id"],
     )
     doc = _serialize_doc(watcher.model_dump())
@@ -1965,6 +2006,8 @@ async def update_watcher(
     updates = {k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
     if not updates:
         raise HTTPException(status_code=400, detail="No watcher changes provided")
+    if "recommended_actions" in updates:
+        updates["recommended_actions"] = _clean_string_list(updates.get("recommended_actions"))
     updates["updated_at"] = datetime.now(timezone.utc)
     result = await db.server_watchers.update_one({"id": watcher_id, "server_id": server_id}, {"$set": updates})
     if result.matched_count == 0:
@@ -2027,19 +2070,46 @@ async def get_server_report_summary(server_id: str, current_user: dict = Depends
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
+    await ensure_default_watchers(server_id, created_by=current_user["id"])
     detections = await db.server_detections.find({"server_id": server_id}, {"_id": 0}).sort("last_seen", -1).to_list(100)
     incidents = await db.server_incidents.find({"server_id": server_id}, {"_id": 0}).sort("detected_at", -1).to_list(100)
     backups = await db.server_backups.find({"server_id": server_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    watchers = await db.server_watchers.find({"server_id": server_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
     relevant_mod_issues = await db.mod_issues.find({"affected_servers.server_id": server_id}, {"_id": 0}).sort("last_seen", -1).to_list(100)
+    notes = sorted(
+        list(server.get("notes") or []),
+        key=lambda note: str(note.get("created_at") or ""),
+        reverse=True,
+    )
 
     detection_summary = {
         "total": len(detections),
         "active": len([d for d in detections if d.get("status") == "active"]),
+        "monitoring": len([d for d in detections if d.get("status") == "monitoring"]),
+        "resolved": len([d for d in detections if d.get("status") == "resolved"]),
         "false_positive": len([d for d in detections if d.get("status") == "false_positive"]),
     }
     categories: dict[str, int] = {}
+    detection_categories: dict[str, int] = {}
+    detection_severity: dict[str, int] = {}
     for issue in relevant_mod_issues:
         categories[issue.get("source_category", "unknown")] = categories.get(issue.get("source_category", "unknown"), 0) + 1
+    for detection in detections:
+        category = str(detection.get("source_category") or "unknown")
+        severity = str(detection.get("severity") or "medium")
+        detection_categories[category] = detection_categories.get(category, 0) + 1
+        detection_severity[severity] = detection_severity.get(severity, 0) + 1
+
+    note_categories: dict[str, int] = {}
+    for note in notes:
+        category = str(note.get("category") or "general")
+        note_categories[category] = note_categories.get(category, 0) + 1
+
+    watcher_summary = {
+        "total": len(watchers),
+        "enabled": len([watcher for watcher in watchers if watcher.get("enabled") is not False]),
+        "system_managed": len([watcher for watcher in watchers if watcher.get("system_managed")]),
+    }
 
     return _serialize_doc({
         "server_id": server_id,
@@ -2048,14 +2118,25 @@ async def get_server_report_summary(server_id: str, current_user: dict = Depends
         "mod_issues": relevant_mod_issues[:25],
         "incidents": incidents[:25],
         "backups": backups[:25],
+        "watchers": watchers[:25],
+        "notes": notes[:25],
         "summary": {
             "detections": detection_summary,
+            "detection_categories": detection_categories,
+            "detection_severity": detection_severity,
             "incidents": {
                 "total": len(incidents),
                 "open": len([i for i in incidents if i.get("status") == "open"]),
             },
             "mod_issue_categories": categories,
             "backups": len(backups),
+            "watchers": watcher_summary,
+            "notes": {
+                "total": len(notes),
+                "open": len([note for note in notes if note.get("status") not in {"resolved", "archived"}]),
+                "follow_up_required": len([note for note in notes if note.get("follow_up_required")]),
+                "by_category": note_categories,
+            },
         },
     })
 
@@ -2113,7 +2194,12 @@ async def get_server_notes(server_id: str, current_user: dict = Depends(_require
     )
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    return server.get("notes", [])
+    notes = sorted(
+        list(server.get("notes") or []),
+        key=lambda note: str(note.get("created_at") or ""),
+        reverse=True,
+    )
+    return notes
 
 
 @router.post("/servers/{server_id}/notes", status_code=201)
@@ -2130,10 +2216,19 @@ async def add_server_note(
     note = ServerNote(
         author_id=current_user["id"],
         author_name=current_user.get("username", ""),
+        title=str(body.title or "").strip(),
+        category=body.category,
+        status=body.status,
+        priority=body.priority,
+        tags=_clean_string_list(body.tags),
+        related_mods=_clean_string_list(body.related_mods),
+        requested_actions=_clean_string_list(body.requested_actions),
+        follow_up_required=bool(body.follow_up_required),
+        event_at=body.event_at,
         content=body.content,
     )
     note_doc = note.model_dump()
-    for key in ("created_at",):
+    for key in ("created_at", "updated_at", "event_at"):
         val = note_doc.get(key)
         if isinstance(val, datetime):
             note_doc[key] = val.isoformat()
@@ -2162,7 +2257,7 @@ async def get_rcon_status(server_id: str, current_user: dict = Depends(_require_
 
     rcon = (server.get("config") or {}).get("rcon") or {}
     status = await bercon_client.probe(
-        host="127.0.0.1",
+        host=get_server_runtime_host(),
         port=int((server.get("ports") or {}).get("rcon", 19999)),
         password=str(rcon.get("password") or ""),
     )
@@ -2196,7 +2291,7 @@ async def execute_rcon(
     rcon_password = str(((server.get("config") or {}).get("rcon") or {}).get("password") or "")
 
     success, response = await bercon_client.execute(
-        host="127.0.0.1",
+        host=get_server_runtime_host(),
         port=rcon_port,
         password=rcon_password,
         command=body.command,
@@ -2626,7 +2721,7 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
             )
 
             success, response = await bercon_client.execute(
-                host="127.0.0.1",
+                host=get_server_runtime_host(),
                 port=rcon_port,
                 password=rcon_password,
                 command=command,

@@ -9,6 +9,7 @@ from services.a2s_query import query_a2s_info
 from services.docker_agent import DockerAgent
 from services.rcon_bridge import bercon_client
 from services.server_logs import get_recent_server_log_text
+from services.server_runtime_host import get_server_runtime_host
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,7 @@ async def _collect_rcon_metrics(server: dict) -> dict:
         return {}
 
     success, response = await bercon_client.execute(
-        host="127.0.0.1",
+        host=get_server_runtime_host(),
         port=int(ports.get("rcon", 19999)),
         password=password,
         command="#players",
@@ -103,7 +104,7 @@ async def _collect_rcon_metrics(server: dict) -> dict:
 
 async def _collect_a2s_metrics(server: dict) -> dict:
     ports = server.get("ports") or {}
-    response = await query_a2s_info("127.0.0.1", int(ports.get("query", 17777)))
+    response = await query_a2s_info(get_server_runtime_host(), int(ports.get("query", 17777)))
     if not response:
         return {}
     return {

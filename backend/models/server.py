@@ -289,10 +289,12 @@ class ServerBackup(BaseModel):
 
 WATCHER_TYPES = ["health", "log", "threshold"]
 WATCHER_VERDICTS = ["active", "monitoring", "resolved", "false_positive"]
+WATCHER_COMPARISONS = ["gt", "gte", "lt", "lte"]
 
 WatcherType = Literal["health", "log", "threshold"]
 WatcherSeverity = Literal["low", "medium", "high", "critical"]
 WatcherMetric = Literal["cpu_percent", "memory_mb", "player_count", "server_fps", "avg_player_ping_ms"]
+WatcherComparison = Literal["gt", "gte", "lt", "lte"]
 DetectionStatus = Literal["active", "monitoring", "resolved", "false_positive"]
 
 
@@ -307,8 +309,14 @@ class ServerWatcher(BaseModel):
     notify: bool = True
     pattern: str = ""
     metric: WatcherMetric = "cpu_percent"
+    comparison: WatcherComparison = "gt"
     threshold: float = 90.0
     severity: WatcherSeverity = "medium"
+    source_category: str = "runtime-script"
+    description: str = ""
+    template_key: str = ""
+    system_managed: bool = False
+    recommended_actions: List[str] = Field(default_factory=list)
     created_by: str = ""
     created_at: datetime = Field(default_factory=_utc_now)
     updated_at: datetime = Field(default_factory=_utc_now)
@@ -323,8 +331,14 @@ class ServerWatcherCreate(BaseModel):
     notify: bool = True
     pattern: str = ""
     metric: WatcherMetric = "cpu_percent"
+    comparison: WatcherComparison = "gt"
     threshold: float = 90.0
     severity: WatcherSeverity = "medium"
+    source_category: str = "runtime-script"
+    description: str = ""
+    template_key: str = ""
+    system_managed: bool = False
+    recommended_actions: List[str] = Field(default_factory=list)
 
 
 class ServerWatcherUpdate(BaseModel):
@@ -334,8 +348,14 @@ class ServerWatcherUpdate(BaseModel):
     notify: Optional[bool] = None
     pattern: Optional[str] = None
     metric: Optional[WatcherMetric] = None
+    comparison: Optional[WatcherComparison] = None
     threshold: Optional[float] = None
     severity: Optional[WatcherSeverity] = None
+    source_category: Optional[str] = None
+    description: Optional[str] = None
+    template_key: Optional[str] = None
+    system_managed: Optional[bool] = None
+    recommended_actions: Optional[List[str]] = None
 
 
 class WatcherDetection(BaseModel):
@@ -422,11 +442,30 @@ class ServerNote(BaseModel):
     id: str = Field(default_factory=lambda: f"note_{uuid.uuid4().hex[:12]}")
     author_id: str = ""
     author_name: str = ""
+    title: str = ""
+    category: Literal["general", "mod_change", "mod_request", "moderation", "development", "community", "incident", "test", "handoff"] = "general"
+    status: Literal["open", "in_progress", "blocked", "resolved", "archived"] = "open"
+    priority: Literal["low", "medium", "high", "critical"] = "medium"
+    tags: List[str] = Field(default_factory=list)
+    related_mods: List[str] = Field(default_factory=list)
+    requested_actions: List[str] = Field(default_factory=list)
+    follow_up_required: bool = False
+    event_at: Optional[datetime] = None
     content: str = ""
     created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
 
 
 class ServerNoteCreate(BaseModel):
+    title: str = Field(default="", max_length=200)
+    category: Literal["general", "mod_change", "mod_request", "moderation", "development", "community", "incident", "test", "handoff"] = "general"
+    status: Literal["open", "in_progress", "blocked", "resolved", "archived"] = "open"
+    priority: Literal["low", "medium", "high", "critical"] = "medium"
+    tags: List[str] = Field(default_factory=list)
+    related_mods: List[str] = Field(default_factory=list)
+    requested_actions: List[str] = Field(default_factory=list)
+    follow_up_required: bool = False
+    event_at: Optional[datetime] = None
     content: str = Field(min_length=1, max_length=5000)
 
 

@@ -16,11 +16,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { API } from '@/utils/api';
+import { buildServerWsUrl } from '@/utils/serverRealtime';
 import { normalizeServer } from '@/utils/serverStatus';
-
-const WS_BASE = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '')
-  .replace(/^http/, 'ws')
-  .replace(/\/$/, '');
 
 function normalizeEntry(entry, fallbackId) {
   return {
@@ -119,9 +116,10 @@ function ConsoleModule() {
 
     const connect = () => {
       if (disposed) return;
-      const token = document.cookie.split(';').find((c) => c.trim().startsWith('session='))?.split('=')?.[1] || '';
-      const since = encodeURIComponent(lastSeenTimestampRef.current || '');
-      const url = `${WS_BASE}/api/ws/servers/${serverId}/logs?token=${token}&tail=0${since ? `&since=${since}` : ''}`;
+      const url = buildServerWsUrl(`/api/ws/servers/${serverId}/logs`, {
+        tail: 0,
+        since: lastSeenTimestampRef.current || '',
+      });
       setConnectionState(reconnectAttemptRef.current > 0 ? 'reconnecting' : 'connecting');
 
       try {
@@ -285,7 +283,7 @@ function ConsoleModule() {
           <div
             ref={logRef}
             className="h-[60vh] overflow-y-auto font-mono text-xs leading-relaxed"
-            style={{ scrollBehavior: paused ? 'auto' : 'smooth' }}
+            style={{ scrollBehavior: 'auto' }}
           >
             {loading ? (
               <div className="flex items-center justify-center py-12 text-gray-600">
