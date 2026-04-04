@@ -250,13 +250,22 @@ async def rss_proxy(url: str = Query(..., description="RSS feed URL to fetch")):
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise HTTPException(status_code=400, detail="Only http/https URLs are allowed")
-    if parsed.hostname and parsed.hostname not in _RSS_ALLOWED_DOMAINS:
+    if not parsed.hostname or parsed.hostname not in _RSS_ALLOWED_DOMAINS:
         raise HTTPException(status_code=403, detail="Domain not in RSS allowlist")
+
+    # Reconstruct the URL from validated components to prevent URL manipulation
+    # that could bypass the allowlist (e.g., user:password@evil.com).
+    safe_url = f"{parsed.scheme}://{parsed.hostname}"
+    if parsed.port:
+        safe_url += f":{parsed.port}"
+    safe_url += parsed.path
+    if parsed.query:
+        safe_url += f"?{parsed.query}"
 
     try:
         async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
             resp = await client.get(
-                url,
+                safe_url,
                 headers={
                     "User-Agent": "Mozilla/5.0 WorldMonitor/1.0",
                     "Accept": "application/rss+xml, application/xml, text/xml, */*",
@@ -277,6 +286,9 @@ async def rss_proxy(url: str = Query(..., description="RSS feed URL to fetch")):
 # Finnhub Proxy — injects API key server-side
 # ---------------------------------------------------------------------------
 
+_MAX_FINNHUB_SYMBOLS = 20
+
+
 @router.get("/finnhub")
 async def finnhub_proxy(symbols: str = Query(..., description="Comma-separated stock symbols")):
     """Proxy Finnhub stock quotes, injecting the API key server-side."""
@@ -284,7 +296,7 @@ async def finnhub_proxy(symbols: str = Query(..., description="Comma-separated s
     if not api_key:
         raise HTTPException(status_code=503, detail="FINNHUB_API_KEY not configured")
 
-    symbol_list = [s.strip() for s in symbols.split(",") if s.strip()][:20]
+    symbol_list = [s.strip() for s in symbols.split(",") if s.strip()][:_MAX_FINNHUB_SYMBOLS]
     quotes = []
 
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -293,8 +305,12 @@ async def finnhub_proxy(symbols: str = Query(..., description="Comma-separated s
                 resp = await client.get(
                     f"https://finnhub.io/api/v1/quote?symbol={symbol}&token={api_key}",
                 )
+                if resp.status_code != 200:
+                    quotes.append({"symbol": symbol, "error": f"HTTP {resp.status_code}"})
+                    continue
                 data = resp.json()
-                if data.get("c", 0) == 0 and data.get("h", 0) == 0:
+                # Finnhub returns all-zeros when a symbol has no data
+                if data.get("c") is None and data.get("h") is None:
                     quotes.append({"symbol": symbol, "error": "No data available"})
                 else:
                     quotes.append({
