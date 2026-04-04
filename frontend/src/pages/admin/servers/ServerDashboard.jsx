@@ -2,11 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -59,7 +57,8 @@ function SectionHeader({ label, open, onToggle }) {
   return (
     <button
       onClick={onToggle}
-      className="flex w-full items-center gap-2 py-2 text-[10px] font-bold tracking-[0.2em] text-gray-500 hover:text-tropic-gold transition-colors"
+      className="flex w-full items-center gap-2 py-2 text-[10px] font-bold tracking-[0.25em] text-[#4a6070] hover:text-[#00ff88] transition-colors"
+      style={{ fontFamily: "'Oswald', sans-serif" }}
     >
       {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
       {label}
@@ -311,35 +310,35 @@ function ServerDashboard() {
       label: 'Total Servers',
       value: stats.total,
       icon: Server,
-      color: 'text-tropic-gold',
+      color: 'text-[#e8c547]',
       glow: '',
     },
     {
       label: 'Active Servers',
       value: stats.running,
       icon: Activity,
-      color: 'text-green-400',
-      glow: 'shadow-[0_0_10px_rgba(34,197,94,0.1)]',
+      color: 'text-[#00ff88]',
+      glow: 'shadow-[0_0_10px_rgba(0,255,136,0.1)]',
     },
     {
       label: 'Issues',
       value: stats.issues,
       icon: AlertTriangle,
-      color: 'text-red-400',
-      glow: stats.issues > 0 ? 'shadow-[0_0_10px_rgba(248,113,113,0.15)]' : '',
+      color: 'text-[#ff3333]',
+      glow: stats.issues > 0 ? 'shadow-[0_0_10px_rgba(255,51,51,0.15)]' : '',
     },
     {
       label: 'Avg FPS',
       value: dashboardAverages.fps != null ? `${dashboardAverages.fps.toFixed(1)}` : '\u2014',
       icon: Gauge,
-      color: 'text-emerald-400',
+      color: 'text-[#00ff88]',
       glow: '',
     },
     {
       label: 'Avg Ping',
       value: dashboardAverages.ping != null ? `${dashboardAverages.ping.toFixed(0)} ms` : '\u2014',
       icon: Wifi,
-      color: 'text-blue-400',
+      color: 'text-[#00aaff]',
       glow: '',
     },
   ], [dashboardAverages.fps, dashboardAverages.ping, stats]);
@@ -355,72 +354,73 @@ function ServerDashboard() {
   return (
     <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1
-            className="text-4xl font-bold tracking-widest text-tropic-gold"
-            style={{ fontFamily: 'Rajdhani, sans-serif' }}
-          >
-            DASHBOARD
-          </h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Real-time operational overview {'\u2014'} all 25VID servers.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={refreshing}
-            onClick={() => fetchServers({ silent: true })}
-            className="border-tropic-gold-dark/30 text-tropic-gold hover:bg-tropic-gold/10"
-          >
-            <RefreshCw className={`mr-1.5 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-
-          {canManage && (
-            <Button
-              size="sm"
-              className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
-              onClick={openCreateModal}
+      <div className="relative border border-[rgba(0,255,136,0.15)] bg-[radial-gradient(circle_at_top,rgba(0,255,136,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+        <div className="corner-bracket" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Server Nerve Center</p>
+            <h1
+              className="mt-2 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]"
+              style={{ fontFamily: "'Orbitron', sans-serif" }}
             >
-              <Plus className="mr-1.5 h-4 w-4" />
-              New Server
-            </Button>
-          )}
+              DASHBOARD
+            </h1>
+            <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>
+              Real-time operational overview {'\u2014'} all 25VID servers.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              disabled={refreshing}
+              onClick={() => fetchServers({ silent: true })}
+              className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] hover:border-[rgba(0,255,136,0.5)] disabled:opacity-40 transition-colors"
+              style={{ fontFamily: "'Oswald', sans-serif" }}
+            >
+              <RefreshCw className={`mr-1.5 h-4 w-4 inline-block ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+
+            {canManage && (
+              <button
+                onClick={openCreateModal}
+                className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] hover:border-[rgba(201,162,39,0.5)] transition-colors"
+                style={{ fontFamily: "'Oswald', sans-serif" }}
+              >
+                <Plus className="mr-1.5 h-4 w-4 inline-block" />
+                New Server
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ── Error banners ───────────────────────────────────────────── */}
       {error && (
-        <div className="flex items-center gap-3 rounded-lg border border-red-600/30 bg-red-600/10 px-4 py-3 text-sm text-red-400">
+        <div className="flex items-center gap-3 border border-[rgba(255,51,51,0.3)] bg-[rgba(255,51,51,0.06)] px-4 py-3 text-sm text-[#ff3333]">
           <AlertTriangle className="h-5 w-5 shrink-0" />
-          <span>{error}</span>
-          <Button
-            variant="ghost"
-            size="sm"
+          <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{error}</span>
+          <button
             onClick={() => fetchServers()}
-            className="ml-auto text-red-400 hover:text-red-300"
+            className="tactical-button ml-auto px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#ff3333] border border-[rgba(255,51,51,0.3)] hover:bg-[rgba(255,51,51,0.08)] transition-colors"
+            style={{ fontFamily: "'Oswald', sans-serif" }}
           >
             Retry
-          </Button>
+          </button>
         </div>
       )}
 
       {actionError && (
-        <div className="flex items-center gap-3 rounded-lg border border-red-600/30 bg-red-600/10 px-4 py-3 text-sm text-red-400">
+        <div className="flex items-center gap-3 border border-[rgba(255,51,51,0.3)] bg-[rgba(255,51,51,0.06)] px-4 py-3 text-sm text-[#ff3333]">
           <AlertTriangle className="h-5 w-5 shrink-0" />
-          <span>{actionError}</span>
-          <Button
-            variant="ghost"
-            size="sm"
+          <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{actionError}</span>
+          <button
             onClick={() => setActionError(null)}
-            className="ml-auto text-red-400 hover:text-red-300"
+            className="tactical-button ml-auto px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#ff3333] border border-[rgba(255,51,51,0.3)] hover:bg-[rgba(255,51,51,0.08)] transition-colors"
+            style={{ fontFamily: "'Oswald', sans-serif" }}
           >
             Dismiss
-          </Button>
+          </button>
         </div>
       )}
 
@@ -429,25 +429,23 @@ function ServerDashboard() {
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Card key={i} className="animate-pulse border-tropic-gold-dark/10 bg-black/60">
-                <CardHeader className="pb-2">
-                  <div className="h-4 w-20 rounded bg-zinc-800" />
-                </CardHeader>
-                <CardContent>
-                  <div className="h-7 w-10 rounded bg-zinc-800" />
-                </CardContent>
-              </Card>
+              <div key={i} className="relative animate-pulse border border-[rgba(0,255,136,0.08)] bg-[#0c1117] p-0">
+                <div className="px-5 pt-4 pb-2">
+                  <div className="h-4 w-20 bg-[#111a24]" />
+                </div>
+                <div className="px-5 pb-5">
+                  <div className="h-7 w-10 bg-[#111a24]" />
+                </div>
+              </div>
             ))}
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {Array.from({ length: 2 }).map((_, i) => (
-              <Card key={i} className="animate-pulse border-tropic-gold-dark/10 bg-black/60">
-                <CardContent className="space-y-3 p-6">
-                  <div className="h-5 w-3/4 rounded bg-zinc-800" />
-                  <div className="h-4 w-1/2 rounded bg-zinc-800" />
-                  <div className="h-4 w-2/3 rounded bg-zinc-800" />
-                </CardContent>
-              </Card>
+              <div key={i} className="relative animate-pulse border border-[rgba(0,255,136,0.08)] bg-[#0c1117] p-6 space-y-3">
+                <div className="h-5 w-3/4 bg-[#111a24]" />
+                <div className="h-4 w-1/2 bg-[#111a24]" />
+                <div className="h-4 w-2/3 bg-[#111a24]" />
+              </div>
             ))}
           </div>
         </div>
@@ -473,25 +471,31 @@ function ServerDashboard() {
               {summaryCards.map((stat) => {
                 const Icon = stat.icon;
                 return (
-                  <Card
+                  <div
                     key={stat.label}
-                    className={`border-tropic-gold-dark/10 bg-black/60 backdrop-blur-sm ${stat.glow}`}
+                    className={`relative border border-[rgba(0,255,136,0.1)] bg-[#0c1117] shadow-xl ${stat.glow}`}
                   >
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <div className="corner-bracket" />
+                    <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                      <span
+                        className="text-xs font-semibold uppercase tracking-[0.18em] text-[#4a6070]"
+                        style={{ fontFamily: "'Oswald', sans-serif" }}
+                      >
                         {stat.label}
-                      </CardTitle>
-                      <Icon className={`h-4 w-4 ${stat.color}`} />
-                    </CardHeader>
-                    <CardContent>
+                      </span>
+                      <div className="border border-[rgba(0,255,136,0.15)] bg-[#050a0e] p-2">
+                        <Icon className={`h-4 w-4 ${stat.color}`} />
+                      </div>
+                    </div>
+                    <div className="px-5 pb-5">
                       <div
-                        className="text-2xl font-bold text-white"
-                        style={{ fontFamily: 'Rajdhani, sans-serif' }}
+                        className="text-2xl font-bold text-[#00ff88]"
+                        style={{ fontFamily: "'JetBrains Mono', monospace" }}
                       >
                         {stat.value}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -512,12 +516,13 @@ function ServerDashboard() {
           >
             {/* Search bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4a6070]" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search servers by name..."
-                className="border-tropic-gold-dark/20 bg-black/60 pl-10 text-white placeholder:text-gray-500 focus-visible:ring-tropic-gold/40"
+                className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] pl-10 text-[#d0d8e0] placeholder:text-[#4a6070] focus-visible:ring-[rgba(0,255,136,0.3)] rounded-none"
+                style={{ fontFamily: "'JetBrains Mono', monospace" }}
               />
             </div>
 
@@ -538,36 +543,34 @@ function ServerDashboard() {
                 ))}
               </div>
             ) : (
-              <Card className="border-tropic-gold-dark/10 bg-black/60">
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                  <Activity className="mb-4 h-12 w-12 text-tropic-gold-dark/40" />
-                  <p className="text-lg font-semibold text-gray-300">
+              <div className="relative border border-[rgba(0,255,136,0.1)] bg-[#0c1117]">
+                <div className="corner-bracket" />
+                <div className="flex flex-col items-center justify-center py-16 text-center px-5">
+                  <Activity className="mb-4 h-12 w-12 text-[#4a6070]" />
+                  <p className="text-lg font-semibold text-[#d0d8e0]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
                     {searchQuery ? 'No servers match your search' : 'No servers configured'}
                   </p>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-[#4a6070]" style={{ fontFamily: "'Inter', sans-serif" }}>
                     {searchQuery ? 'Try a different search term.' : 'Add a server to get started.'}
                   </p>
                   {!searchQuery && canManage && (
-                    <Button
-                      size="sm"
-                      className="mt-4 bg-tropic-gold text-black hover:bg-tropic-gold-light"
+                    <button
+                      className="tactical-button mt-4 px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] transition-colors"
+                      style={{ fontFamily: "'Oswald', sans-serif" }}
                       onClick={openCreateModal}
                     >
-                      <Plus className="mr-1.5 h-4 w-4" />
+                      <Plus className="mr-1.5 h-4 w-4 inline-block" />
                       New Server
-                    </Button>
+                    </button>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
           </div>
 
           {/* Live indicator */}
-          <div className="flex items-center justify-end gap-2 text-xs text-gray-600">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tropic-gold/60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-tropic-gold" />
-            </span>
+          <div className="flex items-center justify-end gap-2 text-xs text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <span className="status-dot status-dot-online" />
             Auto-refreshing every 15 s
           </div>
         </>
@@ -575,15 +578,15 @@ function ServerDashboard() {
 
       {/* ── Create Server Modal ─────────────────────────────────────── */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="border-tropic-gold-dark/20 bg-zinc-950 sm:max-w-lg">
+        <DialogContent className="border-[rgba(0,255,136,0.15)] bg-[#0c1117] rounded-none sm:max-w-lg">
           <DialogHeader>
             <DialogTitle
-              className="text-xl font-bold tracking-wider text-tropic-gold"
-              style={{ fontFamily: 'Rajdhani, sans-serif' }}
+              className="text-xl font-black uppercase tracking-[0.12em] text-[#e8c547]"
+              style={{ fontFamily: "'Orbitron', sans-serif" }}
             >
               NEW SERVER
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-400">
+            <DialogDescription className="text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>
               Create the dashboard record and container now. First-boot provisioning continues inside the server workspace after deployment succeeds.
             </DialogDescription>
           </DialogHeader>
@@ -591,21 +594,22 @@ function ServerDashboard() {
           <div className="space-y-4 py-2">
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="srv-name" className="text-sm text-gray-300">
-                Server Name <span className="text-red-400">*</span>
+              <Label htmlFor="srv-name" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
+                Server Name <span className="text-[#ff3333]">*</span>
               </Label>
               <Input
                 id="srv-name"
                 value={form.name}
                 onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                 placeholder="e.g. US East #1"
-                className="border-tropic-gold-dark/20 bg-black/60 text-white placeholder:text-gray-600"
+                className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
+                style={{ fontFamily: "'JetBrains Mono', monospace" }}
               />
             </div>
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="srv-desc" className="text-sm text-gray-300">
+              <Label htmlFor="srv-desc" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                 Description
               </Label>
               <Textarea
@@ -613,14 +617,15 @@ function ServerDashboard() {
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Optional server description..."
-                className="border-tropic-gold-dark/20 bg-black/60 text-white placeholder:text-gray-600"
+                className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
+                style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 rows={3}
               />
             </div>
 
             {/* Auto Restart toggle */}
-            <div className="flex items-center justify-between rounded-lg border border-tropic-gold-dark/10 bg-black/40 px-4 py-3">
-              <Label htmlFor="srv-autorestart" className="text-sm text-gray-300">
+            <div className="flex items-center justify-between border border-[rgba(0,255,136,0.1)] bg-[#050a0e] px-4 py-3">
+              <Label htmlFor="srv-autorestart" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                 Auto Restart
               </Label>
               <Switch
@@ -633,7 +638,7 @@ function ServerDashboard() {
             {/* Max Restart Attempts — only when auto_restart is on */}
             {form.auto_restart && (
               <div className="space-y-2">
-                <Label htmlFor="srv-maxrestart" className="text-sm text-gray-300">
+                <Label htmlFor="srv-maxrestart" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                   Max Restart Attempts
                 </Label>
                 <Input
@@ -648,14 +653,15 @@ function ServerDashboard() {
                       max_restart_attempts: parseInt(e.target.value, 10) || 1,
                     }))
                   }
-                  className="w-24 border-tropic-gold-dark/20 bg-black/60 text-white"
+                  className="w-24 border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] rounded-none"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 />
               </div>
             )}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="flex items-center justify-between rounded-lg border border-tropic-gold-dark/10 bg-black/40 px-4 py-3">
-                <Label htmlFor="srv-logstats" className="text-sm text-gray-300">
+              <div className="flex items-center justify-between border border-[rgba(0,255,136,0.1)] bg-[#050a0e] px-4 py-3">
+                <Label htmlFor="srv-logstats" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                   Enable logStats
                 </Label>
                 <Switch
@@ -665,7 +671,7 @@ function ServerDashboard() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="srv-maxfps" className="text-sm text-gray-300">
+                <Label htmlFor="srv-maxfps" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                   Max FPS
                 </Label>
                 <Input
@@ -675,13 +681,14 @@ function ServerDashboard() {
                   max={240}
                   value={form.max_fps}
                   onChange={(e) => setForm((prev) => ({ ...prev, max_fps: parseInt(e.target.value, 10) || 120 }))}
-                  className="border-tropic-gold-dark/20 bg-black/60 text-white"
+                  className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] rounded-none"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="srv-startup-params" className="text-sm text-gray-300">
+              <Label htmlFor="srv-startup-params" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                 Extra Startup Parameters
               </Label>
               <Textarea
@@ -689,17 +696,18 @@ function ServerDashboard() {
                 value={form.startup_parameters}
                 onChange={(e) => setForm((prev) => ({ ...prev, startup_parameters: e.target.value }))}
                 placeholder="-profileVerbose&#10;-SomeFlag value"
-                className="border-tropic-gold-dark/20 bg-black/60 font-mono text-white placeholder:text-gray-600"
+                className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
+                style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 rows={3}
               />
-              <p className="text-xs text-gray-500">
-                One parameter per line. <code>-logstats</code> and the default telemetry flags are managed separately so the dashboard stays ready by default.
+              <p className="text-xs text-[#4a6070]" style={{ fontFamily: "'Inter', sans-serif" }}>
+                One parameter per line. <code className="text-[#00ff88]">-logstats</code> and the default telemetry flags are managed separately so the dashboard stays ready by default.
               </p>
             </div>
 
             {/* Tags */}
             <div className="space-y-2">
-              <Label className="text-sm text-gray-300">Tags</Label>
+              <Label className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>Tags</Label>
               <div className="flex gap-2">
                 <Input
                   value={tagInput}
@@ -708,35 +716,35 @@ function ServerDashboard() {
                     if (e.key === 'Enter') { e.preventDefault(); addTag(); }
                   }}
                   placeholder="Add tag and press Enter"
-                  className="border-tropic-gold-dark/20 bg-black/60 text-white placeholder:text-gray-600"
+                  className="border-[rgba(0,255,136,0.15)] bg-[#050a0e] text-[#d0d8e0] placeholder:text-[#4a6070] rounded-none"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 />
-                <Button
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
                   onClick={addTag}
-                  className="border-tropic-gold-dark/30 text-tropic-gold hover:bg-tropic-gold/10"
+                  className="tactical-button px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] transition-colors"
+                  style={{ fontFamily: "'Oswald', sans-serif" }}
                 >
                   Add
-                </Button>
+                </button>
               </div>
               {form.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {form.tags.map((tag) => (
-                    <Badge
+                    <span
                       key={tag}
-                      variant="secondary"
-                      className="gap-1 bg-tropic-gold/10 text-tropic-gold"
+                      className="inline-flex items-center gap-1 border border-[rgba(0,255,136,0.2)] bg-[rgba(0,255,136,0.06)] px-2 py-0.5 text-xs text-[#00ff88]"
+                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="ml-0.5 rounded-full hover:text-red-400"
+                        className="ml-0.5 hover:text-[#ff3333]"
                       >
                         <X className="h-3 w-3" />
                       </button>
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               )}
@@ -744,32 +752,33 @@ function ServerDashboard() {
 
             {/* Create error */}
             {createError && (
-              <div className="rounded-md border border-red-600/30 bg-red-600/10 px-3 py-2 text-sm text-red-400">
+              <div className="border border-[rgba(255,51,51,0.3)] bg-[rgba(255,51,51,0.06)] px-3 py-2 text-sm text-[#ff3333]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                 {createError}
               </div>
             )}
           </div>
 
           <DialogFooter>
-            <Button
-              variant="ghost"
+            <button
               onClick={() => setShowCreateModal(false)}
-              className="text-gray-400 hover:text-white"
+              className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#8a9aa8] hover:text-[#d0d8e0] transition-colors"
+              style={{ fontFamily: "'Oswald', sans-serif" }}
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleCreate}
               disabled={creating || !form.name.trim()}
-              className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
+              className="tactical-button px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#00ff88] border border-[rgba(0,255,136,0.3)] hover:bg-[rgba(0,255,136,0.08)] hover:border-[rgba(0,255,136,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              style={{ fontFamily: "'Oswald', sans-serif" }}
             >
               {creating ? (
-                <RefreshCw className="mr-1.5 h-4 w-4 animate-spin" />
+                <RefreshCw className="mr-1.5 h-4 w-4 animate-spin inline-block" />
               ) : (
-                <Save className="mr-1.5 h-4 w-4" />
+                <Save className="mr-1.5 h-4 w-4 inline-block" />
               )}
               {creating ? 'Creating...' : 'Create And Open'}
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
