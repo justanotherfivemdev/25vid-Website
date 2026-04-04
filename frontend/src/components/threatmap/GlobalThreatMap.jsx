@@ -923,6 +923,7 @@ export default function GlobalThreatMap({
   }, [selectedEvent]);
 
   const onMapClick = useCallback((event) => {
+    try {
     // Check for cluster click
     const features = event.features || [];
     const clusterFeature = features.find((f) => f.layer.id === 'clusters');
@@ -1034,17 +1035,48 @@ export default function GlobalThreatMap({
       return;
     }
 
-    // Check for country polygon click (for conflicts modal)
+    // Check for country polygon click (for conflicts modal).
+    // Mapbox dark-v11 does not include a fill layer named "country-boundaries".
+    // We query without a layer filter and look for country-label features, or fall
+    // back to any feature whose sourceLayer includes "country" or "admin".
     if (mapRef.current) {
-      const map = mapRef.current.getMap();
-      const countryFeatures = map.queryRenderedFeatures(event.point, {
-        layers: ['country-boundaries'],
-      });
-      if (countryFeatures.length > 0) {
-        const countryName = countryFeatures[0].properties.name_en || countryFeatures[0].properties.name;
+      try {
+        const map = mapRef.current.getMap();
+        // Prefer the visible country-label layer (always present in dark-v11)
+        const styleLayers = map.getStyle()?.layers || [];
+        const candidateIds = styleLayers
+          .filter((l) => /^country-label/.test(l.id))
+          .map((l) => l.id);
+
+        let countryName = null;
+        if (candidateIds.length > 0) {
+          const hits = map.queryRenderedFeatures(event.point, { layers: candidateIds });
+          if (hits.length > 0) {
+            countryName = hits[0].properties.name_en || hits[0].properties.name;
+          }
+        }
+
+        // Fallback: query all features at the click point and find one with a
+        // country-related source layer (admin-0, country-boundary, etc.)
+        if (!countryName) {
+          const allHits = map.queryRenderedFeatures(event.point);
+          const countryHit = allHits.find(
+            (f) =>
+              f.sourceLayer &&
+              (/^admin-0|^country/.test(f.sourceLayer) || /^place_label/.test(f.sourceLayer)) &&
+              (f.properties.name_en || f.properties.name),
+          );
+          if (countryHit) {
+            countryName = countryHit.properties.name_en || countryHit.properties.name;
+          }
+        }
+
         if (countryName) {
           setCountryModal(countryName);
         }
+      } catch (err) {
+        // Swallow style/layer query errors so the click handler never crashes
+        console.warn('Country query failed:', err);
       }
     }
 
@@ -1054,6 +1086,9 @@ export default function GlobalThreatMap({
     setCampaignPopup(null);
     setDeploymentPopup(null);
     setAircraftPopup(null);
+    } catch (err) {
+      console.error('Map click handler error:', err);
+    }
   }, [selectEvent]);
 
   const onMouseEnter = useCallback(() => setCursor('pointer'), []);
@@ -1071,8 +1106,12 @@ export default function GlobalThreatMap({
 
   // Add aircraft icon to map when it loads
   const onMapLoad = useCallback(() => {
-    if (mapRef.current) {
-      addAircraftIcon(mapRef.current.getMap());
+    try {
+      if (mapRef.current) {
+        addAircraftIcon(mapRef.current.getMap());
+      }
+    } catch (err) {
+      console.warn('Failed to add aircraft icon:', err);
     }
     setMapReady(true);
     setMapError(null);

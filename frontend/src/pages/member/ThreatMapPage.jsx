@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useCallback, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useCallback, useState, useRef } from 'react';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
 import { useAuth } from '@/context/AuthContext';
@@ -9,9 +9,11 @@ import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
 import IntelLayerPanel from '@/components/threatmap/IntelLayerPanel';
 import '@/components/threatmap/threatmap.css';
+import { TerminalTransition, buildThreatMapLines } from '@/components/tactical/TerminalTransition';
 
 import { API } from '@/utils/api';
 const REFRESH_INTERVAL = 300000; // 5 minutes
+const THREAT_MAP_BOOT_KEY = '25vid_threatmap_boot_done';
 
 export default function ThreatMapPage() {
   const { setEvents, setLoading, setError, isLoading } = useEventsStore();
@@ -22,6 +24,16 @@ export default function ThreatMapPage() {
   const [intelEvents, setIntelEvents] = useState([]);
   const [campaignEvents, setCampaignEvents] = useState([]);
   const [mapStatus, setMapStatus] = useState({ ready: false, error: null });
+
+  /* ── entry animation (once per session) ────────────────────────────── */
+  const [animDone, setAnimDone] = useState(() => {
+    try { return !!sessionStorage.getItem(THREAT_MAP_BOOT_KEY); } catch { return true; }
+  });
+  const threatMapLines = useRef(buildThreatMapLines());
+  const handleAnimComplete = useCallback(() => {
+    try { sessionStorage.setItem(THREAT_MAP_BOOT_KEY, '1'); } catch {}
+    setAnimDone(true);
+  }, []);
 
   // This page always renders the Globe view. World Monitor is a standalone app
   // at /worldmonitor/ (served by Nginx), not a React route.
@@ -104,6 +116,9 @@ export default function ThreatMapPage() {
 
   return (
     <div className="flex h-screen flex-col bg-[#050a0e] threat-map-page">
+      {!animDone && (
+        <TerminalTransition lines={threatMapLines.current} onComplete={handleAnimComplete} />
+      )}
       <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} mapStatus={mapStatus} isAdmin={isAdmin} />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">

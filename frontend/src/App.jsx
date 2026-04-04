@@ -1070,15 +1070,20 @@ const LoginPage = () => {
   const [loginTransition, setLoginTransition] = useState(null);
   const navigate = useNavigate();
 
-  // If already authenticated, send the user to the correct destination immediately
+  // If already authenticated, show login transition animation then redirect
   useEffect(() => {
+    // Don't interfere with Discord OAuth or email verification flows
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('discord_success') || params.get('discord_error') || params.get('verify_email_token')) return;
+
     axios.get(`${API}/auth/me`)
       .then(res => {
         login(res.data);
-        navigate(getPostAuthRoute(res.data), { replace: true });
+        const dest = getPostAuthRoute(res.data);
+        setLoginTransition({ username: res.data.username, dest });
       })
       .catch(() => {});
-  }, [navigate, login]);
+  }, [login, setLoginTransition]);
 
   // Check if Discord OAuth is enabled on the backend
   useEffect(() => {
@@ -1120,6 +1125,7 @@ const LoginPage = () => {
           login(res.data);
           window.history.replaceState({}, '', '/login');
           const dest = getPostAuthRoute(res.data);
+          setDiscordLoading(false);
           setLoginTransition({ username: res.data.username, dest });
         })
         .catch(() => {

@@ -1,35 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const buildLoginLines = (username) => {
-  const display = username || 'OPERATOR';
-  const masked = '*'.repeat(Math.max(8, display.length + 2));
-  return [
-    { text: 'INITIATING SECURE CONNECTION...', delay: 0 },
-    { text: 'ROUTING THROUGH ENCRYPTED CHANNEL... OK', delay: 400 },
-    { text: `AUTHENTICATING: ${display.toUpperCase()}`, delay: 900 },
-    { text: `PASSWORD: ${masked}`, delay: 1300 },
-    { text: 'VERIFYING CREDENTIALS... OK', delay: 1800 },
-    { text: 'ACCESS GRANTED', delay: 2300, highlight: true },
-    { text: 'LOADING COMMAND CENTER...', delay: 2700 },
-  ];
-};
-
-export function LoginTransition({ username, onComplete }) {
-  const [lines, setLines] = useState([]);
+/**
+ * Reusable terminal-style transition overlay.
+ *
+ * @param {Object[]} lines  – Array of { text, delay, highlight? } objects.
+ * @param {Function} onComplete – Called after the animation finishes and fades out.
+ */
+export function TerminalTransition({ lines, onComplete }) {
+  const [visibleLines, setVisibleLines] = useState([]);
   const [phase, setPhase] = useState('active');
   const hasCompletedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
-
   const fadeTimerRef = useRef(null);
 
   useEffect(() => {
     if (hasCompletedRef.current) return;
-    setLines([]);
-    const loginLines = buildLoginLines(username);
-    const timers = loginLines.map((line) =>
-      setTimeout(() => setLines((prev) => [...prev, line]), line.delay)
+    setVisibleLines([]);
+    const maxDelay = lines.length === 0 ? 0 : Math.max(...lines.map((l) => l.delay));
+    const timers = lines.map((line) =>
+      setTimeout(() => setVisibleLines((prev) => [...prev, line]), line.delay),
     );
     const completeTimer = setTimeout(() => {
       if (hasCompletedRef.current) return;
@@ -40,13 +31,13 @@ export function LoginTransition({ username, onComplete }) {
         setPhase('hidden');
         onCompleteRef.current?.();
       }, 500);
-    }, 3200);
+    }, maxDelay + 600);
     return () => {
       timers.forEach(clearTimeout);
       clearTimeout(completeTimer);
       clearTimeout(fadeTimerRef.current);
     };
-  }, [username]);
+  }, [lines]);
 
   if (phase === 'hidden') return null;
 
@@ -54,7 +45,7 @@ export function LoginTransition({ username, onComplete }) {
     <AnimatePresence mode="wait">
       {phase !== 'hidden' && (
         <motion.div
-          key="login-transition"
+          key="terminal-transition"
           initial={{ opacity: 1 }}
           animate={{ opacity: phase === 'done' ? 0 : 1 }}
           transition={{ duration: 0.5 }}
@@ -69,7 +60,7 @@ export function LoginTransition({ username, onComplete }) {
             }}
           />
           <div className="relative z-10 w-full max-w-2xl space-y-1">
-            {lines.map((line, idx) => (
+            {visibleLines.map((line, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, x: -10 }}
@@ -93,4 +84,39 @@ export function LoginTransition({ username, onComplete }) {
       )}
     </AnimatePresence>
   );
+}
+
+/** Pre-built line sets for common transitions. */
+
+export function buildServerConnectLines(serverName) {
+  const display = serverName || 'SERVER';
+  return [
+    { text: 'ESTABLISHING SECURE LINK...', delay: 0 },
+    { text: 'ROUTING TO SERVER NODE... OK', delay: 350 },
+    { text: `CONNECTING: ${display.toUpperCase()}`, delay: 700 },
+    { text: 'LOADING SERVER TELEMETRY... OK', delay: 1100 },
+    { text: 'INTERFACE READY', delay: 1500, highlight: true },
+  ];
+}
+
+export function buildServerProvisionLines(serverName) {
+  const display = serverName || 'SERVER';
+  return [
+    { text: 'PROVISIONING NEW SERVER INSTANCE...', delay: 0 },
+    { text: `ALLOCATING RESOURCES: ${display.toUpperCase()}`, delay: 400 },
+    { text: 'GENERATING CONFIGURATION... OK', delay: 800 },
+    { text: 'INITIALIZING CONTAINER... OK', delay: 1200 },
+    { text: 'SERVER ONLINE', delay: 1600, highlight: true },
+  ];
+}
+
+export function buildThreatMapLines() {
+  return [
+    { text: 'GLOBAL THREAT ASSESSMENT SYSTEM v2.1', delay: 0 },
+    { text: 'CONNECTING TO INTELLIGENCE FEEDS...', delay: 350 },
+    { text: 'LOADING SATELLITE IMAGERY... OK', delay: 700 },
+    { text: 'SYNCHRONIZING THREAT DATA... OK', delay: 1050 },
+    { text: 'RENDERING OPERATIONAL PICTURE... OK', delay: 1400 },
+    { text: 'THREAT MAP ONLINE', delay: 1800, highlight: true },
+  ];
 }
