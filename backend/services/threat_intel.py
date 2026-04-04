@@ -351,6 +351,11 @@ def process_search_results(results):
             "sourceUrl": url,
             "keywords": extract_keywords_from_text(full_text),
             "rawContent": content,
+            "provider": "valyu",
+            "event_nature": "real",
+            "is_simulated": False,
+            "map_worthy": False,
+            "location_precision": "country",
         })
 
     level_priority = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}

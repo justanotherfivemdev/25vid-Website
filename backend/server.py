@@ -68,6 +68,7 @@ from routes.user_settings import router as user_settings_router
 from routes.community_events import router as community_events_router
 from routes.worldmonitor import router as worldmonitor_router
 from routes.servers import router as servers_router
+from routes.operational_docs import router as operational_docs_router
 
 
 # Create the main app
@@ -102,6 +103,7 @@ api_router.include_router(user_settings_router)
 api_router.include_router(community_events_router)
 api_router.include_router(worldmonitor_router)
 api_router.include_router(servers_router)
+api_router.include_router(operational_docs_router)
 
 
 @api_router.get("/")
@@ -539,6 +541,16 @@ async def startup_event():
         await db.community_events.create_index("event_nature")
         await db.community_events.create_index("category")
         await db.community_events.create_index("created_at")
+        await db.community_events.create_index("campaign_id")
+        await db.community_events.create_index("operation_id")
+        await db.community_events.create_index("generation_signature")
+        await db.community_events.create_index("source_document_ids")
+        await db.operation_documents.create_index("id", unique=True)
+        await db.operation_documents.create_index("campaign_id")
+        await db.operation_documents.create_index("operation_id")
+        await db.operation_documents.create_index("document_type")
+        await db.operation_documents.create_index("checksum")
+        await db.operation_documents.create_index("generation_signature")
         # WorldMonitor cache collection
         await db.wm_cache.create_index("key", unique=True)
         await db.external_events.create_index("provider")

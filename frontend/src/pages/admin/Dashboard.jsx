@@ -106,11 +106,14 @@ const AdminDashboard = () => {
   return (
     <>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-2" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <div className="rounded-3xl border border-tropic-gold/15 bg-[radial-gradient(circle_at_top,rgba(85,107,47,0.18),rgba(7,10,13,0.96)_58%)] px-6 py-7 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-tropic-gold-dark">Command Overview</p>
+          <h1 className="mt-3 text-4xl font-black tracking-[0.08em] text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
             DASHBOARD
           </h1>
-          <p className="text-gray-400">Welcome to the 25th Infantry Division Admin Panel</p>
+          <p className="mt-3 max-w-3xl text-sm text-gray-300">
+            Command-center summary for personnel, operations tempo, content flow, and member recognition.
+          </p>
         </div>
         
         {loading ? (
@@ -120,12 +123,14 @@ const AdminDashboard = () => {
             {statCards.map((stat, idx) => {
               const Icon = stat.icon;
               return (
-                <Card key={idx} className="bg-gray-900 border-gray-800">
+                <Card key={idx} className="border-tropic-gold/12 bg-[#0b1016] shadow-xl">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-gray-400">
                       {stat.label}
                     </CardTitle>
-                    <Icon className={`w-5 h-5 ${stat.color === 'tropic-red' ? 'text-tropic-red' : 'text-tropic-gold'}`} />
+                    <div className="rounded-xl border border-tropic-gold/15 bg-black/50 p-2">
+                      <Icon className={`w-5 h-5 ${stat.color === 'tropic-red' ? 'text-tropic-red' : 'text-tropic-gold'}`} />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
@@ -139,7 +144,7 @@ const AdminDashboard = () => {
         )}
         
         {/* Soldier of the Month Management */}
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2"><Star className="w-5 h-5 text-tropic-gold" />Soldier of the Month</CardTitle>
@@ -152,7 +157,7 @@ const AdminDashboard = () => {
                     <Star className="w-4 h-4 mr-1" />{motw ? 'Change' : 'Set'}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-lg max-h-[80vh] overflow-y-auto">
+                <DialogContent className="bg-[#0b1016] text-white border-tropic-gold/15 max-w-lg max-h-[80vh] overflow-y-auto">
                   <DialogHeader><DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>Set Soldier of the Month</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -213,29 +218,29 @@ const AdminDashboard = () => {
           )}
         </Card>
 
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="border-tropic-gold/12 bg-[#0b1016] shadow-xl">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Link to="/admin/operations" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+            <Link to="/admin/operations" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
               <Calendar className="w-8 h-8 mx-auto mb-2 text-tropic-gold" />
               <div className="font-medium">Manage Operations</div>
             </Link>
-            <Link to="/admin/announcements" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+            <Link to="/admin/announcements" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
               <Megaphone className="w-8 h-8 mx-auto mb-2 text-tropic-gold" />
               <div className="font-medium">Post Announcement</div>
             </Link>
-            <Link to="/admin/users" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+            <Link to="/admin/users" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
               <Users className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
               <div className="font-medium">Manage Members</div>
             </Link>
-            <Link to="/admin/site-content" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+            <Link to="/admin/site-content" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
               <TrendingUp className="w-8 h-8 mx-auto mb-2 text-green-500" />
               <div className="font-medium">Edit Site Content</div>
             </Link>
-            <Link to="/admin/gallery" className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-center">
+            <Link to="/admin/gallery" className="rounded-2xl border border-tropic-gold/10 bg-black/45 p-4 text-center transition-colors hover:border-tropic-gold/30 hover:bg-tropic-gold/5">
               <Image className="w-8 h-8 mx-auto mb-2 text-tropic-red" />
               <div className="font-medium">Manage Gallery</div>
             </Link>

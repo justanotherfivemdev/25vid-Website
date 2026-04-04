@@ -88,6 +88,9 @@ export default function EventPopup({ event, isAdmin = false }) {
   const displaySummary = savedOverrides.summary || event.summary;
   const displaySource = savedOverrides.source || event.source || 'unknown';
   const displayCredibility = savedOverrides.credibility || event.credibility;
+  const sourceLabel = event.is_simulated || event.event_nature === 'fictional'
+    ? 'Simulated'
+    : (event.source_badge || event.provider || displaySource || 'Feed');
 
   return (
     <div className={`p-3 ${isExpanded || isEditing ? 'sm:max-w-[500px]' : 'sm:max-w-[300px]'}`}>
@@ -249,9 +252,16 @@ export default function EventPopup({ event, isAdmin = false }) {
         <Badge variant="outline" className="text-[10px] capitalize text-gray-300 border-gray-700/60">
           {event.category}
         </Badge>
-        {isAdmin && displaySource !== 'unknown' && (
-          <Badge variant="outline" className="text-[10px] text-tropic-gold-dark border-tropic-gold-dark/30">
-            {displaySource}
+        <Badge variant="outline" className={`text-[10px] ${
+          event.is_simulated || event.event_nature === 'fictional'
+            ? 'text-purple-300 border-purple-500/30'
+            : 'text-tropic-gold-dark border-tropic-gold-dark/30'
+        }`}>
+          {sourceLabel}
+        </Badge>
+        {event.campaign_name && (
+          <Badge variant="outline" className="text-[10px] text-tropic-gold-light border-tropic-gold/30">
+            {event.campaign_name}
           </Badge>
         )}
         {(event.keywords || []).slice(0, 2).map((keyword) => (

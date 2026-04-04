@@ -35,6 +35,9 @@ const threatBg = {
 
 const EventCard = memo(function EventCard({ event, isSelected, onClick, style }) {
   const CategoryIcon = categoryIconMap[event.category] || AlertTriangle;
+  const sourceLabel = event.is_simulated || event.event_nature === 'fictional'
+    ? 'Simulated'
+    : (event.source_badge || event.provider || event.source || 'Feed');
 
   const handleClick = useCallback(() => {
     onClick();
@@ -71,7 +74,7 @@ const EventCard = memo(function EventCard({ event, isSelected, onClick, style })
               {stripUrls(event.summary)}
             </div>
 
-            <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {event.location?.placeName || event.location?.country || 'Unknown'}
@@ -80,14 +83,16 @@ const EventCard = memo(function EventCard({ event, isSelected, onClick, style })
                 <Clock className="h-3 w-3" />
                 {formatRelativeTime(event.timestamp)}
               </span>
-              {event.source === 'community' && (
-                <span className="text-[9px] font-medium text-cyan-400 bg-cyan-500/10 px-1 py-0.5 rounded">
-                  Community
-                </span>
-              )}
-              {event.event_nature === 'fictional' && (
-                <span className="text-[9px] font-medium text-purple-400 bg-purple-500/10 px-1 py-0.5 rounded">
-                  Fictional
+              <span className={`text-[9px] font-medium px-1 py-0.5 rounded ${
+                event.is_simulated || event.event_nature === 'fictional'
+                  ? 'text-purple-300 bg-purple-500/10'
+                  : 'text-emerald-300 bg-emerald-500/10'
+              }`}>
+                {sourceLabel}
+              </span>
+              {event.campaign_name && (
+                <span className="text-[9px] font-medium text-tropic-gold-light bg-tropic-gold/10 px-1 py-0.5 rounded">
+                  {event.campaign_name}
                 </span>
               )}
             </div>

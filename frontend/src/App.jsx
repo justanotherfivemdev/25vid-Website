@@ -52,6 +52,7 @@ const LOARequest = lazy(() => import('@/pages/member/LOARequest'));
 const LOAManager = lazy(() => import('@/pages/admin/LOAManager'));
 const PipelineManager = lazy(() => import('@/pages/admin/PipelineManager'));
 const DeploymentManager = lazy(() => import('@/pages/admin/DeploymentManager'));
+const OperationalDocsManager = lazy(() => import('@/pages/admin/OperationalDocsManager'));
 const ServerDashboard = lazy(() => import('@/pages/admin/servers/ServerDashboard'));
 const ModIssues = lazy(() => import('@/pages/admin/servers/ModIssues'));
 const ServerWorkspace = lazy(() => import('@/pages/admin/servers/ServerWorkspace'));
@@ -314,6 +315,8 @@ const HeroSection = ({ content }) => {
       {heroIsVideo && <video src={heroMedia} className="absolute inset-0 w-full h-full object-cover" muted loop autoPlay playsInline />}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/75 to-black"></div>
       <div className="hero-grid-overlay"></div>
+      <div className="hero-aurora hero-aurora-left"></div>
+      <div className="hero-aurora hero-aurora-right"></div>
       <div className="relative z-10 text-center px-4 md:px-6">
         <div className="mb-10 compass-logo" data-testid="unit-logo">
           <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th Infantry Division" className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain drop-shadow-[0_0_30px_rgba(212,160,23,0.4)]" />
@@ -322,8 +325,51 @@ const HeroSection = ({ content }) => {
           <span className="block">{heroLine1}</span>
           {heroLine2 && <span className="block text-lg sm:text-xl lg:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-tropic-gold to-tropic-gold-light mt-4 tracking-[0.2em]">{heroLine2}</span>}
         </h1>
-        <div className="mt-10">
-          <Link to="/login"><Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">{content.nav?.buttonText || 'ENLIST NOW'}</Button></Link>
+
+        <div className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
+          <div className="hero-intel-card text-left">
+            <div className="flex items-center gap-3">
+              <div className="hero-intel-icon"><Globe className="h-4 w-4" /></div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-tropic-gold-dark">Campaign Theater</p>
+                <p className="mt-1 text-lg font-bold text-white">Global Ops Board</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-gray-400">Live recruiting theaters, campaign hotspots, and global threat visualization tied to current operations.</p>
+          </div>
+          <div className="hero-intel-card text-left">
+            <div className="flex items-center gap-3">
+              <div className="hero-intel-icon"><Calendar className="h-4 w-4" /></div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-tropic-gold-dark">Weekly Rhythm</p>
+                <p className="mt-1 text-lg font-bold text-white">Operation Cycle</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-gray-400">Training blocks, deployments, and live missions are surfaced through the same command-centered experience members use internally.</p>
+          </div>
+          <div className="hero-intel-card text-left">
+            <div className="flex items-center gap-3">
+              <div className="hero-intel-icon"><Users className="h-4 w-4" /></div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-tropic-gold-dark">Tropic Lightning</p>
+                <p className="mt-1 text-lg font-bold text-white">Member Pipeline</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-gray-400">From first contact to campaign deployment, the site now reads like a flagship operations platform instead of a static brochure.</p>
+          </div>
+        </div>
+
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link to="/join">
+            <Button className="bg-tropic-gold hover:bg-tropic-gold-light text-black px-10 py-5 text-lg tactical-button tracking-widest" data-testid="hero-cta-button">
+              {content.nav?.buttonText || 'ENLIST NOW'}
+            </Button>
+          </Link>
+          <Link to="/login">
+            <Button variant="outline" className="border-tropic-gold/35 bg-black/40 px-8 py-5 text-base tracking-[0.2em] text-tropic-gold hover:bg-tropic-gold/10">
+              Member Access
+            </Button>
+          </Link>
         </div>
         <div className="mt-8 flex items-center justify-center gap-2 text-xs tracking-[0.25em] text-gray-500 uppercase">
           <span className="w-8 h-px bg-gradient-to-r from-transparent to-gray-600"></span>
@@ -1277,6 +1323,7 @@ function App() {
           <Route path="/admin/intel" element={<IntelManager />} />
           <Route path="/admin/campaigns" element={<CampaignManager />} />
           <Route path="/admin/deployments" element={<DeploymentManager />} />
+          <Route path="/admin/operational-docs" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's3_operations']}><OperationalDocsManager /></ProtectedRoute>} />
           <Route path="/admin/unit-config" element={<UnitTagsManager />} />
           <Route path="/admin/partner-units" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's5_liaison', 's5_civil_affairs']}><PartnerUnitsManager /></ProtectedRoute>} />
           <Route path="/admin/partner-applications" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's5_liaison', 's5_civil_affairs']}><PartnerApplicationsReview /></ProtectedRoute>} />

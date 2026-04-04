@@ -3,7 +3,7 @@ import { useEventsStore } from '@/stores/threatMapStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Zap, ChevronRight, ChevronLeft,
+  Zap, ChevronRight,
   TrendingUp, AlertTriangle, Radio,
 } from 'lucide-react';
 
@@ -106,17 +106,21 @@ const severityColor = {
   info: '#94a3b8',
 };
 
-export default function CorrelationPanel() {
+export default function CorrelationPanel({ docked = false }) {
   const { filteredEvents } = useEventsStore();
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   const signals = useMemo(() => detectSignals(filteredEvents), [filteredEvents]);
+  const positionClass = docked ? 'relative' : 'absolute top-16 right-3 z-20';
+  const expandedClass = docked
+    ? 'absolute right-0 top-full mt-2 z-30'
+    : 'absolute top-16 right-3 z-20';
 
   if (signals.length === 0) return null;
 
   if (isCollapsed) {
     return (
-      <div className="absolute top-16 right-3 z-20">
+      <div className={positionClass}>
         <Button
           variant="ghost"
           size="icon"
@@ -138,7 +142,7 @@ export default function CorrelationPanel() {
 
   return (
     <div
-      className="absolute top-16 right-3 z-20 w-64 rounded-lg border shadow-xl overflow-hidden"
+      className={`${expandedClass} w-64 rounded-lg border shadow-xl overflow-hidden`}
       style={{
         borderColor: 'rgba(255,215,0,0.3)',
         background: 'rgba(5,10,20,0.95)',

@@ -8,7 +8,6 @@ import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
 import IntelLayerPanel from '@/components/threatmap/IntelLayerPanel';
-import CorrelationPanel from '@/components/threatmap/CorrelationPanel';
 import '@/components/threatmap/threatmap.css';
 
 import { API } from '@/utils/api';
@@ -22,6 +21,7 @@ export default function ThreatMapPage() {
   const [operations, setOperations] = useState([]);
   const [intelEvents, setIntelEvents] = useState([]);
   const [campaignEvents, setCampaignEvents] = useState([]);
+  const [mapStatus, setMapStatus] = useState({ ready: false, error: null });
 
   // This page always renders the Globe view. World Monitor is a standalone app
   // at /worldmonitor/ (served by Nginx), not a React route.
@@ -104,14 +104,19 @@ export default function ThreatMapPage() {
 
   return (
     <div className="flex h-screen flex-col bg-black threat-map-page">
-      <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} />
+      <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} mapStatus={mapStatus} isAdmin={isAdmin} />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          <GlobalThreatMap operations={operations} intelEvents={intelEvents} campaignEvents={campaignEvents} />
+          <GlobalThreatMap
+            operations={operations}
+            intelEvents={intelEvents}
+            campaignEvents={campaignEvents}
+            isAdmin={isAdmin}
+            onStatusChange={setMapStatus}
+          />
           <TimelineScrubber />
           <ThreatMapControls />
           <IntelLayerPanel />
-          <CorrelationPanel />
         </div>
         <ThreatMapSidebar isAdmin={isAdmin} />
       </div>

@@ -15,6 +15,7 @@ tzdata>=2024.2
 requests>=2.32.0
 openai>=1.26.0
 valyu>=0.1.0
+pypdf>=5.4.0
 
 # Server Management / Docker orchestration
 docker>=7.0.0

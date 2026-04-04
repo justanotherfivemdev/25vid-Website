@@ -87,6 +87,20 @@
   color: #B8960F !important;
 }
 
+.threat-map-page .mapboxgl-ctrl-top-right,
+.threat-map-page .mapboxgl-ctrl-top-left {
+  top: 4.5rem !important;
+}
+
+.threat-map-page .mapboxgl-ctrl-top-right {
+  right: 0.9rem !important;
+}
+
+.threat-map-page .mapboxgl-ctrl-bottom-right {
+  bottom: 0.9rem !important;
+  right: 0.9rem !important;
+}
+
 /* Custom scrollbar for threat map sidebar */
 .threat-map-page ::-webkit-scrollbar {
   width: 5px;
