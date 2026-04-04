@@ -18,8 +18,8 @@ const STATUS_COLORS = {
   approved: 'bg-green-500/20 text-green-400 border-green-500/30',
   denied: 'bg-red-500/20 text-red-400 border-red-500/30',
   active: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  returned: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  expired: 'bg-gray-700/20 text-gray-500 border-gray-700/30',
+  returned: 'bg-gray-500/20 text-[#8a9aa8] border-gray-500/30',
+  expired: 'bg-[#111a24]/20 text-[#4a6070] border-[rgba(201,162,39,0.15)]/30',
 };
 
 const LOARequest = () => {
@@ -67,20 +67,20 @@ const LOARequest = () => {
 
   const handleLogout = async () => { await logout(); navigate('/'); };
 
-  if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
+  if (loading) return <div className="min-h-screen bg-[#050a0e] text-white flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className={inLayout ? '' : 'min-h-screen bg-black text-white'}>
+    <div className={inLayout ? '' : 'min-h-screen bg-[#050a0e] text-white'}>
       {!inLayout && (
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#050a0e]/92 backdrop-blur-xl border-b border-tropic-gold/15">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
-            <h1 className="text-xl font-bold tracking-widest" style={{ fontFamily: 'Rajdhani, sans-serif' }}>LEAVE OF ABSENCE</h1>
+            <Link to="/hub"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
+            <h1 className="text-xl font-bold tracking-widest" style={{ fontFamily: "'Share Tech', sans-serif" }}>LEAVE OF ABSENCE</h1>
           </div>
           <div className="flex items-center space-x-3">
-            <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
-            <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
+            <Link to="/"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><Home className="w-4 h-4" /></Button></Link>
+            <Button size="sm" variant="outline" onClick={handleLogout} className="border-[rgba(201,162,39,0.15)]"><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>
       </nav>
@@ -103,8 +103,8 @@ const LOARequest = () => {
                   <Calendar className="w-5 h-5 text-blue-400" />
                   <div>
                     <div className="font-bold text-blue-400 tracking-wider text-sm">CURRENTLY ON LOA</div>
-                    <div className="text-xs text-gray-400">{activeLOA.start_date} — {activeLOA.end_date}</div>
-                    <div className="text-xs text-gray-500 mt-1">{activeLOA.reason}</div>
+                    <div className="text-xs text-[#8a9aa8]">{activeLOA.start_date} — {activeLOA.end_date}</div>
+                    <div className="text-xs text-[#4a6070] mt-1">{activeLOA.reason}</div>
                   </div>
                 </div>
               </CardContent>
@@ -112,7 +112,7 @@ const LOARequest = () => {
           )}
 
           {/* Request Form */}
-          <Card className="bg-gray-900/80 border-gray-800">
+          <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg tracking-wider flex items-center gap-2">
                 <Send className="w-5 h-5 text-tropic-gold" /> REQUEST LOA
@@ -123,20 +123,20 @@ const LOARequest = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Start Date *</Label>
-                    <Input type="date" required value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} className="bg-black border-gray-700" />
+                    <Input type="date" required value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" />
                   </div>
                   <div>
                     <Label>End Date *</Label>
-                    <Input type="date" required value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} className="bg-black border-gray-700" />
+                    <Input type="date" required value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" />
                   </div>
                 </div>
                 <div>
                   <Label>Reason *</Label>
-                  <Input required value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} className="bg-black border-gray-700" placeholder="Brief reason for leave" />
+                  <Input required value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Brief reason for leave" />
                 </div>
                 <div>
                   <Label>Additional Notes</Label>
-                  <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="bg-black border-gray-700" rows={3} placeholder="Any additional details..." />
+                  <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" rows={3} placeholder="Any additional details..." />
                 </div>
                 <Button type="submit" disabled={submitting} className="bg-tropic-gold hover:bg-tropic-gold-light text-black">
                   <Send className="w-4 h-4 mr-2" />{submitting ? 'Submitting...' : 'Submit LOA Request'}
@@ -147,24 +147,24 @@ const LOARequest = () => {
 
           {/* Previous Requests */}
           {requests.length > 0 && (
-            <Card className="bg-gray-900/80 border-gray-800">
+            <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg tracking-wider">YOUR LOA HISTORY</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {requests.map(r => (
-                    <div key={r.id} className="bg-black/30 border border-gray-800 rounded-lg p-3">
+                    <div key={r.id} className="bg-[#050a0e]/30 border border-[rgba(201,162,39,0.12)] rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-300">{r.start_date} — {r.end_date}</span>
+                          <Clock className="w-4 h-4 text-[#4a6070]" />
+                          <span className="text-sm text-[#8a9aa8]">{r.start_date} — {r.end_date}</span>
                         </div>
-                        <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || 'bg-gray-700'}`}>{(r.status || 'pending').toUpperCase()}</Badge>
+                        <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || 'bg-[#111a24]'}`}>{(r.status || 'pending').toUpperCase()}</Badge>
                       </div>
-                      <div className="text-xs text-gray-400">{r.reason}</div>
-                      {r.notes && <div className="text-xs text-gray-500 mt-1">{r.notes}</div>}
-                      {r.reviewed_by && <div className="text-xs text-gray-600 mt-1">Reviewed by: {r.reviewed_by}</div>}
+                      <div className="text-xs text-[#8a9aa8]">{r.reason}</div>
+                      {r.notes && <div className="text-xs text-[#4a6070] mt-1">{r.notes}</div>}
+                      {r.reviewed_by && <div className="text-xs text-[#4a6070] mt-1">Reviewed by: {r.reviewed_by}</div>}
                     </div>
                   ))}
                 </div>

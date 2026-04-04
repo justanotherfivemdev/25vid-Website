@@ -36,17 +36,17 @@ const deepMerge = (defaults, overrides) => {
 
 /* ─── tiny label component ─── */
 const FieldHint = ({ location, purpose, recommended }) => (
-  <div className="text-xs text-gray-500 space-y-0.5 mt-1 leading-snug">
-    {location && <div><span className="text-gray-400 font-medium">Appears on:</span> {location}</div>}
-    {purpose && <div><span className="text-gray-400 font-medium">Purpose:</span> {purpose}</div>}
-    {recommended && <div><span className="text-gray-400 font-medium">Recommended:</span> {recommended}</div>}
+  <div className="text-xs text-[#4a6070] space-y-0.5 mt-1 leading-snug">
+    {location && <div><span className="text-[#8a9aa8] font-medium">Appears on:</span> {location}</div>}
+    {purpose && <div><span className="text-[#8a9aa8] font-medium">Purpose:</span> {purpose}</div>}
+    {recommended && <div><span className="text-[#8a9aa8] font-medium">Recommended:</span> {recommended}</div>}
   </div>
 );
 
 /* ─── section wrapper ─── */
 const SectionCard = ({ number, icon: Icon, title, subtitle, children }) => (
-  <Card className="bg-gray-900 border-gray-800 overflow-hidden" data-testid={`section-${number}`}>
-    <CardHeader className="bg-gray-900/80 border-b border-gray-800/60">
+  <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)] overflow-hidden" data-testid={`section-${number}`}>
+    <CardHeader className="bg-[#0c1117]/80 border-b border-[rgba(201,162,39,0.12)]/60">
       <div className="flex items-center gap-4">
         <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-tropic-gold/20 text-tropic-gold font-bold text-sm shrink-0">{number}</div>
         <div className="flex-1">
@@ -134,10 +134,10 @@ const SiteContentManager = () => {
     <>
       <div className="space-y-6 max-w-5xl">
         {/* Header */}
-        <div className="flex items-center justify-between sticky top-0 z-10 bg-gray-950/95 backdrop-blur-sm py-4 -mx-2 px-2 border-b border-gray-800/50">
+        <div className="flex items-center justify-between sticky top-0 z-10 bg-[#050a0e]/95 backdrop-blur-sm py-4 -mx-2 px-2 border-b border-[rgba(201,162,39,0.12)]/50">
           <div>
             <h1 className="text-3xl font-bold tracking-wider" data-testid="site-content-title">COMMAND CENTER</h1>
-            <p className="text-sm text-gray-500 mt-1">Edit all website branding, text, and imagery. Changes are live after saving.</p>
+            <p className="text-sm text-[#4a6070] mt-1">Edit all website branding, text, and imagery. Changes are live after saving.</p>
           </div>
           <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black px-8" data-testid="save-content-btn">
             <Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save All'}
@@ -156,13 +156,13 @@ const SiteContentManager = () => {
           <div>
             <Label>Tab Title</Label>
             <FieldHint location="Browser tab label" purpose="What visitors see in the tab text" recommended="25th Infantry Division" />
-            <Input value={get('browser.tabTitle')} onChange={e => set('browser.tabTitle', e.target.value)} className="bg-black border-gray-700 mt-2" data-testid="browser-tab-title-input" />
+            <Input value={get('browser.tabTitle')} onChange={e => set('browser.tabTitle', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" data-testid="browser-tab-title-input" />
           </div>
           <div>
             <Label>Tab Description (Meta Description)</Label>
             <FieldHint location="Page metadata" purpose="Description used by browsers and search previews" recommended="Official site of the 25th Infantry Division — Tropic Lightning. Ready to Strike, Anywhere, Anytime." />
-            <p className="text-xs text-gray-500 text-center mt-2">Default (25th branding): Official site of the 25th Infantry Division — Tropic Lightning. Ready to Strike, Anywhere, Anytime.</p>
-            <Textarea value={get('browser.tabDescription')} onChange={e => set('browser.tabDescription', e.target.value)} rows={3} className="bg-black border-gray-700 mt-2" data-testid="browser-tab-description-input" />
+            <p className="text-xs text-[#4a6070] text-center mt-2">Default (25th branding): Official site of the 25th Infantry Division — Tropic Lightning. Ready to Strike, Anywhere, Anytime.</p>
+            <Textarea value={get('browser.tabDescription')} onChange={e => set('browser.tabDescription', e.target.value)} rows={3} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" data-testid="browser-tab-description-input" />
           </div>
           <ImageUpload
             value={get('browser.tabIcon')}
@@ -179,13 +179,13 @@ const SiteContentManager = () => {
             <div>
               <Label>Brand Name</Label>
               <FieldHint location="Top-left of nav bar on every page" purpose="Your unit's display name" />
-              <Input value={get('nav.brandName')} onChange={e => set('nav.brandName', e.target.value)} className="bg-black border-gray-700 mt-2" data-testid="nav-brand-input" />
+              <Input value={get('nav.brandName')} onChange={e => set('nav.brandName', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" data-testid="nav-brand-input" />
               <FieldHint recommended="25TH INFANTRY DIVISION" />
             </div>
             <div>
               <Label>CTA Button Text</Label>
               <FieldHint location="Top-right of nav bar + hero section" purpose="Primary call-to-action button" />
-              <Input value={get('nav.buttonText')} onChange={e => set('nav.buttonText', e.target.value)} className="bg-black border-gray-700 mt-2" data-testid="nav-btn-input" />
+              <Input value={get('nav.buttonText')} onChange={e => set('nav.buttonText', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" data-testid="nav-btn-input" />
               <FieldHint recommended="ENLIST NOW" />
             </div>
           </div>
@@ -200,12 +200,12 @@ const SiteContentManager = () => {
             <div>
               <Label>Tagline Line 1</Label>
               <FieldHint location="Centered below compass logo" purpose="Bold headline, first line" />
-              <Input value={get('hero.tagline.line1')} onChange={e => set('hero.tagline.line1', e.target.value)} className="bg-black border-gray-700 mt-2" data-testid="hero-line1-input" />
+              <Input value={get('hero.tagline.line1')} onChange={e => set('hero.tagline.line1', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" data-testid="hero-line1-input" />
             </div>
             <div>
               <Label>Tagline Line 2</Label>
               <FieldHint location="Centered below line 1" purpose="Bold headline, second line" />
-              <Input value={get('hero.tagline.line2')} onChange={e => set('hero.tagline.line2', e.target.value)} className="bg-black border-gray-700 mt-2" data-testid="hero-line2-input" />
+              <Input value={get('hero.tagline.line2')} onChange={e => set('hero.tagline.line2', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" data-testid="hero-line2-input" />
             </div>
           </div>
         </SectionCard>
@@ -216,12 +216,12 @@ const SiteContentManager = () => {
             <div>
               <Label>Section Heading</Label>
               <FieldHint location="About section title" purpose="Main label shown above the about copy" />
-              <Input value={get('sectionHeadings.about.heading')} onChange={e => set('sectionHeadings.about.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('sectionHeadings.about.heading')} onChange={e => set('sectionHeadings.about.heading', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
             <div>
               <Label>Section Subtext</Label>
               <FieldHint location="Below the About heading" purpose="Optional supporting line" />
-              <Input value={get('sectionHeadings.about.subtext')} onChange={e => set('sectionHeadings.about.subtext', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('sectionHeadings.about.subtext')} onChange={e => set('sectionHeadings.about.subtext', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
           </div>
           <ImageUpload value={get('about.logoImage')} onChange={url => set('about.logoImage', url)} label="Unit Emblem / Patch"
@@ -230,27 +230,27 @@ const SiteContentManager = () => {
           <div>
             <Label>About Paragraph 1</Label>
             <FieldHint location="About section, main body text" purpose="Unit origin story or description" />
-            <Textarea value={get('about.paragraph1')} onChange={e => set('about.paragraph1', e.target.value)} rows={3} className="bg-black border-gray-700 mt-2" />
+            <Textarea value={get('about.paragraph1')} onChange={e => set('about.paragraph1', e.target.value)} rows={3} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
           </div>
           <div>
             <Label>About Paragraph 2</Label>
             <FieldHint location="About section, below paragraph 1" purpose="Mission statement or community description" />
-            <Textarea value={get('about.paragraph2')} onChange={e => set('about.paragraph2', e.target.value)} rows={3} className="bg-black border-gray-700 mt-2" />
+            <Textarea value={get('about.paragraph2')} onChange={e => set('about.paragraph2', e.target.value)} rows={3} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
           </div>
-          <div className="border-t border-gray-800 pt-6">
-            <h4 className="text-sm font-bold text-gray-400 tracking-wider mb-4">FOUNDER QUOTE BLOCK</h4>
+          <div className="border-t border-[rgba(201,162,39,0.12)] pt-6">
+            <h4 className="text-sm font-bold text-[#8a9aa8] tracking-wider mb-4">FOUNDER QUOTE BLOCK</h4>
             <ImageUpload value={get('about.quote.backgroundImage')} onChange={url => set('about.quote.backgroundImage', url)} label="Quote Background Image"
               description="Appears on: Behind the quote text box. Purpose: Atmospheric tactical backdrop. Recommended: 1200x600px landscape."
               previewClass="w-full h-28 object-cover rounded" />
             <div className="mt-4">
               <Label>Quote Text</Label>
               <FieldHint location="About section, quote block" purpose="Featured motivational / leadership quote" />
-              <Textarea value={get('about.quote.text')} onChange={e => set('about.quote.text', e.target.value)} rows={2} className="bg-black border-gray-700 mt-2" />
+              <Textarea value={get('about.quote.text')} onChange={e => set('about.quote.text', e.target.value)} rows={2} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
             <div className="mt-4">
               <Label>Quote Author</Label>
               <FieldHint location="Below the quote text" purpose="Attribution line" />
-              <Input value={get('about.quote.author')} onChange={e => set('about.quote.author', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('about.quote.author')} onChange={e => set('about.quote.author', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
               <FieldHint recommended="25th Infantry Division Motto" />
             </div>
           </div>
@@ -262,18 +262,18 @@ const SiteContentManager = () => {
             <div>
               <Label>Section Heading</Label>
               <FieldHint location="Large left-side heading" purpose="Main section title shown on the homepage" />
-              <Input value={get('sectionHeadings.operationalSuperiority.heading')} onChange={e => set('sectionHeadings.operationalSuperiority.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('sectionHeadings.operationalSuperiority.heading')} onChange={e => set('sectionHeadings.operationalSuperiority.heading', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
             <div>
               <Label>Section Subtext</Label>
               <FieldHint location="Above the description text" purpose="Optional supporting label" />
-              <Input value={get('sectionHeadings.operationalSuperiority.subtext')} onChange={e => set('sectionHeadings.operationalSuperiority.subtext', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('sectionHeadings.operationalSuperiority.subtext')} onChange={e => set('sectionHeadings.operationalSuperiority.subtext', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
           </div>
           <div>
             <Label>Section Description</Label>
             <FieldHint location="Right side of heading" purpose="Describes the unit's operational capability" />
-            <Textarea value={get('operationalSuperiority.description')} onChange={e => set('operationalSuperiority.description', e.target.value)} rows={2} className="bg-black border-gray-700 mt-2" />
+            <Textarea value={get('operationalSuperiority.description')} onChange={e => set('operationalSuperiority.description', e.target.value)} rows={2} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[0, 1, 2].map(i => (
@@ -290,40 +290,40 @@ const SiteContentManager = () => {
             <div>
               <Label>Section Heading</Label>
               <FieldHint location="Top of the Lethality section" purpose="Main section title shown on the homepage" />
-              <Input value={get('sectionHeadings.lethality.heading')} onChange={e => set('sectionHeadings.lethality.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('sectionHeadings.lethality.heading')} onChange={e => set('sectionHeadings.lethality.heading', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
             <div>
               <Label>Section Subtext</Label>
               <FieldHint location="Below the Lethality heading" purpose="Optional supporting line" />
-              <Input value={get('sectionHeadings.lethality.subtext')} onChange={e => set('sectionHeadings.lethality.subtext', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('sectionHeadings.lethality.subtext')} onChange={e => set('sectionHeadings.lethality.subtext', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
           </div>
-          <div className="border border-gray-800 rounded-lg p-4 space-y-4">
-            <h4 className="text-sm font-bold text-gray-400 tracking-wider">LOGISTICS BLOCK</h4>
+          <div className="border border-[rgba(201,162,39,0.12)] rounded-lg p-4 space-y-4">
+            <h4 className="text-sm font-bold text-[#8a9aa8] tracking-wider">LOGISTICS BLOCK</h4>
             <div>
               <Label>Logistics Heading</Label>
               <FieldHint location="Logistics block title" purpose="Visible heading above the logistics description" />
-              <Input value={get('lethality.logistics.heading')} onChange={e => set('lethality.logistics.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('lethality.logistics.heading')} onChange={e => set('lethality.logistics.heading', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
             <div>
               <Label>Logistics Description</Label>
               <FieldHint location="Left of logistics image" purpose="Logistical support overview" />
-              <Textarea value={get('lethality.logistics.description')} onChange={e => set('lethality.logistics.description', e.target.value)} rows={2} className="bg-black border-gray-700 mt-2" />
+              <Textarea value={get('lethality.logistics.description')} onChange={e => set('lethality.logistics.description', e.target.value)} rows={2} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
             <ImageUpload value={get('lethality.logistics.image')} onChange={url => set('lethality.logistics.image', url)} label="Logistics Image"
               description="Appears on: Right of logistics text. Recommended: 800x450px landscape." previewClass="w-full h-28 object-cover rounded" />
           </div>
-          <div className="border border-gray-800 rounded-lg p-4 space-y-4">
-            <h4 className="text-sm font-bold text-gray-400 tracking-wider">TRAINING BLOCK</h4>
+          <div className="border border-[rgba(201,162,39,0.12)] rounded-lg p-4 space-y-4">
+            <h4 className="text-sm font-bold text-[#8a9aa8] tracking-wider">TRAINING BLOCK</h4>
             <div>
               <Label>Training Heading</Label>
               <FieldHint location="Training block title" purpose="Visible heading above the training description" />
-              <Input value={get('lethality.training.heading')} onChange={e => set('lethality.training.heading', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('lethality.training.heading')} onChange={e => set('lethality.training.heading', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
             <div>
               <Label>Training Description</Label>
               <FieldHint location="Right of training image" purpose="Training program overview" />
-              <Textarea value={get('lethality.training.description')} onChange={e => set('lethality.training.description', e.target.value)} rows={2} className="bg-black border-gray-700 mt-2" />
+              <Textarea value={get('lethality.training.description')} onChange={e => set('lethality.training.description', e.target.value)} rows={2} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
             <ImageUpload value={get('lethality.training.image')} onChange={url => set('lethality.training.image', url)} label="Training Image"
               description="Appears on: Left of training text. Recommended: 800x450px landscape." previewClass="w-full h-28 object-cover rounded" />
@@ -339,16 +339,16 @@ const SiteContentManager = () => {
             { key: 'gallery', label: 'Mission Gallery', defaultH: 'MISSION GALLERY', defaultS: 'Moments from the field' },
             { key: 'enlist', label: 'Enlist / Join Section', defaultH: 'ENLIST TODAY', defaultS: 'Join the most professional MilSim unit' },
           ].map(({ key, label, defaultH, defaultS }) => (
-            <div key={key} className="grid grid-cols-[1fr,1fr] gap-4 pb-4 border-b border-gray-800/50 last:border-0">
+            <div key={key} className="grid grid-cols-[1fr,1fr] gap-4 pb-4 border-b border-[rgba(201,162,39,0.12)]/50 last:border-0">
               <div>
                 <Label>{label} — Heading</Label>
-                <Input value={get(`sectionHeadings.${key}.heading`) || ''} onChange={e => set(`sectionHeadings.${key}.heading`, e.target.value)} className="bg-black border-gray-700 mt-1" />
+                <Input value={get(`sectionHeadings.${key}.heading`) || ''} onChange={e => set(`sectionHeadings.${key}.heading`, e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-1" />
                 <FieldHint recommended={defaultH} />
               </div>
               {defaultS !== '' ? (
                 <div>
                   <Label>{label} — Subtext</Label>
-                  <Input value={get(`sectionHeadings.${key}.subtext`) || ''} onChange={e => set(`sectionHeadings.${key}.subtext`, e.target.value)} className="bg-black border-gray-700 mt-1" />
+                  <Input value={get(`sectionHeadings.${key}.subtext`) || ''} onChange={e => set(`sectionHeadings.${key}.subtext`, e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-1" />
                   <FieldHint recommended={defaultS} />
                 </div>
               ) : <div></div>}
@@ -383,8 +383,8 @@ const SiteContentManager = () => {
             <div>
               <Label>Show Background</Label>
               <Select value={get('partnerLogin.showBackground') === false ? 'no' : 'yes'} onValueChange={v => set('partnerLogin.showBackground', v === 'yes')}>
-                <SelectTrigger className="bg-black border-gray-700 mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                   <SelectItem value="yes">Yes</SelectItem>
                   <SelectItem value="no">No</SelectItem>
                 </SelectContent>
@@ -395,7 +395,7 @@ const SiteContentManager = () => {
               <Input type="number" min="0" max="1" step="0.05"
                 value={get('partnerLogin.overlayOpacity') ?? 0.85}
                 onChange={e => set('partnerLogin.overlayOpacity', parseFloat(e.target.value) || 0.85)}
-                className="bg-black border-gray-700 mt-1" />
+                className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-1" />
             </div>
           </div>
         </SectionCard>
@@ -405,25 +405,25 @@ const SiteContentManager = () => {
           <div>
             <Label>Footer Tagline</Label>
             <FieldHint location="Footer, below brand name" purpose="Short unit description or slogan" />
-            <Input value={get('footer.tagline')} onChange={e => set('footer.tagline', e.target.value)} className="bg-black border-gray-700 mt-2" />
+            <Input value={get('footer.tagline')} onChange={e => set('footer.tagline', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Discord</Label>
               <FieldHint location="Footer, Connect column" />
-              <Input value={get('footer.discord')} onChange={e => set('footer.discord', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('footer.discord')} onChange={e => set('footer.discord', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
             <div>
               <Label>Email</Label>
               <FieldHint location="Footer, Connect column" />
-              <Input value={get('footer.email')} onChange={e => set('footer.email', e.target.value)} className="bg-black border-gray-700 mt-2" />
+              <Input value={get('footer.email')} onChange={e => set('footer.email', e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] mt-2" />
             </div>
           </div>
         </SectionCard>
 
         {/* Bottom save */}
-        <div className="flex justify-between items-center pt-8 border-t border-gray-800">
-          <p className="text-sm text-gray-600">All fields are optional. Empty fields fall back to defaults.</p>
+        <div className="flex justify-between items-center pt-8 border-t border-[rgba(201,162,39,0.12)]">
+          <p className="text-sm text-[#4a6070]">All fields are optional. Empty fields fall back to defaults.</p>
           <Button onClick={handleSave} disabled={saving} className="bg-tropic-gold hover:bg-tropic-gold-dark text-black px-10 py-5 text-base" data-testid="save-content-btn-bottom">
             <Save className="w-5 h-5 mr-2" />{saving ? 'Saving...' : 'Save All Changes'}
           </Button>

@@ -133,7 +133,7 @@ export default function EventPopup({ event, isAdmin = false }) {
             <textarea
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
-              className="w-full mt-1 p-2 text-xs bg-black/60 border border-tropic-gold-dark/30 rounded text-gray-200 resize-y min-h-[60px] focus:border-tropic-gold/50 focus:outline-none"
+              className="w-full mt-1 p-2 text-xs bg-[#050a0e]/60 border border-tropic-gold-dark/30 rounded text-[#d0d8e0] resize-y min-h-[60px] focus:border-tropic-gold/50 focus:outline-none"
               rows={3}
             />
           </div>
@@ -142,7 +142,7 @@ export default function EventPopup({ event, isAdmin = false }) {
             <input
               value={editSource}
               onChange={(e) => setEditSource(e.target.value)}
-              className="w-full mt-1 p-1.5 text-xs bg-black/60 border border-tropic-gold-dark/30 rounded text-gray-200 focus:border-tropic-gold/50 focus:outline-none"
+              className="w-full mt-1 p-1.5 text-xs bg-[#050a0e]/60 border border-tropic-gold-dark/30 rounded text-[#d0d8e0] focus:border-tropic-gold/50 focus:outline-none"
               placeholder="e.g. Internal Intelligence"
             />
           </div>
@@ -156,7 +156,7 @@ export default function EventPopup({ event, isAdmin = false }) {
                   className={`flex-1 text-[9px] py-1 rounded font-medium transition-all ${
                     editCredibility === opt.value
                       ? `bg-tropic-gold/20 ${opt.color} border border-tropic-gold/40`
-                      : 'text-gray-500 border border-transparent hover:border-gray-700'
+                      : 'text-[#4a6070] border border-transparent hover:border-[rgba(201,162,39,0.15)]'
                   }`}
                 >
                   {opt.label}
@@ -174,19 +174,19 @@ export default function EventPopup({ event, isAdmin = false }) {
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] rounded text-gray-400 border border-gray-700 hover:text-gray-200 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-[10px] rounded text-[#8a9aa8] border border-[rgba(201,162,39,0.15)] hover:text-[#d0d8e0] transition-colors"
             >
               <X className="h-3 w-3" /> Cancel
             </button>
           </div>
         </div>
       ) : !isExpanded ? (
-        <div className="mb-2 text-xs text-gray-300 line-clamp-3 break-words">
+        <div className="mb-2 text-xs text-[#8a9aa8] line-clamp-3 break-words">
           {stripUrls(displaySummary)}
         </div>
       ) : (
         <div className="mb-2 max-h-[400px] overflow-y-auto rounded-md p-3" style={{ background: 'rgba(14,20,32,0.6)' }}>
-          <div className="text-xs text-gray-200 whitespace-pre-wrap break-words">
+          <div className="text-xs text-[#d0d8e0] whitespace-pre-wrap break-words">
             <LinkifiedText text={event.rawContent || displaySummary} />
           </div>
         </div>
@@ -206,13 +206,13 @@ export default function EventPopup({ event, isAdmin = false }) {
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-xs text-gray-400">
+      <div className="flex items-center gap-2 text-xs text-[#8a9aa8]">
         <MapPin className="h-3 w-3" />
         <span>{event.location?.placeName || event.location?.country || 'Unknown'}</span>
       </div>
 
       <div className="mt-2 flex items-center justify-between text-xs">
-        <span className="text-gray-400">{formatRelativeTime(event.timestamp)}</span>
+        <span className="text-[#8a9aa8]">{formatRelativeTime(event.timestamp)}</span>
         <div className="flex items-center gap-2">
           {isAdmin && !isEditing && (
             <button
@@ -226,7 +226,7 @@ export default function EventPopup({ event, isAdmin = false }) {
           {event.rawContent && !isEditing && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
+              className="flex items-center gap-1 text-[#8a9aa8] hover:text-white transition-colors"
             >
               {isExpanded ? (
                 <><ChevronUp className="h-3 w-3" /> Collapse</>
@@ -249,7 +249,7 @@ export default function EventPopup({ event, isAdmin = false }) {
       </div>
 
       <div className="mt-2 flex flex-wrap gap-1">
-        <Badge variant="outline" className="text-[10px] capitalize text-gray-300 border-gray-700/60">
+        <Badge variant="outline" className="text-[10px] capitalize text-[#8a9aa8] border-[rgba(201,162,39,0.15)]/60">
           {event.category}
         </Badge>
         <Badge variant="outline" className={`text-[10px] ${
@@ -265,7 +265,7 @@ export default function EventPopup({ event, isAdmin = false }) {
           </Badge>
         )}
         {(event.keywords || []).slice(0, 2).map((keyword) => (
-          <Badge key={keyword} variant="secondary" className="text-[10px] bg-gray-800/60 text-gray-400">
+          <Badge key={keyword} variant="secondary" className="text-[10px] bg-[#111a24]/60 text-[#8a9aa8]">
             {keyword}
           </Badge>
         ))}

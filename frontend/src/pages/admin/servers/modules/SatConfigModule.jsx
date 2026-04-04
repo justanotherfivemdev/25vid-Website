@@ -331,9 +331,9 @@ function SatConfigModule() {
 
   if (!configState?.available) {
     return (
-      <Card className="border-zinc-800 bg-black/60">
-        <CardContent className="py-14 text-center text-gray-500">
-          <ShieldAlert className="mx-auto mb-3 h-8 w-8 text-gray-700" />
+      <Card className="border-zinc-800 bg-[#050a0e]/60">
+        <CardContent className="py-14 text-center text-[#4a6070]">
+          <ShieldAlert className="mx-auto mb-3 h-8 w-8 text-[#4a6070]" />
           <p className="text-sm">Server Admin Tools config is not available yet.</p>
           <p className="mt-1 text-xs">Current state: {configState?.status || 'pending'}. Start the server and let the profile finish generating before editing SAT.</p>
         </CardContent>
@@ -345,15 +345,15 @@ function SatConfigModule() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold tracking-[0.24em] text-gray-200" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h2 className="text-sm font-semibold tracking-[0.24em] text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             SERVER ADMIN TOOLS
           </h2>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-[#4a6070]">
             Structured SAT control surface with live status, ban management, operator messaging, events wiring, and recovery tools.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={refreshAll} className="h-8 border-zinc-800 text-xs text-gray-300">
+          <Button size="sm" variant="outline" onClick={refreshAll} className="h-8 border-zinc-800 text-xs text-[#8a9aa8]">
             <RefreshCw className="mr-1 h-3.5 w-3.5" /> Refresh
           </Button>
           <Button size="sm" onClick={saveConfig} disabled={!draft || saving} className="h-8 bg-tropic-gold text-black hover:bg-tropic-gold-light">
@@ -374,8 +374,8 @@ function SatConfigModule() {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-3">
             <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-              <Input value={newBanId} onChange={(event) => setNewBanId(event.target.value)} placeholder="Player ID / GUID" className="h-9 border-zinc-800 bg-black/50 text-white" />
-              <Input value={newBanReason} onChange={(event) => setNewBanReason(event.target.value)} placeholder="Reason (optional)" className="h-9 border-zinc-800 bg-black/50 text-white" />
+              <Input value={newBanId} onChange={(event) => setNewBanId(event.target.value)} placeholder="Player ID / GUID" className="h-9 border-zinc-800 bg-[#050a0e]/50 text-white" />
+              <Input value={newBanReason} onChange={(event) => setNewBanReason(event.target.value)} placeholder="Reason (optional)" className="h-9 border-zinc-800 bg-[#050a0e]/50 text-white" />
               <Button onClick={addBan} disabled={!newBanId.trim() || workingAction === 'add-ban'} className="h-9 bg-tropic-gold text-black hover:bg-tropic-gold-light">
                 {workingAction === 'add-ban' ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
                 Add ban
@@ -383,15 +383,15 @@ function SatConfigModule() {
             </div>
             <div className="space-y-2">
               {bans.length === 0 ? (
-                <p className="text-xs text-gray-500">No SAT bans are configured yet.</p>
+                <p className="text-xs text-[#4a6070]">No SAT bans are configured yet.</p>
               ) : (
                 bans.map((ban) => (
                   <div key={ban.id} className="flex items-center gap-3 rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-3">
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm text-gray-100">{ban.id}</div>
-                      <div className="text-xs text-gray-500">{ban.reason || 'No reason provided'}</div>
+                      <div className="truncate text-sm text-[#d0d8e0]">{ban.id}</div>
+                      <div className="text-xs text-[#4a6070]">{ban.reason || 'No reason provided'}</div>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={() => removeBan(ban.id)} className="text-gray-500 hover:text-red-400">
+                    <Button size="sm" variant="ghost" onClick={() => removeBan(ban.id)} className="text-[#4a6070] hover:text-red-400">
                       Remove
                     </Button>
                   </div>
@@ -400,8 +400,8 @@ function SatConfigModule() {
             </div>
           </div>
           <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-4">
-            <div className="text-sm font-medium text-gray-100">Live Sync</div>
-            <p className="mt-1 text-xs text-gray-500">
+            <div className="text-sm font-medium text-[#d0d8e0]">Live Sync</div>
+            <p className="mt-1 text-xs text-[#4a6070]">
               Replay SAT bans against the live server when BattlEye RCON is available.
             </p>
             <Button
@@ -409,7 +409,7 @@ function SatConfigModule() {
               variant="outline"
               onClick={syncBans}
               disabled={workingAction === 'sync-bans'}
-              className="mt-4 h-8 border-zinc-700 text-gray-200"
+              className="mt-4 h-8 border-zinc-700 text-[#d0d8e0]"
             >
               {workingAction === 'sync-bans' ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1 h-3.5 w-3.5" />}
               Sync bans to runtime
@@ -422,23 +422,23 @@ function SatConfigModule() {
         <div className="grid gap-4 xl:grid-cols-2">
           <div className="space-y-3">
             <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-4">
-              <div className="text-xs font-medium uppercase tracking-[0.18em] text-gray-500">Admins</div>
+              <div className="text-xs font-medium uppercase tracking-[0.18em] text-[#4a6070]">Admins</div>
               <div className="mt-3 grid gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
-                <Input value={newAdminId} onChange={(event) => setNewAdminId(event.target.value)} placeholder="Admin identity / GUID" className="h-8 border-zinc-800 bg-black/40 font-mono text-xs text-white" />
-                <Input value={newAdminName} onChange={(event) => setNewAdminName(event.target.value)} placeholder="Display name" className="h-8 border-zinc-800 bg-black/40 text-xs text-white" />
-                <Button size="sm" variant="outline" onClick={addAdmin} disabled={!newAdminId.trim()} className="h-8 border-zinc-700 text-gray-200">
+                <Input value={newAdminId} onChange={(event) => setNewAdminId(event.target.value)} placeholder="Admin identity / GUID" className="h-8 border-zinc-800 bg-[#050a0e]/40 font-mono text-xs text-white" />
+                <Input value={newAdminName} onChange={(event) => setNewAdminName(event.target.value)} placeholder="Display name" className="h-8 border-zinc-800 bg-[#050a0e]/40 text-xs text-white" />
+                <Button size="sm" variant="outline" onClick={addAdmin} disabled={!newAdminId.trim()} className="h-8 border-zinc-700 text-[#d0d8e0]">
                   Add admin
                 </Button>
               </div>
               <div className="mt-3 space-y-2">
                 {admins.length === 0 ? (
-                  <p className="text-xs text-gray-500">No explicit SAT admins found in the current config.</p>
+                  <p className="text-xs text-[#4a6070]">No explicit SAT admins found in the current config.</p>
                 ) : (
                   admins.map((admin) => (
                     <div key={admin.id} className="grid gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
-                      <Input value={admin.id} readOnly className="h-8 border-zinc-800 bg-black/40 font-mono text-xs text-gray-300" />
-                      <Input value={admin.name} onChange={(event) => updateAdminName(admin.id, event.target.value)} className="h-8 border-zinc-800 bg-black/40 text-xs text-white" />
-                      <Button size="sm" variant="ghost" onClick={() => removeAdmin(admin.id)} className="text-gray-500 hover:text-red-400">
+                      <Input value={admin.id} readOnly className="h-8 border-zinc-800 bg-[#050a0e]/40 font-mono text-xs text-[#8a9aa8]" />
+                      <Input value={admin.name} onChange={(event) => updateAdminName(admin.id, event.target.value)} className="h-8 border-zinc-800 bg-[#050a0e]/40 text-xs text-white" />
+                      <Button size="sm" variant="ghost" onClick={() => removeAdmin(admin.id)} className="text-[#4a6070] hover:text-red-400">
                         Remove
                       </Button>
                     </div>
@@ -467,7 +467,7 @@ function SatConfigModule() {
           onRemove={(index) => removeArrayItem('repeatedChatMessages', index)}
           renderItem={(item, index) => (
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_140px]">
-              <Textarea value={item.message || ''} onChange={(event) => updateArrayItem('repeatedChatMessages', index, { message: event.target.value })} rows={3} className="border-zinc-800 bg-black/40 text-sm text-white" />
+              <Textarea value={item.message || ''} onChange={(event) => updateArrayItem('repeatedChatMessages', index, { message: event.target.value })} rows={3} className="border-zinc-800 bg-[#050a0e]/40 text-sm text-white" />
               <LabeledInput label="Interval (min)" type="number" value={item.intervalMinutes ?? 15} onChange={(value) => updateArrayItem('repeatedChatMessages', index, { intervalMinutes: Number(value || 0) })} />
             </div>
           )}
@@ -481,7 +481,7 @@ function SatConfigModule() {
           onRemove={(index) => removeArrayItem('scheduledChatMessages', index)}
           renderItem={(item, index) => (
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_120px_120px]">
-              <Textarea value={item.message || ''} onChange={(event) => updateArrayItem('scheduledChatMessages', index, { message: event.target.value })} rows={3} className="border-zinc-800 bg-black/40 text-sm text-white" />
+              <Textarea value={item.message || ''} onChange={(event) => updateArrayItem('scheduledChatMessages', index, { message: event.target.value })} rows={3} className="border-zinc-800 bg-[#050a0e]/40 text-sm text-white" />
               <LabeledInput label="Hour" type="number" value={item.hour ?? 0} onChange={(value) => updateArrayItem('scheduledChatMessages', index, { hour: Number(value || 0) })} />
               <LabeledInput label="Minute" type="number" value={item.minute ?? 0} onChange={(value) => updateArrayItem('scheduledChatMessages', index, { minute: Number(value || 0) })} />
             </div>
@@ -495,7 +495,7 @@ function SatConfigModule() {
             value={Array.isArray(draft?.serverMessage) ? draft.serverMessage.join('\n') : String(draft?.serverMessage || '')}
             onChange={(event) => updateField('serverMessage', dedupeStringList(event.target.value))}
             rows={8}
-            className="border-zinc-800 bg-black/40 text-sm text-white"
+            className="border-zinc-800 bg-[#050a0e]/40 text-sm text-white"
           />
           <div className="space-y-3">
             <LabeledInput label="Header Image" value={draft?.serverMessageHeaderImage || ''} onChange={(value) => updateField('serverMessageHeaderImage', value)} />
@@ -511,12 +511,12 @@ function SatConfigModule() {
           <LabeledInput label="Events API Address" value={draft?.eventsApiAddress || ''} onChange={(value) => updateField('eventsApiAddress', value)} />
           <LabeledInput label="Rate Limit (s)" type="number" value={draft?.eventsApiRatelimitSeconds ?? 0} onChange={(value) => updateField('eventsApiRatelimitSeconds', Number(value || 0))} />
           <div>
-            <div className="mb-1 text-xs font-medium text-gray-500">Enabled Events</div>
+            <div className="mb-1 text-xs font-medium text-[#4a6070]">Enabled Events</div>
             <Textarea
               value={Array.isArray(draft?.eventsApiEventsEnabled) ? draft.eventsApiEventsEnabled.join(', ') : ''}
               onChange={(event) => updateField('eventsApiEventsEnabled', dedupeStringList(event.target.value))}
               rows={4}
-              className="border-zinc-800 bg-black/40 text-sm text-white"
+              className="border-zinc-800 bg-[#050a0e]/40 text-sm text-white"
             />
           </div>
         </div>
@@ -544,7 +544,7 @@ function SatConfigModule() {
       </SectionCard>
 
       <SectionCard title="Advanced" icon={ShieldAlert}>
-        <p className="mb-3 text-xs text-gray-500">
+        <p className="mb-3 text-xs text-[#4a6070]">
           Unknown SAT keys stay editable here so structured coverage can improve without blocking uncommon fields.
           Known keys entered here are ignored — use the structured fields above.
         </p>
@@ -555,7 +555,7 @@ function SatConfigModule() {
             if (advancedJsonError) setAdvancedJsonError('');
           }}
           rows={12}
-          className={`border-zinc-800 bg-black/40 font-mono text-xs text-white ${advancedJsonError ? 'border-red-500/50' : ''}`}
+          className={`border-zinc-800 bg-[#050a0e]/40 font-mono text-xs text-white ${advancedJsonError ? 'border-red-500/50' : ''}`}
         />
         {advancedJsonError && (
           <p className="mt-1.5 text-xs text-red-400">{advancedJsonError}</p>
@@ -567,10 +567,10 @@ function SatConfigModule() {
 
 function StatusTile({ label, value }) {
   return (
-    <Card className="border-zinc-800 bg-black/60">
+    <Card className="border-zinc-800 bg-[#050a0e]/60">
       <CardContent className="p-4">
-        <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500">{label}</div>
-        <div className="mt-2 text-2xl font-semibold text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#4a6070]">{label}</div>
+        <div className="mt-2 text-2xl font-semibold text-white" style={{ fontFamily: "'Share Tech', sans-serif" }}>
           {value}
         </div>
       </CardContent>
@@ -580,9 +580,9 @@ function StatusTile({ label, value }) {
 
 function SectionCard({ title, icon: Icon, children }) {
   return (
-    <Card className="border-zinc-800 bg-black/60">
+    <Card className="border-zinc-800 bg-[#050a0e]/60">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+        <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-[#d0d8e0]">
           <Icon className="h-4 w-4 text-tropic-gold" /> {title}
         </CardTitle>
       </CardHeader>
@@ -594,8 +594,8 @@ function SectionCard({ title, icon: Icon, children }) {
 function LabeledInput({ label, value, onChange, type = 'text' }) {
   return (
     <div>
-      <div className="mb-1 text-xs font-medium text-gray-500">{label}</div>
-      <Input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="h-9 border-zinc-800 bg-black/40 text-white" />
+      <div className="mb-1 text-xs font-medium text-[#4a6070]">{label}</div>
+      <Input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="h-9 border-zinc-800 bg-[#050a0e]/40 text-white" />
     </div>
   );
 }
@@ -603,7 +603,7 @@ function LabeledInput({ label, value, onChange, type = 'text' }) {
 function ToggleField({ label, checked, onCheckedChange }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-zinc-800/70 bg-zinc-950/70 px-3 py-3">
-      <div className="text-xs font-medium text-gray-300">{label}</div>
+      <div className="text-xs font-medium text-[#8a9aa8]">{label}</div>
       <Switch checked={checked} onCheckedChange={onCheckedChange} className="h-5 w-9" />
     </div>
   );
@@ -612,18 +612,18 @@ function ToggleField({ label, checked, onCheckedChange }) {
 function ArraySection({ items, onAdd, onRemove, renderItem }) {
   return (
     <div className="space-y-3">
-      {items.length === 0 && <p className="text-xs text-gray-500">No entries configured yet.</p>}
+      {items.length === 0 && <p className="text-xs text-[#4a6070]">No entries configured yet.</p>}
       {items.map((item, index) => (
         <div key={`item-${index}`} className="space-y-3 rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-4">
           {renderItem(item, index)}
           <div className="flex justify-end">
-            <Button size="sm" variant="ghost" onClick={() => onRemove(index)} className="text-gray-500 hover:text-red-400">
+            <Button size="sm" variant="ghost" onClick={() => onRemove(index)} className="text-[#4a6070] hover:text-red-400">
               Remove
             </Button>
           </div>
         </div>
       ))}
-      <Button size="sm" variant="outline" onClick={onAdd} className="border-zinc-800 text-gray-200">
+      <Button size="sm" variant="outline" onClick={onAdd} className="border-zinc-800 text-[#d0d8e0]">
         Add entry
       </Button>
     </div>
@@ -633,11 +633,11 @@ function ArraySection({ items, onAdd, onRemove, renderItem }) {
 function ToolCard({ title, description, buttonLabel, icon: Icon, onClick, loading }) {
   return (
     <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-gray-100">
+      <div className="flex items-center gap-2 text-sm font-medium text-[#d0d8e0]">
         <Icon className="h-4 w-4 text-tropic-gold" /> {title}
       </div>
-      <p className="mt-2 text-xs text-gray-500">{description}</p>
-      <Button size="sm" variant="outline" onClick={onClick} disabled={loading} className="mt-4 border-zinc-700 text-gray-200">
+      <p className="mt-2 text-xs text-[#4a6070]">{description}</p>
+      <Button size="sm" variant="outline" onClick={onClick} disabled={loading} className="mt-4 border-zinc-700 text-[#d0d8e0]">
         {loading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
         {buttonLabel}
       </Button>

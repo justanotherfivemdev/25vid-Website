@@ -80,17 +80,17 @@ const PartnerLoginPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 md:px-6 relative" style={partnerBg}>
       {bgConfig?.showBackground && bgConfig?.backgroundImage && (
-        <div className="absolute inset-0 bg-black" style={{ opacity: bgConfig.overlayOpacity || 0.85 }}></div>
+        <div className="absolute inset-0 bg-[#050a0e]" style={{ opacity: bgConfig.overlayOpacity || 0.85 }}></div>
       )}
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-12 h-12 object-contain" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2 tracking-wider text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2 tracking-wider text-white" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             S-5 LIAISON AREA
           </h1>
-          <p className="text-gray-400 text-sm tracking-wide">Partner Unit Access — 25th Infantry Division</p>
+          <p className="text-[#8a9aa8] text-sm tracking-wide">Partner Unit Access — 25th Infantry Division</p>
         </div>
 
         <Card className="glass-card border border-tropic-olive/30">
@@ -105,11 +105,11 @@ const PartnerLoginPage = () => {
               {mode === 'register' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Invite Code</label>
+                    <label className="block text-sm font-medium mb-2 text-[#8a9aa8]">Invite Code</label>
                     <Input
                       type="text"
                       required
-                      className="bg-black/50 border-white/20"
+                      className="bg-[#050a0e]/50 border-white/20"
                       value={formData.invite_code}
                       onChange={(e) => setFormData({ ...formData, invite_code: e.target.value })}
                       placeholder="Enter your invite code"
@@ -117,11 +117,11 @@ const PartnerLoginPage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Username</label>
+                    <label className="block text-sm font-medium mb-2 text-[#8a9aa8]">Username</label>
                     <Input
                       type="text"
                       required
-                      className="bg-black/50 border-white/20"
+                      className="bg-[#050a0e]/50 border-white/20"
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                       data-testid="partner-username-input"
@@ -130,22 +130,22 @@ const PartnerLoginPage = () => {
                 </>
               )}
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Email</label>
+                <label className="block text-sm font-medium mb-2 text-[#8a9aa8]">Email</label>
                 <Input
                   type="email"
                   required
-                  className="bg-black/50 border-white/20"
+                  className="bg-[#050a0e]/50 border-white/20"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   data-testid="partner-email-input"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Password</label>
+                <label className="block text-sm font-medium mb-2 text-[#8a9aa8]">Password</label>
                 <Input
                   type="password"
                   required
-                  className="bg-black/50 border-white/20"
+                  className="bg-[#050a0e]/50 border-white/20"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   data-testid="partner-password-input"
@@ -153,10 +153,10 @@ const PartnerLoginPage = () => {
               </div>
               {mode === 'register' && (
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">Rank (Optional)</label>
+                  <label className="block text-sm font-medium mb-2 text-[#8a9aa8]">Rank (Optional)</label>
                   <Input
                     type="text"
-                    className="bg-black/50 border-white/20"
+                    className="bg-[#050a0e]/50 border-white/20"
                     value={formData.rank}
                     onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
                     data-testid="partner-rank-input"
@@ -180,7 +180,7 @@ const PartnerLoginPage = () => {
             <div className="mt-6 text-center">
               <button
                 onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setNotice(''); }}
-                className="text-sm text-gray-400 hover:text-tropic-gold transition-colors"
+                className="text-sm text-[#8a9aa8] hover:text-tropic-gold transition-colors"
                 data-testid="partner-auth-toggle"
               >
                 {mode === 'login' ? 'Have an invite code? Register here' : 'Already have an account? Login'}
@@ -193,10 +193,10 @@ const PartnerLoginPage = () => {
           <Link to="/partner-apply" className="text-sm text-tropic-olive hover:text-tropic-gold transition-colors block">
             Don't have an invite? Apply as a Partner Unit →
           </Link>
-          <Link to="/login" className="text-sm text-gray-500 hover:text-tropic-gold transition-colors block">
+          <Link to="/login" className="text-sm text-[#4a6070] hover:text-tropic-gold transition-colors block">
             &larr; 25th ID Member Login
           </Link>
-          <Link to="/" className="text-sm text-gray-600 hover:text-tropic-gold transition-colors block">
+          <Link to="/" className="text-sm text-[#4a6070] hover:text-tropic-gold transition-colors block">
             &larr; Back to Home
           </Link>
         </div>

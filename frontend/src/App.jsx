@@ -136,7 +136,7 @@ const MediaFrame = ({ src, alt, className = 'w-full h-full object-cover', imgCla
   }
   if (kind === 'audio') {
     return (
-      <div className="w-full h-full bg-black/60 flex items-center justify-center p-4">
+      <div className="w-full h-full bg-[#050a0e]/60 flex items-center justify-center p-4">
         <audio src={src} controls className="w-full max-w-xs" />
       </div>
     );
@@ -664,9 +664,9 @@ const UnitHistorySection = ({ content }) => {
                         <span className={`text-[10px] tracking-widest px-2 py-0.5 rounded ${accent.split(' ')[1]} text-white/90`}>{entry.campaign_type.toUpperCase()}</span>
                       </div>
 
-                      <h3 className="text-xl md:text-2xl font-bold tracking-wide mb-3" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{entry.title}</h3>
+                      <h3 className="text-xl md:text-2xl font-bold tracking-wide mb-3" style={{ fontFamily: "'Share Tech', sans-serif" }}>{entry.title}</h3>
 
-                      <p className={`${useDarkText ? 'text-gray-800' : 'text-gray-200'} text-sm leading-relaxed`}>{entry.description}</p>
+                      <p className={`${useDarkText ? 'text-gray-800' : 'text-[#d0d8e0]'} text-sm leading-relaxed`}>{entry.description}</p>
                       </div>
                     </div>
                   </div>

@@ -92,13 +92,13 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
   return (
     <div className="space-y-3" data-testid={`image-upload-${label?.toLowerCase().replace(/\s+/g, '-')}`}>
       {label && <label className="text-lg font-semibold block">{label}</label>}
-      {description && <p className="text-sm text-gray-400">{description}</p>}
+      {description && <p className="text-sm text-[#8a9aa8]">{description}</p>}
 
       <div className="flex gap-2">
         <Button
           type="button"
           variant="outline"
-          className="border-gray-700 flex-1"
+          className="border-[rgba(201,162,39,0.15)] flex-1"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
         >
@@ -128,11 +128,11 @@ const ImageUpload = ({ value, onChange, label, description, previewClass = "w-fu
       {error && <p className="text-sm text-tropic-red">{error}</p>}
 
       {value && (
-        <div className="mt-2 border border-gray-700 rounded-lg overflow-hidden inline-block">
+        <div className="mt-2 border border-[rgba(201,162,39,0.15)] rounded-lg overflow-hidden inline-block">
           {mediaKind(value) === 'video' ? (
             <video src={getDisplayUrl(value)} className={previewClass} muted loop autoPlay playsInline controls />
           ) : mediaKind(value) === 'audio' ? (
-            <div className="p-4 bg-black/40 min-w-[280px]">
+            <div className="p-4 bg-[#050a0e]/40 min-w-[280px]">
               <audio src={getDisplayUrl(value)} className="w-full" controls />
             </div>
           ) : (

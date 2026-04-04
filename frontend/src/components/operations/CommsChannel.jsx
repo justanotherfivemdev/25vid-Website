@@ -157,15 +157,14 @@ export default function CommsChannel({
   if (!joined) {
     return (
       <div className="p-3 text-center">
-        <Button
-          size="sm"
-          variant="outline"
-          className="border-[#C9A227] text-[#C9A227] hover:bg-[#C9A227]/10"
+        <button
+          className="tactical-button w-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] hover:border-[rgba(201,162,39,0.5)] transition-colors"
+          style={{ fontFamily: "'Oswald', sans-serif" }}
           onClick={joinChannel}
         >
-          <Radio className="w-4 h-4 mr-1" /> Join Comms
-        </Button>
-        <p className="text-[10px] text-gray-600 mt-1">Listen to or record voice transmissions</p>
+          <Radio className="w-4 h-4 inline mr-1.5" /> Join Comms
+        </button>
+        <p className="text-[10px] text-[#4a6070] mt-1.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Listen to or record voice transmissions</p>
       </div>
     );
   }
@@ -175,27 +174,26 @@ export default function CommsChannel({
       {/* Channel header */}
       <div className="flex items-center justify-between px-3 pt-2">
         <div className="flex items-center gap-1.5">
-          <Radio className="w-3.5 h-3.5 text-green-400" />
-          <span className="text-[10px] text-green-400 uppercase tracking-wider font-bold">
+          <Radio className="w-3.5 h-3.5 text-[#e8c547]" />
+          <span className="text-[10px] text-[#e8c547] uppercase tracking-wider font-bold" style={{ fontFamily: "'Oswald', sans-serif" }}>
             Comms Active
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button
-            className="text-gray-500 hover:text-gray-300 transition"
+            className="text-[#4a6070] hover:text-[#8a9aa8] transition"
             onClick={() => setMuted(!muted)}
             title={muted ? 'Unmute' : 'Mute'}
           >
             {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-red-400 hover:text-red-300 h-6 px-2 text-[10px]"
+          <button
+            className="text-[#ff3333] hover:text-[#ff5555] h-6 px-2 text-[10px] uppercase tracking-wider font-bold transition"
+            style={{ fontFamily: "'Oswald', sans-serif" }}
             onClick={leaveChannel}
           >
             Leave
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -203,11 +201,12 @@ export default function CommsChannel({
       {!readOnly && (
         <div className="px-3">
           <button
-            className={`w-full py-2 rounded text-xs font-bold uppercase tracking-wider transition ${
+            className={`w-full py-2 text-xs font-bold uppercase tracking-wider transition ${
               recording
-                ? 'bg-red-600 text-white animate-pulse'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                ? 'bg-[rgba(255,51,51,0.15)] text-[#ff3333] border border-[rgba(255,51,51,0.4)] animate-pulse'
+                : 'bg-[#050a0e] text-[#4a6070] border border-[rgba(201,162,39,0.1)] hover:border-[rgba(201,162,39,0.3)] hover:text-[#8a9aa8]'
             }`}
+            style={{ fontFamily: "'Oswald', sans-serif" }}
             onMouseDown={startRecording}
             onMouseUp={stopRecording}
             onMouseLeave={recording ? stopRecording : undefined}
@@ -219,8 +218,8 @@ export default function CommsChannel({
               <><MicOff className="w-4 h-4 inline mr-1" /> Push to Talk</>
             )}
           </button>
-          <p className="text-[9px] text-gray-600 mt-1 text-center">
-            Hold button or press <kbd className="px-1 py-0.5 bg-gray-800 rounded text-gray-400 font-mono border border-gray-700">{pttKeyLabel}</kbd> to transmit
+          <p className="text-[9px] text-[#4a6070] mt-1 text-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            Hold button or press <kbd className="px-1 py-0.5 bg-[#050a0e] text-[#8a9aa8] font-mono border border-[rgba(201,162,39,0.15)]">{pttKeyLabel}</kbd> to transmit
           </p>
         </div>
       )}
@@ -238,20 +237,20 @@ export default function CommsChannel({
       {/* Voice log */}
       <div className="px-3 pb-2 space-y-1 max-h-48 overflow-y-auto">
         {clips.length === 0 ? (
-          <p className="text-[10px] text-gray-600 text-center py-2">No transmissions yet</p>
+          <p className="text-[10px] text-[#4a6070] text-center py-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>No transmissions yet</p>
         ) : (
           clips.slice(-20).map((c) => (
             <button
               key={c.id}
-              className="flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-gray-800/50 transition text-left text-[10px]"
+              className="flex items-center gap-2 w-full px-2 py-1 hover:bg-[rgba(201,162,39,0.04)] transition text-left text-[10px] border border-transparent hover:border-[rgba(201,162,39,0.1)]"
               onClick={() => playClip(c)}
             >
-              <User className="w-3 h-3 text-gray-600 shrink-0" />
-              <span className="text-gray-400 truncate">{c.username || 'Unknown'}</span>
-              <span className="text-gray-600 ml-auto shrink-0">
+              <User className="w-3 h-3 text-[#4a6070] shrink-0" />
+              <span className="text-[#8a9aa8] truncate" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{c.username || 'Unknown'}</span>
+              <span className="text-[#4a6070] ml-auto shrink-0" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                 {c.timestamp ? new Date(c.timestamp).toLocaleTimeString() : ''}
               </span>
-              <Volume2 className="w-3 h-3 text-[#C9A227] shrink-0" />
+              <Volume2 className="w-3 h-3 text-[#e8c547] shrink-0" />
             </button>
           ))
         )}

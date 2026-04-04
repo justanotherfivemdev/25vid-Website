@@ -210,7 +210,7 @@ function ConsoleModule() {
     if (lower.includes('error') || lower.includes('fatal') || lower.includes('crash')) return 'text-red-400';
     if (lower.includes('warn') || lower.includes('warning')) return 'text-amber-300';
     if (lower.includes('restart') || lower.includes('shutdown')) return 'text-blue-400 font-semibold';
-    return 'text-gray-300';
+    return 'text-[#8a9aa8]';
   };
 
   const connectionLabel = {
@@ -239,30 +239,30 @@ function ConsoleModule() {
     <div className="flex h-full flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[220px] flex-1">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#4a6070]" />
           <Input
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
             placeholder="Filter console lines"
-            className="h-8 border-zinc-800 bg-black/60 pl-9 text-xs text-white placeholder:text-gray-600"
+            className="h-8 border-zinc-800 bg-[#050a0e]/60 pl-9 text-xs text-white placeholder:text-[#4a6070]"
           />
         </div>
         <Button
           size="sm"
           variant="outline"
           onClick={() => setPaused((current) => !current)}
-          className={`h-8 border-zinc-800 text-xs ${paused ? 'text-amber-300' : 'text-gray-400'}`}
+          className={`h-8 border-zinc-800 text-xs ${paused ? 'text-amber-300' : 'text-[#8a9aa8]'}`}
         >
           {paused ? <Play className="mr-1 h-3.5 w-3.5" /> : <Pause className="mr-1 h-3.5 w-3.5" />}
           {paused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
         </Button>
-        <Button size="sm" variant="outline" onClick={handleCopy} className="h-8 border-zinc-800 text-xs text-gray-400">
+        <Button size="sm" variant="outline" onClick={handleCopy} className="h-8 border-zinc-800 text-xs text-[#8a9aa8]">
           <Copy className="mr-1 h-3.5 w-3.5" /> Copy
         </Button>
-        <Button size="sm" variant="outline" onClick={handleDownload} className="h-8 border-zinc-800 text-xs text-gray-400">
+        <Button size="sm" variant="outline" onClick={handleDownload} className="h-8 border-zinc-800 text-xs text-[#8a9aa8]">
           <Download className="mr-1 h-3.5 w-3.5" /> Download
         </Button>
-        <Button size="sm" variant="outline" onClick={() => setLogs([])} className="h-8 border-zinc-800 text-xs text-gray-400">
+        <Button size="sm" variant="outline" onClick={() => setLogs([])} className="h-8 border-zinc-800 text-xs text-[#8a9aa8]">
           <Trash2 className="mr-1 h-3.5 w-3.5" /> Clear buffer
         </Button>
       </div>
@@ -275,10 +275,10 @@ function ConsoleModule() {
             AUTO-SCROLL PAUSED
           </Badge>
         )}
-        <span className="ml-auto text-gray-600">{filteredLogs.length} entries in view</span>
+        <span className="ml-auto text-[#4a6070]">{filteredLogs.length} entries in view</span>
       </div>
 
-      <Card className="flex-1 border-zinc-800 bg-black/80">
+      <Card className="flex-1 border-zinc-800 bg-[#050a0e]/80">
         <CardContent className="p-0">
           <div
             ref={logRef}
@@ -286,12 +286,12 @@ function ConsoleModule() {
             style={{ scrollBehavior: 'auto' }}
           >
             {loading ? (
-              <div className="flex items-center justify-center py-12 text-gray-600">
+              <div className="flex items-center justify-center py-12 text-[#4a6070]">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading logs...
               </div>
             ) : filteredLogs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-                <Terminal className="mb-2 h-8 w-8 text-gray-700" />
+              <div className="flex flex-col items-center justify-center py-12 text-[#4a6070]">
+                <Terminal className="mb-2 h-8 w-8 text-[#4a6070]" />
                 <p>{filter ? 'No matching log lines' : 'No merged logs available yet'}</p>
               </div>
             ) : (

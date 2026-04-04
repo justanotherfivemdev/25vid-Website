@@ -7,13 +7,13 @@ const ThreatFilters = ({ filters, onChange }) => {
       <Input
         value={filters.search}
         onChange={(e) => onChange({ ...filters, search: e.target.value })}
-        className="bg-black border-gray-700"
+        className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
         placeholder="Search region/objective"
       />
       <select
         value={filters.severity}
         onChange={(e) => onChange({ ...filters, severity: e.target.value })}
-        className="h-10 rounded-md bg-black border border-gray-700 px-3 text-sm"
+        className="h-10 rounded-md bg-[#050a0e] border border-[rgba(201,162,39,0.15)] px-3 text-sm"
       >
         <option value="all">All Severities</option>
         <option value="low">Low</option>
@@ -24,7 +24,7 @@ const ThreatFilters = ({ filters, onChange }) => {
       <select
         value={filters.status}
         onChange={(e) => onChange({ ...filters, status: e.target.value })}
-        className="h-10 rounded-md bg-black border border-gray-700 px-3 text-sm"
+        className="h-10 rounded-md bg-[#050a0e] border border-[rgba(201,162,39,0.15)] px-3 text-sm"
       >
         <option value="all">All Statuses</option>
         <option value="pending">Pending</option>

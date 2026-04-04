@@ -144,13 +144,13 @@ export default function AircraftLayer({ aircraft = [], visible = false, popup = 
           maxWidth="280px"
           className="threat-map-popup"
         >
-          <div className="p-3 bg-gray-900 text-white rounded-lg border border-cyan-500/30">
+          <div className="p-3 bg-[#0c1117] text-white rounded-lg border border-cyan-500/30">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-bold px-2 py-0.5 rounded bg-cyan-600/20 text-cyan-300 uppercase">
                 ADS-B
               </span>
               {popup.aircraft_type && (
-                <span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300">
+                <span className="text-xs px-2 py-0.5 rounded bg-[#111a24] text-[#8a9aa8]">
                   {popup.aircraft_type}
                 </span>
               )}
@@ -164,43 +164,43 @@ export default function AircraftLayer({ aircraft = [], visible = false, popup = 
               {popup.callsign || 'UNKNOWN'}
             </h3>
             {popup.origin_country && (
-              <p className="text-xs text-gray-400 mt-0.5">{popup.origin_country}</p>
+              <p className="text-xs text-[#8a9aa8] mt-0.5">{popup.origin_country}</p>
             )}
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs">
               {popup.altitude != null && (
                 <>
-                  <span className="text-gray-400">Altitude</span>
-                  <span className="text-gray-200 text-right">{Math.round(popup.altitude).toLocaleString()} ft</span>
+                  <span className="text-[#8a9aa8]">Altitude</span>
+                  <span className="text-[#d0d8e0] text-right">{Math.round(popup.altitude).toLocaleString()} ft</span>
                 </>
               )}
               {popup.velocity != null && (
                 <>
-                  <span className="text-gray-400">Speed</span>
-                  <span className="text-gray-200 text-right">{Math.round(popup.velocity)} kts</span>
+                  <span className="text-[#8a9aa8]">Speed</span>
+                  <span className="text-[#d0d8e0] text-right">{Math.round(popup.velocity)} kts</span>
                 </>
               )}
               {popup.heading != null && (
                 <>
-                  <span className="text-gray-400">Heading</span>
-                  <span className="text-gray-200 text-right">{Math.round(popup.heading)}°</span>
+                  <span className="text-[#8a9aa8]">Heading</span>
+                  <span className="text-[#d0d8e0] text-right">{Math.round(popup.heading)}°</span>
                 </>
               )}
               {popup.vertical_rate != null && popup.vertical_rate !== 0 && (
                 <>
-                  <span className="text-gray-400">V/S</span>
-                  <span className="text-gray-200 text-right">{popup.vertical_rate > 0 ? '+' : ''}{Math.round(popup.vertical_rate)} ft/min</span>
+                  <span className="text-[#8a9aa8]">V/S</span>
+                  <span className="text-[#d0d8e0] text-right">{popup.vertical_rate > 0 ? '+' : ''}{Math.round(popup.vertical_rate)} ft/min</span>
                 </>
               )}
               {popup.squawk && (
                 <>
-                  <span className="text-gray-400">Squawk</span>
-                  <span className="text-gray-200 text-right">{popup.squawk}</span>
+                  <span className="text-[#8a9aa8]">Squawk</span>
+                  <span className="text-[#d0d8e0] text-right">{popup.squawk}</span>
                 </>
               )}
               {popup.source && (
                 <>
-                  <span className="text-gray-400">Source</span>
-                  <span className="text-gray-200 text-right">{popup.source}</span>
+                  <span className="text-[#8a9aa8]">Source</span>
+                  <span className="text-[#d0d8e0] text-right">{popup.source}</span>
                 </>
               )}
             </div>

@@ -29,7 +29,7 @@ const DEPLOYMENT_STATUSES = ['planning', 'deploying', 'deployed', 'endex', 'rtb'
 const ORIGIN_TYPES = ['25th', 'partner', 'counterpart'];
 
 const STATUS_COLORS = {
-  planning: 'bg-gray-600 text-gray-100',
+  planning: 'bg-[#4a6070] text-[#d0d8e0]',
   deploying: 'bg-yellow-600 text-yellow-100',
   deployed: 'bg-green-600 text-green-100',
   endex: 'bg-orange-600 text-orange-100',
@@ -523,13 +523,13 @@ const DeploymentManager = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-tropic-gold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h1 className="text-3xl font-bold text-tropic-gold tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             DEPLOYMENT MANAGER
           </h1>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-gray-800 pb-2">
+        <div className="flex gap-2 border-b border-[rgba(201,162,39,0.12)] pb-2">
           {[
             { key: 'deployments', label: 'DEPLOYMENTS' },
             { key: 'allied', label: 'ALLIED DEPLOYMENTS' },
@@ -541,7 +541,7 @@ const DeploymentManager = () => {
               className={`px-4 py-2 text-sm font-bold tracking-wider transition-colors ${
                 activeTab === tab.key
                   ? 'text-tropic-gold border-b-2 border-tropic-gold'
-                  : 'text-gray-500 hover:text-gray-300'
+                  : 'text-[#4a6070] hover:text-[#8a9aa8]'
               }`}
               onClick={() => setActiveTab(tab.key)}
             >
@@ -561,12 +561,12 @@ const DeploymentManager = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <p className="text-gray-400 text-sm">{filteredDeployments.length} deployment(s)</p>
+                <p className="text-[#8a9aa8] text-sm">{filteredDeployments.length} deployment(s)</p>
                 <Select value={originTypeFilter} onValueChange={setOriginTypeFilter}>
-                  <SelectTrigger className="w-[150px] bg-black border-gray-700 text-xs h-8">
+                  <SelectTrigger className="w-[150px] bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-xs h-8">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                     <SelectItem value="all" className="text-xs">All Types</SelectItem>
                     {ORIGIN_TYPES.map((t) => (
                       <SelectItem key={t} value={t} className="text-xs">{formatLabel(t)}</SelectItem>
@@ -578,7 +578,7 @@ const DeploymentManager = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-gray-700 text-gray-400 hover:text-white"
+                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white"
                   onClick={fetchDeployments}
                 >
                   <RefreshCw className="w-3 h-3 mr-1" />
@@ -595,24 +595,24 @@ const DeploymentManager = () => {
             </div>
 
             {deploymentsLoading ? (
-              <div className="text-center text-gray-500 py-12">Loading deployments...</div>
+              <div className="text-center text-[#4a6070] py-12">Loading deployments...</div>
             ) : filteredDeployments.length === 0 ? (
-              <div className="text-center text-gray-600 py-12">No deployments found. Create your first deployment.</div>
+              <div className="text-center text-[#4a6070] py-12">No deployments found. Create your first deployment.</div>
             ) : (
               <div className="space-y-3">
                 {filteredDeployments.map((dep) => (
-                  <Card key={dep.id || dep._id} className="bg-black/40 border-gray-800 hover:border-gray-700 transition-colors">
+                  <Card key={dep.id || dep._id} className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.12)] hover:border-[rgba(201,162,39,0.15)] transition-colors">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <h3 className="text-lg font-bold text-white truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                            <h3 className="text-lg font-bold text-white truncate" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                               {dep.title}
                             </h3>
-                            <Badge className={STATUS_COLORS[dep.status] || 'bg-gray-600'}>
+                            <Badge className={STATUS_COLORS[dep.status] || 'bg-[#4a6070]'}>
                               {dep.status?.toUpperCase()}
                             </Badge>
-                            <Badge className={ORIGIN_TYPE_COLORS[dep.origin_type] || 'bg-gray-600'}>
+                            <Badge className={ORIGIN_TYPE_COLORS[dep.origin_type] || 'bg-[#4a6070]'}>
                               {dep.origin_type?.toUpperCase()}
                             </Badge>
                             {dep.is_active && (
@@ -622,9 +622,9 @@ const DeploymentManager = () => {
                             )}
                           </div>
                           {dep.unit_name && (
-                            <p className="text-gray-300 text-sm mb-1">{dep.unit_name}</p>
+                            <p className="text-[#8a9aa8] text-sm mb-1">{dep.unit_name}</p>
                           )}
-                          <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                          <div className="flex flex-wrap gap-4 text-xs text-[#4a6070]">
                             {Array.isArray(dep.route_points) && dep.route_points.length > 0 && (
                               <span className="flex items-center gap-1">
                                 <Navigation className="w-3 h-3" />
@@ -646,7 +646,7 @@ const DeploymentManager = () => {
                             className={`h-8 text-xs ${
                               dep.is_active
                                 ? 'border-green-500/50 text-green-400 hover:bg-green-900/20'
-                                : 'border-gray-700 text-gray-400 hover:text-white'
+                                : 'border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white'
                             }`}
                             onClick={() => handleToggleActive(dep)}
                           >
@@ -655,7 +655,7 @@ const DeploymentManager = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="border-gray-700 text-gray-400 hover:text-white h-8"
+                            className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white h-8"
                             onClick={() => openEditDeployment(dep)}
                           >
                             <Edit className="w-3 h-3" />
@@ -683,13 +683,13 @@ const DeploymentManager = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <p className="text-gray-400 text-sm">{alliedDeployments.length} allied deployment(s)</p>
+                <p className="text-[#8a9aa8] text-sm">{alliedDeployments.length} allied deployment(s)</p>
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-gray-700 text-gray-400 hover:text-white"
+                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white"
                   onClick={fetchDeployments}
                 >
                   <RefreshCw className="w-3 h-3 mr-1" />
@@ -706,24 +706,24 @@ const DeploymentManager = () => {
             </div>
 
             {deploymentsLoading ? (
-              <div className="text-center text-gray-500 py-12">Loading allied deployments...</div>
+              <div className="text-center text-[#4a6070] py-12">Loading allied deployments...</div>
             ) : alliedDeployments.length === 0 ? (
-              <div className="text-center text-gray-600 py-12">No allied deployments found. Create your first allied deployment.</div>
+              <div className="text-center text-[#4a6070] py-12">No allied deployments found. Create your first allied deployment.</div>
             ) : (
               <div className="space-y-3">
                 {alliedDeployments.map((dep) => (
-                  <Card key={dep.id || dep._id} className="bg-black/40 border-gray-800 hover:border-gray-700 transition-colors">
+                  <Card key={dep.id || dep._id} className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.12)] hover:border-[rgba(201,162,39,0.15)] transition-colors">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <h3 className="text-lg font-bold text-white truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                            <h3 className="text-lg font-bold text-white truncate" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                               {dep.title}
                             </h3>
-                            <Badge className={STATUS_COLORS[dep.status] || 'bg-gray-600'}>
+                            <Badge className={STATUS_COLORS[dep.status] || 'bg-[#4a6070]'}>
                               {dep.status?.toUpperCase()}
                             </Badge>
-                            <Badge className={ORIGIN_TYPE_COLORS[dep.origin_type] || 'bg-gray-600'}>
+                            <Badge className={ORIGIN_TYPE_COLORS[dep.origin_type] || 'bg-[#4a6070]'}>
                               {dep.origin_type?.toUpperCase()}
                             </Badge>
                             {dep.is_active && (
@@ -733,9 +733,9 @@ const DeploymentManager = () => {
                             )}
                           </div>
                           {dep.unit_name && (
-                            <p className="text-gray-300 text-sm mb-1">{dep.unit_name}</p>
+                            <p className="text-[#8a9aa8] text-sm mb-1">{dep.unit_name}</p>
                           )}
-                          <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                          <div className="flex flex-wrap gap-4 text-xs text-[#4a6070]">
                             {Array.isArray(dep.route_points) && dep.route_points.length > 0 && (
                               <span className="flex items-center gap-1">
                                 <Navigation className="w-3 h-3" />
@@ -757,7 +757,7 @@ const DeploymentManager = () => {
                             className={`h-8 text-xs ${
                               dep.is_active
                                 ? 'border-green-500/50 text-green-400 hover:bg-green-900/20'
-                                : 'border-gray-700 text-gray-400 hover:text-white'
+                                : 'border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white'
                             }`}
                             onClick={() => handleToggleActive(dep)}
                           >
@@ -766,7 +766,7 @@ const DeploymentManager = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="border-gray-700 text-gray-400 hover:text-white h-8"
+                            className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white h-8"
                             onClick={() => openEditDeployment(dep)}
                           >
                             <Edit className="w-3 h-3" />
@@ -793,12 +793,12 @@ const DeploymentManager = () => {
         {activeTab === 'nato-markers' && (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <p className="text-gray-400 text-sm">{markers.length} marker(s)</p>
+              <p className="text-[#8a9aa8] text-sm">{markers.length} marker(s)</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-gray-700 text-gray-400 hover:text-white"
+                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white"
                   onClick={fetchMarkers}
                 >
                   <RefreshCw className="w-3 h-3 mr-1" />
@@ -815,24 +815,24 @@ const DeploymentManager = () => {
             </div>
 
             {markersLoading ? (
-              <div className="text-center text-gray-500 py-12">Loading NATO markers...</div>
+              <div className="text-center text-[#4a6070] py-12">Loading NATO markers...</div>
             ) : markers.length === 0 ? (
-              <div className="text-center text-gray-600 py-12">No NATO markers found. Create your first marker.</div>
+              <div className="text-center text-[#4a6070] py-12">No NATO markers found. Create your first marker.</div>
             ) : (
               <div className="space-y-3">
                 {markers.map((marker) => (
-                  <Card key={marker.id} className="bg-black/40 border-gray-800 hover:border-gray-700 transition-colors">
+                  <Card key={marker.id} className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.12)] hover:border-[rgba(201,162,39,0.15)] transition-colors">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-bold text-white truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                            <h3 className="text-lg font-bold text-white truncate" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                               {marker.title}
                             </h3>
-                            <Badge className={AFFILIATION_COLORS[marker.affiliation] || 'bg-gray-600'}>
+                            <Badge className={AFFILIATION_COLORS[marker.affiliation] || 'bg-[#4a6070]'}>
                               {marker.affiliation?.toUpperCase()}
                             </Badge>
-                            <Badge variant="outline" className="border-gray-600 text-gray-300 text-[10px]">
+                            <Badge variant="outline" className="border-[rgba(201,162,39,0.2)] text-[#8a9aa8] text-[10px]">
                               {formatLabel(marker.symbol_type || 'unknown')}
                             </Badge>
                             {marker.echelon && marker.echelon !== 'none' && (
@@ -842,9 +842,9 @@ const DeploymentManager = () => {
                             )}
                           </div>
                           {marker.description && (
-                            <p className="text-gray-400 text-sm mb-2 line-clamp-2">{marker.description}</p>
+                            <p className="text-[#8a9aa8] text-sm mb-2 line-clamp-2">{marker.description}</p>
                           )}
-                          <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                          <div className="flex flex-wrap gap-4 text-xs text-[#4a6070]">
                             {marker.designator && <span>Designator: {marker.designator}</span>}
                             {marker.latitude != null && marker.longitude != null && (
                               <span className="flex items-center gap-1">
@@ -858,7 +858,7 @@ const DeploymentManager = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="border-gray-700 text-gray-400 hover:text-white h-8"
+                            className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white h-8"
                             onClick={() => openEditMarker(marker)}
                           >
                             <Edit className="w-3 h-3" />
@@ -884,27 +884,27 @@ const DeploymentManager = () => {
         {/* ===================== DIVISION LOCATION TAB ===================== */}
         {activeTab === 'division-location' && (
           <div className="space-y-4">
-            <Card className="bg-black/40 border-gray-800">
+            <Card className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.12)]">
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <MapPin className="w-6 h-6 text-tropic-gold" />
-                  <h2 className="text-xl font-bold text-white tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                  <h2 className="text-xl font-bold text-white tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                     DIVISION HQ LOCATION
                   </h2>
                 </div>
                 {divisionLocation ? (
                   <div className="space-y-2">
-                    <div className="text-sm text-gray-300">
-                      <span className="text-gray-500">Name:</span>{' '}
+                    <div className="text-sm text-[#8a9aa8]">
+                      <span className="text-[#4a6070]">Name:</span>{' '}
                       {divisionLocation.current_location_name || 'Unknown'}
                     </div>
-                    <div className="text-sm text-gray-300">
-                      <span className="text-gray-500">Coordinates:</span>{' '}
+                    <div className="text-sm text-[#8a9aa8]">
+                      <span className="text-[#4a6070]">Coordinates:</span>{' '}
                       {divisionLocation.current_latitude?.toFixed(4)}, {divisionLocation.current_longitude?.toFixed(4)}
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">Division location not set.</p>
+                  <p className="text-[#4a6070] text-sm">Division location not set.</p>
                 )}
                 <div className="mt-4">
                   <Button
@@ -926,9 +926,9 @@ const DeploymentManager = () => {
           setDeploymentDialogOpen(open);
           if (!open) { setEditingDeployment(null); setDeploymentForm({ ...EMPTY_DEPLOYMENT }); }
         }}>
-          <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-[#0c1117] text-white border-[rgba(201,162,39,0.12)] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              <DialogTitle style={{ fontFamily: "'Share Tech', sans-serif" }}>
                 {editingDeployment ? 'EDIT DEPLOYMENT' : 'CREATE NEW DEPLOYMENT'}
               </DialogTitle>
             </DialogHeader>
@@ -939,7 +939,7 @@ const DeploymentManager = () => {
                   required
                   value={deploymentForm.title}
                   onChange={(e) => setDeploymentForm({ ...deploymentForm, title: e.target.value })}
-                  className="bg-black border-gray-700"
+                  className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   placeholder="e.g., Operation Pacific Shield"
                 />
               </div>
@@ -949,7 +949,7 @@ const DeploymentManager = () => {
                 <Input
                   value={deploymentForm.unit_name}
                   onChange={(e) => setDeploymentForm({ ...deploymentForm, unit_name: e.target.value })}
-                  className="bg-black border-gray-700"
+                  className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   placeholder="e.g., 2nd Brigade Combat Team"
                 />
               </div>
@@ -972,10 +972,10 @@ const DeploymentManager = () => {
                       setDeploymentForm({ ...prev, origin_type: val, route_points: newRoutePoints });
                     }}
                   >
-                    <SelectTrigger className="bg-black border-gray-700">
+                    <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                       {ORIGIN_TYPES.map((t) => (
                         <SelectItem key={t} value={t}>{formatLabel(t)}</SelectItem>
                       ))}
@@ -988,10 +988,10 @@ const DeploymentManager = () => {
                     value={deploymentForm.status}
                     onValueChange={(val) => setDeploymentForm({ ...deploymentForm, status: val })}
                   >
-                    <SelectTrigger className="bg-black border-gray-700">
+                    <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                       {DEPLOYMENT_STATUSES.map((s) => (
                         <SelectItem key={s} value={s}>{formatLabel(s)}</SelectItem>
                       ))}
@@ -1002,12 +1002,12 @@ const DeploymentManager = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-end">
-                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                  <label className="flex items-center gap-2 text-sm text-[#8a9aa8] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={deploymentForm.is_active}
                       onChange={(e) => setDeploymentForm({ ...deploymentForm, is_active: e.target.checked })}
-                      className="rounded border-gray-700"
+                      className="rounded border-[rgba(201,162,39,0.15)]"
                     />
                     Active Deployment
                   </label>
@@ -1020,7 +1020,7 @@ const DeploymentManager = () => {
                     min="0"
                     value={deploymentForm.total_duration_hours}
                     onChange={(e) => setDeploymentForm({ ...deploymentForm, total_duration_hours: e.target.value })}
-                    className="bg-black border-gray-700"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                     placeholder="24"
                   />
                 </div>
@@ -1032,14 +1032,14 @@ const DeploymentManager = () => {
                     min="0"
                     value={deploymentForm.return_duration_hours ?? 0}
                     onChange={(e) => setDeploymentForm({ ...deploymentForm, return_duration_hours: e.target.value })}
-                    className="bg-black border-gray-700"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                     placeholder="0"
                   />
                 </div>
               </div>
 
               {/* Route Points */}
-              <div className="border border-gray-800 rounded-lg p-3 space-y-3">
+              <div className="border border-[rgba(201,162,39,0.12)] rounded-lg p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-tropic-gold tracking-wider font-bold">ROUTE POINTS</div>
                   <Button
@@ -1059,7 +1059,7 @@ const DeploymentManager = () => {
                 {/* Mini map for click-to-add route points */}
                 {MAPBOX_TOKEN ? (
                 <>
-                <div className="rounded border border-gray-700 overflow-hidden" style={{ height: 200 }}>
+                <div className="rounded border border-[rgba(201,162,39,0.15)] overflow-hidden" style={{ height: 200 }}>
                   <Map
                     mapboxAccessToken={MAPBOX_TOKEN}
                     initialViewState={{ longitude: -98, latitude: 38, zoom: 1.5 }}
@@ -1119,18 +1119,18 @@ const DeploymentManager = () => {
                     })()}
                   </Map>
                 </div>
-                <p className="text-[10px] text-gray-600 mt-1">Click the map to add route points, which will appear in the list below.</p>
+                <p className="text-[10px] text-[#4a6070] mt-1">Click the map to add route points, which will appear in the list below.</p>
                 </>
                 ) : (
                   <p className="text-[10px] text-yellow-600 italic">Mapbox token not configured. Map preview unavailable.</p>
                 )}
                 {(deploymentForm.route_points || []).length === 0 && (
-                  <p className="text-xs text-gray-600 italic">No route points. Add stops to define the deployment route.</p>
+                  <p className="text-xs text-[#4a6070] italic">No route points. Add stops to define the deployment route.</p>
                 )}
                 {(deploymentForm.route_points || []).map((rp, idx) => {
                   const isLockedOrigin = idx === 0 && deploymentForm.origin_type === '25th';
                   return (
-                  <div key={idx} className={`border rounded p-2 space-y-2 ${isLockedOrigin ? 'border-tropic-gold/40 bg-tropic-gold/5' : 'border-gray-800/60'}`}>
+                  <div key={idx} className={`border rounded p-2 space-y-2 ${isLockedOrigin ? 'border-tropic-gold/40 bg-tropic-gold/5' : 'border-[rgba(201,162,39,0.12)]/60'}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-tropic-gold font-bold tracking-wider">
                         {isLockedOrigin ? 'ORIGIN — SCHOFIELD BARRACKS (LOCKED)' : `Stop ${idx + 1}`}
@@ -1140,7 +1140,7 @@ const DeploymentManager = () => {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="border-gray-700 text-gray-400 hover:text-white h-6 w-6 p-0 shrink-0"
+                          className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white h-6 w-6 p-0 shrink-0"
                           onClick={() => moveRoutePointUp(idx)}
                           disabled={idx === 0}
                         >
@@ -1150,7 +1150,7 @@ const DeploymentManager = () => {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="border-gray-700 text-gray-400 hover:text-white h-6 w-6 p-0 shrink-0"
+                          className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white h-6 w-6 p-0 shrink-0"
                           onClick={() => moveRoutePointDown(idx)}
                           disabled={isLockedOrigin || idx === (deploymentForm.route_points || []).length - 1}
                         >
@@ -1173,27 +1173,27 @@ const DeploymentManager = () => {
                     </div>
                     {!isLockedOrigin && (
                     <div className="relative">
-                      <Label className="text-[10px] text-gray-500 flex items-center gap-1">
+                      <Label className="text-[10px] text-[#4a6070] flex items-center gap-1">
                         <Search className="w-3 h-3" />
                         Search Location
                       </Label>
                       <Input
                         value={locationSearches[idx] || ''}
                         onChange={(e) => handleLocationSearch(e.target.value, idx)}
-                        className="bg-black border-gray-700 h-8 text-xs"
+                        className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs"
                         placeholder="Type a place name to search..."
                       />
                       {(locationResults[idx] || []).length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-gray-900 border border-gray-700 rounded shadow-lg max-h-[200px] overflow-y-auto">
+                        <div className="absolute z-50 w-full mt-1 bg-[#0c1117] border border-[rgba(201,162,39,0.15)] rounded shadow-lg max-h-[200px] overflow-y-auto">
                           {locationResults[idx].map((result, rIdx) => (
                             <button
                               key={rIdx}
                               type="button"
-                              className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-gray-800 border-b border-gray-800 last:border-0"
+                              className="w-full text-left px-3 py-2 text-xs text-[#d0d8e0] hover:bg-[#111a24] border-b border-[rgba(201,162,39,0.12)] last:border-0"
                               onClick={() => handleLocationSelect(result, idx)}
                             >
                               <div className="text-white">{result.name}</div>
-                              <div className="text-[10px] text-gray-500">{result.latitude.toFixed(4)}, {result.longitude.toFixed(4)}</div>
+                              <div className="text-[10px] text-[#4a6070]">{result.latitude.toFixed(4)}, {result.longitude.toFixed(4)}</div>
                             </button>
                           ))}
                         </div>
@@ -1202,19 +1202,19 @@ const DeploymentManager = () => {
                     )}
                     {!isLockedOrigin && (locationEntities || []).length > 0 && (
                       <div>
-                        <Label className="text-[10px] text-gray-500 flex items-center gap-1">
+                        <Label className="text-[10px] text-[#4a6070] flex items-center gap-1">
                           <Search className="w-3 h-3" />
                           Select Entity
                         </Label>
                         <Select onValueChange={(val) => handleEntityPickRoutePoint(val, idx)}>
-                          <SelectTrigger className="bg-black border-gray-700 h-7 text-xs">
+                          <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-7 text-xs">
                             <SelectValue placeholder="— Manual entry —" />
                           </SelectTrigger>
-                          <SelectContent className="bg-gray-900 border-gray-700 max-h-[250px]">
-                            <SelectItem value="__manual__" className="text-xs text-gray-400">— Manual entry —</SelectItem>
+                          <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] max-h-[250px]">
+                            <SelectItem value="__manual__" className="text-xs text-[#8a9aa8]">— Manual entry —</SelectItem>
                             {Object.entries(groupedEntities).map(([type, entities]) => (
                               <React.Fragment key={type}>
-                                <div className="px-2 py-1 text-[10px] text-tropic-gold/70 font-bold tracking-wider uppercase border-t border-gray-800 mt-1">
+                                <div className="px-2 py-1 text-[10px] text-tropic-gold/70 font-bold tracking-wider uppercase border-t border-[rgba(201,162,39,0.12)] mt-1">
                                   {type}
                                 </div>
                                 {entities.map((entity) => (
@@ -1230,7 +1230,7 @@ const DeploymentManager = () => {
                     )}
                     <div className="flex items-end gap-2">
                       <div className="flex-1 space-y-1">
-                        <Label className="text-[10px] text-gray-500">Name</Label>
+                        <Label className="text-[10px] text-[#4a6070]">Name</Label>
                         <Input
                           value={rp.name || ''}
                           onChange={(e) => {
@@ -1238,13 +1238,13 @@ const DeploymentManager = () => {
                             rps[idx] = { ...rps[idx], name: e.target.value };
                             setDeploymentForm({ ...deploymentForm, route_points: rps });
                           }}
-                          className="bg-black border-gray-700 h-8 text-xs"
+                          className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs"
                           placeholder="e.g., Schofield Barracks"
                           disabled={isLockedOrigin}
                         />
                       </div>
                       <div className="w-24 space-y-1">
-                        <Label className="text-[10px] text-gray-500">Lat</Label>
+                        <Label className="text-[10px] text-[#4a6070]">Lat</Label>
                         <Input
                           type="number"
                           step="any"
@@ -1254,12 +1254,12 @@ const DeploymentManager = () => {
                             rps[idx] = { ...rps[idx], latitude: e.target.value };
                             setDeploymentForm({ ...deploymentForm, route_points: rps });
                           }}
-                          className="bg-black border-gray-700 h-8 text-xs"
+                          className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs"
                           disabled={isLockedOrigin}
                         />
                       </div>
                       <div className="w-24 space-y-1">
-                        <Label className="text-[10px] text-gray-500">Lng</Label>
+                        <Label className="text-[10px] text-[#4a6070]">Lng</Label>
                         <Input
                           type="number"
                           step="any"
@@ -1269,7 +1269,7 @@ const DeploymentManager = () => {
                             rps[idx] = { ...rps[idx], longitude: e.target.value };
                             setDeploymentForm({ ...deploymentForm, route_points: rps });
                           }}
-                          className="bg-black border-gray-700 h-8 text-xs"
+                          className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs"
                           disabled={isLockedOrigin}
                         />
                       </div>
@@ -1277,7 +1277,7 @@ const DeploymentManager = () => {
                     {!isLockedOrigin && (
                     <div className="flex items-end gap-2">
                       <div className="flex-1 space-y-1">
-                        <Label className="text-[10px] text-gray-500">Description</Label>
+                        <Label className="text-[10px] text-[#4a6070]">Description</Label>
                         <Input
                           value={rp.description || ''}
                           onChange={(e) => {
@@ -1285,12 +1285,12 @@ const DeploymentManager = () => {
                             rps[idx] = { ...rps[idx], description: e.target.value };
                             setDeploymentForm({ ...deploymentForm, route_points: rps });
                           }}
-                          className="bg-black border-gray-700 h-8 text-xs"
+                          className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs"
                           placeholder="Optional description"
                         />
                       </div>
                       <div className="w-28 space-y-1">
-                        <Label className="text-[10px] text-gray-500">Stop Duration (h)</Label>
+                        <Label className="text-[10px] text-[#4a6070]">Stop Duration (h)</Label>
                         <Input
                           type="number"
                           step="any"
@@ -1301,7 +1301,7 @@ const DeploymentManager = () => {
                             rps[idx] = { ...rps[idx], stop_duration_hours: e.target.value };
                             setDeploymentForm({ ...deploymentForm, route_points: rps });
                           }}
-                          className="bg-black border-gray-700 h-8 text-xs"
+                          className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs"
                           placeholder="Hours"
                         />
                       </div>
@@ -1318,7 +1318,7 @@ const DeploymentManager = () => {
                   rows={2}
                   value={deploymentForm.notes}
                   onChange={(e) => setDeploymentForm({ ...deploymentForm, notes: e.target.value })}
-                  className="bg-black border-gray-700"
+                  className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   placeholder="Internal notes"
                 />
               </div>
@@ -1327,7 +1327,7 @@ const DeploymentManager = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-gray-700 text-gray-400"
+                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8]"
                   onClick={() => setDeploymentDialogOpen(false)}
                 >
                   Cancel
@@ -1345,9 +1345,9 @@ const DeploymentManager = () => {
           setMarkerDialogOpen(open);
           if (!open) { setEditingMarker(null); setMarkerForm({ ...EMPTY_MARKER }); }
         }}>
-          <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-[#0c1117] text-white border-[rgba(201,162,39,0.12)] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              <DialogTitle style={{ fontFamily: "'Share Tech', sans-serif" }}>
                 {editingMarker ? 'EDIT NATO MARKER' : 'CREATE NATO MARKER'}
               </DialogTitle>
             </DialogHeader>
@@ -1358,7 +1358,7 @@ const DeploymentManager = () => {
                   required
                   value={markerForm.title}
                   onChange={(e) => setMarkerForm({ ...markerForm, title: e.target.value })}
-                  className="bg-black border-gray-700"
+                  className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   placeholder="e.g., Alpha Company Forward Position"
                 />
               </div>
@@ -1369,7 +1369,7 @@ const DeploymentManager = () => {
                   rows={2}
                   value={markerForm.description}
                   onChange={(e) => setMarkerForm({ ...markerForm, description: e.target.value })}
-                  className="bg-black border-gray-700"
+                  className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   placeholder="Marker description"
                 />
               </div>
@@ -1381,10 +1381,10 @@ const DeploymentManager = () => {
                     value={markerForm.affiliation}
                     onValueChange={(val) => setMarkerForm({ ...markerForm, affiliation: val })}
                   >
-                    <SelectTrigger className="bg-black border-gray-700">
+                    <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700 max-h-[300px]">
+                    <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] max-h-[300px]">
                       {affiliations.map((a) => (
                         <SelectItem key={a} value={a}>{getNatoLabel(a, affiliationLabels)}</SelectItem>
                       ))}
@@ -1397,10 +1397,10 @@ const DeploymentManager = () => {
                     value={markerForm.symbol_type}
                     onValueChange={(val) => setMarkerForm({ ...markerForm, symbol_type: val })}
                   >
-                    <SelectTrigger className="bg-black border-gray-700">
+                    <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700 max-h-[300px]">
+                    <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] max-h-[300px]">
                       {symbolTypes.map((st) => (
                         <SelectItem key={st} value={st}>{getNatoLabel(st, symbolTypeLabels)}</SelectItem>
                       ))}
@@ -1413,10 +1413,10 @@ const DeploymentManager = () => {
                     value={markerForm.echelon}
                     onValueChange={(val) => setMarkerForm({ ...markerForm, echelon: val })}
                   >
-                    <SelectTrigger className="bg-black border-gray-700">
+                    <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700 max-h-[300px]">
+                    <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] max-h-[300px]">
                       {echelons.map((ec) => (
                         <SelectItem key={ec} value={ec}>{getNatoLabel(ec, echelonLabels)}</SelectItem>
                       ))}
@@ -1430,7 +1430,7 @@ const DeploymentManager = () => {
                 <Input
                   value={markerForm.designator}
                   onChange={(e) => setMarkerForm({ ...markerForm, designator: e.target.value })}
-                  className="bg-black border-gray-700"
+                  className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   placeholder="e.g., 1-25 INF"
                 />
               </div>
@@ -1443,7 +1443,7 @@ const DeploymentManager = () => {
                     step="any"
                     value={markerForm.latitude}
                     onChange={(e) => setMarkerForm({ ...markerForm, latitude: e.target.value })}
-                    className="bg-black border-gray-700"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   />
                 </div>
                 <div>
@@ -1453,7 +1453,7 @@ const DeploymentManager = () => {
                     step="any"
                     value={markerForm.longitude}
                     onChange={(e) => setMarkerForm({ ...markerForm, longitude: e.target.value })}
-                    className="bg-black border-gray-700"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   />
                 </div>
               </div>
@@ -1462,7 +1462,7 @@ const DeploymentManager = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-gray-700 text-gray-400"
+                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8]"
                   onClick={() => setMarkerDialogOpen(false)}
                 >
                   Cancel
@@ -1477,9 +1477,9 @@ const DeploymentManager = () => {
 
         {/* ===================== DIVISION LOCATION DIALOG ===================== */}
         <Dialog open={divisionDialogOpen} onOpenChange={setDivisionDialogOpen}>
-          <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-md">
+          <DialogContent className="bg-[#0c1117] text-white border-[rgba(201,162,39,0.12)] max-w-md">
             <DialogHeader>
-              <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              <DialogTitle style={{ fontFamily: "'Share Tech', sans-serif" }}>
                 UPDATE DIVISION LOCATION
               </DialogTitle>
             </DialogHeader>
@@ -1490,7 +1490,7 @@ const DeploymentManager = () => {
                   required
                   value={divisionForm.name}
                   onChange={(e) => setDivisionForm({ ...divisionForm, name: e.target.value })}
-                  className="bg-black border-gray-700"
+                  className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   placeholder="e.g., Schofield Barracks, HI"
                 />
               </div>
@@ -1503,7 +1503,7 @@ const DeploymentManager = () => {
                     step="any"
                     value={divisionForm.latitude}
                     onChange={(e) => setDivisionForm({ ...divisionForm, latitude: e.target.value })}
-                    className="bg-black border-gray-700"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   />
                 </div>
                 <div>
@@ -1514,7 +1514,7 @@ const DeploymentManager = () => {
                     step="any"
                     value={divisionForm.longitude}
                     onChange={(e) => setDivisionForm({ ...divisionForm, longitude: e.target.value })}
-                    className="bg-black border-gray-700"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                   />
                 </div>
               </div>
@@ -1522,7 +1522,7 @@ const DeploymentManager = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-gray-700 text-gray-400"
+                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8]"
                   onClick={() => setDivisionDialogOpen(false)}
                 >
                   Cancel

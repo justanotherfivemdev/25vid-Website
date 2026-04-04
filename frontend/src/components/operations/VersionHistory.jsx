@@ -19,7 +19,7 @@ const EVENT_LABELS = {
   UNIT_MOVE: { label: 'Unit Moved', color: 'text-blue-400' },
   UNIT_UPDATE: { label: 'Unit Updated', color: 'text-yellow-400' },
   UNIT_DELETE: { label: 'Unit Deleted', color: 'text-red-400' },
-  PLAN_METADATA_UPDATE: { label: 'Plan Updated', color: 'text-gray-400' },
+  PLAN_METADATA_UPDATE: { label: 'Plan Updated', color: 'text-[#8a9aa8]' },
 };
 
 export default function VersionHistory({ planId, canRollback = false, onRollback }) {
@@ -60,49 +60,49 @@ export default function VersionHistory({ planId, canRollback = false, onRollback
   };
 
   return (
-    <div className="border-t border-gray-800">
+    <div className="border-t border-[rgba(201,162,39,0.12)]">
       <button
-        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-gray-800/30 transition"
+        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-[#111a24]/30 transition"
         onClick={() => setExpanded(!expanded)}
       >
-        <History className="w-3.5 h-3.5 text-gray-500" />
-        <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold flex-1">
+        <History className="w-3.5 h-3.5 text-[#4a6070]" />
+        <span className="text-[10px] text-[#4a6070] uppercase tracking-wider font-bold flex-1">
           Version History
         </span>
         {expanded ? (
-          <ChevronUp className="w-3 h-3 text-gray-600" />
+          <ChevronUp className="w-3 h-3 text-[#4a6070]" />
         ) : (
-          <ChevronDown className="w-3 h-3 text-gray-600" />
+          <ChevronDown className="w-3 h-3 text-[#4a6070]" />
         )}
       </button>
 
       {expanded && (
         <div className="px-3 pb-3 space-y-1 max-h-60 overflow-y-auto">
           {loading ? (
-            <p className="text-[10px] text-gray-600 text-center py-2">Loading…</p>
+            <p className="text-[10px] text-[#4a6070] text-center py-2">Loading…</p>
           ) : versions.length === 0 ? (
-            <p className="text-[10px] text-gray-600 text-center py-2">No version history</p>
+            <p className="text-[10px] text-[#4a6070] text-center py-2">No version history</p>
           ) : (
             versions.slice().reverse().slice(0, 50).map((v) => {
               const cfg = EVENT_LABELS[v.event_type] || EVENT_LABELS.PLAN_METADATA_UPDATE;
               return (
                 <div
                   key={v.id}
-                  className="flex items-center gap-2 text-[10px] py-1 px-1 rounded hover:bg-gray-800/30"
+                  className="flex items-center gap-2 text-[10px] py-1 px-1 rounded hover:bg-[#111a24]/30"
                 >
-                  <span className="text-gray-600 font-mono w-6 text-right shrink-0">
+                  <span className="text-[#4a6070] font-mono w-6 text-right shrink-0">
                     v{v.version}
                   </span>
                   <span className={`${cfg.color} truncate flex-1`}>
                     {cfg.label}
                   </span>
-                  <span className="text-gray-600 shrink-0">{v.username || '?'}</span>
-                  <span className="text-gray-700 shrink-0">
+                  <span className="text-[#4a6070] shrink-0">{v.username || '?'}</span>
+                  <span className="text-[#4a6070] shrink-0">
                     {v.timestamp ? new Date(v.timestamp).toLocaleTimeString() : ''}
                   </span>
                   {canRollback && (
                     <button
-                      className="text-gray-600 hover:text-[#C9A227] transition"
+                      className="text-[#4a6070] hover:text-[#C9A227] transition"
                       onClick={() => handleRollback(v.version)}
                       disabled={rolling}
                       title={`Rollback to v${v.version}`}

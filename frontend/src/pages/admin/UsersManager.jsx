@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 
 import { BACKEND_URL, API } from '@/utils/api';
 const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('/uploads/')) return `${BACKEND_URL}/api${url}`; return `${BACKEND_URL}${url}`; };
-const STATUS_COLORS = { recruit: 'bg-tropic-gold-dark', active: 'bg-green-700', reserve: 'bg-tropic-gold/60', staff: 'bg-purple-700', command: 'bg-tropic-red', inactive: 'bg-gray-700' };
+const STATUS_COLORS = { recruit: 'bg-tropic-gold-dark', active: 'bg-green-700', reserve: 'bg-tropic-gold/60', staff: 'bg-purple-700', command: 'bg-tropic-red', inactive: 'bg-[#111a24]' };
 
 const UsersManager = () => {
   const [users, setUsers] = useState([]);
@@ -68,77 +68,83 @@ const UsersManager = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="users-manager-title">MEMBER MANAGEMENT</h1>
-            <p className="text-gray-400 mt-2">{users.length} total members. Click a member to edit their full profile, history, and awards.</p>
+        {/* Hero banner */}
+        <div className="relative corner-bracket border border-[rgba(201,162,39,0.15)] bg-[radial-gradient(circle_at_top,rgba(201,162,39,0.06),#050a0e_58%)] px-6 py-7 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a227]" style={{ fontFamily: "'Oswald', sans-serif" }}>Personnel Directory</p>
+              <h1 className="mt-3 text-4xl font-black uppercase tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="users-manager-title">MEMBER MANAGEMENT</h1>
+              <p className="mt-2 text-sm text-[#8a9aa8]" style={{ fontFamily: "'Inter', sans-serif" }}>{users.length} total members. Click a member to edit their full profile, history, and awards.</p>
+            </div>
+            <Button onClick={() => setPreCreateOpen(true)} className="tactical-button bg-[#c9a227] hover:bg-[#e8c547] text-[#050a0e] font-bold text-xs tracking-[0.15em]" style={{ fontFamily: "'Oswald', sans-serif" }}>
+              <UserPlus className="w-4 h-4 mr-2" />Pre-Create Member
+            </Button>
           </div>
-          <Button onClick={() => setPreCreateOpen(true)} className="bg-tropic-gold hover:bg-tropic-gold-light text-black">
-            <UserPlus className="w-4 h-4 mr-2" />Pre-Create Member
-          </Button>
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or email..." className="bg-gray-900 border-gray-700 pl-10" data-testid="user-search-input" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4a6070]" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or email..." className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] pl-10 text-[#d0d8e0]" style={{ fontFamily: "'JetBrains Mono', monospace" }} data-testid="user-search-input" />
         </div>
 
-        {loading ? <div className="text-center py-12">Loading...</div> : filtered.length === 0 ? (
-          <Card className="bg-gray-900 border-gray-800"><CardContent className="py-12 text-center text-gray-400">No members found.</CardContent></Card>
+        {loading ? (
+          <div className="text-center py-12 text-[#e8c547]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <span className="animate-pulse">■</span> Loading personnel...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="border border-[rgba(201,162,39,0.12)] bg-[#0c1117] p-12 text-center text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>No members found.</div>
         ) : (
           <div className="grid gap-2">
             {filtered.map((u) => (
               <Link to={`/admin/users/${u.id}`} key={u.id}>
-                <Card className="bg-gray-900 border-gray-800 hover:border-tropic-gold/25 transition-colors group" data-testid={`user-card-${u.id}`}>
-                  <CardContent className="py-3">
+                <div className="border border-[rgba(201,162,39,0.08)] bg-[#0c1117] hover:border-[rgba(201,162,39,0.3)] transition-colors group px-4 py-3" data-testid={`user-card-${u.id}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {u.avatar_url ? (
-                          <img src={resolveImg(u.avatar_url)} alt="" className="w-9 h-9 rounded-lg object-cover border border-gray-700" />
+                          <img src={resolveImg(u.avatar_url)} alt="" className="w-9 h-9 rounded-sm object-cover border border-[rgba(201,162,39,0.15)]" />
                         ) : (
-                          <div className="w-9 h-9 rounded-lg bg-gray-800 flex items-center justify-center text-sm font-bold text-gray-500 border border-gray-700">{u.username[0]?.toUpperCase()}</div>
+                          <div className="w-9 h-9 rounded-sm bg-[#050a0e] flex items-center justify-center text-sm font-bold text-[#4a6070] border border-[rgba(201,162,39,0.15)]">{u.username[0]?.toUpperCase()}</div>
                         )}
                         <div>
-                          <div className="font-bold text-sm tracking-wide group-hover:text-tropic-gold transition-colors" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{u.username}</div>
-                          <div className="text-xs text-gray-500">{u.email}</div>
+                          <div className="font-bold text-sm tracking-wide text-[#d0d8e0] group-hover:text-[#e8c547] transition-colors" style={{ fontFamily: "'Share Tech', sans-serif" }}>{u.username}</div>
+                          <div className="text-xs text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{u.email}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {u.rank && <span className="text-xs text-gray-400 hidden sm:block">{u.rank}</span>}
-                        <Badge className={`${STATUS_COLORS[u.status] || 'bg-gray-700'} text-white text-[10px] px-2`}>{(u.status || 'recruit').toUpperCase()}</Badge>
-                        {u.role === 'admin' && <Badge className="bg-tropic-gold/20 text-tropic-gold text-[10px]">ADMIN</Badge>}
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteUser(u.id); }} className="text-tropic-red hover:bg-tropic-red/10 shrink-0" data-testid={`delete-user-${u.id}`}><Trash2 className="w-3 h-3" /></Button>
-                        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-tropic-gold transition-colors" />
+                        {u.rank && <span className="text-xs text-[#8a9aa8] hidden sm:block" style={{ fontFamily: "'Oswald', sans-serif" }}>{u.rank}</span>}
+                        <Badge className={`${STATUS_COLORS[u.status] || 'bg-[#4a6070]'} text-white text-[10px] px-2`}>{(u.status || 'recruit').toUpperCase()}</Badge>
+                        {u.role === 'admin' && <Badge className="bg-[rgba(201,162,39,0.15)] text-[#e8c547] text-[10px]">ADMIN</Badge>}
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteUser(u.id); }} className="text-[#ff3333] hover:bg-[rgba(255,51,51,0.08)] shrink-0" data-testid={`delete-user-${u.id}`}><Trash2 className="w-3 h-3" /></Button>
+                        <ChevronRight className="w-4 h-4 text-[#4a6070] group-hover:text-[#e8c547] transition-colors" />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
               </Link>
             ))}
           </div>
         )}
         <Dialog open={preCreateOpen} onOpenChange={setPreCreateOpen}>
-          <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogContent className="bg-[#0c1117] border-[rgba(201,162,39,0.2)] text-[#d0d8e0] max-w-lg max-h-[80vh] overflow-y-auto rounded-none">
             <DialogHeader>
-              <DialogTitle className="tracking-wider">PRE-CREATE MEMBER ACCOUNT</DialogTitle>
+              <DialogTitle className="tracking-wider text-[#e8c547] uppercase" style={{ fontFamily: "'Share Tech', sans-serif" }}>PRE-CREATE MEMBER ACCOUNT</DialogTitle>
             </DialogHeader>
-            <p className="text-xs text-gray-500 mb-2">Create an account for an existing unit member. They can claim it via the login page or by logging in with Discord.</p>
+            <p className="text-xs text-[#4a6070] mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Create an account for an existing unit member. They can claim it via the login page or by logging in with Discord.</p>
             {preCreateMsg.text && (
-              <div className={`text-sm p-2 rounded ${preCreateMsg.type === 'success' ? 'bg-green-900/20 text-green-400 border border-green-700' : 'bg-red-900/20 text-red-400 border border-red-700'}`}>{preCreateMsg.text}</div>
+              <div className={`text-sm p-2 ${preCreateMsg.type === 'success' ? 'bg-[rgba(201,162,39,0.06)] text-[#e8c547] border border-[rgba(201,162,39,0.3)]' : 'bg-[rgba(255,51,51,0.06)] text-[#ff3333] border border-[rgba(255,51,51,0.3)]'}`}>{preCreateMsg.text}</div>
             )}
             <form onSubmit={handlePreCreate} className="space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div><Label className="text-xs">Username *</Label><Input required value={preCreateForm.username} onChange={e => setPreCreateForm({...preCreateForm, username: e.target.value})} className="bg-black border-gray-700" /></div>
-                <div><Label className="text-xs">Email *</Label><Input type="email" required value={preCreateForm.email} onChange={e => setPreCreateForm({...preCreateForm, email: e.target.value})} className="bg-black border-gray-700" /></div>
+                <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Username *</Label><Input required value={preCreateForm.username} onChange={e => setPreCreateForm({...preCreateForm, username: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" /></div>
+                <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Email *</Label><Input type="email" required value={preCreateForm.email} onChange={e => setPreCreateForm({...preCreateForm, email: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" /></div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div><Label className="text-xs">Rank</Label><Input value={preCreateForm.rank} onChange={e => setPreCreateForm({...preCreateForm, rank: e.target.value})} className="bg-black border-gray-700" /></div>
-                <div><Label className="text-xs">Specialization</Label><Input value={preCreateForm.specialization} onChange={e => setPreCreateForm({...preCreateForm, specialization: e.target.value})} className="bg-black border-gray-700" /></div>
+                <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Rank</Label><Input value={preCreateForm.rank} onChange={e => setPreCreateForm({...preCreateForm, rank: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" /></div>
+                <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Specialization</Label><Input value={preCreateForm.specialization} onChange={e => setPreCreateForm({...preCreateForm, specialization: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" /></div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">Role</Label>
-                  <select value={preCreateForm.role} onChange={e => setPreCreateForm({...preCreateForm, role: e.target.value})} className="w-full bg-black border border-gray-700 rounded-md px-3 py-2 text-sm text-white">
+                  <Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Role</Label>
+                  <select value={preCreateForm.role} onChange={e => setPreCreateForm({...preCreateForm, role: e.target.value})} className="w-full bg-[#050a0e] border border-[rgba(201,162,39,0.15)] px-3 py-2 text-sm text-[#d0d8e0]">
                     <option value="member">Member</option>
                     <option value="admin">Admin (S-1)</option>
                     <option value="s1_personnel">S-1 Personnel</option>
@@ -151,8 +157,8 @@ const UsersManager = () => {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs">Status</Label>
-                  <select value={preCreateForm.status} onChange={e => setPreCreateForm({...preCreateForm, status: e.target.value})} className="w-full bg-black border border-gray-700 rounded-md px-3 py-2 text-sm text-white">
+                  <Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Status</Label>
+                  <select value={preCreateForm.status} onChange={e => setPreCreateForm({...preCreateForm, status: e.target.value})} className="w-full bg-[#050a0e] border border-[rgba(201,162,39,0.15)] px-3 py-2 text-sm text-[#d0d8e0]">
                     <option value="member">Member</option>
                     <option value="recruit">Recruit</option>
                     <option value="active">Active</option>
@@ -164,18 +170,18 @@ const UsersManager = () => {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                <div><Label className="text-xs">Company</Label><Input value={preCreateForm.company} onChange={e => setPreCreateForm({...preCreateForm, company: e.target.value})} className="bg-black border-gray-700" /></div>
-                <div><Label className="text-xs">Platoon</Label><Input value={preCreateForm.platoon} onChange={e => setPreCreateForm({...preCreateForm, platoon: e.target.value})} className="bg-black border-gray-700" /></div>
-                <div><Label className="text-xs">Squad</Label><Input value={preCreateForm.squad} onChange={e => setPreCreateForm({...preCreateForm, squad: e.target.value})} className="bg-black border-gray-700" /></div>
+                <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Company</Label><Input value={preCreateForm.company} onChange={e => setPreCreateForm({...preCreateForm, company: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" /></div>
+                <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Platoon</Label><Input value={preCreateForm.platoon} onChange={e => setPreCreateForm({...preCreateForm, platoon: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" /></div>
+                <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Squad</Label><Input value={preCreateForm.squad} onChange={e => setPreCreateForm({...preCreateForm, squad: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" /></div>
               </div>
-              <div><Label className="text-xs">Billet</Label><Input value={preCreateForm.billet} onChange={e => setPreCreateForm({...preCreateForm, billet: e.target.value})} className="bg-black border-gray-700" placeholder="e.g., Squad Leader" /></div>
+              <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Billet</Label><Input value={preCreateForm.billet} onChange={e => setPreCreateForm({...preCreateForm, billet: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" placeholder="e.g., Squad Leader" /></div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div><Label className="text-xs">Discord ID</Label><Input value={preCreateForm.discord_id} onChange={e => setPreCreateForm({...preCreateForm, discord_id: e.target.value})} className="bg-black border-gray-700" /></div>
-                <div><Label className="text-xs">Discord Username</Label><Input value={preCreateForm.discord_username} onChange={e => setPreCreateForm({...preCreateForm, discord_username: e.target.value})} className="bg-black border-gray-700" /></div>
+                <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Discord ID</Label><Input value={preCreateForm.discord_id} onChange={e => setPreCreateForm({...preCreateForm, discord_id: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" /></div>
+                <div><Label className="text-xs text-[#8a9aa8] uppercase tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>Discord Username</Label><Input value={preCreateForm.discord_username} onChange={e => setPreCreateForm({...preCreateForm, discord_username: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] text-[#d0d8e0] rounded-none" /></div>
               </div>
-              <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-light text-black w-full mt-2">
-                <UserPlus className="w-4 h-4 mr-2" />Create Pre-Registered Account
-              </Button>
+              <button type="submit" className="tactical-button w-full px-4 py-3 text-xs font-bold uppercase tracking-wider bg-[#111a24] text-[#e8c547] border border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.08)] hover:border-[rgba(201,162,39,0.5)] transition-colors mt-2" style={{ fontFamily: "'Oswald', sans-serif" }}>
+                <UserPlus className="w-4 h-4 mr-2 inline-block" />Create Pre-Registered Account
+              </button>
             </form>
           </DialogContent>
         </Dialog>

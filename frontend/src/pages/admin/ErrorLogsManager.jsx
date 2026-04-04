@@ -16,7 +16,7 @@ const SEVERITY_CONFIG = {
   error: { color: 'bg-orange-600/20 text-orange-300 border-orange-600/40', icon: AlertTriangle, label: 'ERROR' },
   warning: { color: 'bg-yellow-600/20 text-yellow-300 border-yellow-600/40', icon: AlertTriangle, label: 'WARNING' },
   info: { color: 'bg-blue-600/20 text-blue-300 border-blue-600/40', icon: Bug, label: 'INFO' },
-  debug: { color: 'bg-gray-600/20 text-gray-300 border-gray-600/40', icon: Bug, label: 'DEBUG' },
+  debug: { color: 'bg-[#4a6070]/20 text-[#8a9aa8] border-[rgba(201,162,39,0.2)]/40', icon: Bug, label: 'DEBUG' },
 };
 
 const SOURCE_COLORS = {
@@ -158,25 +158,25 @@ const ErrorLogsManager = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-tropic-gold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+            <h1 className="text-3xl font-bold text-tropic-gold tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>
               ERROR LOGS
             </h1>
-            <p className="text-gray-500 text-sm mt-1">Application error monitoring for deployments, ADSB, and system events</p>
+            <p className="text-[#4a6070] text-sm mt-1">Application error monitoring for deployments, ADSB, and system events</p>
           </div>
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-xs text-[#8a9aa8] cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="rounded border-gray-700"
+                className="rounded border-[rgba(201,162,39,0.15)]"
               />
               Auto-refresh
             </label>
             <Button
               variant="outline"
               size="sm"
-              className="border-gray-700 text-gray-400 hover:text-white"
+              className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white"
               onClick={() => { fetchLogs(); fetchStats(); }}
             >
               <RefreshCw className={`w-3 h-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
@@ -188,28 +188,28 @@ const ErrorLogsManager = () => {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card className="bg-black/60 border-gray-800">
+            <Card className="bg-[#050a0e]/60 border-[rgba(201,162,39,0.12)]">
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-white">{stats.total}</div>
-                <div className="text-[10px] text-gray-500 tracking-wider font-bold">TOTAL ERRORS</div>
+                <div className="text-[10px] text-[#4a6070] tracking-wider font-bold">TOTAL ERRORS</div>
               </CardContent>
             </Card>
-            <Card className="bg-black/60 border-red-900/40">
+            <Card className="bg-[#050a0e]/60 border-red-900/40">
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-red-400">{stats.unresolved}</div>
-                <div className="text-[10px] text-gray-500 tracking-wider font-bold">UNRESOLVED</div>
+                <div className="text-[10px] text-[#4a6070] tracking-wider font-bold">UNRESOLVED</div>
               </CardContent>
             </Card>
-            <Card className="bg-black/60 border-yellow-900/40">
+            <Card className="bg-[#050a0e]/60 border-yellow-900/40">
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-yellow-400">{stats.recent_1h}</div>
-                <div className="text-[10px] text-gray-500 tracking-wider font-bold">LAST HOUR</div>
+                <div className="text-[10px] text-[#4a6070] tracking-wider font-bold">LAST HOUR</div>
               </CardContent>
             </Card>
-            <Card className="bg-black/60 border-blue-900/40">
+            <Card className="bg-[#050a0e]/60 border-blue-900/40">
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-blue-400">{stats.recent_24h}</div>
-                <div className="text-[10px] text-gray-500 tracking-wider font-bold">LAST 24H</div>
+                <div className="text-[10px] text-[#4a6070] tracking-wider font-bold">LAST 24H</div>
               </CardContent>
             </Card>
           </div>
@@ -219,9 +219,9 @@ const ErrorLogsManager = () => {
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {stats.by_severity && Object.keys(stats.by_severity).length > 0 && (
-              <Card className="bg-black/60 border-gray-800">
+              <Card className="bg-[#050a0e]/60 border-[rgba(201,162,39,0.12)]">
                 <CardContent className="p-4">
-                  <div className="text-[10px] text-gray-500 tracking-wider font-bold mb-2">BY SEVERITY</div>
+                  <div className="text-[10px] text-[#4a6070] tracking-wider font-bold mb-2">BY SEVERITY</div>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(stats.by_severity).map(([sev, count]) => {
                       const cfg = SEVERITY_CONFIG[sev] || SEVERITY_CONFIG.error;
@@ -237,12 +237,12 @@ const ErrorLogsManager = () => {
               </Card>
             )}
             {stats.by_source && Object.keys(stats.by_source).length > 0 && (
-              <Card className="bg-black/60 border-gray-800">
+              <Card className="bg-[#050a0e]/60 border-[rgba(201,162,39,0.12)]">
                 <CardContent className="p-4">
-                  <div className="text-[10px] text-gray-500 tracking-wider font-bold mb-2">BY SOURCE</div>
+                  <div className="text-[10px] text-[#4a6070] tracking-wider font-bold mb-2">BY SOURCE</div>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(stats.by_source).map(([src, count]) => {
-                      const color = SOURCE_COLORS[src] || 'bg-gray-600/20 text-gray-300 border-gray-600/30';
+                      const color = SOURCE_COLORS[src] || 'bg-[#4a6070]/20 text-[#8a9aa8] border-[rgba(201,162,39,0.2)]/30';
                       return (
                         <Badge key={src} className={`${color} border text-xs cursor-pointer`}
                           onClick={() => handleFilterChange('source', src)}>
@@ -258,19 +258,19 @@ const ErrorLogsManager = () => {
         )}
 
         {/* Filters */}
-        <Card className="bg-black/60 border-gray-800">
+        <Card className="bg-[#050a0e]/60 border-[rgba(201,162,39,0.12)]">
           <CardContent className="p-4">
             <div className="flex flex-wrap items-end gap-3">
-              <div className="flex items-center gap-1 text-xs text-gray-500">
+              <div className="flex items-center gap-1 text-xs text-[#4a6070]">
                 <Filter className="w-3 h-3" />
                 FILTERS
               </div>
               <div className="w-36">
                 <Select value={filters.source || '__all__'} onValueChange={(v) => handleFilterChange('source', v)}>
-                  <SelectTrigger className="bg-black border-gray-700 h-8 text-xs">
+                  <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs">
                     <SelectValue placeholder="All Sources" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                     <SelectItem value="__all__" className="text-xs">All Sources</SelectItem>
                     <SelectItem value="deployment" className="text-xs">Deployment</SelectItem>
                     <SelectItem value="adsb" className="text-xs">ADSB</SelectItem>
@@ -282,10 +282,10 @@ const ErrorLogsManager = () => {
               </div>
               <div className="w-36">
                 <Select value={filters.severity || '__all__'} onValueChange={(v) => handleFilterChange('severity', v)}>
-                  <SelectTrigger className="bg-black border-gray-700 h-8 text-xs">
+                  <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs">
                     <SelectValue placeholder="All Severities" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                     <SelectItem value="__all__" className="text-xs">All Severities</SelectItem>
                     <SelectItem value="critical" className="text-xs">Critical</SelectItem>
                     <SelectItem value="error" className="text-xs">Error</SelectItem>
@@ -297,10 +297,10 @@ const ErrorLogsManager = () => {
               </div>
               <div className="w-36">
                 <Select value={filters.resolved || '__all__'} onValueChange={(v) => handleFilterChange('resolved', v)}>
-                  <SelectTrigger className="bg-black border-gray-700 h-8 text-xs">
+                  <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs">
                     <SelectValue placeholder="All States" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                     <SelectItem value="__all__" className="text-xs">All States</SelectItem>
                     <SelectItem value="false" className="text-xs">Unresolved</SelectItem>
                     <SelectItem value="true" className="text-xs">Resolved</SelectItem>
@@ -309,15 +309,15 @@ const ErrorLogsManager = () => {
               </div>
               <form onSubmit={handleSearchSubmit} className="flex items-center gap-1 flex-1 min-w-[180px]">
                 <div className="relative flex-1">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500" />
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#4a6070]" />
                   <Input
                     value={filters.search}
                     onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-                    className="bg-black border-gray-700 h-8 text-xs pl-7"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] h-8 text-xs pl-7"
                     placeholder="Search messages, paths..."
                   />
                 </div>
-                <Button type="submit" size="sm" variant="outline" className="border-gray-700 text-gray-400 h-8 text-xs">
+                <Button type="submit" size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] h-8 text-xs">
                   Go
                 </Button>
               </form>
@@ -337,13 +337,13 @@ const ErrorLogsManager = () => {
         </Card>
 
         {/* Log count & pagination header */}
-        <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center justify-between text-xs text-[#4a6070]">
           <span>{total} error log(s) found</span>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="border-gray-700 text-gray-400 h-7 w-7 p-0"
+              className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] h-7 w-7 p-0"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
@@ -353,7 +353,7 @@ const ErrorLogsManager = () => {
             <Button
               variant="outline"
               size="sm"
-              className="border-gray-700 text-gray-400 h-7 w-7 p-0"
+              className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] h-7 w-7 p-0"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
@@ -364,23 +364,23 @@ const ErrorLogsManager = () => {
 
         {/* Log entries */}
         {loading ? (
-          <div className="text-center text-gray-500 py-12">Loading error logs...</div>
+          <div className="text-center text-[#4a6070] py-12">Loading error logs...</div>
         ) : logs.length === 0 ? (
-          <div className="text-center text-gray-600 py-12">
+          <div className="text-center text-[#4a6070] py-12">
             <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500/30" />
-            <p className="text-lg font-bold text-gray-500">No error logs found</p>
-            <p className="text-sm text-gray-600 mt-1">All systems operational</p>
+            <p className="text-lg font-bold text-[#4a6070]">No error logs found</p>
+            <p className="text-sm text-[#4a6070] mt-1">All systems operational</p>
           </div>
         ) : (
           <div className="space-y-2">
             {logs.map((log) => {
               const sevCfg = SEVERITY_CONFIG[log.severity] || SEVERITY_CONFIG.error;
               const SevIcon = sevCfg.icon;
-              const srcColor = SOURCE_COLORS[log.source] || 'bg-gray-600/20 text-gray-300 border-gray-600/30';
+              const srcColor = SOURCE_COLORS[log.source] || 'bg-[#4a6070]/20 text-[#8a9aa8] border-[rgba(201,162,39,0.2)]/30';
               const isExpanded = expandedIds.has(log.id);
 
               return (
-                <Card key={log.id} className={`bg-black/40 border-gray-800 hover:border-gray-700 transition-colors ${log.resolved ? 'opacity-50' : ''}`}>
+                <Card key={log.id} className={`bg-[#050a0e]/40 border-[rgba(201,162,39,0.12)] hover:border-[rgba(201,162,39,0.15)] transition-colors ${log.resolved ? 'opacity-50' : ''}`}>
                   <CardContent className="p-0">
                     {/* Collapsed header */}
                     <div
@@ -389,23 +389,23 @@ const ErrorLogsManager = () => {
                     >
                       <div className="mt-0.5 shrink-0">
                         {isExpanded ? (
-                          <ChevronDown className="w-4 h-4 text-gray-500" />
+                          <ChevronDown className="w-4 h-4 text-[#4a6070]" />
                         ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-500" />
+                          <ChevronRight className="w-4 h-4 text-[#4a6070]" />
                         )}
                       </div>
                       <SevIcon className={`w-4 h-4 mt-0.5 shrink-0 ${
                         log.severity === 'critical' ? 'text-red-400' :
                         log.severity === 'error' ? 'text-orange-400' :
                         log.severity === 'warning' ? 'text-yellow-400' :
-                        'text-gray-400'
+                        'text-[#8a9aa8]'
                       }`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <Badge className={`${sevCfg.color} border text-[10px]`}>{sevCfg.label}</Badge>
                           <Badge className={`${srcColor} border text-[10px]`}>{log.source}</Badge>
                           {log.error_type && (
-                            <span className="text-[10px] text-gray-500 font-mono">{log.error_type}</span>
+                            <span className="text-[10px] text-[#4a6070] font-mono">{log.error_type}</span>
                           )}
                           {log.resolved && (
                             <Badge className="bg-green-600/20 text-green-300 border-green-600/30 border text-[10px]">
@@ -413,8 +413,8 @@ const ErrorLogsManager = () => {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-200 truncate">{log.message}</p>
-                        <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500">
+                        <p className="text-sm text-[#d0d8e0] truncate">{log.message}</p>
+                        <div className="flex items-center gap-3 mt-1 text-[10px] text-[#4a6070]">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {timeAgo(log.timestamp)}
@@ -451,11 +451,11 @@ const ErrorLogsManager = () => {
 
                     {/* Expanded details */}
                     {isExpanded && (
-                      <div className="px-4 pb-4 pt-0 ml-8 border-t border-gray-800/50 mt-0 space-y-3">
+                      <div className="px-4 pb-4 pt-0 ml-8 border-t border-[rgba(201,162,39,0.12)]/50 mt-0 space-y-3">
                         {/* Full message */}
                         <div className="mt-3">
-                          <div className="text-[10px] text-gray-500 tracking-wider font-bold mb-1">MESSAGE</div>
-                          <p className="text-sm text-gray-300 whitespace-pre-wrap break-words bg-gray-900/50 rounded p-2 font-mono text-xs">
+                          <div className="text-[10px] text-[#4a6070] tracking-wider font-bold mb-1">MESSAGE</div>
+                          <p className="text-sm text-[#8a9aa8] whitespace-pre-wrap break-words bg-[#0c1117]/50 rounded p-2 font-mono text-xs">
                             {log.message}
                           </p>
                         </div>
@@ -463,8 +463,8 @@ const ErrorLogsManager = () => {
                         {/* Request info */}
                         {(log.request_method || log.request_path) && (
                           <div>
-                            <div className="text-[10px] text-gray-500 tracking-wider font-bold mb-1">REQUEST</div>
-                            <div className="text-xs text-gray-400 font-mono bg-gray-900/50 rounded p-2">
+                            <div className="text-[10px] text-[#4a6070] tracking-wider font-bold mb-1">REQUEST</div>
+                            <div className="text-xs text-[#8a9aa8] font-mono bg-[#0c1117]/50 rounded p-2">
                               <span className="text-cyan-400">{log.request_method}</span> {log.request_path}
                             </div>
                           </div>
@@ -473,8 +473,8 @@ const ErrorLogsManager = () => {
                         {/* Request body */}
                         {log.request_body && Object.keys(log.request_body).length > 0 && (
                           <div>
-                            <div className="text-[10px] text-gray-500 tracking-wider font-bold mb-1">REQUEST BODY</div>
-                            <pre className="text-xs text-gray-400 font-mono bg-gray-900/50 rounded p-2 overflow-x-auto max-h-40 whitespace-pre-wrap">
+                            <div className="text-[10px] text-[#4a6070] tracking-wider font-bold mb-1">REQUEST BODY</div>
+                            <pre className="text-xs text-[#8a9aa8] font-mono bg-[#0c1117]/50 rounded p-2 overflow-x-auto max-h-40 whitespace-pre-wrap">
                               {JSON.stringify(log.request_body, null, 2)}
                             </pre>
                           </div>
@@ -483,8 +483,8 @@ const ErrorLogsManager = () => {
                         {/* Stack trace */}
                         {log.stack_trace && (
                           <div>
-                            <div className="text-[10px] text-gray-500 tracking-wider font-bold mb-1">STACK TRACE</div>
-                            <pre className="text-xs text-red-300/80 font-mono bg-gray-900/50 rounded p-2 overflow-x-auto max-h-60 whitespace-pre-wrap">
+                            <div className="text-[10px] text-[#4a6070] tracking-wider font-bold mb-1">STACK TRACE</div>
+                            <pre className="text-xs text-red-300/80 font-mono bg-[#0c1117]/50 rounded p-2 overflow-x-auto max-h-60 whitespace-pre-wrap">
                               {log.stack_trace}
                             </pre>
                           </div>
@@ -493,23 +493,23 @@ const ErrorLogsManager = () => {
                         {/* Metadata */}
                         {log.metadata && Object.keys(log.metadata).length > 0 && (
                           <div>
-                            <div className="text-[10px] text-gray-500 tracking-wider font-bold mb-1">METADATA</div>
-                            <pre className="text-xs text-gray-400 font-mono bg-gray-900/50 rounded p-2 overflow-x-auto max-h-40 whitespace-pre-wrap">
+                            <div className="text-[10px] text-[#4a6070] tracking-wider font-bold mb-1">METADATA</div>
+                            <pre className="text-xs text-[#8a9aa8] font-mono bg-[#0c1117]/50 rounded p-2 overflow-x-auto max-h-40 whitespace-pre-wrap">
                               {JSON.stringify(log.metadata, null, 2)}
                             </pre>
                           </div>
                         )}
 
                         {/* Timestamps */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] text-gray-500">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] text-[#4a6070]">
                           <div>
                             <span className="font-bold tracking-wider">LOGGED</span>
-                            <div className="text-gray-400">{new Date(log.timestamp).toLocaleString()}</div>
+                            <div className="text-[#8a9aa8]">{new Date(log.timestamp).toLocaleString()}</div>
                           </div>
                           {log.user_id && (
                             <div>
                               <span className="font-bold tracking-wider">USER ID</span>
-                              <div className="text-gray-400 font-mono">{log.user_id}</div>
+                              <div className="text-[#8a9aa8] font-mono">{log.user_id}</div>
                             </div>
                           )}
                           {log.resolved_at && (
@@ -521,7 +521,7 @@ const ErrorLogsManager = () => {
                           {log.resolved_by && (
                             <div>
                               <span className="font-bold tracking-wider">RESOLVED BY</span>
-                              <div className="text-gray-400 font-mono">{log.resolved_by}</div>
+                              <div className="text-[#8a9aa8] font-mono">{log.resolved_by}</div>
                             </div>
                           )}
                         </div>
@@ -536,11 +536,11 @@ const ErrorLogsManager = () => {
 
         {/* Bottom pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center justify-center gap-2 text-xs text-[#4a6070]">
             <Button
               variant="outline"
               size="sm"
-              className="border-gray-700 text-gray-400 h-7"
+              className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] h-7"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
@@ -551,7 +551,7 @@ const ErrorLogsManager = () => {
             <Button
               variant="outline"
               size="sm"
-              className="border-gray-700 text-gray-400 h-7"
+              className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] h-7"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >

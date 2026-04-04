@@ -4,8 +4,8 @@ import { SEVERITY_COLORS } from '@/utils/mapConfig';
 const ThreatLegend = () => {
   const items = Object.entries(SEVERITY_COLORS);
   return (
-    <div className="bg-black/70 border border-gray-700 rounded p-3 text-xs text-gray-300" data-testid="threat-legend">
-      <div className="font-semibold tracking-wider text-gray-100 mb-2">THREAT LEGEND</div>
+    <div className="bg-[#050a0e]/70 border border-[rgba(201,162,39,0.15)] rounded p-3 text-xs text-[#8a9aa8]" data-testid="threat-legend">
+      <div className="font-semibold tracking-wider text-[#d0d8e0] mb-2">THREAT LEGEND</div>
       <div className="space-y-1">
         {items.map(([severity, color]) => (
           <div key={severity} className="flex items-center gap-2">
@@ -14,8 +14,8 @@ const ThreatLegend = () => {
           </div>
         ))}
       </div>
-      <div className="border-t border-gray-700 mt-2 pt-2">
-        <div className="font-semibold tracking-wider text-gray-100 mb-1">ORIGIN</div>
+      <div className="border-t border-[rgba(201,162,39,0.15)] mt-2 pt-2">
+        <div className="font-semibold tracking-wider text-[#d0d8e0] mb-1">ORIGIN</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#C9A227' }} />

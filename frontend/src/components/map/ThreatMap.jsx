@@ -19,7 +19,7 @@ const ThreatMap = ({ markers = [], selectedMarkerId = null, onSelectMarker, show
   const filteredMarkers = useMemo(() => markers.filter(hasCoords), [markers]);
 
   return (
-    <div className="rounded-lg overflow-hidden border border-gray-800" style={{ height }} data-testid="threat-map-canvas">
+    <div className="rounded-lg overflow-hidden border border-[rgba(201,162,39,0.12)]" style={{ height }} data-testid="threat-map-canvas">
       <MapContainer center={DEFAULT_MAP_CENTER} zoom={DEFAULT_MAP_ZOOM} scrollWheelZoom className="h-full w-full z-0">
         <TileLayer attribution={MAP_ATTRIBUTION} url={MAP_TILE_URL} />
         <ThreatMapClickHandler onMapClick={onMapClick} />

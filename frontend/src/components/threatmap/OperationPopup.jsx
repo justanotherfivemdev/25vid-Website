@@ -7,7 +7,7 @@ export default function OperationPopup({ operation }) {
   const stateColors = {
     planned: 'bg-tropic-gold/15 text-tropic-gold',
     ongoing: 'bg-green-500/15 text-green-400',
-    completed: 'bg-gray-500/15 text-gray-400',
+    completed: 'bg-gray-500/15 text-[#8a9aa8]',
   };
 
   return (
@@ -24,22 +24,22 @@ export default function OperationPopup({ operation }) {
         </Badge>
       </div>
 
-      <div className="flex flex-col gap-1.5 text-xs text-gray-300">
+      <div className="flex flex-col gap-1.5 text-xs text-[#8a9aa8]">
         {operation.operation_type && (
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-500 text-[10px] uppercase tracking-wider">Type</span>
+            <span className="text-[#4a6070] text-[10px] uppercase tracking-wider">Type</span>
             <span className="capitalize font-mono text-[11px]">{operation.operation_type}</span>
           </div>
         )}
         {operation.date && (
           <div className="flex items-center gap-1.5">
-            <Calendar className="h-3 w-3 text-gray-500" />
+            <Calendar className="h-3 w-3 text-[#4a6070]" />
             <span className="font-mono text-[11px]">{operation.date}</span>
           </div>
         )}
         {operation.max_participants > 0 && (
           <div className="flex items-center gap-1.5">
-            <Users className="h-3 w-3 text-gray-500" />
+            <Users className="h-3 w-3 text-[#4a6070]" />
             <span className="text-[11px]">Max {operation.max_participants} participants</span>
           </div>
         )}

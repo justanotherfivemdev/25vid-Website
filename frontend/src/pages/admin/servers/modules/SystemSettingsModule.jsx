@@ -18,8 +18,8 @@ import {
 function Row({ label, value, mono = false }) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <span className="text-xs text-gray-500">{label}</span>
-      <span className={`text-right text-xs text-gray-300 ${mono ? 'font-mono break-all' : ''}`}>
+      <span className="text-xs text-[#4a6070]">{label}</span>
+      <span className={`text-right text-xs text-[#8a9aa8] ${mono ? 'font-mono break-all' : ''}`}>
         {value || '-'}
       </span>
     </div>
@@ -60,10 +60,10 @@ function SystemSettingsModule() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <h2 className="text-sm font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
           INFRASTRUCTURE DIAGNOSTICS
         </h2>
-        <Button size="sm" variant="outline" onClick={fetchDiagnostics} className="h-7 border-zinc-800 text-xs text-gray-400">
+        <Button size="sm" variant="outline" onClick={fetchDiagnostics} className="h-7 border-zinc-800 text-xs text-[#8a9aa8]">
           <RefreshCw className="mr-1 h-3 w-3" /> Refresh
         </Button>
       </div>
@@ -73,9 +73,9 @@ function SystemSettingsModule() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
               <Server className="h-3.5 w-3.5 text-tropic-gold" /> CONTAINER
             </CardTitle>
           </CardHeader>
@@ -94,9 +94,9 @@ function SystemSettingsModule() {
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
               <ShieldAlert className="h-3.5 w-3.5 text-tropic-gold" /> HOST PORTS
             </CardTitle>
           </CardHeader>
@@ -105,16 +105,16 @@ function SystemSettingsModule() {
             <Row label="A2S UDP" value={String(ports.query || '')} mono />
             <Row label="RCON UDP" value={String(ports.rcon || '')} mono />
             <div className="pt-2">
-              <Badge variant="outline" className="border-zinc-700 text-[10px] text-gray-500">
+              <Badge variant="outline" className="border-zinc-700 text-[10px] text-[#4a6070]">
                 Host-level ports are allocated by the backend to avoid collisions.
               </Badge>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-800 bg-black/60 lg:col-span-2">
+        <Card className="border-zinc-800 bg-[#050a0e]/60 lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
               <FolderTree className="h-3.5 w-3.5 text-tropic-gold" /> MANAGED PATHS
             </CardTitle>
           </CardHeader>
@@ -128,22 +128,22 @@ function SystemSettingsModule() {
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-800 bg-black/60 lg:col-span-2">
+        <Card className="border-zinc-800 bg-[#050a0e]/60 lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-gray-400">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#8a9aa8]">
               <HardDrive className="h-3.5 w-3.5 text-tropic-gold" /> MOUNTS
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {mounts.length === 0 ? (
-              <p className="text-xs text-gray-600">Mount information is not available yet.</p>
+              <p className="text-xs text-[#4a6070]">Mount information is not available yet.</p>
             ) : (
               mounts.map((mount) => (
-                <div key={`${mount.Source}-${mount.Destination}`} className="rounded border border-zinc-800/70 bg-black/40 px-3 py-2">
+                <div key={`${mount.Source}-${mount.Destination}`} className="rounded border border-zinc-800/70 bg-[#050a0e]/40 px-3 py-2">
                   <div className="flex items-center justify-between gap-4 text-[11px]">
-                    <span className="font-mono text-gray-400 break-all">{mount.Source}</span>
-                    <span className="text-gray-600">to</span>
-                    <span className="font-mono text-gray-300 break-all">{mount.Destination}</span>
+                    <span className="font-mono text-[#8a9aa8] break-all">{mount.Source}</span>
+                    <span className="text-[#4a6070]">to</span>
+                    <span className="font-mono text-[#8a9aa8] break-all">{mount.Destination}</span>
                   </div>
                 </div>
               ))

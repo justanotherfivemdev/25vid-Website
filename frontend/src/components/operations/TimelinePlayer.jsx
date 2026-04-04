@@ -55,9 +55,9 @@ export default function TimelinePlayer({
       UNIT_MOVE: 'text-blue-400',
       UNIT_UPDATE: 'text-yellow-400',
       UNIT_DELETE: 'text-red-400',
-      PLAN_METADATA_UPDATE: 'text-gray-400',
+      PLAN_METADATA_UPDATE: 'text-[#8a9aa8]',
     };
-    return colors[et] || 'text-gray-400';
+    return colors[et] || 'text-[#8a9aa8]';
   };
 
   const formatDuration = (ms) => {
@@ -68,10 +68,10 @@ export default function TimelinePlayer({
   };
 
   return (
-    <div className="bg-[#0c1322] border-t border-gray-800 px-4 py-2">
+    <div className="bg-[#0c1322] border-t border-[rgba(201,162,39,0.12)] px-4 py-2">
       {/* Scrub bar */}
       <div
-        className="relative h-2 bg-gray-800 rounded-full cursor-pointer mb-2 group"
+        className="relative h-2 bg-[#111a24] rounded-full cursor-pointer mb-2 group"
         onClick={handleScrub}
       >
         <div
@@ -90,7 +90,7 @@ export default function TimelinePlayer({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0 text-gray-300 hover:text-[#C9A227]"
+          className="h-7 w-7 p-0 text-[#8a9aa8] hover:text-[#C9A227]"
           onClick={onReset}
           title="Reset to start"
         >
@@ -100,7 +100,7 @@ export default function TimelinePlayer({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0 text-gray-300 hover:text-[#C9A227]"
+          className="h-7 w-7 p-0 text-[#8a9aa8] hover:text-[#C9A227]"
           onClick={playing ? onPause : onPlay}
           title={playing ? 'Pause' : 'Play'}
         >
@@ -113,14 +113,14 @@ export default function TimelinePlayer({
 
         {/* Speed control */}
         <div className="flex items-center gap-1 ml-1">
-          <FastForward className="w-3 h-3 text-gray-500" />
+          <FastForward className="w-3 h-3 text-[#4a6070]" />
           {SPEED_OPTIONS.map((s) => (
             <button
               key={s}
               className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition ${
                 speed === s
                   ? 'bg-[#C9A227]/20 text-[#C9A227] border border-[#C9A227]/40'
-                  : 'text-gray-500 hover:text-gray-300'
+                  : 'text-[#4a6070] hover:text-[#8a9aa8]'
               }`}
               onClick={() => onSetSpeed(s)}
             >
@@ -130,13 +130,13 @@ export default function TimelinePlayer({
         </div>
 
         {/* Progress info */}
-        <div className="flex-1 text-center text-gray-500">
+        <div className="flex-1 text-center text-[#4a6070]">
           <span className="font-mono">{currentIndex}</span>
           <span className="mx-1">/</span>
           <span className="font-mono">{totalEvents}</span>
-          <span className="ml-2 text-gray-600">events</span>
+          <span className="ml-2 text-[#4a6070]">events</span>
           {totalDurationMs > 0 && (
-            <span className="ml-2 text-gray-600">
+            <span className="ml-2 text-[#4a6070]">
               <Clock className="w-3 h-3 inline mr-0.5" />
               {formatDuration(totalDurationMs)}
             </span>
@@ -145,12 +145,12 @@ export default function TimelinePlayer({
 
         {/* Current event indicator */}
         {currentEvent && (
-          <div className="flex items-center gap-2 text-gray-400">
+          <div className="flex items-center gap-2 text-[#8a9aa8]">
             <span className={`font-mono text-[10px] ${eventTypeColor(currentEvent.event_type)}`}>
               {eventTypeLabel(currentEvent.event_type)}
             </span>
             {currentEvent.username && (
-              <span className="text-gray-600">by {currentEvent.username}</span>
+              <span className="text-[#4a6070]">by {currentEvent.username}</span>
             )}
           </div>
         )}

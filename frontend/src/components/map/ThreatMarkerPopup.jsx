@@ -28,7 +28,7 @@ const ThreatMarkerPopup = ({ marker, showRecruitCta = false }) => {
         </Link>
       )}
       {showRecruitCta && marker.is_public_recruiting && (
-        <div className="text-[11px] mt-2 text-gray-700">Recruiting open for this region.</div>
+        <div className="text-[11px] mt-2 text-[#4a6070]">Recruiting open for this region.</div>
       )}
     </div>
   );

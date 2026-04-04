@@ -88,18 +88,18 @@ export default function FeedFilters({ isAdmin = false }) {
             placeholder="Search intelligence..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-9 bg-black border-tropic-gold-dark/30 text-gray-200 placeholder:text-gray-600 focus:border-tropic-gold/50 focus:ring-tropic-gold/20"
+            className="pl-9 pr-9 bg-[#050a0e] border-tropic-gold-dark/30 text-[#d0d8e0] placeholder:text-[#4a6070] focus:border-tropic-gold/50 focus:ring-tropic-gold/20"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-tropic-gold"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a6070] hover:text-tropic-gold"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
-        <p className="text-[10px] text-gray-600 text-center">Curated intelligence feed</p>
+        <p className="text-[10px] text-[#4a6070] text-center">Curated intelligence feed</p>
       </div>
     );
   }
@@ -113,12 +113,12 @@ export default function FeedFilters({ isAdmin = false }) {
           placeholder="Search events..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 pr-9 bg-black border-tropic-gold-dark/30 text-gray-200 placeholder:text-gray-600 focus:border-tropic-gold/50 focus:ring-tropic-gold/20"
+          className="pl-9 pr-9 bg-[#050a0e] border-tropic-gold-dark/30 text-[#d0d8e0] placeholder:text-[#4a6070] focus:border-tropic-gold/50 focus:ring-tropic-gold/20"
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-tropic-gold"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a6070] hover:text-tropic-gold"
           >
             <X className="h-4 w-4" />
           </button>
@@ -135,7 +135,7 @@ export default function FeedFilters({ isAdmin = false }) {
               className={`cursor-pointer capitalize text-xs ${
                 threatLevelFilters.includes(level)
                   ? threatBadgeVariant[level]
-                  : 'border-gray-600 text-gray-400 hover:text-gray-200'
+                  : 'border-[rgba(201,162,39,0.2)] text-[#8a9aa8] hover:text-[#d0d8e0]'
               }`}
               onClick={() => toggleThreatLevel(level)}
             >
@@ -155,7 +155,7 @@ export default function FeedFilters({ isAdmin = false }) {
               className={`cursor-pointer capitalize text-xs ${
                 categoryFilters.includes(category)
                   ? 'bg-tropic-gold/20 text-tropic-gold border-tropic-gold/30'
-                  : 'border-tropic-gold-dark/20 text-gray-500 hover:text-tropic-gold-light hover:border-tropic-gold-dark/40'
+                  : 'border-tropic-gold-dark/20 text-[#4a6070] hover:text-tropic-gold-light hover:border-tropic-gold-dark/40'
               }`}
               onClick={() => toggleCategory(category)}
             >
@@ -176,7 +176,7 @@ export default function FeedFilters({ isAdmin = false }) {
                 className={`cursor-pointer text-xs ${
                   sourceFilters.includes(source)
                     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                    : 'border-tropic-gold-dark/20 text-gray-500 hover:text-tropic-gold-light hover:border-tropic-gold-dark/40'
+                    : 'border-tropic-gold-dark/20 text-[#4a6070] hover:text-tropic-gold-light hover:border-tropic-gold-dark/40'
                 }`}
                 onClick={() => toggleSource(source)}
               >
@@ -193,7 +193,7 @@ export default function FeedFilters({ isAdmin = false }) {
           <select
             value={campaignFilter}
             onChange={(event) => setCampaignFilter(event.target.value)}
-            className="w-full rounded-md border border-tropic-gold-dark/30 bg-black px-3 py-2 text-sm text-gray-200 focus:border-tropic-gold/50 focus:outline-none"
+            className="w-full rounded-md border border-tropic-gold-dark/30 bg-[#050a0e] px-3 py-2 text-sm text-[#d0d8e0] focus:border-tropic-gold/50 focus:outline-none"
           >
             <option value="all">All campaigns</option>
             {campaignOptions.map((campaign) => (

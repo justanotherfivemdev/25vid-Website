@@ -54,35 +54,35 @@ function statusTone(status) {
 
 function SummaryCard({ label, value, detail, icon: Icon, color, border }) {
   return (
-    <Card className={`${border} bg-black/60`}>
+    <Card className={`${border} bg-[#050a0e]/60`}>
       <CardContent className="p-3">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500">{label}</span>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-[#4a6070]">{label}</span>
           <Icon className={`h-3.5 w-3.5 ${color}`} />
         </div>
-        <div className="mt-1.5 text-xl font-bold text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <div className="mt-1.5 text-xl font-bold text-white" style={{ fontFamily: "'Share Tech', sans-serif" }}>
           {value}
         </div>
-        {detail ? <div className="mt-1 text-[11px] text-gray-500">{detail}</div> : null}
+        {detail ? <div className="mt-1 text-[11px] text-[#4a6070]">{detail}</div> : null}
       </CardContent>
     </Card>
   );
 }
 
-function BreakdownCard({ title, items, emptyLabel, accent = 'text-gray-300' }) {
+function BreakdownCard({ title, items, emptyLabel, accent = 'text-[#8a9aa8]' }) {
   return (
-    <Card className="border-zinc-800 bg-black/60">
+    <Card className="border-zinc-800 bg-[#050a0e]/60">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">{title}</CardTitle>
+        <CardTitle className="text-xs font-semibold tracking-wider text-[#8a9aa8]">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <p className="py-4 text-center text-xs text-gray-600">{emptyLabel}</p>
+          <p className="py-4 text-center text-xs text-[#4a6070]">{emptyLabel}</p>
         ) : (
           <div className="space-y-2">
             {items.map((item) => (
               <div key={item.label} className="flex items-center justify-between rounded border border-zinc-800/70 bg-zinc-950/70 px-3 py-2 text-xs">
-                <span className="text-gray-300">{item.label}</span>
+                <span className="text-[#8a9aa8]">{item.label}</span>
                 <Badge variant="outline" className={`border-zinc-700 ${item.className || accent}`}>
                   {item.value}
                 </Badge>
@@ -208,7 +208,7 @@ function ReportsModule() {
       <div className="flex flex-col items-center justify-center gap-3 py-16">
         <AlertTriangle className="h-5 w-5 text-red-400" />
         <p className="text-xs text-red-400">{fetchError}</p>
-        <Button size="sm" variant="outline" onClick={() => fetchData()} className="h-7 border-zinc-800 text-xs text-gray-400">
+        <Button size="sm" variant="outline" onClick={() => fetchData()} className="h-7 border-zinc-800 text-xs text-[#8a9aa8]">
           <RefreshCw className="mr-1 h-3 w-3" /> Retry
         </Button>
       </div>
@@ -219,18 +219,18 @@ function ReportsModule() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h2 className="text-sm font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             REPORTS
           </h2>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-[#4a6070]">
             Live reporting now rolls detections, watcher coverage, notes, incidents, and backups into one triage view.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="outline" className="border-zinc-800 text-[10px] text-gray-400">
+          <Badge variant="outline" className="border-zinc-800 text-[10px] text-[#8a9aa8]">
             Refreshes every 30s
           </Badge>
-          <Button size="sm" variant="outline" onClick={() => fetchData(true)} className="h-7 border-zinc-800 text-xs text-gray-400">
+          <Button size="sm" variant="outline" onClick={() => fetchData(true)} className="h-7 border-zinc-800 text-xs text-[#8a9aa8]">
             <RefreshCw className={`mr-1 h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
           </Button>
           <Button size="sm" onClick={exportReport} disabled={!report || Object.keys(report).length === 0} className="h-7 bg-tropic-gold text-black hover:bg-tropic-gold-light text-xs disabled:opacity-50">
@@ -301,19 +301,19 @@ function ReportsModule() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">WATCHER COVERAGE</CardTitle>
+            <CardTitle className="text-xs font-semibold tracking-wider text-[#8a9aa8]">WATCHER COVERAGE</CardTitle>
           </CardHeader>
           <CardContent>
             {watchers.length === 0 ? (
-              <p className="py-4 text-center text-xs text-gray-600">No watcher coverage installed yet.</p>
+              <p className="py-4 text-center text-xs text-[#4a6070]">No watcher coverage installed yet.</p>
             ) : (
               <div className="space-y-2">
                 {watchers.slice(0, 8).map((watcher) => (
                   <div key={watcher.id} className="rounded-lg border border-zinc-800/70 bg-zinc-950/70 p-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-gray-200">{watcher.name}</span>
+                      <span className="text-sm text-[#d0d8e0]">{watcher.name}</span>
                       <Badge variant="outline" className={`text-[10px] ${severityTone(watcher.severity)}`}>
                         {humanize(watcher.severity)}
                       </Badge>
@@ -326,10 +326,10 @@ function ReportsModule() {
                         </Badge>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-[#4a6070]">
                       {watcher.description || humanize(watcher.source_category)}
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-gray-600">
+                    <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-[#4a6070]">
                       <span>Type: {humanize(watcher.type)}</span>
                       <span>Triggers: {watcher.trigger_count || 0}</span>
                       {watcher.last_triggered_at ? <span>Last triggered: {formatDate(watcher.last_triggered_at)}</span> : null}
@@ -341,22 +341,22 @@ function ReportsModule() {
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">OPS NOTE QUEUE</CardTitle>
+            <CardTitle className="text-xs font-semibold tracking-wider text-[#8a9aa8]">OPS NOTE QUEUE</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded border border-zinc-800/70 bg-zinc-950/70 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Total</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[#4a6070]">Total</div>
                 <div className="mt-1 text-lg font-semibold text-white">{summary.notes?.total || 0}</div>
               </div>
               <div className="rounded border border-zinc-800/70 bg-zinc-950/70 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Open</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[#4a6070]">Open</div>
                 <div className="mt-1 text-lg font-semibold text-white">{summary.notes?.open || 0}</div>
               </div>
               <div className="rounded border border-zinc-800/70 bg-zinc-950/70 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Follow-Up</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[#4a6070]">Follow-Up</div>
                 <div className="mt-1 text-lg font-semibold text-white">{summary.notes?.follow_up_required || 0}</div>
               </div>
             </div>
@@ -371,19 +371,19 @@ function ReportsModule() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <Card className="border-zinc-800 bg-black/60 xl:col-span-1">
+        <Card className="border-zinc-800 bg-[#050a0e]/60 xl:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">RECENT DETECTIONS</CardTitle>
+            <CardTitle className="text-xs font-semibold tracking-wider text-[#8a9aa8]">RECENT DETECTIONS</CardTitle>
           </CardHeader>
           <CardContent>
             {detections.length === 0 ? (
-              <p className="py-4 text-center text-xs text-gray-600">No watcher detections recorded yet.</p>
+              <p className="py-4 text-center text-xs text-[#4a6070]">No watcher detections recorded yet.</p>
             ) : (
               <div className="space-y-2">
                 {detections.slice(0, 6).map((detection) => (
                   <div key={detection.id} className="rounded-lg border border-zinc-800/70 bg-zinc-950/70 p-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-gray-200">{detection.title}</span>
+                      <span className="text-sm text-[#d0d8e0]">{detection.title}</span>
                       <Badge variant="outline" className={`text-[10px] ${statusTone(detection.status)}`}>
                         {humanize(detection.status)}
                       </Badge>
@@ -391,8 +391,8 @@ function ReportsModule() {
                         {humanize(detection.severity)}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">{detection.summary || 'No summary provided.'}</p>
-                    <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-gray-600">
+                    <p className="mt-1 text-xs text-[#4a6070]">{detection.summary || 'No summary provided.'}</p>
+                    <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-[#4a6070]">
                       <span>Category: {humanize(detection.source_category)}</span>
                       <span>Occurrences: {detection.occurrence_count || 0}</span>
                       {detection.last_seen ? <span>Last seen: {formatDate(detection.last_seen)}</span> : null}
@@ -404,19 +404,19 @@ function ReportsModule() {
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-800 bg-black/60 xl:col-span-1">
+        <Card className="border-zinc-800 bg-[#050a0e]/60 xl:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">RECENT NOTES</CardTitle>
+            <CardTitle className="text-xs font-semibold tracking-wider text-[#8a9aa8]">RECENT NOTES</CardTitle>
           </CardHeader>
           <CardContent>
             {notes.length === 0 ? (
-              <p className="py-4 text-center text-xs text-gray-600">No operational notes recorded yet.</p>
+              <p className="py-4 text-center text-xs text-[#4a6070]">No operational notes recorded yet.</p>
             ) : (
               <div className="space-y-2">
                 {notes.slice(0, 6).map((note) => (
                   <div key={note.id} className="rounded-lg border border-zinc-800/70 bg-zinc-950/70 p-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-gray-200">{note.title || humanize(note.category)}</span>
+                      <span className="text-sm text-[#d0d8e0]">{note.title || humanize(note.category)}</span>
                       <Badge variant="outline" className={`text-[10px] ${statusTone(note.status)}`}>
                         {humanize(note.status)}
                       </Badge>
@@ -424,8 +424,8 @@ function ReportsModule() {
                         {humanize(note.priority)}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 line-clamp-3">{note.content}</p>
-                    <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-gray-600">
+                    <p className="mt-1 text-xs text-[#4a6070] line-clamp-3">{note.content}</p>
+                    <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-[#4a6070]">
                       <span>Category: {humanize(note.category)}</span>
                       <span>Author: {note.author_name || note.author_id || 'Unknown'}</span>
                       {note.created_at ? <span>Created: {formatDate(note.created_at)}</span> : null}
@@ -437,28 +437,28 @@ function ReportsModule() {
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-800 bg-black/60 xl:col-span-1">
+        <Card className="border-zinc-800 bg-[#050a0e]/60 xl:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">INCIDENTS AND BACKUPS</CardTitle>
+            <CardTitle className="text-xs font-semibold tracking-wider text-[#8a9aa8]">INCIDENTS AND BACKUPS</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+              <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#4a6070]">
                 <Activity className="h-3.5 w-3.5 text-red-400" /> Incidents
               </div>
               {incidents.length === 0 ? (
-                <p className="pb-2 text-xs text-gray-600">No incidents recorded.</p>
+                <p className="pb-2 text-xs text-[#4a6070]">No incidents recorded.</p>
               ) : (
                 <div className="space-y-2">
                   {incidents.slice(0, 3).map((incident, index) => (
                     <div key={incident.id || index} className="rounded border border-zinc-800/70 bg-zinc-950/70 p-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-gray-200">{incident.title || 'Incident'}</span>
+                        <span className="text-sm text-[#d0d8e0]">{incident.title || 'Incident'}</span>
                         <Badge variant="outline" className={`text-[10px] ${statusTone(incident.status)}`}>
                           {humanize(incident.status)}
                         </Badge>
                       </div>
-                      <div className="mt-1 text-[11px] text-gray-500">
+                      <div className="mt-1 text-[11px] text-[#4a6070]">
                         Severity: {humanize(incident.severity)}{incident.detected_at ? ` | ${formatDate(incident.detected_at)}` : ''}
                       </div>
                     </div>
@@ -468,17 +468,17 @@ function ReportsModule() {
             </div>
 
             <div>
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+              <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#4a6070]">
                 <FileText className="h-3.5 w-3.5 text-green-400" /> Backups
               </div>
               {backups.length === 0 ? (
-                <p className="text-xs text-gray-600">No backups created.</p>
+                <p className="text-xs text-[#4a6070]">No backups created.</p>
               ) : (
                 <div className="space-y-2">
                   {backups.slice(0, 3).map((backup, index) => (
                     <div key={backup.id || index} className="rounded border border-zinc-800/70 bg-zinc-950/70 p-3">
-                      <div className="text-sm text-gray-200">{backup.backup_type || 'Backup'}</div>
-                      <div className="mt-1 text-[11px] text-gray-500">
+                      <div className="text-sm text-[#d0d8e0]">{backup.backup_type || 'Backup'}</div>
+                      <div className="mt-1 text-[11px] text-[#4a6070]">
                         {backup.created_at ? formatDate(backup.created_at) : 'Unknown time'}
                       </div>
                     </div>
@@ -491,9 +491,9 @@ function ReportsModule() {
       </div>
 
       {modIssues.length > 0 ? (
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold tracking-wider text-gray-400">RECENT MOD FINDINGS</CardTitle>
+            <CardTitle className="text-xs font-semibold tracking-wider text-[#8a9aa8]">RECENT MOD FINDINGS</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 xl:grid-cols-3">
@@ -502,12 +502,12 @@ function ReportsModule() {
                   <div className="flex items-start gap-2">
                     <Wrench className="mt-0.5 h-4 w-4 text-amber-300" />
                     <div>
-                      <div className="text-sm text-gray-200">{issue.mod_name || issue.error_signature || 'Unattributed issue'}</div>
-                      <div className="mt-1 text-[11px] text-gray-500">
+                      <div className="text-sm text-[#d0d8e0]">{issue.mod_name || issue.error_signature || 'Unattributed issue'}</div>
+                      <div className="mt-1 text-[11px] text-[#4a6070]">
                         {humanize(issue.source_category || issue.issue_type || 'unknown')}
                       </div>
                       {issue.last_seen ? (
-                        <div className="mt-2 text-[11px] text-gray-600">Last seen: {formatDate(issue.last_seen)}</div>
+                        <div className="mt-2 text-[11px] text-[#4a6070]">Last seen: {formatDate(issue.last_seen)}</div>
                       ) : null}
                     </div>
                   </div>
@@ -515,7 +515,7 @@ function ReportsModule() {
               ))}
             </div>
             {modIssueCount > modIssues.length ? (
-              <div className="mt-3 text-xs text-gray-600">
+              <div className="mt-3 text-xs text-[#4a6070]">
                 Showing {modIssues.length} of {modIssueCount} attributed findings in the current report window.
               </div>
             ) : null}

@@ -88,8 +88,8 @@ const AnnouncementsManager = () => {
   };
 
   const getPriorityColor = (p) => {
-    const c = { urgent: 'bg-tropic-red', high: 'bg-orange-600', normal: 'bg-tropic-gold-dark', low: 'bg-gray-600' };
-    return c[p] || 'bg-gray-600';
+    const c = { urgent: 'bg-tropic-red', high: 'bg-orange-600', normal: 'bg-tropic-gold-dark', low: 'bg-[#4a6070]' };
+    return c[p] || 'bg-[#4a6070]';
   };
 
   return (
@@ -97,10 +97,10 @@ const AnnouncementsManager = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="announcements-manager-title">
+            <h1 className="text-4xl font-bold" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="announcements-manager-title">
               ANNOUNCEMENTS MANAGEMENT
             </h1>
-            <p className="text-gray-400 mt-2">Create and manage intel announcements</p>
+            <p className="text-[#8a9aa8] mt-2">Create and manage intel announcements</p>
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
@@ -110,9 +110,9 @@ const AnnouncementsManager = () => {
                 New Announcement
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-[#0c1117] text-white border-[rgba(201,162,39,0.12)] max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                <DialogTitle style={{ fontFamily: "'Share Tech', sans-serif" }}>
                   {editingAnn ? 'Edit Announcement' : 'Create New Announcement'}
                 </DialogTitle>
               </DialogHeader>
@@ -124,7 +124,7 @@ const AnnouncementsManager = () => {
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="bg-black border-gray-700"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                     placeholder="e.g., New Training Schedule Released"
                     data-testid="announcement-title-input"
                   />
@@ -137,7 +137,7 @@ const AnnouncementsManager = () => {
                     rows={4}
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    className="bg-black border-gray-700"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
                     placeholder="Announcement details..."
                     data-testid="announcement-content-input"
                   />
@@ -149,10 +149,10 @@ const AnnouncementsManager = () => {
                     value={formData.priority}
                     onValueChange={(value) => setFormData({ ...formData, priority: value })}
                   >
-                    <SelectTrigger className="bg-black border-gray-700" data-testid="announcement-priority-select">
+                    <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" data-testid="announcement-priority-select">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="normal">Normal</SelectItem>
                       <SelectItem value="high">High</SelectItem>
@@ -172,7 +172,7 @@ const AnnouncementsManager = () => {
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-700">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="border-[rgba(201,162,39,0.15)]">
                     Cancel
                   </Button>
                   <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="announcement-submit-btn">
@@ -187,15 +187,15 @@ const AnnouncementsManager = () => {
         {loading ? (
           <div className="text-center py-12">Loading announcements...</div>
         ) : announcements.length === 0 ? (
-          <Card className="bg-gray-900 border-gray-800">
-            <CardContent className="py-12 text-center text-gray-400">
+          <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
+            <CardContent className="py-12 text-center text-[#8a9aa8]">
               No announcements yet. Create your first announcement!
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4">
             {announcements.map((ann) => (
-              <Card key={ann.id} className="bg-gray-900 border-gray-800" data-testid={`announcement-item-${ann.id}`}>
+              <Card key={ann.id} className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]" data-testid={`announcement-item-${ann.id}`}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -203,15 +203,15 @@ const AnnouncementsManager = () => {
                         <Badge className={`${getPriorityColor(ann.priority)} text-white`}>
                           {ann.priority.toUpperCase()}
                         </Badge>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-[#4a6070]">
                           {new Date(ann.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <CardTitle className="text-2xl" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                      <CardTitle className="text-2xl" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                         {ann.title}
                       </CardTitle>
-                      <p className="text-gray-400 mt-2 whitespace-pre-wrap">{ann.content}</p>
-                      <div className="flex items-center mt-3 text-sm text-gray-500">
+                      <p className="text-[#8a9aa8] mt-2 whitespace-pre-wrap">{ann.content}</p>
+                      <div className="flex items-center mt-3 text-sm text-[#4a6070]">
                         <Megaphone className="w-4 h-4 mr-1" />
                         Posted by {ann.author_name}
                         {ann.badge_url && (
@@ -221,7 +221,7 @@ const AnnouncementsManager = () => {
                     </div>
 
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(ann)} className="border-gray-700" data-testid={`edit-announcement-${ann.id}`}>
+                      <Button size="sm" variant="outline" onClick={() => handleEdit(ann)} className="border-[rgba(201,162,39,0.15)]" data-testid={`edit-announcement-${ann.id}`}>
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleDelete(ann.id)} className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10" data-testid={`delete-announcement-${ann.id}`}>

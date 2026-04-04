@@ -46,14 +46,14 @@ export default function MovementPathPanel({
     <div className="space-y-3">
       {/* ── Animation Controls ─────────────────────────────────────── */}
       {movementPaths.length > 0 && (
-        <div className="p-3 border border-gray-800 rounded-lg bg-black/20 space-y-2">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">
+        <div className="p-3 border border-[rgba(201,162,39,0.12)] rounded-lg bg-[#050a0e]/20 space-y-2">
+          <p className="text-[10px] text-[#4a6070] uppercase tracking-wider">
             <Navigation className="w-3 h-3 inline mr-1" />Animation
           </p>
 
           {/* Progress bar */}
           <div
-            className="relative h-1.5 bg-gray-800 rounded-full cursor-pointer group"
+            className="relative h-1.5 bg-[#111a24] rounded-full cursor-pointer group"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -71,7 +71,7 @@ export default function MovementPathPanel({
             <Button
               size="sm"
               variant="ghost"
-              className="h-6 w-6 p-0 text-gray-400 hover:text-[#3B82F6]"
+              className="h-6 w-6 p-0 text-[#8a9aa8] hover:text-[#3B82F6]"
               onClick={onAnimReset}
               title="Reset"
             >
@@ -80,7 +80,7 @@ export default function MovementPathPanel({
             <Button
               size="sm"
               variant="ghost"
-              className="h-6 w-6 p-0 text-gray-400 hover:text-[#3B82F6]"
+              className="h-6 w-6 p-0 text-[#8a9aa8] hover:text-[#3B82F6]"
               onClick={animPlaying ? onAnimPause : onAnimPlay}
               title={animPlaying ? 'Pause' : 'Play'}
             >
@@ -95,7 +95,7 @@ export default function MovementPathPanel({
                   className={`px-1 py-0.5 rounded text-[9px] font-mono transition ${
                     animSpeed === s
                       ? 'bg-[#3B82F6]/20 text-[#3B82F6]'
-                      : 'text-gray-600 hover:text-gray-400'
+                      : 'text-[#4a6070] hover:text-[#8a9aa8]'
                   }`}
                   onClick={() => onAnimSetSpeed(s)}
                 >
@@ -104,7 +104,7 @@ export default function MovementPathPanel({
               ))}
             </div>
 
-            <span className="ml-auto text-[9px] text-gray-600 font-mono">
+            <span className="ml-auto text-[9px] text-[#4a6070] font-mono">
               {Math.round((animProgress || 0) * 100)}%
             </span>
           </div>
@@ -113,11 +113,11 @@ export default function MovementPathPanel({
 
       {/* ── Path List ──────────────────────────────────────────────── */}
       <div>
-        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+        <p className="text-[10px] text-[#4a6070] uppercase tracking-wider mb-2">
           Movement Paths ({movementPaths.length})
         </p>
         {movementPaths.length === 0 ? (
-          <p className="text-[10px] text-gray-600 italic">
+          <p className="text-[10px] text-[#4a6070] italic">
             Use the Movement Path tool to draw a path on the map.
           </p>
         ) : (
@@ -133,7 +133,7 @@ export default function MovementPathPanel({
                   className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-left text-xs transition ${
                     isSelected
                       ? 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30'
-                      : 'text-gray-400 hover:bg-gray-800/40'
+                      : 'text-[#8a9aa8] hover:bg-[#111a24]/40'
                   }`}
                   onClick={() => onSelectPath(isSelected ? null : path.id)}
                 >
@@ -153,31 +153,31 @@ export default function MovementPathPanel({
 
       {/* ── Selected Path Properties ───────────────────────────────── */}
       {selectedPath && (
-        <div className="pt-2 border-t border-gray-800 space-y-2">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">
+        <div className="pt-2 border-t border-[rgba(201,162,39,0.12)] space-y-2">
+          <p className="text-[10px] text-[#4a6070] uppercase tracking-wider">
             Path Properties
           </p>
 
           <div>
-            <label className="text-[9px] text-gray-500 block mb-0.5">Name</label>
+            <label className="text-[9px] text-[#4a6070] block mb-0.5">Name</label>
             {isViewOnly ? (
-              <p className="text-xs text-gray-300">{selectedPath.name || '—'}</p>
+              <p className="text-xs text-[#8a9aa8]">{selectedPath.name || '—'}</p>
             ) : (
               <Input
                 value={selectedPath.name}
                 onChange={(e) => onUpdatePath(selectedPath.id, { name: e.target.value })}
                 placeholder="Path name…"
-                className="bg-gray-900 border-gray-700 text-xs h-7"
+                className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-xs h-7"
               />
             )}
           </div>
 
           <div>
-            <label className="text-[9px] text-gray-500 block mb-0.5">
+            <label className="text-[9px] text-[#4a6070] block mb-0.5">
               <Clock className="w-3 h-3 inline mr-0.5" />Duration (seconds)
             </label>
             {isViewOnly ? (
-              <p className="text-xs text-gray-300">{selectedPath.duration}s</p>
+              <p className="text-xs text-[#8a9aa8]">{selectedPath.duration}s</p>
             ) : (
               <Input
                 type="number"
@@ -189,25 +189,25 @@ export default function MovementPathPanel({
                     duration: Math.max(1, parseInt(e.target.value) || 60),
                   })
                 }
-                className="bg-gray-900 border-gray-700 text-xs h-7"
+                className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-xs h-7"
               />
             )}
           </div>
 
           <div>
-            <label className="text-[9px] text-gray-500 block mb-0.5">Waypoints</label>
-            <p className="text-[10px] text-gray-400 font-mono">
+            <label className="text-[9px] text-[#4a6070] block mb-0.5">Waypoints</label>
+            <p className="text-[10px] text-[#8a9aa8] font-mono">
               {selectedPath.coordinates?.length || 0} point(s)
             </p>
           </div>
 
           {/* Linked Units */}
-          <div className="pt-2 border-t border-gray-800">
-            <p className="text-[9px] text-gray-500 uppercase tracking-wider mb-1">
+          <div className="pt-2 border-t border-[rgba(201,162,39,0.12)]">
+            <p className="text-[9px] text-[#4a6070] uppercase tracking-wider mb-1">
               Linked Units
             </p>
             {linkedAssignments.length === 0 ? (
-              <p className="text-[9px] text-gray-600 italic">No units linked.</p>
+              <p className="text-[9px] text-[#4a6070] italic">No units linked.</p>
             ) : (
               <div className="space-y-1">
                 {linkedAssignments.map((a) => {
@@ -215,13 +215,13 @@ export default function MovementPathPanel({
                   return (
                     <div
                       key={a.id}
-                      className="flex items-center gap-1 px-1.5 py-1 rounded bg-gray-800/40 text-[10px]"
+                      className="flex items-center gap-1 px-1.5 py-1 rounded bg-[#111a24]/40 text-[10px]"
                     >
                       <Link className="w-3 h-3 text-[#3B82F6] shrink-0" />
-                      <span className="text-gray-300 truncate flex-1">
+                      <span className="text-[#8a9aa8] truncate flex-1">
                         {unit?.name || a.unit_id.slice(0, 8)}
                       </span>
-                      <Badge className="text-[8px] px-1 bg-transparent border border-gray-700 text-gray-500">
+                      <Badge className="text-[8px] px-1 bg-transparent border border-[rgba(201,162,39,0.15)] text-[#4a6070]">
                         {a.mode}
                       </Badge>
                       {!isViewOnly && (
@@ -243,7 +243,7 @@ export default function MovementPathPanel({
             {!isViewOnly && availableUnits.length > 0 && (
               <div className="mt-2">
                 <select
-                  className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px] text-gray-300"
+                  className="w-full bg-[#0c1117] border border-[rgba(201,162,39,0.15)] rounded px-2 py-1 text-[10px] text-[#8a9aa8]"
                   defaultValue=""
                   onChange={(e) => {
                     if (e.target.value) {

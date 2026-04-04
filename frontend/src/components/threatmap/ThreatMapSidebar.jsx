@@ -29,12 +29,12 @@ export default function ThreatMapSidebar({ isAdmin = false }) {
   if (isMobile && !isCollapsed) {
     return (
       <>
-        <div className="fixed inset-0 z-30 bg-black/50" onClick={() => setIsCollapsed(true)} />
-        <div className="fixed right-0 top-14 bottom-0 z-40 w-80 max-w-[85vw] flex flex-col border-l border-tropic-gold-dark/20 bg-black">
+        <div className="fixed inset-0 z-30 bg-[#050a0e]/50" onClick={() => setIsCollapsed(true)} />
+        <div className="fixed right-0 top-14 bottom-0 z-40 w-80 max-w-[85vw] flex flex-col border-l border-tropic-gold-dark/20 bg-[#050a0e]">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute -left-3 top-4 z-10 h-6 w-6 rounded-full border border-tropic-gold-dark/40 bg-black text-tropic-gold hover:bg-tropic-gold/10 hover:text-tropic-gold-light"
+            className="absolute -left-3 top-4 z-10 h-6 w-6 rounded-full border border-tropic-gold-dark/40 bg-[#050a0e] text-tropic-gold hover:bg-tropic-gold/10 hover:text-tropic-gold-light"
             onClick={() => setIsCollapsed(true)}
           >
             <ChevronRight className="h-3 w-3" />
@@ -47,7 +47,7 @@ export default function ThreatMapSidebar({ isAdmin = false }) {
                 className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
                   activeTab === tab.id
                     ? 'border-b-2 border-tropic-gold text-tropic-gold'
-                    : 'text-gray-500 hover:text-tropic-gold-light'
+                    : 'text-[#4a6070] hover:text-tropic-gold-light'
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
@@ -71,7 +71,7 @@ export default function ThreatMapSidebar({ isAdmin = false }) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full border border-tropic-gold-dark/40 bg-black/80 text-tropic-gold hover:bg-tropic-gold/10"
+          className="h-8 w-8 rounded-full border border-tropic-gold-dark/40 bg-[#050a0e]/80 text-tropic-gold hover:bg-tropic-gold/10"
           onClick={() => setIsCollapsed(false)}
         >
           <ChevronLeft className="h-3 w-3" />
@@ -83,14 +83,14 @@ export default function ThreatMapSidebar({ isAdmin = false }) {
   // Desktop layout (unchanged)
   return (
     <div
-      className={`relative flex h-full flex-col border-l border-tropic-gold-dark/20 bg-black transition-all duration-300 ${
+      className={`relative flex h-full flex-col border-l border-tropic-gold-dark/20 bg-[#050a0e] transition-all duration-300 ${
         isCollapsed ? 'w-12' : 'w-96'
       }`}
     >
       <Button
         variant="ghost"
         size="icon"
-        className="absolute -left-3 top-4 z-10 h-6 w-6 rounded-full border border-tropic-gold-dark/40 bg-black text-tropic-gold hover:bg-tropic-gold/10 hover:text-tropic-gold-light"
+        className="absolute -left-3 top-4 z-10 h-6 w-6 rounded-full border border-tropic-gold-dark/40 bg-[#050a0e] text-tropic-gold hover:bg-tropic-gold/10 hover:text-tropic-gold-light"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         {isCollapsed ? (
@@ -110,7 +110,7 @@ export default function ThreatMapSidebar({ isAdmin = false }) {
                 className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
                   activeTab === tab.id
                     ? 'border-b-2 border-tropic-gold text-tropic-gold'
-                    : 'text-gray-500 hover:text-tropic-gold-light'
+                    : 'text-[#4a6070] hover:text-tropic-gold-light'
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
@@ -137,7 +137,7 @@ export default function ThreatMapSidebar({ isAdmin = false }) {
                 setActiveTab(tab.id);
                 setIsCollapsed(false);
               }}
-              className={`h-8 w-8 text-gray-500 hover:text-tropic-gold ${
+              className={`h-8 w-8 text-[#4a6070] hover:text-tropic-gold ${
                 activeTab === tab.id ? 'bg-tropic-gold/10 text-tropic-gold' : ''
               }`}
             >

@@ -59,22 +59,22 @@ const PartnerHub = () => {
 
   const getTypeColor = (t) => ({
     combat: 'bg-tropic-red', training: 'bg-tropic-gold-dark',
-    recon: 'bg-green-600', support: 'bg-gray-600'
-  }[t] || 'bg-gray-600');
+    recon: 'bg-green-600', support: 'bg-[#4a6070]'
+  }[t] || 'bg-[#4a6070]');
 
   if (loading) {
-    return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen bg-[#050a0e] text-white flex items-center justify-center">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#050a0e] text-white">
       {/* Top bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="partner-nav">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#050a0e]/92 backdrop-blur-xl border-b border-tropic-gold/15" data-testid="partner-nav">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={`${BACKEND_URL}/api/uploads/25th_id_patch.png`} alt="25th ID" className="w-8 h-8 object-contain" />
             <div>
-              <h1 className="text-xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              <h1 className="text-xl font-bold tracking-wider text-tropic-gold" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                 PARTNER HUB
               </h1>
               <p className="text-[10px] text-tropic-olive tracking-widest">S-5 LIAISON AREA</p>
@@ -84,12 +84,12 @@ const PartnerHub = () => {
             <Badge className="bg-tropic-olive/20 text-tropic-olive border border-tropic-olive/40 text-[10px] hidden sm:inline-flex">
               PARTNER UNIT
             </Badge>
-            <span className="text-sm text-gray-400 hidden lg:block">
+            <span className="text-sm text-[#8a9aa8] hidden lg:block">
               <span className="text-tropic-gold font-bold">{user?.username}</span>
-              {user?.partner_unit_name && <span className="text-gray-500 ml-1">({user.partner_unit_name})</span>}
+              {user?.partner_unit_name && <span className="text-[#4a6070] ml-1">({user.partner_unit_name})</span>}
             </span>
             <Link to="/partner/shared">
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-tropic-gold">
+              <Button variant="ghost" size="sm" className="text-[#8a9aa8] hover:text-tropic-gold">
                 <Handshake className="w-4 h-4 md:mr-1.5" /><span className="hidden md:inline">Shared</span>
               </Button>
             </Link>
@@ -101,11 +101,11 @@ const PartnerHub = () => {
               </Link>
             )}
             <Link to="/">
-              <Button size="sm" variant="outline" className="border-gray-700">
+              <Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]">
                 <Home className="w-4 h-4 md:mr-1" /><span className="hidden md:inline">Home</span>
               </Button>
             </Link>
-            <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700" data-testid="partner-logout-btn">
+            <Button size="sm" variant="outline" onClick={handleLogout} className="border-[rgba(201,162,39,0.15)]" data-testid="partner-logout-btn">
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
@@ -115,11 +115,11 @@ const PartnerHub = () => {
       <div className="pt-20 pb-12 px-4 md:px-6">
         <div className="container mx-auto max-w-7xl space-y-8">
           {/* Welcome */}
-          <div className="bg-gradient-to-r from-tropic-olive/20 to-gray-900 border border-tropic-olive/30 rounded-xl p-6">
-            <h2 className="text-2xl font-bold text-tropic-gold mb-1" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <div className="bg-gradient-to-r from-tropic-olive/20 to-[#0c1117] border border-tropic-olive/30 rounded-xl p-6">
+            <h2 className="text-2xl font-bold text-tropic-gold mb-1" style={{ fontFamily: "'Share Tech', sans-serif" }}>
               Welcome, {user?.username}
             </h2>
-            <p className="text-gray-400 text-sm">
+            <p className="text-[#8a9aa8] text-sm">
               {user?.partner_unit_name || 'Partner Unit'} — Allied Unit Portal
             </p>
           </div>
@@ -135,10 +135,10 @@ const PartnerHub = () => {
               { icon: Map, label: 'Threat Map', color: 'text-orange-400', href: '/partner/threat-map' },
             ].map((item) => {
               const content = (
-                <Card key={item.label} className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors cursor-pointer">
+                <Card key={item.label} className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)] hover:border-tropic-olive/40 transition-colors cursor-pointer">
                   <CardContent className="p-4 text-center">
                     <item.icon className={`w-6 h-6 mx-auto mb-2 ${item.color}`} />
-                    <p className="text-xs font-medium text-gray-300">{item.label}</p>
+                    <p className="text-xs font-medium text-[#8a9aa8]">{item.label}</p>
                   </CardContent>
                 </Card>
               );
@@ -151,23 +151,23 @@ const PartnerHub = () => {
           {/* Operations */}
           <div id="ops">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-tropic-gold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              <h3 className="text-lg font-bold text-tropic-gold tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                 <Calendar className="w-5 h-5 inline mr-2" />UPCOMING OPERATIONS
               </h3>
             </div>
             {operations.length === 0 ? (
-              <Card className="bg-gray-900/50 border-gray-800"><CardContent className="p-6 text-center text-gray-500">No operations available</CardContent></Card>
+              <Card className="bg-[#0c1117]/50 border-[rgba(201,162,39,0.12)]"><CardContent className="p-6 text-center text-[#4a6070]">No operations available</CardContent></Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {operations.map(op => (
-                  <Card key={op.id} className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors">
+                  <Card key={op.id} className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)] hover:border-tropic-olive/40 transition-colors">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="font-bold text-sm">{op.title}</h4>
                         <Badge className={`${getTypeColor(op.operation_type)} text-[10px]`}>{op.operation_type?.toUpperCase()}</Badge>
                       </div>
-                      <p className="text-xs text-gray-400 line-clamp-2 mb-2">{op.description}</p>
-                      <div className="flex items-center gap-3 text-[10px] text-gray-500">
+                      <p className="text-xs text-[#8a9aa8] line-clamp-2 mb-2">{op.description}</p>
+                      <div className="flex items-center gap-3 text-[10px] text-[#4a6070]">
                         <span><Calendar className="w-3 h-3 inline mr-1" />{op.date}</span>
                         <span><Clock className="w-3 h-3 inline mr-1" />{op.time}</span>
                       </div>
@@ -181,7 +181,7 @@ const PartnerHub = () => {
           {/* Discussions */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-tropic-gold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              <h3 className="text-lg font-bold text-tropic-gold tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                 <MessageSquare className="w-5 h-5 inline mr-2" />DISCUSSIONS
               </h3>
               <Link to="/partner/discussions">
@@ -191,21 +191,21 @@ const PartnerHub = () => {
               </Link>
             </div>
             {discussions.length === 0 ? (
-              <Card className="bg-gray-900/50 border-gray-800"><CardContent className="p-6 text-center text-gray-500">No discussions available</CardContent></Card>
+              <Card className="bg-[#0c1117]/50 border-[rgba(201,162,39,0.12)]"><CardContent className="p-6 text-center text-[#4a6070]">No discussions available</CardContent></Card>
             ) : (
               <div className="space-y-2">
                 {discussions.map(d => (
                   <Link key={d.id} to={`/partner/discussions/${d.id}`}>
-                    <Card className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors cursor-pointer">
+                    <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)] hover:border-tropic-olive/40 transition-colors cursor-pointer">
                       <CardContent className="p-4 flex items-center justify-between">
                         <div>
                           <h4 className="font-bold text-sm">{d.title}</h4>
-                          <p className="text-xs text-gray-500">{d.category} — by {d.author_name}</p>
+                          <p className="text-xs text-[#4a6070]">{d.category} — by {d.author_name}</p>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 text-xs text-[#4a6070]">
                           <MessageSquare className="w-3 h-3" />
                           <span>{d.replies?.length || 0}</span>
-                          <ChevronRight className="w-4 h-4 text-gray-600" />
+                          <ChevronRight className="w-4 h-4 text-[#4a6070]" />
                         </div>
                       </CardContent>
                     </Card>
@@ -219,19 +219,19 @@ const PartnerHub = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" id="training">
             {/* Training */}
             <div>
-              <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                 <BookOpen className="w-5 h-5 inline mr-2" />TRAINING
               </h3>
               {training.length === 0 ? (
-                <Card className="bg-gray-900/50 border-gray-800"><CardContent className="p-6 text-center text-gray-500">No training available</CardContent></Card>
+                <Card className="bg-[#0c1117]/50 border-[rgba(201,162,39,0.12)]"><CardContent className="p-6 text-center text-[#4a6070]">No training available</CardContent></Card>
               ) : (
                 <div className="space-y-2">
                   {training.map(t => (
-                    <Card key={t.id} className="bg-gray-900/80 border-gray-800">
+                    <Card key={t.id} className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]">
                       <CardContent className="p-4">
                         <h4 className="font-bold text-sm mb-1">{t.title}</h4>
-                        <p className="text-xs text-gray-400 line-clamp-2">{t.description}</p>
-                        <p className="text-[10px] text-gray-500 mt-1">Instructor: {t.instructor}</p>
+                        <p className="text-xs text-[#8a9aa8] line-clamp-2">{t.description}</p>
+                        <p className="text-[10px] text-[#4a6070] mt-1">Instructor: {t.instructor}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -241,21 +241,21 @@ const PartnerHub = () => {
 
             {/* Intel */}
             <div id="intel">
-              <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                 <Radio className="w-5 h-5 inline mr-2" />INTEL BOARD
               </h3>
               {intel.length === 0 ? (
-                <Card className="bg-gray-900/50 border-gray-800"><CardContent className="p-6 text-center text-gray-500">No intel briefings available</CardContent></Card>
+                <Card className="bg-[#0c1117]/50 border-[rgba(201,162,39,0.12)]"><CardContent className="p-6 text-center text-[#4a6070]">No intel briefings available</CardContent></Card>
               ) : (
                 <div className="space-y-2">
                   {intel.map(i => (
-                    <Card key={i.id} className="bg-gray-900/80 border-gray-800">
+                    <Card key={i.id} className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]">
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-1">
                           <h4 className="font-bold text-sm">{i.title}</h4>
-                          <Badge className="bg-gray-700 text-[10px]">{i.classification?.toUpperCase()}</Badge>
+                          <Badge className="bg-[#111a24] text-[10px]">{i.classification?.toUpperCase()}</Badge>
                         </div>
-                        <p className="text-xs text-gray-400 line-clamp-2">{i.content}</p>
+                        <p className="text-xs text-[#8a9aa8] line-clamp-2">{i.content}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -266,21 +266,21 @@ const PartnerHub = () => {
 
           {/* Campaigns */}
           <div id="campaigns">
-            <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+            <h3 className="text-lg font-bold text-tropic-gold tracking-wider mb-4" style={{ fontFamily: "'Share Tech', sans-serif" }}>
               <Target className="w-5 h-5 inline mr-2" />CAMPAIGNS
             </h3>
             {campaigns.length === 0 ? (
-              <Card className="bg-gray-900/50 border-gray-800"><CardContent className="p-6 text-center text-gray-500">No campaigns available</CardContent></Card>
+              <Card className="bg-[#0c1117]/50 border-[rgba(201,162,39,0.12)]"><CardContent className="p-6 text-center text-[#4a6070]">No campaigns available</CardContent></Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {campaigns.map(c => (
-                  <Card key={c.id} className="bg-gray-900/80 border-gray-800 hover:border-tropic-olive/40 transition-colors">
+                  <Card key={c.id} className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)] hover:border-tropic-olive/40 transition-colors">
                     <CardContent className="p-4">
                       <h4 className="font-bold text-sm mb-1">{c.name}</h4>
-                      <p className="text-xs text-gray-400 line-clamp-2 mb-2">{c.description}</p>
+                      <p className="text-xs text-[#8a9aa8] line-clamp-2 mb-2">{c.description}</p>
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-gray-700 text-[10px]">{c.status?.toUpperCase()}</Badge>
-                        {c.theater && <span className="text-[10px] text-gray-500">{c.theater}</span>}
+                        <Badge className="bg-[#111a24] text-[10px]">{c.status?.toUpperCase()}</Badge>
+                        {c.theater && <span className="text-[10px] text-[#4a6070]">{c.theater}</span>}
                       </div>
                     </CardContent>
                   </Card>

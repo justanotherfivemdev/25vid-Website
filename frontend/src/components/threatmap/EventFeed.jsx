@@ -33,7 +33,7 @@ export default function EventFeed({ isAdmin = false }) {
 
         {!isLoading && !error && filteredEvents.length === 0 && (
           <div className="py-8 text-center">
-            <p className="text-sm text-gray-500">No events match your filters</p>
+            <p className="text-sm text-[#4a6070]">No events match your filters</p>
           </div>
         )}
 

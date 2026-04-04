@@ -22,7 +22,7 @@ const CATEGORIES = [
 ];
 
 const CLASSIFICATIONS = [
-  { value: 'routine', label: 'ROUTINE', color: 'bg-gray-700 text-gray-300' },
+  { value: 'routine', label: 'ROUTINE', color: 'bg-[#111a24] text-[#8a9aa8]' },
   { value: 'priority', label: 'PRIORITY', color: 'bg-tropic-gold-dark text-white' },
   { value: 'immediate', label: 'IMMEDIATE', color: 'bg-orange-700 text-white' },
   { value: 'flash', label: 'FLASH', color: 'bg-tropic-red text-white' },
@@ -47,20 +47,20 @@ const AckPanel = ({ briefingId }) => {
       .finally(() => setLoading(false));
   }, [briefingId]);
 
-  if (loading) return <div className="text-xs text-gray-500 py-2">Loading...</div>;
-  if (!acks || acks.length === 0) return <div className="text-xs text-gray-600 py-2">No acknowledgments yet</div>;
+  if (loading) return <div className="text-xs text-[#4a6070] py-2">Loading...</div>;
+  if (!acks || acks.length === 0) return <div className="text-xs text-[#4a6070] py-2">No acknowledgments yet</div>;
 
   return (
     <div className="space-y-1 pt-1" data-testid={`ack-panel-${briefingId}`}>
       {acks.map((a, i) => (
-        <div key={i} className="flex items-center justify-between text-xs px-2 py-1.5 bg-black/30 rounded">
+        <div key={i} className="flex items-center justify-between text-xs px-2 py-1.5 bg-[#050a0e]/30 rounded">
           <div className="flex items-center gap-2">
-            <User className="w-3 h-3 text-gray-500" />
-            <span className="text-gray-300 font-medium">{a.username}</span>
-            {a.rank && <span className="text-gray-600">{a.rank}</span>}
+            <User className="w-3 h-3 text-[#4a6070]" />
+            <span className="text-[#8a9aa8] font-medium">{a.username}</span>
+            {a.rank && <span className="text-[#4a6070]">{a.rank}</span>}
             {a.company && <span className="text-tropic-gold/60">{a.company}</span>}
           </div>
-          <span className="text-gray-600 flex items-center gap-1">
+          <span className="text-[#4a6070] flex items-center gap-1">
             <Clock className="w-2.5 h-2.5" />{new Date(a.acknowledged_at).toLocaleString()}
           </span>
         </div>
@@ -173,10 +173,10 @@ const IntelManager = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="intel-manager-title">
+            <h1 className="text-4xl font-bold" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="intel-manager-title">
               INTEL & BRIEFINGS
             </h1>
-            <p className="text-gray-400 mt-2">Manage intelligence updates, orders, and after-action reports</p>
+            <p className="text-[#8a9aa8] mt-2">Manage intelligence updates, orders, and after-action reports</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
@@ -184,23 +184,23 @@ const IntelManager = () => {
                 <Plus className="w-4 h-4 mr-2" />New Briefing
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-[#0c1117] text-white border-[rgba(201,162,39,0.12)] max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                <DialogTitle style={{ fontFamily: "'Share Tech', sans-serif" }}>
                   {editing ? 'Edit Briefing' : 'New Briefing'}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label>Title</Label>
-                  <Input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="bg-black border-gray-700" placeholder="Briefing title" data-testid="intel-title-input" />
+                  <Input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Briefing title" data-testid="intel-title-input" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Category</Label>
                     <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
-                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                         {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -208,8 +208,8 @@ const IntelManager = () => {
                   <div>
                     <Label>Classification</Label>
                     <Select value={form.classification} onValueChange={v => setForm({ ...form, classification: v })}>
-                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                         {CLASSIFICATIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -219,8 +219,8 @@ const IntelManager = () => {
                   <div>
                     <Label>Visibility</Label>
                     <Select value={form.visibility_scope} onValueChange={v => setForm({ ...form, visibility_scope: v })}>
-                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                         {VISIBILITY_SCOPES.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -228,8 +228,8 @@ const IntelManager = () => {
                   <div>
                     <Label>Severity</Label>
                     <Select value={form.severity} onValueChange={v => setForm({ ...form, severity: v })}>
-                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                         <SelectItem value="low">Low</SelectItem>
                         <SelectItem value="medium">Medium</SelectItem>
                         <SelectItem value="high">High</SelectItem>
@@ -239,23 +239,23 @@ const IntelManager = () => {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <div><Label>Campaign ID</Label><Input value={form.campaign_id} onChange={e => setForm({ ...form, campaign_id: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
-                  <div><Label>Objective ID</Label><Input value={form.objective_id} onChange={e => setForm({ ...form, objective_id: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
-                  <div><Label>Operation ID</Label><Input value={form.operation_id} onChange={e => setForm({ ...form, operation_id: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" /></div>
+                  <div><Label>Campaign ID</Label><Input value={form.campaign_id} onChange={e => setForm({ ...form, campaign_id: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Optional" /></div>
+                  <div><Label>Objective ID</Label><Input value={form.objective_id} onChange={e => setForm({ ...form, objective_id: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Optional" /></div>
+                  <div><Label>Operation ID</Label><Input value={form.operation_id} onChange={e => setForm({ ...form, operation_id: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Optional" /></div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <div><Label>Theater</Label><Input value={form.theater} onChange={e => setForm({ ...form, theater: e.target.value })} className="bg-black border-gray-700" placeholder="Pacific" /></div>
-                  <div><Label>Region Label</Label><Input value={form.region_label} onChange={e => setForm({ ...form, region_label: e.target.value })} className="bg-black border-gray-700" placeholder="South China Sea" /></div>
-                  <div><Label>Grid Ref</Label><Input value={form.grid_ref} onChange={e => setForm({ ...form, grid_ref: e.target.value })} className="bg-black border-gray-700" placeholder="G-17" /></div>
+                  <div><Label>Theater</Label><Input value={form.theater} onChange={e => setForm({ ...form, theater: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Pacific" /></div>
+                  <div><Label>Region Label</Label><Input value={form.region_label} onChange={e => setForm({ ...form, region_label: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="South China Sea" /></div>
+                  <div><Label>Grid Ref</Label><Input value={form.grid_ref} onChange={e => setForm({ ...form, grid_ref: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="G-17" /></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Latitude</Label>
-                    <Input type="number" step="any" value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" />
+                    <Input type="number" step="any" value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Optional" />
                   </div>
                   <div>
                     <Label>Longitude</Label>
-                    <Input type="number" step="any" value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} className="bg-black border-gray-700" placeholder="Optional" />
+                    <Input type="number" step="any" value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Optional" />
                   </div>
                 </div>
                 {/* Mini map preview — click to place marker */}
@@ -284,13 +284,13 @@ const IntelManager = () => {
                 </div>
                 <div>
                   <Label>Content</Label>
-                  <Textarea required value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} rows={10} className="bg-black border-gray-700 font-mono text-sm" placeholder="Briefing content... Paragraph breaks are preserved." data-testid="intel-content-input" />
+                  <Textarea required value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} rows={10} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] font-mono text-sm" placeholder="Briefing content... Paragraph breaks are preserved." data-testid="intel-content-input" />
                 </div>
                 <div>
                   <Label>Tags</Label>
                   <div className="flex gap-2 mb-2">
-                    <Input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }} className="bg-black border-gray-700 flex-1" placeholder="Add tag and press Enter" data-testid="intel-tag-input" />
-                    <Button type="button" onClick={addTag} className="bg-gray-700 hover:bg-gray-600"><Plus className="w-4 h-4" /></Button>
+                    <Input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] flex-1" placeholder="Add tag and press Enter" data-testid="intel-tag-input" />
+                    <Button type="button" onClick={addTag} className="bg-[#111a24] hover:bg-[#4a6070]"><Plus className="w-4 h-4" /></Button>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {form.tags.map(t => (
@@ -301,7 +301,7 @@ const IntelManager = () => {
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="border-gray-700">Cancel</Button>
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="border-[rgba(201,162,39,0.15)]">Cancel</Button>
                   <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="intel-submit-btn">{editing ? 'Update' : 'Publish'} Briefing</Button>
                 </div>
               </form>
@@ -312,12 +312,12 @@ const IntelManager = () => {
         {/* Filters */}
         <div className="flex items-center gap-4 flex-wrap">
           <div className="relative flex-1 max-w-sm">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} className="bg-gray-900 border-gray-700 pl-10" placeholder="Search briefings..." data-testid="intel-search" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6070]" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] pl-10" placeholder="Search briefings..." data-testid="intel-search" />
           </div>
           <Select value={filterCat || '__all__'} onValueChange={v => setFilterCat(v === '__all__' ? '' : v)}>
-            <SelectTrigger className="bg-gray-900 border-gray-700 w-48"><SelectValue placeholder="All categories" /></SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-700">
+            <SelectTrigger className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] w-48"><SelectValue placeholder="All categories" /></SelectTrigger>
+            <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
               <SelectItem value="__all__">All Categories</SelectItem>
               {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
             </SelectContent>
@@ -326,10 +326,10 @@ const IntelManager = () => {
 
         {/* Briefings List */}
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading briefings...</div>
+          <div className="text-center py-12 text-[#4a6070]">Loading briefings...</div>
         ) : briefings.length === 0 ? (
-          <Card className="bg-gray-900 border-gray-800">
-            <CardContent className="py-12 text-center text-gray-400">
+          <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
+            <CardContent className="py-12 text-center text-[#8a9aa8]">
               <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
               No briefings found. Create your first intel briefing.
             </CardContent>
@@ -340,22 +340,22 @@ const IntelManager = () => {
               const cls = getClassBadge(b.classification);
               const isAckExpanded = expandedAck === b.id;
               return (
-                <Card key={b.id} className="bg-gray-900 border-gray-800 hover:border-gray-700 transition-colors" data-testid={`intel-card-${b.id}`}>
+                <Card key={b.id} className="bg-[#0c1117] border-[rgba(201,162,39,0.12)] hover:border-[rgba(201,162,39,0.15)] transition-colors" data-testid={`intel-card-${b.id}`}>
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-2">
                           <Badge className={`${cls.color} text-[10px] tracking-wider`}>{cls.label}</Badge>
-                          <Badge variant="outline" className="border-gray-700 text-gray-400 text-[10px]">{getCatLabel(b.category)}</Badge>
+                          <Badge variant="outline" className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] text-[10px]">{getCatLabel(b.category)}</Badge>
                           {(b.tags || []).map(t => (
                             <Badge key={t} variant="outline" className="border-tropic-gold/40 text-tropic-gold text-[10px]">
                               <Tag className="w-2.5 h-2.5 mr-1" />{t}
                             </Badge>
                           ))}
                         </div>
-                        <h3 className="text-lg font-bold tracking-wide truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{b.title}</h3>
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{b.content}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
+                        <h3 className="text-lg font-bold tracking-wide truncate" style={{ fontFamily: "'Share Tech', sans-serif" }}>{b.title}</h3>
+                        <p className="text-sm text-[#4a6070] mt-1 line-clamp-2">{b.content}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-[#4a6070]">
                           <span>By {b.author_name}</span>
                           <span>{new Date(b.created_at).toLocaleDateString()}</span>
                           {b.updated_at && <span className="text-tropic-gold/70">(edited)</span>}
@@ -364,17 +364,17 @@ const IntelManager = () => {
                       <div className="flex gap-2 shrink-0 items-center">
                         <Button size="sm" variant="outline"
                           onClick={() => setExpandedAck(isAckExpanded ? null : b.id)}
-                          className={`border-gray-700 text-xs ${isAckExpanded ? 'bg-green-900/20 border-green-700' : ''}`}
+                          className={`border-[rgba(201,162,39,0.15)] text-xs ${isAckExpanded ? 'bg-green-900/20 border-green-700' : ''}`}
                           data-testid={`ack-toggle-${b.id}`}>
                           <Eye className="w-3.5 h-3.5 mr-1" />{b.ack_count || 0}
                           {isAckExpanded ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(b)} className="border-gray-700" data-testid={`edit-intel-${b.id}`}><Edit className="w-4 h-4" /></Button>
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(b)} className="border-[rgba(201,162,39,0.15)]" data-testid={`edit-intel-${b.id}`}><Edit className="w-4 h-4" /></Button>
                         <Button size="sm" variant="outline" onClick={() => handleDelete(b.id)} className="border-tropic-red/60 text-tropic-red hover:bg-tropic-red/10" data-testid={`delete-intel-${b.id}`}><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </div>
                     {isAckExpanded && (
-                      <div className="mt-3 pt-3 border-t border-gray-800">
+                      <div className="mt-3 pt-3 border-t border-[rgba(201,162,39,0.12)]">
                         <AckPanel briefingId={b.id} />
                       </div>
                     )}

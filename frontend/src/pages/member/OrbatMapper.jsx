@@ -110,8 +110,8 @@ const OrbatUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicat
   const [collapsed, setCollapsed] = useState(false);
   const [editing, setEditing] = useState(!unit.designation);
   const echelonCfg = UNIT_ECHELONS.find(e => e.value === unit.echelon);
-  const colorClass = ECHELON_COLORS[unit.echelon] || 'border-gray-700 bg-gray-900/40';
-  const textColor = ECHELON_TEXT_COLORS[unit.echelon] || 'text-gray-400';
+  const colorClass = ECHELON_COLORS[unit.echelon] || 'border-[rgba(201,162,39,0.15)] bg-[#0c1117]/40';
+  const textColor = ECHELON_TEXT_COLORS[unit.echelon] || 'text-[#8a9aa8]';
   const hasChildren = unit.children && unit.children.length > 0;
 
   const handleFieldChange = (field, value) => {
@@ -158,7 +158,7 @@ const OrbatUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicat
       <div className={`border rounded-lg p-3 ${colorClass} transition-all`}>
         {/* Header row */}
         <div className="flex items-center gap-2 flex-wrap">
-          <GripVertical className="w-4 h-4 text-gray-600 shrink-0 cursor-grab" />
+          <GripVertical className="w-4 h-4 text-[#4a6070] shrink-0 cursor-grab" />
           <Badge className={`${textColor} bg-transparent border border-current text-[10px] uppercase tracking-wider`}>
             {echelonCfg?.label || unit.echelon}
           </Badge>
@@ -171,7 +171,7 @@ const OrbatUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicat
               onBlur={() => { if (unit.designation) setEditing(false); }}
               onKeyDown={(e) => { if (e.key === 'Enter' && unit.designation) setEditing(false); }}
               placeholder="Unit designation…"
-              className="bg-black/40 border-gray-700 h-7 text-sm flex-1 min-w-[120px]"
+              className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-sm flex-1 min-w-[120px]"
             />
           ) : (
             <button
@@ -187,7 +187,7 @@ const OrbatUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicat
             {hasChildren && (
               <button
                 onClick={() => setCollapsed(!collapsed)}
-                className="p-1 rounded hover:bg-white/10 transition text-gray-400"
+                className="p-1 rounded hover:bg-white/10 transition text-[#8a9aa8]"
                 title={collapsed ? 'Expand sub-units' : 'Collapse sub-units'}
               >
                 {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -220,17 +220,17 @@ const OrbatUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicat
         {/* Detail fields — compact inline row */}
         <Collapsible defaultOpen={!unit.designation}>
           <CollapsibleTrigger asChild>
-            <button className="text-[10px] text-gray-500 hover:text-gray-300 mt-1.5 flex items-center gap-1 transition">
+            <button className="text-[10px] text-[#4a6070] hover:text-[#8a9aa8] mt-1.5 flex items-center gap-1 transition">
               <ChevronDown className="w-3 h-3" />Details
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
               <div>
-                <label className="text-[9px] text-gray-500 uppercase tracking-wider">Echelon</label>
+                <label className="text-[9px] text-[#4a6070] uppercase tracking-wider">Echelon</label>
                 <Select value={unit.echelon} onValueChange={(v) => handleFieldChange('echelon', v)}>
-                  <SelectTrigger className="bg-black/40 border-gray-700 h-7 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectTrigger className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                     {UNIT_ECHELONS.map(e => (
                       <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
                     ))}
@@ -238,10 +238,10 @@ const OrbatUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicat
                 </Select>
               </div>
               <div>
-                <label className="text-[9px] text-gray-500 uppercase tracking-wider">Branch</label>
+                <label className="text-[9px] text-[#4a6070] uppercase tracking-wider">Branch</label>
                 <Select value={unit.branch} onValueChange={(v) => handleFieldChange('branch', v)}>
-                  <SelectTrigger className="bg-black/40 border-gray-700 h-7 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectTrigger className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                     {BRANCH_TYPES.map(b => (
                       <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                     ))}
@@ -249,20 +249,20 @@ const OrbatUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicat
                 </Select>
               </div>
               <div>
-                <label className="text-[9px] text-gray-500 uppercase tracking-wider">Callsign</label>
-                <Input value={unit.callsign} onChange={(e) => handleFieldChange('callsign', e.target.value)} placeholder="e.g., Warhorse 6" className="bg-black/40 border-gray-700 h-7 text-xs" />
+                <label className="text-[9px] text-[#4a6070] uppercase tracking-wider">Callsign</label>
+                <Input value={unit.callsign} onChange={(e) => handleFieldChange('callsign', e.target.value)} placeholder="e.g., Warhorse 6" className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs" />
               </div>
               <div>
-                <label className="text-[9px] text-gray-500 uppercase tracking-wider">Commander</label>
-                <Input value={unit.commander} onChange={(e) => handleFieldChange('commander', e.target.value)} placeholder="e.g., CPT Smith" className="bg-black/40 border-gray-700 h-7 text-xs" />
+                <label className="text-[9px] text-[#4a6070] uppercase tracking-wider">Commander</label>
+                <Input value={unit.commander} onChange={(e) => handleFieldChange('commander', e.target.value)} placeholder="e.g., CPT Smith" className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs" />
               </div>
               <div>
-                <label className="text-[9px] text-gray-500 uppercase tracking-wider">Personnel</label>
-                <Input value={unit.personnel} onChange={(e) => handleFieldChange('personnel', e.target.value)} placeholder="Strength count" className="bg-black/40 border-gray-700 h-7 text-xs" />
+                <label className="text-[9px] text-[#4a6070] uppercase tracking-wider">Personnel</label>
+                <Input value={unit.personnel} onChange={(e) => handleFieldChange('personnel', e.target.value)} placeholder="Strength count" className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs" />
               </div>
               <div className="col-span-2 sm:col-span-1 lg:col-span-3">
-                <label className="text-[9px] text-gray-500 uppercase tracking-wider">Notes</label>
-                <Input value={unit.notes} onChange={(e) => handleFieldChange('notes', e.target.value)} placeholder="Additional notes…" className="bg-black/40 border-gray-700 h-7 text-xs" />
+                <label className="text-[9px] text-[#4a6070] uppercase tracking-wider">Notes</label>
+                <Input value={unit.notes} onChange={(e) => handleFieldChange('notes', e.target.value)} placeholder="Additional notes…" className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs" />
               </div>
             </div>
           </CollapsibleContent>
@@ -271,7 +271,7 @@ const OrbatUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicat
 
       {/* Children */}
       {!collapsed && hasChildren && (
-        <div className="mt-1 space-y-1 border-l-2 border-gray-800 ml-3">
+        <div className="mt-1 space-y-1 border-l-2 border-[rgba(201,162,39,0.12)] ml-3">
           {unit.children.map(child => (
             <OrbatUnitNode
               key={child.id}
@@ -530,12 +530,12 @@ export default function OrbatMapper() {
   return (
     <div className="min-h-screen bg-[#060a14] text-white flex flex-col">
       {/* ── Top Bar ─────────────────────────────────────────────────── */}
-      <header className="shrink-0 border-b border-gray-800 bg-[#0c1322] px-4 py-3 flex items-center gap-3 flex-wrap">
-        <Link to="/hub" className="text-gray-400 hover:text-white transition">
+      <header className="shrink-0 border-b border-[rgba(201,162,39,0.12)] bg-[#0c1322] px-4 py-3 flex items-center gap-3 flex-wrap">
+        <Link to="/hub" className="text-[#8a9aa8] hover:text-white transition">
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <Network className="w-5 h-5 text-[#C9A227]" />
-        <h1 className="text-lg font-bold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <h1 className="text-lg font-bold tracking-wide" style={{ fontFamily: "'Share Tech', sans-serif" }}>
           ORBAT CREATOR
         </h1>
 
@@ -546,7 +546,7 @@ export default function OrbatMapper() {
         )}
 
         <div className="ml-auto flex items-center gap-2 flex-wrap">
-          <Badge className="bg-gray-800 text-gray-400 text-[10px]">
+          <Badge className="bg-[#111a24] text-[#8a9aa8] text-[10px]">
             <Users className="w-3 h-3 mr-1 inline" />{totalUnits} unit{totalUnits !== 1 ? 's' : ''}
           </Badge>
           {dirty && !saved && (
@@ -561,29 +561,29 @@ export default function OrbatMapper() {
       {/* ── Main Layout ─────────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* ── Sidebar ─────────────────────────────────────────────── */}
-        <aside className="w-72 border-r border-gray-800 bg-[#0c1322] shrink-0 hidden md:flex flex-col overflow-hidden">
+        <aside className="w-72 border-r border-[rgba(201,162,39,0.12)] bg-[#0c1322] shrink-0 hidden md:flex flex-col overflow-hidden">
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
               {/* Title */}
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">ORBAT Title</label>
+                <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">ORBAT Title</label>
                 <Input
                   value={orbatTitle}
                   onChange={(e) => setOrbatTitle(e.target.value)}
                   placeholder="e.g., TF Warhorse ORBAT"
-                  className="bg-gray-900 border-gray-700 text-sm"
+                  className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                   disabled={!canEdit}
                 />
               </div>
 
               {/* Link to Operation */}
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Link to Operation (optional)</label>
+                <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">Link to Operation (optional)</label>
                 <Select value={linkedOperationId} onValueChange={(v) => setLinkedOperationId(v)} disabled={!canEdit}>
-                  <SelectTrigger className="bg-gray-900 border-gray-700 text-sm h-8">
+                  <SelectTrigger className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm h-8">
                     <SelectValue placeholder="None — Ad-hoc ORBAT" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-gray-700 max-h-60">
+                  <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] max-h-60">
                     <SelectItem value="none">None — Ad-hoc</SelectItem>
                     {operations.map(op => (
                       <SelectItem key={op.id} value={op.id}>{op.title}</SelectItem>
@@ -595,7 +595,7 @@ export default function OrbatMapper() {
               {/* Quick-add root unit */}
               {canEdit && (
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-2">Add Root Unit</label>
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-2">Add Root Unit</label>
                   <Button onClick={addRootUnit} size="sm" className="w-full bg-[#C9A227] text-black hover:bg-[#b8931f]">
                     <Plus className="w-4 h-4 mr-1" /> Add Unit
                   </Button>
@@ -604,30 +604,30 @@ export default function OrbatMapper() {
 
               {/* Echelon legend */}
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-2">Echelon Legend</label>
+                <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-2">Echelon Legend</label>
                 <div className="space-y-1">
                   {UNIT_ECHELONS.map(e => (
                     <div key={e.value} className="flex items-center gap-2 text-[11px]">
-                      <span className={`w-2 h-2 rounded-full ${ECHELON_DOT_COLORS[e.value] || 'bg-gray-600'}`} />
+                      <span className={`w-2 h-2 rounded-full ${ECHELON_DOT_COLORS[e.value] || 'bg-[#4a6070]'}`} />
                       <span className={ECHELON_TEXT_COLORS[e.value]}>{e.label}</span>
-                      <span className="text-gray-600 ml-auto">{e.size}</span>
+                      <span className="text-[#4a6070] ml-auto">{e.size}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="space-y-2 pt-2 border-t border-gray-800">
-                <Button onClick={handleSave} size="sm" variant="outline" className="w-full border-gray-700 text-xs" disabled={!canEdit}>
+              <div className="space-y-2 pt-2 border-t border-[rgba(201,162,39,0.12)]">
+                <Button onClick={handleSave} size="sm" variant="outline" className="w-full border-[rgba(201,162,39,0.15)] text-xs" disabled={!canEdit}>
                   <Save className="w-3 h-3 mr-1" /> Save Locally
                 </Button>
                 <Button onClick={handleExportToPlanner} size="sm" className="w-full bg-[#C9A227] text-black hover:bg-[#b8931f] text-xs" disabled={units.length === 0}>
                   <Send className="w-3 h-3 mr-1" /> Export to Operations Planner
                 </Button>
-                <Button onClick={handleExportJSON} size="sm" variant="outline" className="w-full border-gray-700 text-xs">
+                <Button onClick={handleExportJSON} size="sm" variant="outline" className="w-full border-[rgba(201,162,39,0.15)] text-xs">
                   <Download className="w-3 h-3 mr-1" /> Export JSON
                 </Button>
-                <Button onClick={handleImportJSON} size="sm" variant="outline" className="w-full border-gray-700 text-xs" disabled={!canEdit}>
+                <Button onClick={handleImportJSON} size="sm" variant="outline" className="w-full border-[rgba(201,162,39,0.15)] text-xs" disabled={!canEdit}>
                   <Upload className="w-3 h-3 mr-1" /> Import JSON
                 </Button>
                 <Button onClick={handleClear} size="sm" variant="outline" className="w-full border-red-900/60 text-red-400 text-xs hover:bg-red-900/20" disabled={!canEdit}>
@@ -641,20 +641,20 @@ export default function OrbatMapper() {
         {/* ── Main Canvas ─────────────────────────────────────────── */}
         <main className="flex-1 overflow-y-auto">
           {/* Mobile action bar (visible below md breakpoint) */}
-          <div className="md:hidden flex items-center gap-2 p-3 border-b border-gray-800 bg-[#0c1322] flex-wrap">
+          <div className="md:hidden flex items-center gap-2 p-3 border-b border-[rgba(201,162,39,0.12)] bg-[#0c1322] flex-wrap">
             {canEdit && (
               <Button onClick={addRootUnit} size="sm" className="bg-[#C9A227] text-black text-xs">
                 <Plus className="w-3 h-3 mr-1" /> Add Unit
               </Button>
             )}
-            <Button onClick={handleSave} size="sm" variant="outline" className="border-gray-700 text-xs" disabled={!canEdit}>
+            <Button onClick={handleSave} size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)] text-xs" disabled={!canEdit}>
               <Save className="w-3 h-3 mr-1" /> Save
             </Button>
-            <Button onClick={handleExportJSON} size="sm" variant="outline" className="border-gray-700 text-xs">
+            <Button onClick={handleExportJSON} size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)] text-xs">
               <Download className="w-3 h-3" />
             </Button>
             {canEdit && (
-              <Button onClick={handleImportJSON} size="sm" variant="outline" className="border-gray-700 text-xs">
+              <Button onClick={handleImportJSON} size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)] text-xs">
                 <Upload className="w-3 h-3" />
               </Button>
             )}
@@ -662,17 +662,17 @@ export default function OrbatMapper() {
 
           <div className="p-4 space-y-2">
             {units.length === 0 ? (
-              <Card className="bg-gray-900/50 border-gray-800">
+              <Card className="bg-[#0c1117]/50 border-[rgba(201,162,39,0.12)]">
                 <CardContent className="py-16 text-center space-y-4">
-                  <Network className="w-16 h-16 text-gray-700 mx-auto" />
+                  <Network className="w-16 h-16 text-[#4a6070] mx-auto" />
                   <div>
-                    <p className="text-lg text-gray-400 font-semibold">No units in ORBAT</p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-lg text-[#8a9aa8] font-semibold">No units in ORBAT</p>
+                    <p className="text-sm text-[#4a6070] mt-1">
                       {canEdit
                         ? <>Click <strong>"Add Unit"</strong> to begin building your Order of Battle.</>
                         : 'No units have been added yet.'}
                     </p>
-                    <p className="text-xs text-gray-600 mt-3">
+                    <p className="text-xs text-[#4a6070] mt-3">
                       You can build an ORBAT independently or link it to an existing operation.
                     </p>
                   </div>

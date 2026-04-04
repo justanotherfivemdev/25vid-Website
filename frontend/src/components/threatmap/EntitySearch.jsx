@@ -111,7 +111,7 @@ export default function EntitySearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="pl-9 bg-black border-tropic-gold-dark/30 text-gray-200 placeholder:text-gray-600 focus:border-tropic-gold/50 focus:ring-tropic-gold/20"
+              className="pl-9 bg-[#050a0e] border-tropic-gold-dark/30 text-[#d0d8e0] placeholder:text-[#4a6070] focus:border-tropic-gold/50 focus:ring-tropic-gold/20"
             />
           </div>
           <Button
@@ -129,10 +129,10 @@ export default function EntitySearch() {
               <Loader2 className="h-4 w-4 animate-spin text-tropic-gold" />
               Generating Intelligence Report
             </div>
-            <div className="h-1.5 bg-gray-900 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-[#0c1117] rounded-full overflow-hidden">
               <div className="h-full bg-tropic-gold/50 animate-pulse w-1/3" />
             </div>
-            <p className="text-gray-500 text-xs mt-2">
+            <p className="text-[#4a6070] text-xs mt-2">
               This may take a moment. Powered by <span className="text-tropic-gold">Valyu</span> intelligence.
             </p>
           </div>
@@ -147,7 +147,7 @@ export default function EntitySearch() {
 
       <ScrollArea className="flex-1 p-4">
         {entity && researchResult && (
-          <Card className="bg-black border-tropic-gold-dark/20">
+          <Card className="bg-[#050a0e] border-tropic-gold-dark/20">
             <CardHeader className="pb-3">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tropic-gold/20">
@@ -198,7 +198,7 @@ export default function EntitySearch() {
                   </div>
                 )}
 
-                <div className="text-sm text-gray-400 max-h-40 overflow-hidden relative">
+                <div className="text-sm text-[#8a9aa8] max-h-40 overflow-hidden relative">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {(() => {
                       const text = researchResult.summary || '';
@@ -221,7 +221,7 @@ export default function EntitySearch() {
                       <button
                         key={i}
                         onClick={() => handleFlyToLocation(loc.longitude, loc.latitude)}
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-tropic-gold transition-colors w-full text-left"
+                        className="flex items-center gap-2 text-sm text-[#8a9aa8] hover:text-tropic-gold transition-colors w-full text-left"
                       >
                         <MapPin className="h-3 w-3 shrink-0" />
                         <span className="truncate">{loc.placeName || loc.country || `${loc.latitude.toFixed(2)}, ${loc.longitude.toFixed(2)}`}</span>
@@ -244,7 +244,7 @@ export default function EntitySearch() {
                         href={source.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-tropic-gold transition-colors"
+                        className="flex items-center gap-2 text-sm text-[#8a9aa8] hover:text-tropic-gold transition-colors"
                       >
                         <ExternalLink className="h-3 w-3 shrink-0" />
                         <span className="truncate">{source.title || source.url}</span>
@@ -260,21 +260,21 @@ export default function EntitySearch() {
         {!entity && !isLoading && (
           <div className="py-8 text-center">
             <FileText className="mx-auto h-12 w-12 text-tropic-gold-dark/50" />
-            <p className="mt-4 text-sm text-gray-400">
+            <p className="mt-4 text-sm text-[#8a9aa8]">
               Enter any actor to compile an intelligence dossier
             </p>
-            <div className="mt-3 space-y-1 text-xs text-gray-500">
+            <div className="mt-3 space-y-1 text-xs text-[#4a6070]">
               <p>Wagner Group, Houthis, Hezbollah, North Korea</p>
               <p>Nations, militias, PMCs, cartels, political figures</p>
             </div>
-            <div className="mt-4 p-3 rounded-lg bg-tropic-gold/5 border border-tropic-gold-dark/20 text-xs text-gray-500">
+            <div className="mt-4 p-3 rounded-lg bg-tropic-gold/5 border border-tropic-gold-dark/20 text-xs text-[#4a6070]">
               Reports are powered by <span className="text-tropic-gold font-medium">Valyu</span> intelligence and provide sourced analysis.
             </div>
           </div>
         )}
 
         {entity && isLoading && (
-          <Card className="bg-black border-tropic-gold-dark/20">
+          <Card className="bg-[#050a0e] border-tropic-gold-dark/20">
             <CardHeader className="pb-3">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tropic-gold/20">
@@ -301,8 +301,8 @@ export default function EntitySearch() {
 
       {/* Full Report Dialog */}
       {showFullReport && researchResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="bg-black border border-tropic-gold-dark/30 rounded-lg shadow-2xl w-[95vw] sm:max-w-2xl md:max-w-4xl mx-auto max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/70 backdrop-blur-sm">
+          <div className="bg-[#050a0e] border border-tropic-gold-dark/30 rounded-lg shadow-2xl w-[95vw] sm:max-w-2xl md:max-w-4xl mx-auto max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-tropic-gold-dark/20">
               <h2 className="text-lg font-bold text-tropic-gold-light flex items-center gap-2">
                 <FileText className="h-5 w-5 text-tropic-gold" />
@@ -333,7 +333,7 @@ export default function EntitySearch() {
                         href={source.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-xs text-gray-400 hover:text-tropic-gold truncate"
+                        className="flex items-center gap-2 text-xs text-[#8a9aa8] hover:text-tropic-gold truncate"
                       >
                         <ExternalLink className="h-3 w-3 shrink-0" />
                         <span className="truncate">{source.title || source.url}</span>

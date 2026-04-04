@@ -104,8 +104,8 @@ function countNodes(nodes) {
 
 const MiniUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicate }) => {
   const [collapsed, setCollapsed] = useState(depth > 1);
-  const colorClass = ECHELON_COLORS[unit.echelon] || 'border-gray-700 bg-gray-900/40';
-  const textColor = ECHELON_TEXT_COLORS[unit.echelon] || 'text-gray-400';
+  const colorClass = ECHELON_COLORS[unit.echelon] || 'border-[rgba(201,162,39,0.15)] bg-[#0c1117]/40';
+  const textColor = ECHELON_TEXT_COLORS[unit.echelon] || 'text-[#8a9aa8]';
   const hasChildren = unit.children && unit.children.length > 0;
 
   const handleFieldChange = (field, value) => {
@@ -148,7 +148,7 @@ const MiniUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicate
     <div style={{ marginLeft: depth > 0 ? `${Math.min(depth * 0.75, 3)}rem` : 0 }}>
       <div className={`border rounded p-1.5 ${colorClass} transition-all mb-0.5`}>
         <div className="flex items-center gap-1">
-          <GripVertical className="w-3 h-3 text-gray-600 shrink-0" />
+          <GripVertical className="w-3 h-3 text-[#4a6070] shrink-0" />
           <Badge className={`${textColor} bg-transparent border border-current text-[8px] px-1 py-0`}>
             {unit.echelon?.slice(0, 3).toUpperCase()}
           </Badge>
@@ -161,7 +161,7 @@ const MiniUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicate
           <div className="flex items-center shrink-0">
             {hasChildren && (
               <button onClick={() => setCollapsed(!collapsed)} className="p-0.5 hover:bg-white/10 rounded">
-                {collapsed ? <ChevronDown className="w-3 h-3 text-gray-500" /> : <ChevronUp className="w-3 h-3 text-gray-500" />}
+                {collapsed ? <ChevronDown className="w-3 h-3 text-[#4a6070]" /> : <ChevronUp className="w-3 h-3 text-[#4a6070]" />}
               </button>
             )}
             <button
@@ -182,33 +182,33 @@ const MiniUnitNode = ({ unit, depth, onUpdate, onRemove, onAddChild, onDuplicate
         {/* Compact detail fields */}
         <Collapsible>
           <CollapsibleTrigger asChild>
-            <button className="text-[8px] text-gray-600 hover:text-gray-400 mt-0.5 flex items-center gap-0.5">
+            <button className="text-[8px] text-[#4a6070] hover:text-[#8a9aa8] mt-0.5 flex items-center gap-0.5">
               <ChevronDown className="w-2.5 h-2.5" />Details
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="grid grid-cols-2 gap-1 mt-1">
               <Select value={unit.echelon} onValueChange={(v) => handleFieldChange('echelon', v)}>
-                <SelectTrigger className="bg-black/40 border-gray-700 h-6 text-[9px]"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectTrigger className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-6 text-[9px]"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                   {UNIT_ECHELONS.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={unit.branch} onValueChange={(v) => handleFieldChange('branch', v)}>
-                <SelectTrigger className="bg-black/40 border-gray-700 h-6 text-[9px]"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectTrigger className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-6 text-[9px]"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                   {BRANCH_TYPES.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Input value={unit.callsign} onChange={(e) => handleFieldChange('callsign', e.target.value)} placeholder="Callsign" className="bg-black/40 border-gray-700 h-6 text-[9px]" />
-              <Input value={unit.commander} onChange={(e) => handleFieldChange('commander', e.target.value)} placeholder="CDR" className="bg-black/40 border-gray-700 h-6 text-[9px]" />
+              <Input value={unit.callsign} onChange={(e) => handleFieldChange('callsign', e.target.value)} placeholder="Callsign" className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-6 text-[9px]" />
+              <Input value={unit.commander} onChange={(e) => handleFieldChange('commander', e.target.value)} placeholder="CDR" className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-6 text-[9px]" />
             </div>
           </CollapsibleContent>
         </Collapsible>
       </div>
 
       {!collapsed && hasChildren && (
-        <div className="border-l border-gray-800 ml-2">
+        <div className="border-l border-[rgba(201,162,39,0.12)] ml-2">
           {unit.children.map(child => (
             <MiniUnitNode
               key={child.id}
@@ -348,11 +348,11 @@ export default function OrbatPanel({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Network className="w-3.5 h-3.5 text-[#C9A227]" />
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">
+            <span className="text-[10px] text-[#4a6070] uppercase tracking-wider font-bold">
               ORBAT Builder
             </span>
           </div>
-          <Badge className="bg-gray-800 text-gray-400 text-[9px]">
+          <Badge className="bg-[#111a24] text-[#8a9aa8] text-[9px]">
             <Users className="w-3 h-3 mr-0.5" />{totalUnits}
           </Badge>
         </div>
@@ -365,8 +365,8 @@ export default function OrbatPanel({
         {/* Unit tree */}
         {orbatUnits.length === 0 ? (
           <div className="text-center py-4">
-            <Network className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-            <p className="text-[10px] text-gray-600">
+            <Network className="w-8 h-8 text-[#4a6070] mx-auto mb-2" />
+            <p className="text-[10px] text-[#4a6070]">
               Build your Order of Battle hierarchy, then place units on the map.
             </p>
           </div>
@@ -388,7 +388,7 @@ export default function OrbatPanel({
 
         {/* Actions */}
         {orbatUnits.length > 0 && (
-          <div className="space-y-1.5 pt-2 border-t border-gray-800">
+          <div className="space-y-1.5 pt-2 border-t border-[rgba(201,162,39,0.12)]">
             <Button
               onClick={handlePlaceOnMap}
               size="sm"
@@ -397,10 +397,10 @@ export default function OrbatPanel({
               <Send className="w-3 h-3 mr-1" /> Place on Map
             </Button>
             <div className="flex gap-1.5">
-              <Button onClick={handleExportJSON} size="sm" variant="outline" className="flex-1 border-gray-700 text-[10px] h-6">
+              <Button onClick={handleExportJSON} size="sm" variant="outline" className="flex-1 border-[rgba(201,162,39,0.15)] text-[10px] h-6">
                 <Download className="w-3 h-3 mr-0.5" /> JSON
               </Button>
-              <Button onClick={handleImportJSON} size="sm" variant="outline" className="flex-1 border-gray-700 text-[10px] h-6">
+              <Button onClick={handleImportJSON} size="sm" variant="outline" className="flex-1 border-[rgba(201,162,39,0.15)] text-[10px] h-6">
                 <Upload className="w-3 h-3 mr-0.5" /> Import
               </Button>
             </div>

@@ -208,24 +208,24 @@ export default function MortarPanel({
         {/* Faction & Ammo */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[9px] text-gray-500 uppercase tracking-wider block mb-1">Faction</label>
+            <label className="text-[9px] text-[#4a6070] uppercase tracking-wider block mb-1">Faction</label>
             <Select value={faction} onValueChange={handleFactionChange}>
-              <SelectTrigger className="bg-black/40 border-gray-700 h-7 text-xs">
+              <SelectTrigger className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700">
+              <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                 <SelectItem value="NATO">NATO</SelectItem>
                 <SelectItem value="RU">Russia</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <label className="text-[9px] text-gray-500 uppercase tracking-wider block mb-1">Ammo</label>
+            <label className="text-[9px] text-[#4a6070] uppercase tracking-wider block mb-1">Ammo</label>
             <Select value={ammo} onValueChange={setAmmo}>
-              <SelectTrigger className="bg-black/40 border-gray-700 h-7 text-xs">
+              <SelectTrigger className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700">
+              <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                 {ammoTypes.map((a) => (
                   <SelectItem key={a} value={a}>{a}</SelectItem>
                 ))}
@@ -243,7 +243,7 @@ export default function MortarPanel({
             value={mortarGrid}
             onChange={(e) => setMortarGrid(e.target.value)}
             placeholder="Grid (e.g., 12340 56780)"
-            className="bg-black/40 border-gray-700 h-7 text-xs font-mono"
+            className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs font-mono"
             maxLength={12}
           />
           <Input
@@ -251,7 +251,7 @@ export default function MortarPanel({
             value={mortarElev}
             onChange={(e) => setMortarElev(e.target.value)}
             placeholder="Elevation (m ASL)"
-            className="bg-black/40 border-gray-700 h-7 text-xs font-mono"
+            className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs font-mono"
           />
         </div>
 
@@ -264,7 +264,7 @@ export default function MortarPanel({
             value={foGrid}
             onChange={(e) => setFoGrid(e.target.value)}
             placeholder="FO Grid"
-            className="bg-black/40 border-gray-700 h-7 text-xs font-mono"
+            className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs font-mono"
             maxLength={12}
           />
           <div className="grid grid-cols-2 gap-2">
@@ -273,14 +273,14 @@ export default function MortarPanel({
               value={foAzimuth}
               onChange={(e) => setFoAzimuth(e.target.value)}
               placeholder="Azimuth (°)"
-              className="bg-black/40 border-gray-700 h-7 text-xs font-mono"
+              className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs font-mono"
             />
             <Input
               type="number"
               value={foDistance}
               onChange={(e) => setFoDistance(e.target.value)}
               placeholder="Dist (m)"
-              className="bg-black/40 border-gray-700 h-7 text-xs font-mono"
+              className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs font-mono"
             />
           </div>
           <Input
@@ -288,7 +288,7 @@ export default function MortarPanel({
             value={foElevDiff}
             onChange={(e) => setFoElevDiff(e.target.value)}
             placeholder="Elev Diff (m) — +uphill"
-            className="bg-black/40 border-gray-700 h-7 text-xs font-mono"
+            className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-7 text-xs font-mono"
           />
         </div>
 
@@ -323,11 +323,11 @@ export default function MortarPanel({
               </p>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span className="text-[9px] text-gray-500">Distance</span>
+                  <span className="text-[9px] text-[#4a6070]">Distance</span>
                   <p className="font-bold font-mono text-white">{results.distance}m</p>
                 </div>
                 <div>
-                  <span className="text-[9px] text-gray-500">Elev Diff</span>
+                  <span className="text-[9px] text-[#4a6070]">Elev Diff</span>
                   <p className={`font-bold font-mono ${results.elevDiff >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
                     {results.elevDiff >= 0 ? <ArrowUp className="w-3 h-3 inline" /> : <ArrowDown className="w-3 h-3 inline" />}
                     {Math.abs(results.elevDiff)}m
@@ -335,10 +335,10 @@ export default function MortarPanel({
                 </div>
               </div>
               <div className="mt-1">
-                <span className="text-[9px] text-gray-500">Azimuth</span>
+                <span className="text-[9px] text-[#4a6070]">Azimuth</span>
                 <p className="text-base font-bold font-mono text-[#C9A227]">
                   {results.azimuthMils} MIL
-                  <span className="text-[10px] text-gray-500 ml-1">({results.azimuthDeg}°)</span>
+                  <span className="text-[10px] text-[#4a6070] ml-1">({results.azimuthDeg}°)</span>
                 </p>
               </div>
             </div>
@@ -354,22 +354,22 @@ export default function MortarPanel({
                   className={`rounded border p-2 text-xs ${
                     i === 0
                       ? 'border-green-700/50 bg-green-900/10'
-                      : 'border-gray-700/50 bg-gray-800/20'
+                      : 'border-[rgba(201,162,39,0.15)]/50 bg-[#111a24]/20'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <Badge className={`text-[9px] ${i === 0 ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>
+                    <Badge className={`text-[9px] ${i === 0 ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-[#111a24] text-[#8a9aa8] border-[rgba(201,162,39,0.15)]'}`}>
                       CHG {sol.charge} {i === 0 && '★'}
                     </Badge>
-                    <span className="text-[9px] text-gray-500">±{sol.dispersion}m</span>
+                    <span className="text-[9px] text-[#4a6070]">±{sol.dispersion}m</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[9px] text-gray-500">Elevation</span>
+                      <span className="text-[9px] text-[#4a6070]">Elevation</span>
                       <p className="font-bold font-mono text-white">{sol.elevation} MIL</p>
                     </div>
                     <div>
-                      <span className="text-[9px] text-gray-500">ToF</span>
+                      <span className="text-[9px] text-[#4a6070]">ToF</span>
                       <p className="font-bold font-mono text-yellow-400">
                         <Clock className="w-3 h-3 inline mr-0.5" />{sol.tof}s
                       </p>
@@ -383,8 +383,8 @@ export default function MortarPanel({
 
         {!results && !error && (
           <div className="text-center py-4">
-            <Target className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-            <p className="text-[10px] text-gray-600">
+            <Target className="w-8 h-8 text-[#4a6070] mx-auto mb-2" />
+            <p className="text-[10px] text-[#4a6070]">
               Enter positions and click Calculate for firing solutions.
             </p>
           </div>

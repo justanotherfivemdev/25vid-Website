@@ -80,8 +80,8 @@ const MemberHub = () => {
     navigate('/');
   };
 
-  const getTypeColor = (t) => ({ combat: 'bg-[#ff3333]', training: 'bg-[#c9a227]', recon: 'bg-green-600', support: 'bg-gray-600' }[t] || 'bg-gray-600');
-  const getPriorityColor = (p) => ({ urgent: 'text-[#ff3333] border-[#ff3333]', high: 'text-orange-500 border-orange-500', normal: 'text-[#e8c547] border-[#e8c547]', low: 'text-gray-400 border-gray-400' }[p] || 'text-gray-400 border-gray-400');
+  const getTypeColor = (t) => ({ combat: 'bg-[#ff3333]', training: 'bg-[#c9a227]', recon: 'bg-green-600', support: 'bg-[#4a6070]' }[t] || 'bg-[#4a6070]');
+  const getPriorityColor = (p) => ({ urgent: 'text-[#ff3333] border-[#ff3333]', high: 'text-orange-500 border-orange-500', normal: 'text-[#e8c547] border-[#e8c547]', low: 'text-[#8a9aa8] border-gray-400' }[p] || 'text-[#8a9aa8] border-gray-400');
 
   if (loading) return <div className={`${inLayout ? '' : 'min-h-screen'} bg-[#050a0e] text-[#d0d8e0] flex items-center justify-center`}>Loading...</div>;
 

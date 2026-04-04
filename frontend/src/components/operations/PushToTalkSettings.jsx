@@ -87,11 +87,11 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1 text-[9px] text-gray-500 hover:text-gray-300 transition px-3 py-1"
+        className="flex items-center gap-1 text-[9px] text-[#4a6070] hover:text-[#8a9aa8] transition px-3 py-1"
         title="Push-to-talk key settings"
       >
         <Settings className="w-3 h-3" />
-        <span>PTT Key: <strong className="text-gray-300">{pttKeyLabel}</strong></span>
+        <span>PTT Key: <strong className="text-[#8a9aa8]">{pttKeyLabel}</strong></span>
       </button>
     );
   }
@@ -99,14 +99,14 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
   // ── Expanded panel ────────────────────────────────────────────────────
 
   return (
-    <div className="px-3 py-2 border-t border-gray-800 space-y-2">
+    <div className="px-3 py-2 border-t border-[rgba(201,162,39,0.12)] space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+        <span className="text-[10px] text-[#8a9aa8] uppercase tracking-wider font-bold">
           Push-to-Talk Key
         </span>
         <button
           onClick={() => { setOpen(false); cancelSelection(); }}
-          className="text-gray-600 hover:text-gray-400 text-[10px]"
+          className="text-[#4a6070] hover:text-[#8a9aa8] text-[10px]"
         >
           Close
         </button>
@@ -114,8 +114,8 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
 
       {/* Current key */}
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-gray-500">Current:</span>
-        <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-[10px] text-gray-200 font-mono border border-gray-700">
+        <span className="text-[10px] text-[#4a6070]">Current:</span>
+        <kbd className="px-1.5 py-0.5 bg-[#111a24] rounded text-[10px] text-[#d0d8e0] font-mono border border-[rgba(201,162,39,0.15)]">
           {pttKeyLabel}
         </kbd>
         <ClassBadge cat={classifyKey(pttKey).category} />
@@ -125,11 +125,11 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
       {capturing ? (
         <div className="text-center py-3 bg-[#C9A227]/10 border border-[#C9A227]/30 rounded animate-pulse">
           <p className="text-[11px] text-[#C9A227] font-bold">Press any key…</p>
-          <p className="text-[9px] text-gray-500 mt-0.5">Press the key you want to use for push-to-talk</p>
+          <p className="text-[9px] text-[#4a6070] mt-0.5">Press the key you want to use for push-to-talk</p>
           <Button
             size="sm"
             variant="ghost"
-            className="text-gray-500 hover:text-gray-300 h-5 mt-1 text-[9px]"
+            className="text-[#4a6070] hover:text-[#8a9aa8] h-5 mt-1 text-[9px]"
             onClick={() => { setCapturing(false); }}
           >
             Cancel
@@ -139,7 +139,7 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
         <Button
           size="sm"
           variant="outline"
-          className="w-full border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600 h-7 text-[10px]"
+          className="w-full border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-[#d0d8e0] hover:border-[rgba(201,162,39,0.2)] h-7 text-[10px]"
           onClick={() => { setPendingCode(null); setPendingClassification(null); setCapturing(true); }}
         >
           Change Key Binding
@@ -150,8 +150,8 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
       {pendingCode && pendingClassification && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-500">Selected:</span>
-            <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-[10px] text-gray-200 font-mono border border-gray-700">
+            <span className="text-[10px] text-[#4a6070]">Selected:</span>
+            <kbd className="px-1.5 py-0.5 bg-[#111a24] rounded text-[10px] text-[#d0d8e0] font-mono border border-[rgba(201,162,39,0.15)]">
               {keyCodeToLabel(pendingCode)}
             </kbd>
             <ClassBadge cat={pendingClassification.category} />
@@ -189,7 +189,7 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
             <Button
               size="sm"
               variant="ghost"
-              className="flex-1 text-gray-500 hover:text-gray-300 h-6 text-[10px]"
+              className="flex-1 text-[#4a6070] hover:text-[#8a9aa8] h-6 text-[10px]"
               onClick={cancelSelection}
             >
               Cancel
@@ -202,7 +202,7 @@ export default function PushToTalkSettings({ pttKey, pttKeyLabel, onChangeKey, o
       <div className="flex items-center justify-between">
         <button
           onClick={handleReset}
-          className="flex items-center gap-1 text-[9px] text-gray-600 hover:text-gray-400 transition"
+          className="flex items-center gap-1 text-[9px] text-[#4a6070] hover:text-[#8a9aa8] transition"
         >
           <RotateCcw className="w-3 h-3" /> Reset to Caps Lock
         </button>

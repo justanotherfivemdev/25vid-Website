@@ -154,17 +154,17 @@ function OverviewModule() {
         {healthCards.map((card) => {
           const Icon = card.icon;
           return (
-            <Card key={card.label} className={`${card.border} bg-black/60 backdrop-blur-sm`}>
+            <Card key={card.label} className={`${card.border} bg-[#050a0e]/60 backdrop-blur-sm`}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium uppercase tracking-wider text-gray-500">{card.label}</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-[#4a6070]">{card.label}</span>
                   <Icon className={`h-4 w-4 ${card.color}`} />
                 </div>
-                <div className="mt-2 text-2xl font-bold text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                <div className="mt-2 text-2xl font-bold text-white" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                   {loading ? <div className="h-8 w-16 animate-pulse rounded bg-zinc-800" /> : card.value}
                 </div>
                 {card.trend && (
-                  <div className="mt-1 text-[11px] text-gray-600">{card.trend}</div>
+                  <div className="mt-1 text-[11px] text-[#4a6070]">{card.trend}</div>
                 )}
               </CardContent>
             </Card>
@@ -204,19 +204,19 @@ function OverviewModule() {
                     ) : stage.status === 'failed' ? (
                       <AlertTriangle className="h-3 w-3 text-red-400" />
                     ) : (
-                      <Activity className="h-3 w-3 text-gray-600" />
+                      <Activity className="h-3 w-3 text-[#4a6070]" />
                     )}
                   </div>
                   <div className="flex-1">
                     <span className={`font-medium capitalize ${
                       stage.status === 'success' ? 'text-green-400' :
                       stage.status === 'failed' ? 'text-red-400' :
-                      'text-gray-500'
+                      'text-[#4a6070]'
                     }`}>
                       {stage.name.replace(/_/g, ' ')}
                     </span>
                     {stage.message && (
-                      <span className="ml-2 text-gray-600">{stage.message}</span>
+                      <span className="ml-2 text-[#4a6070]">{stage.message}</span>
                     )}
                   </div>
                   {stage.error && (
@@ -226,7 +226,7 @@ function OverviewModule() {
               ))}
             </div>
             {(server.summary_message || server.last_docker_error) && (
-              <p className="mt-3 border-t border-zinc-800 pt-2 text-xs text-gray-500">{server.summary_message || server.last_docker_error}</p>
+              <p className="mt-3 border-t border-zinc-800 pt-2 text-xs text-[#4a6070]">{server.summary_message || server.last_docker_error}</p>
             )}
           </CardContent>
         </Card>
@@ -241,7 +241,7 @@ function OverviewModule() {
           </div>
           <div className="space-y-2">
             {incidents.slice(0, 3).map((inc, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs text-gray-400">
+              <div key={i} className="flex items-center gap-2 text-xs text-[#8a9aa8]">
                 <Badge variant="outline" className={`text-[10px] ${
                   inc.severity === 'critical' ? 'border-red-600/50 text-red-400' :
                   inc.severity === 'high' ? 'border-amber-600/50 text-amber-400' :
@@ -249,8 +249,8 @@ function OverviewModule() {
                 }`}>
                   {inc.severity?.toUpperCase()}
                 </Badge>
-                <span className="text-gray-300">{inc.title}</span>
-                <span className="ml-auto text-gray-600">{inc.detected_at ? new Date(inc.detected_at).toLocaleString() : ''}</span>
+                <span className="text-[#8a9aa8]">{inc.title}</span>
+                <span className="ml-auto text-[#4a6070]">{inc.detected_at ? new Date(inc.detected_at).toLocaleString() : ''}</span>
               </div>
             ))}
           </div>
@@ -262,9 +262,9 @@ function OverviewModule() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Server Identity */}
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-[#8a9aa8]">
               <Server className="h-4 w-4 text-tropic-gold" /> SERVER IDENTITY
             </CardTitle>
           </CardHeader>
@@ -279,9 +279,9 @@ function OverviewModule() {
         </Card>
 
         {/* Network & Ports */}
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-[#8a9aa8]">
               <Network className="h-4 w-4 text-tropic-gold" /> NETWORK
             </CardTitle>
           </CardHeader>
@@ -290,24 +290,24 @@ function OverviewModule() {
             <DetailRow label="Query Port" value={ports.query || '17777'} mono />
             <DetailRow label="RCON Port" value={ports.rcon || '19999'} mono />
             <div className="pt-2">
-              <span className="text-xs font-medium text-gray-500">Tags</span>
+              <span className="text-xs font-medium text-[#4a6070]">Tags</span>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {(server.tags || []).length > 0 ? server.tags.map((tag) => (
                   <Badge key={tag} variant="outline" className="border-tropic-gold-dark/30 text-tropic-gold text-[10px]">
                     {tag}
                   </Badge>
-                )) : <span className="text-xs text-gray-600">No tags</span>}
+                )) : <span className="text-xs text-[#4a6070]">No tags</span>}
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Mods Summary */}
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-[#8a9aa8]">
               <Puzzle className="h-4 w-4 text-tropic-gold" /> MODS
-              <Badge variant="outline" className="ml-auto border-zinc-700 text-xs text-gray-400">{modCount}</Badge>
+              <Badge variant="outline" className="ml-auto border-zinc-700 text-xs text-[#8a9aa8]">{modCount}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -315,8 +315,8 @@ function OverviewModule() {
               <div className="space-y-1.5">
                 {server.mods.slice(0, 5).map((mod, i) => (
                   <div key={i} className="flex items-center gap-2 rounded border border-zinc-800/50 bg-zinc-900/30 px-3 py-1.5 text-xs">
-                    <span className="text-gray-400">{i + 1}.</span>
-                    <span className="text-gray-200">{mod.name || mod.mod_id || mod.modId}</span>
+                    <span className="text-[#8a9aa8]">{i + 1}.</span>
+                    <span className="text-[#d0d8e0]">{mod.name || mod.mod_id || mod.modId}</span>
                   </div>
                 ))}
                 {modCount > 5 && (
@@ -326,15 +326,15 @@ function OverviewModule() {
                 )}
               </div>
             ) : (
-              <p className="text-xs text-gray-600">No mods configured</p>
+              <p className="text-xs text-[#4a6070]">No mods configured</p>
             )}
           </CardContent>
         </Card>
 
         {/* Quick Actions */}
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-[#8a9aa8]">
               <Activity className="h-4 w-4 text-tropic-gold" /> OPERATIONS
             </CardTitle>
           </CardHeader>
@@ -361,27 +361,27 @@ function OverviewModule() {
                 {resetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />} Reset
               </Button>
             </div>
-            <p className="rounded border border-red-700/30 bg-red-900/10 px-3 py-2 text-xs text-gray-300">
+            <p className="rounded border border-red-700/30 bg-red-900/10 px-3 py-2 text-xs text-[#8a9aa8]">
               Reset removes all mods, restores baseline server settings, and returns the server to its original post-creation state.
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               <Link to="console" className="block">
-                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
+                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-[#8a9aa8] hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
                   <Activity className="mr-2 h-4 w-4" /> View Console Logs
                 </Button>
               </Link>
               <Link to="rcon" className="block">
-                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
+                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-[#8a9aa8] hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
                   <Settings className="mr-2 h-4 w-4" /> Open RCON Console
                 </Button>
               </Link>
               <Link to="config/server" className="block">
-                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
+                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-[#8a9aa8] hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
                   <Settings className="mr-2 h-4 w-4" /> Edit Configuration
                 </Button>
               </Link>
               <Link to="metrics" className="block">
-                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-gray-300 hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
+                <Button variant="outline" size="sm" className="w-full justify-start border-zinc-800 text-[#8a9aa8] hover:border-tropic-gold-dark/30 hover:text-tropic-gold">
                   <BarChart3 className="mr-2 h-4 w-4" /> View Metrics
                 </Button>
               </Link>
@@ -391,9 +391,9 @@ function OverviewModule() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-[#8a9aa8]">
               <ShieldAlert className="h-4 w-4 text-tropic-gold" /> SERVER ADMIN TOOLS
             </CardTitle>
           </CardHeader>
@@ -404,19 +404,19 @@ function OverviewModule() {
             <DetailRow label="logStats" value={logStatsEnabled ? 'Enabled by runtime defaults' : 'Disabled'} />
             <DetailRow label="Max FPS" value={String(maxFps)} mono />
             <div>
-              <span className="text-xs font-medium text-gray-500">Startup Parameters</span>
+              <span className="text-xs font-medium text-[#4a6070]">Startup Parameters</span>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {startupParameters.length > 0 ? startupParameters.map((param) => (
-                  <Badge key={param} variant="outline" className="border-zinc-700 text-gray-300">{param}</Badge>
-                )) : <span className="text-xs text-gray-600">No extra startup parameters configured</span>}
+                  <Badge key={param} variant="outline" className="border-zinc-700 text-[#8a9aa8]">{param}</Badge>
+                )) : <span className="text-xs text-[#4a6070]">No extra startup parameters configured</span>}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-300">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-[#8a9aa8]">
               <Settings className="h-4 w-4 text-tropic-gold" /> TROUBLESHOOTING
             </CardTitle>
           </CardHeader>
@@ -431,7 +431,7 @@ function OverviewModule() {
       </div>
 
       {/* Auto-refresh indicator */}
-      <div className="flex items-center justify-end gap-2 text-xs text-gray-600">
+      <div className="flex items-center justify-end gap-2 text-xs text-[#4a6070]">
         <span className="relative flex h-2 w-2">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tropic-gold/60" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-tropic-gold" />
@@ -444,11 +444,11 @@ function OverviewModule() {
           <DialogHeader>
             <DialogTitle className="text-red-300">Reset Server</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-[#8a9aa8]">
             This will remove all mods, restore baseline server settings, and return the server to its original post-creation state.
           </p>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setResetDialogOpen(false)} className="border-zinc-700 text-gray-300">
+            <Button variant="outline" size="sm" onClick={() => setResetDialogOpen(false)} className="border-zinc-700 text-[#8a9aa8]">
               Cancel
             </Button>
             <Button size="sm" onClick={handleReset} disabled={resetting} className="bg-red-600 text-white hover:bg-red-500">
@@ -465,8 +465,8 @@ function OverviewModule() {
 function DetailRow({ label, value, mono }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <span className="text-xs font-medium text-gray-500">{label}</span>
-      <span className={`text-right text-sm text-gray-200 ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
+      <span className="text-xs font-medium text-[#4a6070]">{label}</span>
+      <span className={`text-right text-sm text-[#d0d8e0] ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
     </div>
   );
 }

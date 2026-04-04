@@ -103,16 +103,16 @@ const AuditLogsManager = () => {
   };
 
   const getActionBadgeClass = (actionType) => {
-    return ACTION_COLORS[actionType] || 'bg-gray-700/50 text-gray-300 border-gray-600/30';
+    return ACTION_COLORS[actionType] || 'bg-[#111a24]/50 text-[#8a9aa8] border-[rgba(201,162,39,0.2)]/30';
   };
 
   const renderMetadata = (log) => {
     if (log.metadata) {
       return (
-        <div className="mt-1 text-xs text-gray-500 font-mono">
+        <div className="mt-1 text-xs text-[#4a6070] font-mono">
           {Object.entries(log.metadata).map(([key, val]) => (
             <span key={key} className="mr-3">
-              {key}: <span className="text-gray-400">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
+              {key}: <span className="text-[#8a9aa8]">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
             </span>
           ))}
         </div>
@@ -122,7 +122,7 @@ const AuditLogsManager = () => {
       const changes = log.after ? Object.keys(log.after) : [];
       if (changes.length > 0) {
         return (
-          <div className="mt-1 text-xs text-gray-500">
+          <div className="mt-1 text-xs text-[#4a6070]">
             Changed: {changes.join(', ')}
           </div>
         );
@@ -137,10 +137,10 @@ const AuditLogsManager = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-tropic-gold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+            <h1 className="text-3xl font-bold text-tropic-gold tracking-wide" style={{ fontFamily: "'Share Tech', sans-serif" }}>
               AUDIT LOGS
             </h1>
-            <p className="text-gray-400 mt-1">System activity trail and administrative action history</p>
+            <p className="text-[#8a9aa8] mt-1">System activity trail and administrative action history</p>
           </div>
           <Button
             variant="outline"
@@ -156,7 +156,7 @@ const AuditLogsManager = () => {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-black/60 border-tropic-gold/20">
+            <Card className="bg-[#050a0e]/60 border-tropic-gold/20">
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-tropic-gold/10 rounded-lg">
@@ -164,12 +164,12 @@ const AuditLogsManager = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-white">{stats.total}</p>
-                    <p className="text-xs text-gray-400">Total Events</p>
+                    <p className="text-xs text-[#8a9aa8]">Total Events</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-black/60 border-tropic-gold/20">
+            <Card className="bg-[#050a0e]/60 border-tropic-gold/20">
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-tropic-gold/10 rounded-lg">
@@ -177,12 +177,12 @@ const AuditLogsManager = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-white">{stats.recent_24h}</p>
-                    <p className="text-xs text-gray-400">Last 24 Hours</p>
+                    <p className="text-xs text-[#8a9aa8]">Last 24 Hours</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-black/60 border-tropic-gold/20">
+            <Card className="bg-[#050a0e]/60 border-tropic-gold/20">
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-tropic-gold/10 rounded-lg">
@@ -190,12 +190,12 @@ const AuditLogsManager = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-white">{Object.keys(stats.by_action || {}).length}</p>
-                    <p className="text-xs text-gray-400">Action Types</p>
+                    <p className="text-xs text-[#8a9aa8]">Action Types</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-black/60 border-tropic-gold/20">
+            <Card className="bg-[#050a0e]/60 border-tropic-gold/20">
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-tropic-gold/10 rounded-lg">
@@ -203,7 +203,7 @@ const AuditLogsManager = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-white">{Object.keys(stats.by_resource || {}).length}</p>
-                    <p className="text-xs text-gray-400">Resource Types</p>
+                    <p className="text-xs text-[#8a9aa8]">Resource Types</p>
                   </div>
                 </div>
               </CardContent>
@@ -212,12 +212,12 @@ const AuditLogsManager = () => {
         )}
 
         {/* Filters */}
-        <Card className="bg-black/60 border-gray-800">
+        <Card className="bg-[#050a0e]/60 border-[rgba(201,162,39,0.12)]">
           <CardContent className="pt-4 pb-4">
             <div className="flex flex-wrap gap-3 items-center">
               <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-400">Filter:</span>
+                <Filter className="w-4 h-4 text-[#8a9aa8]" />
+                <span className="text-sm text-[#8a9aa8]">Filter:</span>
               </div>
               <Select
                 value={filters.action_type || 'all'}
@@ -226,10 +226,10 @@ const AuditLogsManager = () => {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="w-48 bg-black/60 border-gray-700 text-gray-200">
+                <SelectTrigger className="w-48 bg-[#050a0e]/60 border-[rgba(201,162,39,0.15)] text-[#d0d8e0]">
                   <SelectValue placeholder="All Actions" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                   <SelectItem value="all">All Actions</SelectItem>
                   <SelectItem value="update_user">User Updated</SelectItem>
                   <SelectItem value="delete_user">User Deleted</SelectItem>
@@ -249,10 +249,10 @@ const AuditLogsManager = () => {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="w-48 bg-black/60 border-gray-700 text-gray-200">
+                <SelectTrigger className="w-48 bg-[#050a0e]/60 border-[rgba(201,162,39,0.15)] text-[#d0d8e0]">
                   <SelectValue placeholder="All Resources" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                   <SelectItem value="all">All Resources</SelectItem>
                   <SelectItem value="user">Users</SelectItem>
                   <SelectItem value="operation">Operations</SelectItem>
@@ -269,12 +269,12 @@ const AuditLogsManager = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => { setFilters({ action_type: '', resource_type: '', search: '' }); setPage(1); }}
-                  className="text-gray-400 hover:text-white"
+                  className="text-[#8a9aa8] hover:text-white"
                 >
                   Clear Filters
                 </Button>
               )}
-              <div className="ml-auto text-sm text-gray-500">
+              <div className="ml-auto text-sm text-[#4a6070]">
                 {total} total event{total !== 1 ? 's' : ''}
               </div>
             </div>
@@ -282,7 +282,7 @@ const AuditLogsManager = () => {
         </Card>
 
         {/* Logs Table */}
-        <Card className="bg-black/60 border-gray-800">
+        <Card className="bg-[#050a0e]/60 border-[rgba(201,162,39,0.12)]">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-tropic-gold flex items-center gap-2">
               <ScrollText className="w-5 h-5" />
@@ -291,12 +291,12 @@ const AuditLogsManager = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 text-[#8a9aa8]">
                 <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
                 Loading audit logs...
               </div>
             ) : logs.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-[#4a6070]">
                 <ScrollText className="w-10 h-10 mx-auto mb-3 opacity-30" />
                 <p>No audit logs found</p>
                 <p className="text-xs mt-1">Admin actions will appear here as they occur</p>
@@ -306,10 +306,10 @@ const AuditLogsManager = () => {
                 {logs.map((log, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-4 px-4 py-3 rounded-lg hover:bg-white/[0.02] transition-colors border border-transparent hover:border-gray-800/50"
+                    className="flex items-start gap-4 px-4 py-3 rounded-lg hover:bg-white/[0.02] transition-colors border border-transparent hover:border-[rgba(201,162,39,0.12)]/50"
                   >
                     {/* Timestamp */}
-                    <div className="flex-shrink-0 w-40 text-xs text-gray-500 font-mono pt-0.5">
+                    <div className="flex-shrink-0 w-40 text-xs text-[#4a6070] font-mono pt-0.5">
                       {formatTimestamp(log.timestamp)}
                     </div>
 
@@ -321,16 +321,16 @@ const AuditLogsManager = () => {
                     </div>
 
                     {/* User */}
-                    <div className="flex-shrink-0 w-32 text-sm text-gray-300 truncate" title={log.username}>
+                    <div className="flex-shrink-0 w-32 text-sm text-[#8a9aa8] truncate" title={log.username}>
                       {log.username || 'System'}
                     </div>
 
                     {/* Resource */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm text-gray-400">
-                        <span className="text-gray-500">{log.resource_type}</span>
+                      <div className="text-sm text-[#8a9aa8]">
+                        <span className="text-[#4a6070]">{log.resource_type}</span>
                         {log.resource_id && (
-                          <span className="text-gray-600 ml-1 font-mono text-xs">
+                          <span className="text-[#4a6070] ml-1 font-mono text-xs">
                             {log.resource_id.length > 12 ? `${log.resource_id.slice(0, 12)}…` : log.resource_id}
                           </span>
                         )}
@@ -344,8 +344,8 @@ const AuditLogsManager = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-800">
-                <span className="text-sm text-gray-500">
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-[rgba(201,162,39,0.12)]">
+                <span className="text-sm text-[#4a6070]">
                   Page {page} of {totalPages}
                 </span>
                 <div className="flex items-center gap-2">
@@ -354,7 +354,7 @@ const AuditLogsManager = () => {
                     size="sm"
                     disabled={page <= 1}
                     onClick={() => setPage(p => Math.max(1, p - 1))}
-                    className="border-gray-700 text-gray-300 hover:bg-gray-800 disabled:opacity-30"
+                    className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:bg-[#111a24] disabled:opacity-30"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
@@ -363,7 +363,7 @@ const AuditLogsManager = () => {
                     size="sm"
                     disabled={page >= totalPages}
                     onClick={() => setPage(p => p + 1)}
-                    className="border-gray-700 text-gray-300 hover:bg-gray-800 disabled:opacity-30"
+                    className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:bg-[#111a24] disabled:opacity-30"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>

@@ -12,7 +12,7 @@ const statusColor = (s) => ({
   pending: 'bg-yellow-900/50 text-yellow-400 border-yellow-700',
   approved: 'bg-green-900/50 text-green-400 border-green-700',
   denied: 'bg-red-900/50 text-red-400 border-red-700',
-}[s] || 'bg-gray-700 text-gray-300');
+}[s] || 'bg-[#111a24] text-[#8a9aa8]');
 
 const statusIcon = (s) => ({
   pending: <Clock className="w-4 h-4" />,
@@ -69,10 +69,10 @@ const PartnerApplicationsReview = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-tropic-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+            <h2 className="text-2xl font-bold text-tropic-gold" style={{ fontFamily: "'Share Tech', sans-serif" }}>
               <Shield className="w-6 h-6 inline mr-2" />PARTNER APPLICATIONS
             </h2>
-            <p className="text-sm text-gray-500 mt-1">Review and manage incoming partner unit enrollment requests</p>
+            <p className="text-sm text-[#4a6070] mt-1">Review and manage incoming partner unit enrollment requests</p>
           </div>
           {pendingCount > 0 && (
             <Badge className="bg-yellow-900/50 text-yellow-400 border border-yellow-700 text-sm px-3 py-1">
@@ -82,10 +82,10 @@ const PartnerApplicationsReview = () => {
         </div>
 
         {loading ? (
-          <div className="text-center text-gray-500 py-12">Loading applications...</div>
+          <div className="text-center text-[#4a6070] py-12">Loading applications...</div>
         ) : applications.length === 0 ? (
-          <Card className="bg-gray-900/50 border-gray-800">
-            <CardContent className="p-12 text-center text-gray-500">
+          <Card className="bg-[#0c1117]/50 border-[rgba(201,162,39,0.12)]">
+            <CardContent className="p-12 text-center text-[#4a6070]">
               <Users className="w-10 h-10 mx-auto mb-3 opacity-50" />
               <p>No partner applications have been submitted yet.</p>
             </CardContent>
@@ -93,19 +93,19 @@ const PartnerApplicationsReview = () => {
         ) : (
           <div className="space-y-3">
             {applications.map(app => (
-              <Card key={app.id} className={`bg-gray-900/80 border-gray-800 ${app.status === 'pending' ? 'border-l-2 border-l-yellow-500' : ''}`}>
+              <Card key={app.id} className={`bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)] ${app.status === 'pending' ? 'border-l-2 border-l-yellow-500' : ''}`}>
                 <CardContent className="p-0">
                   <div
-                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-800/30 transition-colors"
+                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-[#111a24]/30 transition-colors"
                     onClick={() => toggleExpand(app.id)}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-tropic-olive font-bold text-lg">
+                      <div className="w-10 h-10 rounded-lg bg-[#111a24] flex items-center justify-center text-tropic-olive font-bold text-lg">
                         {app.unit_name?.[0]?.toUpperCase() || '?'}
                       </div>
                       <div>
                         <h3 className="font-bold text-sm text-white">{app.unit_name}</h3>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-[#4a6070]">
                           {app.contact_name && <span>{app.contact_name} — </span>}
                           {app.contact_email}
                         </p>
@@ -115,62 +115,62 @@ const PartnerApplicationsReview = () => {
                       <Badge className={`${statusColor(app.status)} text-[10px] flex items-center gap-1`}>
                         {statusIcon(app.status)} {app.status?.toUpperCase()}
                       </Badge>
-                      <span className="text-[10px] text-gray-600">
+                      <span className="text-[10px] text-[#4a6070]">
                         {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : ''}
                       </span>
-                      {expandedApp === app.id ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                      {expandedApp === app.id ? <ChevronUp className="w-4 h-4 text-[#4a6070]" /> : <ChevronDown className="w-4 h-4 text-[#4a6070]" />}
                     </div>
                   </div>
 
                   {expandedApp === app.id && (
-                    <div className="border-t border-gray-800 p-4 space-y-4">
+                    <div className="border-t border-[rgba(201,162,39,0.12)] p-4 space-y-4">
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div>
-                          <span className="text-xs text-gray-500 block">Unit Name</span>
+                          <span className="text-xs text-[#4a6070] block">Unit Name</span>
                           <span className="text-white">{app.unit_name}</span>
                         </div>
                         <div>
-                          <span className="text-xs text-gray-500 block">Timezone</span>
+                          <span className="text-xs text-[#4a6070] block">Timezone</span>
                           <span className="text-white">{app.unit_timezone || '—'}</span>
                         </div>
                         <div>
-                          <span className="text-xs text-gray-500 block">Member Count</span>
+                          <span className="text-xs text-[#4a6070] block">Member Count</span>
                           <span className="text-white">{app.member_count || '—'}</span>
                         </div>
                         <div>
-                          <span className="text-xs text-gray-500 block">Primary Tasking</span>
+                          <span className="text-xs text-[#4a6070] block">Primary Tasking</span>
                           <span className="text-white">{app.primary_tasking || '—'}</span>
                         </div>
                         <div>
-                          <span className="text-xs text-gray-500 block">Contact</span>
+                          <span className="text-xs text-[#4a6070] block">Contact</span>
                           <span className="text-white">{app.contact_name || '—'}</span>
                         </div>
                         <div>
-                          <span className="text-xs text-gray-500 block">Email</span>
+                          <span className="text-xs text-[#4a6070] block">Email</span>
                           <span className="text-white">{app.contact_email}</span>
                         </div>
                       </div>
 
                       {app.description && (
                         <div>
-                          <span className="text-xs text-gray-500 block mb-1">Description</span>
-                          <p className="text-sm text-gray-300 bg-gray-800/50 rounded p-3">{app.description}</p>
+                          <span className="text-xs text-[#4a6070] block mb-1">Description</span>
+                          <p className="text-sm text-[#8a9aa8] bg-[#111a24]/50 rounded p-3">{app.description}</p>
                         </div>
                       )}
 
                       {app.additional_info && (
                         <div>
-                          <span className="text-xs text-gray-500 block mb-1">Additional Info</span>
-                          <p className="text-sm text-gray-300 bg-gray-800/50 rounded p-3">{app.additional_info}</p>
+                          <span className="text-xs text-[#4a6070] block mb-1">Additional Info</span>
+                          <p className="text-sm text-[#8a9aa8] bg-[#111a24]/50 rounded p-3">{app.additional_info}</p>
                         </div>
                       )}
 
                       {app.review_notes && (
                         <div>
-                          <span className="text-xs text-gray-500 block mb-1">Review Notes</span>
-                          <p className="text-sm text-gray-400 bg-gray-800/50 rounded p-3">{app.review_notes}</p>
+                          <span className="text-xs text-[#4a6070] block mb-1">Review Notes</span>
+                          <p className="text-sm text-[#8a9aa8] bg-[#111a24]/50 rounded p-3">{app.review_notes}</p>
                           {app.reviewed_at && (
-                            <p className="text-[10px] text-gray-600 mt-1">
+                            <p className="text-[10px] text-[#4a6070] mt-1">
                               Reviewed {new Date(app.reviewed_at).toLocaleString()} by {app.reviewed_by || 'Unknown'}
                             </p>
                           )}
@@ -178,15 +178,15 @@ const PartnerApplicationsReview = () => {
                       )}
 
                       {app.status === 'pending' && (
-                        <div className="border-t border-gray-800 pt-4 space-y-3">
+                        <div className="border-t border-[rgba(201,162,39,0.12)] pt-4 space-y-3">
                           <div>
-                            <label className="text-xs text-gray-500 block mb-1">Review Notes (optional)</label>
+                            <label className="text-xs text-[#4a6070] block mb-1">Review Notes (optional)</label>
                             <Textarea
                               value={reviewNotes}
                               onChange={(e) => setReviewNotes(e.target.value)}
                               placeholder="Add notes about this application..."
                               rows={2}
-                              className="bg-black/50 border-gray-700 focus:border-tropic-olive"
+                              className="bg-[#050a0e]/50 border-[rgba(201,162,39,0.15)] focus:border-tropic-olive"
                             />
                           </div>
                           <div className="flex gap-3">

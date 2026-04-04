@@ -17,26 +17,26 @@ const resolveImg = (url) => { if (!url) return ''; if (url.startsWith('http')) r
 
 const STATUS_ICON = { attending: CheckCircle, tentative: HelpCircle, waitlisted: Clock };
 const STATUS_COLOR = { attending: 'text-green-400', tentative: 'text-yellow-400', waitlisted: 'text-orange-400' };
-const TYPE_CFG = { combat: 'bg-tropic-red/80', training: 'bg-tropic-gold-dark/80', recon: 'bg-emerald-700/80', support: 'bg-gray-600/80' };
+const TYPE_CFG = { combat: 'bg-tropic-red/80', training: 'bg-tropic-gold-dark/80', recon: 'bg-emerald-700/80', support: 'bg-[#4a6070]/80' };
 
 const RsvpMemberRow = ({ r, user, group, onPromote }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
-    <div className="border border-gray-800/50 rounded overflow-hidden" data-testid={`rsvp-entry-${r.user_id}`}>
+    <div className="border border-[rgba(201,162,39,0.12)]/50 rounded overflow-hidden" data-testid={`rsvp-entry-${r.user_id}`}>
       <div 
-        className="flex items-center justify-between py-2 px-3 bg-black/30 cursor-pointer hover:bg-black/50 transition-colors"
+        className="flex items-center justify-between py-2 px-3 bg-[#050a0e]/30 cursor-pointer hover:bg-[#050a0e]/50 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-3">
           {r.avatar_url ? (
-            <img src={resolveImg(r.avatar_url)} alt="" className="w-8 h-8 rounded object-cover border border-gray-700" />
+            <img src={resolveImg(r.avatar_url)} alt="" className="w-8 h-8 rounded object-cover border border-[rgba(201,162,39,0.15)]" />
           ) : (
-            <div className="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500">{r.username?.[0]?.toUpperCase()}</div>
+            <div className="w-8 h-8 rounded bg-[#111a24] flex items-center justify-center text-xs font-bold text-[#4a6070]">{r.username?.[0]?.toUpperCase()}</div>
           )}
           <div>
             <Link to={`/roster/${r.user_id}`} className="font-medium text-sm hover:text-tropic-gold transition-colors" onClick={e => e.stopPropagation()}>{r.username}</Link>
-            {r.rank && <span className="text-xs text-gray-500 ml-2">{r.rank}</span>}
+            {r.rank && <span className="text-xs text-[#4a6070] ml-2">{r.rank}</span>}
           </div>
           {r.mos_code && (
             <span className="text-[10px] text-tropic-gold bg-tropic-gold/10 border border-tropic-gold/30 px-1.5 py-0.5 rounded font-mono">
@@ -50,22 +50,22 @@ const RsvpMemberRow = ({ r, user, group, onPromote }) => {
           {isStaff(user?.role) && group.label === 'WAITLISTED' && (
             <Button size="sm" onClick={(e) => { e.stopPropagation(); onPromote(r.user_id); }} className="bg-green-700 hover:bg-green-600 text-xs px-2 py-1 h-auto" data-testid={`promote-${r.user_id}`}><ChevronUp className="w-3 h-3 mr-1" />Promote</Button>
           )}
-          <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-[#4a6070] transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </div>
       </div>
       {expanded && (
-        <div className="px-3 py-2 bg-gray-900/50 border-t border-gray-800/30 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          {r.company && <div><span className="text-gray-600">Company:</span> <span className="text-tropic-gold">{r.company}</span></div>}
-          {r.platoon && <div><span className="text-gray-600">Platoon:</span> <span className="text-green-400">{r.platoon}</span></div>}
-          {r.squad && <div><span className="text-gray-600">Squad:</span> <span className="text-gray-400">{r.squad}</span></div>}
-          {r.mos_title && <div><span className="text-gray-600">MOS:</span> <span className="text-tropic-gold">{r.mos_code} — {r.mos_title}</span></div>}
+        <div className="px-3 py-2 bg-[#0c1117]/50 border-t border-[rgba(201,162,39,0.12)]/30 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          {r.company && <div><span className="text-[#4a6070]">Company:</span> <span className="text-tropic-gold">{r.company}</span></div>}
+          {r.platoon && <div><span className="text-[#4a6070]">Platoon:</span> <span className="text-green-400">{r.platoon}</span></div>}
+          {r.squad && <div><span className="text-[#4a6070]">Squad:</span> <span className="text-[#8a9aa8]">{r.squad}</span></div>}
+          {r.mos_title && <div><span className="text-[#4a6070]">MOS:</span> <span className="text-tropic-gold">{r.mos_code} — {r.mos_title}</span></div>}
           {r.billet && (
-            <div><span className="text-gray-600">Billet:</span>{' '}
+            <div><span className="text-[#4a6070]">Billet:</span>{' '}
               <span className="text-tropic-gold">{r.billet_acronym ? `${r.billet_acronym} — ${r.billet}` : r.billet}</span>
             </div>
           )}
-          {r.member_status && <div><span className="text-gray-600">Status:</span> <span className="text-gray-400 capitalize">{r.member_status}</span></div>}
-          {r.rsvp_time && <div><span className="text-gray-600">RSVPed:</span> <span className="text-gray-500">{new Date(r.rsvp_time).toLocaleDateString()}</span></div>}
+          {r.member_status && <div><span className="text-[#4a6070]">Status:</span> <span className="text-[#8a9aa8] capitalize">{r.member_status}</span></div>}
+          {r.rsvp_time && <div><span className="text-[#4a6070]">RSVPed:</span> <span className="text-[#4a6070]">{new Date(r.rsvp_time).toLocaleDateString()}</span></div>}
         </div>
       )}
     </div>
@@ -142,8 +142,8 @@ const OperationDetail = () => {
 
   const handleLogout = async () => { await logout(); navigate('/'); };
 
-  if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
-  if (!operation) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Operation not found</div>;
+  if (loading) return <div className="min-h-screen bg-[#050a0e] text-white flex items-center justify-center">Loading...</div>;
+  if (!operation) return <div className="min-h-screen bg-[#050a0e] text-white flex items-center justify-center">Operation not found</div>;
 
   const currentStatus = myStatus();
   const counts = rosterData?.counts || {};
@@ -151,18 +151,18 @@ const OperationDetail = () => {
   const rsvps = rosterData?.rsvps || {};
 
   return (
-    <div className={inLayout ? '' : 'min-h-screen bg-black text-white'}>
+    <div className={inLayout ? '' : 'min-h-screen bg-[#050a0e] text-white'}>
       {!inLayout && (
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/92 backdrop-blur-xl border-b border-tropic-gold/15">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#050a0e]/92 backdrop-blur-xl border-b border-tropic-gold/15">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
-            <h1 className="text-xl font-bold tracking-widest truncate" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h1>
+            <Link to="/hub"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
+            <h1 className="text-xl font-bold tracking-widest truncate" style={{ fontFamily: "'Share Tech', sans-serif" }}>{operation.title}</h1>
           </div>
           <div className="flex items-center space-x-3">
             {isStaff(user?.role) && <Link to="/admin/operations"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold hover:bg-tropic-gold/10"><Shield className="w-4 h-4" /></Button></Link>}
-            <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
-            <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
+            <Link to="/"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><Home className="w-4 h-4" /></Button></Link>
+            <Button size="sm" variant="outline" onClick={handleLogout} className="border-[rgba(201,162,39,0.15)]"><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>
       </nav>
@@ -171,24 +171,24 @@ const OperationDetail = () => {
       <div className={`${inLayout ? 'pt-4' : 'pt-20'} pb-12 px-4 md:px-6`}>
         <div className="container mx-auto max-w-4xl space-y-6">
           {/* Op Header */}
-          <Card className="bg-gray-900/80 border-gray-800 overflow-hidden" data-testid="operation-detail-header">
-            <div className={`h-2 ${TYPE_CFG[operation.operation_type] || 'bg-gray-700'}`}></div>
+          <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)] overflow-hidden" data-testid="operation-detail-header">
+            <div className={`h-2 ${TYPE_CFG[operation.operation_type] || 'bg-[#111a24]'}`}></div>
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-3 flex-wrap">
-                <Badge className={`${TYPE_CFG[operation.operation_type] || 'bg-gray-600'} text-white tracking-wider`}>{operation.operation_type.toUpperCase()}</Badge>
-                <Badge variant="outline" className={`${operation.activity_state === 'ongoing' ? 'border-tropic-red text-tropic-red' : operation.activity_state === 'completed' ? 'border-green-600 text-green-500' : 'border-gray-700 text-gray-400'} tracking-wider`}>{(operation.activity_state || 'planned').toUpperCase()}</Badge>
-                <div className="flex items-center gap-4 text-sm text-gray-400">
+                <Badge className={`${TYPE_CFG[operation.operation_type] || 'bg-[#4a6070]'} text-white tracking-wider`}>{operation.operation_type.toUpperCase()}</Badge>
+                <Badge variant="outline" className={`${operation.activity_state === 'ongoing' ? 'border-tropic-red text-tropic-red' : operation.activity_state === 'completed' ? 'border-green-600 text-green-500' : 'border-[rgba(201,162,39,0.15)] text-[#8a9aa8]'} tracking-wider`}>{(operation.activity_state || 'planned').toUpperCase()}</Badge>
+                <div className="flex items-center gap-4 text-sm text-[#8a9aa8]">
                   <span className="flex items-center"><Calendar className="w-4 h-4 mr-1 text-tropic-gold" />{operation.date}</span>
                   <span className="flex items-center"><Clock className="w-4 h-4 mr-1 text-tropic-gold" />{operation.time}</span>
                 </div>
               </div>
-              <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{operation.title}</h2>
-              <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{operation.description}</p>
+              <h2 className="text-3xl font-bold tracking-wider" style={{ fontFamily: "'Share Tech', sans-serif" }}>{operation.title}</h2>
+              <p className="text-[#8a9aa8] leading-relaxed whitespace-pre-wrap">{operation.description}</p>
               {(operation.theater || operation.region_label || operation.grid_ref || operation.campaign_id) && (
-                <div className="bg-black/40 border border-gray-800 rounded-lg p-3 text-xs text-gray-300 flex flex-wrap items-center gap-3">
+                <div className="bg-[#050a0e]/40 border border-[rgba(201,162,39,0.12)] rounded-lg p-3 text-xs text-[#8a9aa8] flex flex-wrap items-center gap-3">
                   {operation.theater && <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5 text-tropic-gold" />{operation.theater}</span>}
                   {operation.region_label && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-tropic-gold-light" />{operation.region_label}</span>}
-                  {operation.grid_ref && <span className="text-gray-400">GRID {operation.grid_ref}</span>}
+                  {operation.grid_ref && <span className="text-[#8a9aa8]">GRID {operation.grid_ref}</span>}
                   <Link to="/hub/campaign" className="text-tropic-gold hover:underline ml-auto">View on Campaign Map</Link>
                 </div>
               )}
@@ -199,7 +199,7 @@ const OperationDetail = () => {
               >
                 <Network className="w-4 h-4" />
                 <span className="font-semibold tracking-wider">Open ORBAT Creator</span>
-                <span className="text-gray-500 ml-1">— Build order of battle for this operation</span>
+                <span className="text-[#4a6070] ml-1">— Build order of battle for this operation</span>
               </Link>
               {/* Attendance summary */}
               {operation.external_id ? (() => {
@@ -207,19 +207,19 @@ const OperationDetail = () => {
                 const declined = (operation.attendees || []).filter(a => a.status === 'declined');
                 const tentativeAtt = (operation.attendees || []).filter(a => a.status === 'tentative');
                 return (
-                  <div className="flex items-center gap-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
-                    <div className="text-center"><div className="text-2xl font-bold text-green-400">{accepted.length}</div><div className="text-[10px] text-gray-500 tracking-wider">ACCEPTED</div></div>
-                    <div className="text-center"><div className="text-2xl font-bold text-red-400">{declined.length}</div><div className="text-[10px] text-gray-500 tracking-wider">DECLINED</div></div>
-                    {tentativeAtt.length > 0 && <div className="text-center"><div className="text-2xl font-bold text-yellow-400">{tentativeAtt.length}</div><div className="text-[10px] text-gray-500 tracking-wider">TENTATIVE</div></div>}
-                    <div className="ml-auto text-[10px] text-gray-600 tracking-wider">SYNCED VIA DISCORD</div>
+                  <div className="flex items-center gap-6 bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.12)]/50">
+                    <div className="text-center"><div className="text-2xl font-bold text-green-400">{accepted.length}</div><div className="text-[10px] text-[#4a6070] tracking-wider">ACCEPTED</div></div>
+                    <div className="text-center"><div className="text-2xl font-bold text-red-400">{declined.length}</div><div className="text-[10px] text-[#4a6070] tracking-wider">DECLINED</div></div>
+                    {tentativeAtt.length > 0 && <div className="text-center"><div className="text-2xl font-bold text-yellow-400">{tentativeAtt.length}</div><div className="text-[10px] text-[#4a6070] tracking-wider">TENTATIVE</div></div>}
+                    <div className="ml-auto text-[10px] text-[#4a6070] tracking-wider">SYNCED VIA DISCORD</div>
                   </div>
                 );
               })() : (
-                <div className="flex items-center gap-6 bg-black/30 rounded-lg p-4 border border-gray-800/50">
-                  <div className="text-center"><div className="text-2xl font-bold text-green-400">{counts.attending || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">ATTENDING</div></div>
-                  <div className="text-center"><div className="text-2xl font-bold text-yellow-400">{counts.tentative || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">TENTATIVE</div></div>
-                  {maxP && <div className="text-center"><div className="text-2xl font-bold text-orange-400">{counts.waitlisted || 0}</div><div className="text-[10px] text-gray-500 tracking-wider">WAITLISTED</div></div>}
-                  {maxP && <div className="text-center ml-auto"><div className="text-2xl font-bold text-gray-300">{maxP}</div><div className="text-[10px] text-gray-500 tracking-wider">CAPACITY</div></div>}
+                <div className="flex items-center gap-6 bg-[#050a0e]/30 rounded-lg p-4 border border-[rgba(201,162,39,0.12)]/50">
+                  <div className="text-center"><div className="text-2xl font-bold text-green-400">{counts.attending || 0}</div><div className="text-[10px] text-[#4a6070] tracking-wider">ATTENDING</div></div>
+                  <div className="text-center"><div className="text-2xl font-bold text-yellow-400">{counts.tentative || 0}</div><div className="text-[10px] text-[#4a6070] tracking-wider">TENTATIVE</div></div>
+                  {maxP && <div className="text-center"><div className="text-2xl font-bold text-orange-400">{counts.waitlisted || 0}</div><div className="text-[10px] text-[#4a6070] tracking-wider">WAITLISTED</div></div>}
+                  {maxP && <div className="text-center ml-auto"><div className="text-2xl font-bold text-[#8a9aa8]">{maxP}</div><div className="text-[10px] text-[#4a6070] tracking-wider">CAPACITY</div></div>}
                 </div>
               )}
             </CardContent>
@@ -227,7 +227,7 @@ const OperationDetail = () => {
 
           {/* Mini-Map */}
           {operation.lat != null && operation.lng != null && (
-            <Card className="bg-gray-900/80 border-gray-800 overflow-hidden">
+            <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)] overflow-hidden">
               <CardContent className="p-0">
                 <MapMiniView
                   latitude={operation.lat}
@@ -244,14 +244,14 @@ const OperationDetail = () => {
 
           {/* MOS Summary */}
           {rosterData?.mos_summary && Object.keys(rosterData.mos_summary).length > 0 && (
-            <Card className="bg-gray-900/80 border-gray-800">
+            <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm tracking-wider text-tropic-gold">MANPOWER BY MOS</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(rosterData.mos_summary).sort((a, b) => b[1] - a[1]).map(([mos, count]) => (
-                    <div key={mos} className="bg-black/40 border border-gray-800 rounded px-3 py-1.5 text-xs">
+                    <div key={mos} className="bg-[#050a0e]/40 border border-[rgba(201,162,39,0.12)] rounded px-3 py-1.5 text-xs">
                       <span className="font-mono text-tropic-gold">{mos}</span>
                       <span className="text-white ml-2 font-bold">{count}</span>
                     </div>
@@ -269,7 +269,7 @@ const OperationDetail = () => {
             return (
               <div className="space-y-4" data-testid="discord-attendance">
                 {accepted.length > 0 && (
-                  <Card className="bg-gray-900/80 border-gray-800">
+                  <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm tracking-wider flex items-center gap-2 text-green-400">
                         <UserCheck className="w-4 h-4" /> ACCEPTED ({accepted.length})
@@ -278,7 +278,7 @@ const OperationDetail = () => {
                     <CardContent>
                       <div className="space-y-1">
                         {accepted.map((a, i) => (
-                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-black/30 rounded border border-gray-800/50">
+                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-[#050a0e]/30 rounded border border-[rgba(201,162,39,0.12)]/50">
                             <div className="w-8 h-8 rounded bg-green-900/40 flex items-center justify-center text-xs font-bold text-green-400">{(a.display_name || '?')[0].toUpperCase()}</div>
                             <span className="text-sm font-medium">{a.display_name}</span>
                             {a.user_id && <Badge variant="outline" className="text-[10px] border-tropic-gold/40 text-tropic-gold">LINKED</Badge>}
@@ -289,7 +289,7 @@ const OperationDetail = () => {
                   </Card>
                 )}
                 {declined.length > 0 && (
-                  <Card className="bg-gray-900/80 border-gray-800">
+                  <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm tracking-wider flex items-center gap-2 text-red-400">
                         <UserX className="w-4 h-4" /> DECLINED ({declined.length})
@@ -298,9 +298,9 @@ const OperationDetail = () => {
                     <CardContent>
                       <div className="space-y-1">
                         {declined.map((a, i) => (
-                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-black/30 rounded border border-gray-800/50">
+                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-[#050a0e]/30 rounded border border-[rgba(201,162,39,0.12)]/50">
                             <div className="w-8 h-8 rounded bg-red-900/40 flex items-center justify-center text-xs font-bold text-red-400">{(a.display_name || '?')[0].toUpperCase()}</div>
-                            <span className="text-sm font-medium text-gray-400">{a.display_name}</span>
+                            <span className="text-sm font-medium text-[#8a9aa8]">{a.display_name}</span>
                           </div>
                         ))}
                       </div>
@@ -308,7 +308,7 @@ const OperationDetail = () => {
                   </Card>
                 )}
                 {tentativeAtt.length > 0 && (
-                  <Card className="bg-gray-900/80 border-gray-800">
+                  <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm tracking-wider flex items-center gap-2 text-yellow-400">
                         <HelpCircle className="w-4 h-4" /> TENTATIVE ({tentativeAtt.length})
@@ -317,7 +317,7 @@ const OperationDetail = () => {
                     <CardContent>
                       <div className="space-y-1">
                         {tentativeAtt.map((a, i) => (
-                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-black/30 rounded border border-gray-800/50">
+                          <div key={a.discord_id || i} className="flex items-center gap-3 py-2 px-3 bg-[#050a0e]/30 rounded border border-[rgba(201,162,39,0.12)]/50">
                             <div className="w-8 h-8 rounded bg-yellow-900/40 flex items-center justify-center text-xs font-bold text-yellow-400">{(a.display_name || '?')[0].toUpperCase()}</div>
                             <span className="text-sm font-medium">{a.display_name}</span>
                           </div>
@@ -332,18 +332,18 @@ const OperationDetail = () => {
 
           {/* RSVP Actions — hidden for Discord-synced operations */}
           {!operation.external_id && (
-          <Card className="bg-gray-900/80 border-gray-800" data-testid="rsvp-actions">
+          <Card className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]" data-testid="rsvp-actions">
             <CardHeader className="pb-3"><CardTitle className="text-lg tracking-wider">YOUR RSVP</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {currentStatus && (
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-400">Current status:</span>
+                  <span className="text-[#8a9aa8]">Current status:</span>
                   <Badge className={`${currentStatus === 'attending' ? 'bg-green-700' : currentStatus === 'tentative' ? 'bg-yellow-700' : 'bg-orange-700'} text-white`}>{currentStatus.toUpperCase()}</Badge>
                 </div>
               )}
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Role / Slot Notes (optional)</label>
-                <Input value={roleNotes} onChange={e => setRoleNotes(e.target.value)} className="bg-black border-gray-700" placeholder="e.g., Squad Lead, Medic, DMR" data-testid="rsvp-role-notes" />
+                <label className="text-xs text-[#4a6070] block mb-1">Role / Slot Notes (optional)</label>
+                <Input value={roleNotes} onChange={e => setRoleNotes(e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., Squad Lead, Medic, DMR" data-testid="rsvp-role-notes" />
               </div>
               <div className="flex flex-wrap gap-3">
                 <Button onClick={() => handleRSVP('attending')} disabled={submitting} className={`${currentStatus === 'attending' ? 'bg-green-700 ring-2 ring-green-500' : 'bg-green-800/60 hover:bg-green-700'}`} data-testid="rsvp-attending"><CheckCircle className="w-4 h-4 mr-2" />Attending</Button>
@@ -362,12 +362,12 @@ const OperationDetail = () => {
                 { label: 'TENTATIVE', list: rsvps.tentative, color: 'text-yellow-400', icon: HelpCircle },
                 { label: 'WAITLISTED', list: rsvps.waitlisted, color: 'text-orange-400', icon: Clock },
               ].filter(g => g.list?.length > 0).map(group => (
-                <Card key={group.label} className="bg-gray-900/80 border-gray-800">
+                <Card key={group.label} className="bg-[#0c1117]/80 border-[rgba(201,162,39,0.12)]">
                   <CardHeader className="pb-2">
                     <CardTitle className={`text-sm tracking-wider flex items-center gap-2 ${group.color}`}>
                       <group.icon className="w-4 h-4" /> {group.label} ({group.list.length})
                     </CardTitle>
-                    <p className="text-[10px] text-gray-600">Click a row to see unit assignment details</p>
+                    <p className="text-[10px] text-[#4a6070]">Click a row to see unit assignment details</p>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">

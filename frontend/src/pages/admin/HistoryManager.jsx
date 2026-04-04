@@ -94,15 +94,15 @@ const HistoryManager = () => {
 
   const typeColor = (t) => ({
     campaign: 'bg-tropic-red', operation: 'bg-tropic-gold-dark', milestone: 'bg-emerald-600'
-  }[t] || 'bg-gray-600');
+  }[t] || 'bg-[#4a6070]');
 
   return (
     <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }} data-testid="history-manager-title">UNIT HISTORY</h1>
-            <p className="text-gray-400 mt-2">Manage the 25th Infantry Division timeline</p>
+            <h1 className="text-4xl font-bold" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="history-manager-title">UNIT HISTORY</h1>
+            <p className="text-[#8a9aa8] mt-2">Manage the 25th Infantry Division timeline</p>
           </div>
           <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
@@ -110,9 +110,9 @@ const HistoryManager = () => {
                 <Plus className="w-4 h-4 mr-2" />Add Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-gray-900 text-white border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-[#0c1117] text-white border-[rgba(201,162,39,0.12)] max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                <DialogTitle style={{ fontFamily: "'Share Tech', sans-serif" }}>
                   {editing ? 'Edit History Entry' : 'Add History Entry'}
                 </DialogTitle>
               </DialogHeader>
@@ -120,21 +120,21 @@ const HistoryManager = () => {
                 <div>
                   <Label>Title</Label>
                   <Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="bg-black border-gray-700" placeholder="e.g., Guadalcanal Campaign"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., Guadalcanal Campaign"
                     data-testid="history-title-input" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Year / Date Range</Label>
                     <Input required value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })}
-                      className="bg-black border-gray-700" placeholder="e.g., 1942-1943"
+                      className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="e.g., 1942-1943"
                       data-testid="history-year-input" />
                   </div>
                   <div>
                     <Label>Type</Label>
                     <Select value={form.campaign_type} onValueChange={(v) => setForm({ ...form, campaign_type: v })}>
-                      <SelectTrigger className="bg-black border-gray-700" data-testid="history-type-select"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" data-testid="history-type-select"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                         {CAMPAIGN_TYPES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -144,14 +144,14 @@ const HistoryManager = () => {
                   <Label>Description</Label>
                   <Textarea required rows={4} value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    className="bg-black border-gray-700" placeholder="Describe this campaign or milestone..."
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Describe this campaign or milestone..."
                     data-testid="history-description-input" />
                 </div>
                 <div>
                   <Label>Sort Order</Label>
                   <Input type="number" value={form.sort_order}
                     onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })}
-                    className="bg-black border-gray-700" placeholder="Lower = earlier in timeline"
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Lower = earlier in timeline"
                     data-testid="history-order-input" />
                 </div>
                 <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })}
@@ -162,8 +162,8 @@ const HistoryManager = () => {
                   <div>
                     <Label>Image Position</Label>
                     <Select value={form.image_position} onValueChange={(v) => setForm({ ...form, image_position: v })}>
-                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                         <SelectItem value="top">Top</SelectItem>
                         <SelectItem value="center">Center</SelectItem>
                         <SelectItem value="bottom">Bottom</SelectItem>
@@ -174,8 +174,8 @@ const HistoryManager = () => {
                   <div>
                     <Label>Text Contrast</Label>
                     <Select value={form.text_contrast_mode} onValueChange={(v) => setForm({ ...form, text_contrast_mode: v })}>
-                      <SelectTrigger className="bg-black border-gray-700"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                         <SelectItem value="auto">Auto Detect</SelectItem>
                         <SelectItem value="light">Light Text</SelectItem>
                         <SelectItem value="dark">Dark Text</SelectItem>
@@ -187,11 +187,11 @@ const HistoryManager = () => {
                     <Label>Overlay Strength ({form.image_overlay_opacity}%)</Label>
                     <Input type="number" min={20} max={90} value={form.image_overlay_opacity}
                       onChange={(e) => setForm({ ...form, image_overlay_opacity: Math.min(90, Math.max(20, parseInt(e.target.value) || 60)) })}
-                      className="bg-black border-gray-700" />
+                      className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" />
                   </div>
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-gray-700">Cancel</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="border-[rgba(201,162,39,0.15)]">Cancel</Button>
                   <Button type="submit" className="bg-tropic-gold hover:bg-tropic-gold-dark text-black" data-testid="history-submit-btn">
                     {editing ? 'Update' : 'Add Entry'}
                   </Button>
@@ -201,29 +201,29 @@ const HistoryManager = () => {
           </Dialog>
         </div>
 
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-[#4a6070]">
           Entries are displayed in order of their sort value. Lower numbers appear first on the timeline.
         </p>
 
         {loading ? <div className="text-center py-12">Loading...</div> : entries.length === 0 ? (
-          <Card className="bg-gray-900 border-gray-800">
-            <CardContent className="py-12 text-center text-gray-400">
+          <Card className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]">
+            <CardContent className="py-12 text-center text-[#8a9aa8]">
               No history entries yet. Add the first chapter of your unit's story.
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
             {entries.map((entry, idx) => (
-              <Card key={entry.id} className="bg-gray-900 border-gray-800" data-testid={`history-entry-${entry.id}`}>
+              <Card key={entry.id} className="bg-[#0c1117] border-[rgba(201,162,39,0.12)]" data-testid={`history-entry-${entry.id}`}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex items-center gap-2 text-gray-600 pt-1">
+                    <div className="flex items-center gap-2 text-[#4a6070] pt-1">
                       <GripVertical className="w-4 h-4" />
                       <span className="text-xs font-mono w-6 text-center">{entry.sort_order}</span>
                     </div>
                     {entry.image_url && (
                       <img src={resolveImg(entry.image_url)} alt={entry.title}
-                        className="w-20 h-20 object-cover rounded border border-gray-700 shrink-0" />
+                        className="w-20 h-20 object-cover rounded border border-[rgba(201,162,39,0.15)] shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -233,11 +233,11 @@ const HistoryManager = () => {
                         <span className="text-tropic-gold font-bold text-sm">{entry.year}</span>
                       </div>
                       <h3 className="font-bold text-lg">{entry.title}</h3>
-                      <p className="text-gray-400 text-sm line-clamp-2 mt-1 whitespace-pre-wrap">{entry.description}</p>
+                      <p className="text-[#8a9aa8] text-sm line-clamp-2 mt-1 whitespace-pre-wrap">{entry.description}</p>
                     </div>
                     <div className="flex gap-2 shrink-0">
                       <Button size="sm" variant="outline" onClick={() => handleEdit(entry)}
-                        className="border-gray-700" data-testid={`history-edit-${entry.id}`}>
+                        className="border-[rgba(201,162,39,0.15)]" data-testid={`history-edit-${entry.id}`}>
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleDelete(entry.id)}

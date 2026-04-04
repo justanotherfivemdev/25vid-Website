@@ -203,15 +203,15 @@ export default function MortarCalculator() {
   /* ── Render ──────────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-[#060a14] text-white">
-      <header className="border-b border-gray-800 bg-[#0c1322] px-4 py-3 flex items-center gap-3">
-        <Link to="/hub" className="text-gray-400 hover:text-white transition">
+      <header className="border-b border-[rgba(201,162,39,0.12)] bg-[#0c1322] px-4 py-3 flex items-center gap-3">
+        <Link to="/hub" className="text-[#8a9aa8] hover:text-white transition">
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <Target className="w-5 h-5 text-[#C9A227]" />
-        <h1 className="text-lg font-bold tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <h1 className="text-lg font-bold tracking-wide" style={{ fontFamily: "'Share Tech', sans-serif" }}>
           MORTAR CALCULATOR
         </h1>
-        <Badge className="bg-gray-800 text-gray-400 text-[10px]">Arma Reforger</Badge>
+        <Badge className="bg-[#111a24] text-[#8a9aa8] text-[10px]">Arma Reforger</Badge>
       </header>
 
       <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
@@ -220,31 +220,31 @@ export default function MortarCalculator() {
           {/* Left: Mortar + FO Data */}
           <div className="space-y-4">
             {/* Faction & Ammo */}
-            <Card className="bg-gray-900/60 border-gray-800">
+            <Card className="bg-[#0c1117]/60 border-[rgba(201,162,39,0.12)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-[#C9A227] uppercase tracking-wider">Ordnance</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Faction</label>
+                    <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">Faction</label>
                     <Select value={faction} onValueChange={handleFactionChange}>
-                      <SelectTrigger className="bg-black/40 border-gray-700 h-8 text-sm">
+                      <SelectTrigger className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-8 text-sm">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                         <SelectItem value="NATO">NATO</SelectItem>
                         <SelectItem value="RU">Russia</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Ammunition</label>
+                    <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">Ammunition</label>
                     <Select value={ammo} onValueChange={setAmmo}>
-                      <SelectTrigger className="bg-black/40 border-gray-700 h-8 text-sm">
+                      <SelectTrigger className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-8 text-sm">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
                         {ammoTypes.map((a) => (
                           <SelectItem key={a} value={a}>{a}</SelectItem>
                         ))}
@@ -256,7 +256,7 @@ export default function MortarCalculator() {
             </Card>
 
             {/* Mortar Position */}
-            <Card className="bg-gray-900/60 border-gray-800">
+            <Card className="bg-[#0c1117]/60 border-[rgba(201,162,39,0.12)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-blue-400 uppercase tracking-wider">
                   <Crosshair className="w-3.5 h-3.5 inline mr-1" />Mortar Position
@@ -264,19 +264,19 @@ export default function MortarCalculator() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     Grid Coordinate (8 or 10 digit)
                   </label>
                   <Input
                     value={mortarGrid}
                     onChange={(e) => setMortarGrid(e.target.value)}
                     placeholder="e.g., 12340 56780"
-                    className="bg-black/40 border-gray-700 h-8 text-sm font-mono"
+                    className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-8 text-sm font-mono"
                     maxLength={12}
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     Elevation (m ASL)
                   </label>
                   <Input
@@ -284,14 +284,14 @@ export default function MortarCalculator() {
                     value={mortarElev}
                     onChange={(e) => setMortarElev(e.target.value)}
                     placeholder="e.g., 150"
-                    className="bg-black/40 border-gray-700 h-8 text-sm font-mono"
+                    className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-8 text-sm font-mono"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* Forward Observer Data */}
-            <Card className="bg-gray-900/60 border-gray-800">
+            <Card className="bg-[#0c1117]/60 border-[rgba(201,162,39,0.12)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-green-400 uppercase tracking-wider">
                   <Compass className="w-3.5 h-3.5 inline mr-1" />Forward Observer Data
@@ -299,20 +299,20 @@ export default function MortarCalculator() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     FO Grid Coordinate
                   </label>
                   <Input
                     value={foGrid}
                     onChange={(e) => setFoGrid(e.target.value)}
                     placeholder="e.g., 12500 57000"
-                    className="bg-black/40 border-gray-700 h-8 text-sm font-mono"
+                    className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-8 text-sm font-mono"
                     maxLength={12}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                       Azimuth to Target (°)
                     </label>
                     <Input
@@ -320,11 +320,11 @@ export default function MortarCalculator() {
                       value={foAzimuth}
                       onChange={(e) => setFoAzimuth(e.target.value)}
                       placeholder="0 - 360"
-                      className="bg-black/40 border-gray-700 h-8 text-sm font-mono"
+                      className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-8 text-sm font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                       Distance to Target (m)
                     </label>
                     <Input
@@ -332,12 +332,12 @@ export default function MortarCalculator() {
                       value={foDistance}
                       onChange={(e) => setFoDistance(e.target.value)}
                       placeholder="e.g., 1200"
-                      className="bg-black/40 border-gray-700 h-8 text-sm font-mono"
+                      className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-8 text-sm font-mono"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     Elevation Difference (m) — positive = uphill
                   </label>
                   <Input
@@ -345,7 +345,7 @@ export default function MortarCalculator() {
                     value={foElevDiff}
                     onChange={(e) => setFoElevDiff(e.target.value)}
                     placeholder="e.g., 25 or -10"
-                    className="bg-black/40 border-gray-700 h-8 text-sm font-mono"
+                    className="bg-[#050a0e]/40 border-[rgba(201,162,39,0.15)] h-8 text-sm font-mono"
                   />
                 </div>
               </CardContent>
@@ -373,7 +373,7 @@ export default function MortarCalculator() {
             {results ? (
               <>
                 {/* Target details */}
-                <Card className="bg-gray-900/60 border-gray-800">
+                <Card className="bg-[#0c1117]/60 border-[rgba(201,162,39,0.12)]">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm text-red-400 uppercase tracking-wider">
                       <Target className="w-3.5 h-3.5 inline mr-1" />Calculated Target Details
@@ -382,11 +382,11 @@ export default function MortarCalculator() {
                   <CardContent className="space-y-2">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wider">Distance</span>
+                        <span className="text-[10px] text-[#4a6070] uppercase tracking-wider">Distance</span>
                         <p className="text-lg font-bold font-mono text-white">{results.distance}m</p>
                       </div>
                       <div>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wider">Elevation Diff</span>
+                        <span className="text-[10px] text-[#4a6070] uppercase tracking-wider">Elevation Diff</span>
                         <p className={`text-lg font-bold font-mono ${results.elevDiff >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
                           {results.elevDiff >= 0 ? <ArrowUp className="w-4 h-4 inline" /> : <ArrowDown className="w-4 h-4 inline" />}
                           {Math.abs(results.elevDiff)}m
@@ -394,17 +394,17 @@ export default function MortarCalculator() {
                       </div>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-wider">Mortar-Target Azimuth</span>
+                      <span className="text-[10px] text-[#4a6070] uppercase tracking-wider">Mortar-Target Azimuth</span>
                       <p className="text-2xl font-bold font-mono text-[#C9A227]">
                         {results.azimuthMils} MIL
-                        <span className="text-sm text-gray-500 ml-2">({results.azimuthDeg}°)</span>
+                        <span className="text-sm text-[#4a6070] ml-2">({results.azimuthDeg}°)</span>
                       </p>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Firing solutions */}
-                <Card className="bg-gray-900/60 border-gray-800">
+                <Card className="bg-[#0c1117]/60 border-[rgba(201,162,39,0.12)]">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm text-[#C9A227] uppercase tracking-wider">
                       Firing Solutions
@@ -417,25 +417,25 @@ export default function MortarCalculator() {
                         className={`rounded-lg border p-3 ${
                           i === 0
                             ? 'border-green-700/50 bg-green-900/10'
-                            : 'border-gray-700/50 bg-gray-800/20'
+                            : 'border-[rgba(201,162,39,0.15)]/50 bg-[#111a24]/20'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <Badge className={`text-[10px] ${i === 0 ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>
+                          <Badge className={`text-[10px] ${i === 0 ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-[#111a24] text-[#8a9aa8] border-[rgba(201,162,39,0.15)]'}`}>
                             Charge {sol.charge}
                             {i === 0 && ' — RECOMMENDED'}
                           </Badge>
-                          <Badge className="bg-gray-800 text-gray-400 text-[10px]">
+                          <Badge className="bg-[#111a24] text-[#8a9aa8] text-[10px]">
                             Dispersion: ±{sol.dispersion}m
                           </Badge>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <span className="text-[10px] text-gray-500 uppercase tracking-wider">Corrected Elevation</span>
+                            <span className="text-[10px] text-[#4a6070] uppercase tracking-wider">Corrected Elevation</span>
                             <p className="text-xl font-bold font-mono text-white">{sol.elevation} MIL</p>
                           </div>
                           <div>
-                            <span className="text-[10px] text-gray-500 uppercase tracking-wider">Time of Flight</span>
+                            <span className="text-[10px] text-[#4a6070] uppercase tracking-wider">Time of Flight</span>
                             <p className="text-xl font-bold font-mono text-yellow-400">
                               <Clock className="w-4 h-4 inline mr-1" />{sol.tof}s
                             </p>
@@ -447,24 +447,24 @@ export default function MortarCalculator() {
                 </Card>
 
                 {/* Quick reference */}
-                <Card className="bg-gray-900/60 border-gray-800">
+                <Card className="bg-[#0c1117]/60 border-[rgba(201,162,39,0.12)]">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-gray-400 uppercase tracking-wider">Quick Reference</CardTitle>
+                    <CardTitle className="text-sm text-[#8a9aa8] uppercase tracking-wider">Quick Reference</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-xs text-gray-500">
-                    <p><strong className="text-gray-400">R key:</strong> Hold for range (left) and elevation diff (right)</p>
-                    <p><strong className="text-gray-400">V key:</strong> Hold for vector/azimuth</p>
-                    <p><strong className="text-gray-400">Tip:</strong> Fire longest ToF charge first, then switch to shortest. Start fast rounds after ~half the first round's ToF has elapsed.</p>
+                  <CardContent className="space-y-2 text-xs text-[#4a6070]">
+                    <p><strong className="text-[#8a9aa8]">R key:</strong> Hold for range (left) and elevation diff (right)</p>
+                    <p><strong className="text-[#8a9aa8]">V key:</strong> Hold for vector/azimuth</p>
+                    <p><strong className="text-[#8a9aa8]">Tip:</strong> Fire longest ToF charge first, then switch to shortest. Start fast rounds after ~half the first round's ToF has elapsed.</p>
                   </CardContent>
                 </Card>
               </>
             ) : (
-              <Card className="bg-gray-900/60 border-gray-800">
+              <Card className="bg-[#0c1117]/60 border-[rgba(201,162,39,0.12)]">
                 <CardContent className="py-16 text-center space-y-4">
-                  <Target className="w-16 h-16 text-gray-700 mx-auto" />
+                  <Target className="w-16 h-16 text-[#4a6070] mx-auto" />
                   <div>
-                    <p className="text-lg text-gray-400 font-semibold">No firing solution</p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-lg text-[#8a9aa8] font-semibold">No firing solution</p>
+                    <p className="text-sm text-[#4a6070] mt-1">
                       Enter mortar position and FO data, then click Calculate.
                     </p>
                   </div>

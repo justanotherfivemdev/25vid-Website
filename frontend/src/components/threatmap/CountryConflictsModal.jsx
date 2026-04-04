@@ -103,8 +103,8 @@ export default function CountryConflictsModal({ country, onClose }) {
     : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-black border border-tropic-gold-dark/30 rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050a0e]/70 backdrop-blur-sm">
+      <div className="bg-[#050a0e] border border-tropic-gold-dark/30 rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-tropic-gold-dark/20">
           <div className="flex items-center gap-3">
@@ -131,7 +131,7 @@ export default function CountryConflictsModal({ country, onClose }) {
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
               activeTab === 'current'
                 ? 'text-tropic-red-light border-b-2 border-tropic-red'
-                : 'text-gray-500 hover:text-tropic-gold-light'
+                : 'text-[#4a6070] hover:text-tropic-gold-light'
             }`}
           >
             <AlertTriangle className="h-4 w-4" />
@@ -142,7 +142,7 @@ export default function CountryConflictsModal({ country, onClose }) {
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
               activeTab === 'past'
                 ? 'text-tropic-gold border-b-2 border-tropic-gold'
-                : 'text-gray-500 hover:text-tropic-gold-light'
+                : 'text-[#4a6070] hover:text-tropic-gold-light'
             }`}
           >
             <History className="h-4 w-4" />
@@ -155,8 +155,8 @@ export default function CountryConflictsModal({ country, onClose }) {
           {loading && !streamingText && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <Loader2 className="h-8 w-8 text-tropic-gold animate-spin" />
-              <p className="text-sm text-gray-400">Analyzing conflicts for {country}...</p>
-              <p className="text-xs text-gray-500">This may take a moment</p>
+              <p className="text-sm text-[#8a9aa8]">Analyzing conflicts for {country}...</p>
+              <p className="text-xs text-[#4a6070]">This may take a moment</p>
             </div>
           )}
 
@@ -194,7 +194,7 @@ export default function CountryConflictsModal({ country, onClose }) {
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-xs text-gray-400 hover:text-tropic-gold transition-colors"
+                    className="flex items-center gap-2 text-xs text-[#8a9aa8] hover:text-tropic-gold transition-colors"
                   >
                     <ExternalLink className="h-3 w-3 shrink-0" />
                     <span className="truncate">{source.title || source.url}</span>

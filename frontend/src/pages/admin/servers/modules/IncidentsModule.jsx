@@ -49,7 +49,7 @@ function IncidentsModule() {
   const severityIcon = (sev) => {
     if (sev === 'critical') return <AlertOctagon className="h-4 w-4 text-red-400" />;
     if (sev === 'high') return <AlertTriangle className="h-4 w-4 text-amber-400" />;
-    return <AlertTriangle className="h-4 w-4 text-gray-400" />;
+    return <AlertTriangle className="h-4 w-4 text-[#8a9aa8]" />;
   };
 
   const statusBadge = (status) => {
@@ -58,17 +58,17 @@ function IncidentsModule() {
       investigating: 'border-amber-600/30 text-amber-400',
       resolved: 'border-green-600/30 text-green-400',
     };
-    return map[status] || 'border-zinc-600/30 text-gray-400';
+    return map[status] || 'border-zinc-600/30 text-[#8a9aa8]';
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold tracking-wider text-gray-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+        <h2 className="text-sm font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
           INCIDENTS & TROUBLESHOOTING
         </h2>
         <Button size="sm" variant="outline" onClick={fetchIncidents}
-          className="h-7 border-zinc-800 text-xs text-gray-400">
+          className="h-7 border-zinc-800 text-xs text-[#8a9aa8]">
           <RefreshCw className={`mr-1 h-3 w-3 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </Button>
       </div>
@@ -76,17 +76,17 @@ function IncidentsModule() {
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#4a6070]" />
           <Input value={filter} onChange={(e) => setFilter(e.target.value)}
             placeholder="Search incidents..."
-            className="h-8 border-zinc-800 bg-black/60 pl-9 text-xs text-white placeholder:text-gray-600" />
+            className="h-8 border-zinc-800 bg-[#050a0e]/60 pl-9 text-xs text-white placeholder:text-[#4a6070]" />
         </div>
         {['all', 'open', 'investigating', 'resolved'].map((s) => (
           <Button key={s} size="sm" variant={statusFilter === s ? 'default' : 'outline'}
             onClick={() => setStatusFilter(s)}
             className={`h-8 text-xs ${statusFilter === s
               ? 'bg-tropic-gold text-black'
-              : 'border-zinc-800 text-gray-400'
+              : 'border-zinc-800 text-[#8a9aa8]'
             }`}>
             {s.charAt(0).toUpperCase() + s.slice(1)}
           </Button>
@@ -99,11 +99,11 @@ function IncidentsModule() {
           <Loader2 className="h-5 w-5 animate-spin text-tropic-gold" />
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="border-zinc-800 bg-black/60">
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <CheckCircle className="mb-2 h-8 w-8 text-green-600/40" />
-            <p className="text-sm text-gray-500">No incidents found</p>
-            <p className="mt-1 text-xs text-gray-600">
+            <p className="text-sm text-[#4a6070]">No incidents found</p>
+            <p className="mt-1 text-xs text-[#4a6070]">
               {statusFilter === 'open' ? 'All clear — no open incidents' : 'No incidents match your search'}
             </p>
           </CardContent>
@@ -111,20 +111,20 @@ function IncidentsModule() {
       ) : (
         <div className="space-y-2">
           {filtered.map((inc, i) => (
-            <Card key={inc.id || i} className="border-zinc-800 bg-black/60 hover:border-zinc-700 transition-colors">
+            <Card key={inc.id || i} className="border-zinc-800 bg-[#050a0e]/60 hover:border-zinc-700 transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   {severityIcon(inc.severity)}
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-200">{inc.title || 'Untitled Incident'}</span>
+                      <span className="text-sm font-medium text-[#d0d8e0]">{inc.title || 'Untitled Incident'}</span>
                       <Badge variant="outline" className={`${statusBadge(inc.status)} text-[10px]`}>
                         {inc.status?.toUpperCase()}
                       </Badge>
                       <Badge variant="outline" className={`text-[10px] ${
                         inc.severity === 'critical' ? 'border-red-600/30 text-red-400' :
                         inc.severity === 'high' ? 'border-amber-600/30 text-amber-400' :
-                        'border-zinc-600/30 text-gray-400'
+                        'border-zinc-600/30 text-[#8a9aa8]'
                       }`}>
                         {inc.severity?.toUpperCase()}
                       </Badge>
@@ -133,9 +133,9 @@ function IncidentsModule() {
                       )}
                     </div>
                     {inc.description && (
-                      <p className="mt-1 text-xs text-gray-400 line-clamp-2">{inc.description}</p>
+                      <p className="mt-1 text-xs text-[#8a9aa8] line-clamp-2">{inc.description}</p>
                     )}
-                    <div className="mt-2 flex items-center gap-4 text-[10px] text-gray-600">
+                    <div className="mt-2 flex items-center gap-4 text-[10px] text-[#4a6070]">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {inc.detected_at ? new Date(inc.detected_at).toLocaleString() : '—'}
@@ -146,8 +146,8 @@ function IncidentsModule() {
                       )}
                     </div>
                     {inc.log_excerpts?.length > 0 && (
-                      <div className="mt-2 rounded border border-zinc-800 bg-black/80 p-2">
-                        <div className="font-mono text-[10px] text-gray-500 max-h-20 overflow-hidden">
+                      <div className="mt-2 rounded border border-zinc-800 bg-[#050a0e]/80 p-2">
+                        <div className="font-mono text-[10px] text-[#4a6070] max-h-20 overflow-hidden">
                           {inc.log_excerpts.slice(0, 3).map((log, j) => (
                             <div key={j}>{log}</div>
                           ))}

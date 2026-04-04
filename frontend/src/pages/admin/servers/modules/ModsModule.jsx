@@ -263,10 +263,10 @@ function ModsModule() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold tracking-[0.24em] text-gray-200" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h2 className="text-sm font-semibold tracking-[0.24em] text-[#d0d8e0]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
             MODS WORKSPACE
           </h2>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-[#4a6070]">
             Browse the live workshop, curate load order, and batch import or export server assignments without leaving the dashboard.
           </p>
         </div>
@@ -281,7 +281,7 @@ function ModsModule() {
               Unsaved load order changes
             </Badge>
           )}
-          <Button size="sm" variant="outline" onClick={validateMods} disabled={validating} className="h-8 border-zinc-800 text-xs text-gray-300">
+          <Button size="sm" variant="outline" onClick={validateMods} disabled={validating} className="h-8 border-zinc-800 text-xs text-[#8a9aa8]">
             {validating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Shield className="mr-1 h-3.5 w-3.5" />}
             Validate
           </Button>
@@ -314,7 +314,7 @@ function ModsModule() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid h-auto grid-cols-3 rounded-xl border border-zinc-800 bg-black/60 p-1">
+        <TabsList className="grid h-auto grid-cols-3 rounded-xl border border-zinc-800 bg-[#050a0e]/60 p-1">
           <TabsTrigger value="workshop" className="data-[state=active]:bg-tropic-gold data-[state=active]:text-black">Workshop</TabsTrigger>
           <TabsTrigger value="load-order" className="data-[state=active]:bg-tropic-gold data-[state=active]:text-black">Load Order</TabsTrigger>
           <TabsTrigger value="batch" className="data-[state=active]:bg-tropic-gold data-[state=active]:text-black">Batch</TabsTrigger>
@@ -322,26 +322,26 @@ function ModsModule() {
 
         <TabsContent value="workshop" className="space-y-4">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <Card className="border-zinc-800 bg-black/60">
+            <Card className="border-zinc-800 bg-[#050a0e]/60">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-[#d0d8e0]">
                   <Package className="h-4 w-4 text-tropic-gold" /> LIVE WORKSHOP BROWSER
                 </CardTitle>
                 <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_160px_160px_auto]">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
+                    <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#4a6070]" />
                     <Input
                       value={workshopSearch}
                       onChange={(event) => setWorkshopSearch(event.target.value)}
                       onKeyDown={(event) => event.key === 'Enter' && searchWorkshop()}
                       placeholder="Search mods or paste a mod ID"
-                      className="h-9 border-zinc-800 bg-black/50 pl-9 text-sm text-white placeholder:text-gray-600"
+                      className="h-9 border-zinc-800 bg-[#050a0e]/50 pl-9 text-sm text-white placeholder:text-[#4a6070]"
                     />
                   </div>
                   <select
                     value={workshopSort}
                     onChange={(event) => setWorkshopSort(event.target.value)}
-                    className="h-9 rounded-md border border-zinc-800 bg-black/50 px-3 text-sm text-white"
+                    className="h-9 rounded-md border border-zinc-800 bg-[#050a0e]/50 px-3 text-sm text-white"
                   >
                     <option value="popularity">Popularity</option>
                     <option value="newest">Newest</option>
@@ -352,7 +352,7 @@ function ModsModule() {
                     value={workshopTags}
                     onChange={(event) => setWorkshopTags(event.target.value)}
                     placeholder="Tags (comma separated)"
-                    className="h-9 border-zinc-800 bg-black/50 text-sm text-white placeholder:text-gray-600"
+                    className="h-9 border-zinc-800 bg-[#050a0e]/50 text-sm text-white placeholder:text-[#4a6070]"
                   />
                   <Button size="sm" onClick={searchWorkshop} className="h-9 bg-tropic-gold text-black hover:bg-tropic-gold-light">
                     {workshopLoading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1 h-3.5 w-3.5" />}
@@ -366,8 +366,8 @@ function ModsModule() {
                     <Loader2 className="h-5 w-5 animate-spin text-tropic-gold" />
                   </div>
                 ) : workshopMods.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-                    <Package className="mb-3 h-8 w-8 text-gray-700" />
+                  <div className="flex flex-col items-center justify-center py-12 text-[#4a6070]">
+                    <Package className="mb-3 h-8 w-8 text-[#4a6070]" />
                     <p className="text-sm">No workshop results yet.</p>
                     <p className="mt-1 text-xs">Search by mod name, tag, or ID to pull live Workshop results into the dashboard.</p>
                   </div>
@@ -380,16 +380,16 @@ function ModsModule() {
                           <img src={mod.thumbnail_url} alt="" className="h-14 w-14 rounded-lg object-cover" />
                         ) : (
                           <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-zinc-900">
-                            <Puzzle className="h-5 w-5 text-gray-600" />
+                            <Puzzle className="h-5 w-5 text-[#4a6070]" />
                           </div>
                         )}
                         <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openModDetail(mod)}>
-                          <div className="truncate text-sm font-medium text-gray-100">{mod.name || mod.mod_id}</div>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
-                            <span className="font-mono text-gray-600">{mod.mod_id}</span>
+                          <div className="truncate text-sm font-medium text-[#d0d8e0]">{mod.name || mod.mod_id}</div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[#4a6070]">
+                            <span className="font-mono text-[#4a6070]">{mod.mod_id}</span>
                             {mod.author && <span>by {mod.author}</span>}
                             {mod.tags?.slice(0, 2).map((tag) => (
-                              <Badge key={tag} variant="outline" className="border-zinc-700 text-[10px] text-gray-400">{tag}</Badge>
+                              <Badge key={tag} variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">{tag}</Badge>
                             ))}
                           </div>
                         </button>
@@ -408,9 +408,9 @@ function ModsModule() {
               </CardContent>
             </Card>
 
-            <Card className="border-zinc-800 bg-black/60">
+            <Card className="border-zinc-800 bg-[#050a0e]/60">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-[#d0d8e0]">
                   <History className="h-4 w-4 text-tropic-gold" /> DOWNLOAD HISTORY
                 </CardTitle>
               </CardHeader>
@@ -420,15 +420,15 @@ function ModsModule() {
                     <Loader2 className="h-5 w-5 animate-spin text-tropic-gold" />
                   </div>
                 ) : downloadHistory.length === 0 ? (
-                  <p className="text-xs text-gray-500">No mod download history has been recorded yet.</p>
+                  <p className="text-xs text-[#4a6070]">No mod download history has been recorded yet.</p>
                 ) : (
                   downloadHistory.slice(0, 12).map((entry) => (
                     <div key={`${entry.mod_id}-${entry.server_id}-${entry.downloaded_at}`} className="rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-3">
-                      <div className="text-sm text-gray-100">{entry.mod_name || entry.mod_id}</div>
-                      <div className="mt-1 text-[11px] text-gray-500">
+                      <div className="text-sm text-[#d0d8e0]">{entry.mod_name || entry.mod_id}</div>
+                      <div className="mt-1 text-[11px] text-[#4a6070]">
                         {entry.server_id} • {entry.downloaded_by || 'Unknown operator'}
                       </div>
-                      <div className="mt-1 text-[11px] text-gray-600">
+                      <div className="mt-1 text-[11px] text-[#4a6070]">
                         {entry.downloaded_at ? new Date(entry.downloaded_at).toLocaleString() : 'Unknown time'}
                       </div>
                     </div>
@@ -440,17 +440,17 @@ function ModsModule() {
         </TabsContent>
 
         <TabsContent value="load-order" className="space-y-4">
-          <Card className="border-zinc-800 bg-black/60">
+          <Card className="border-zinc-800 bg-[#050a0e]/60">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+              <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-[#d0d8e0]">
                 <Puzzle className="h-4 w-4 text-tropic-gold" /> LOAD ORDER
-                <Badge variant="outline" className="ml-auto border-zinc-700 text-gray-400">{enabledCount}/{enabledMods.length} enabled</Badge>
+                <Badge variant="outline" className="ml-auto border-zinc-700 text-[#8a9aa8]">{enabledCount}/{enabledMods.length} enabled</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {enabledMods.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-                  <Puzzle className="mb-3 h-8 w-8 text-gray-700" />
+                <div className="flex flex-col items-center justify-center py-12 text-[#4a6070]">
+                  <Puzzle className="mb-3 h-8 w-8 text-[#4a6070]" />
                   <p className="text-sm">No mods are assigned to this server yet.</p>
                   <p className="mt-1 text-xs">Use the Workshop tab to browse live results and add them to the deployment list.</p>
                 </div>
@@ -458,20 +458,20 @@ function ModsModule() {
                 enabledMods.map((mod, index) => (
                   <div key={mod.mod_id || index} className="flex items-center gap-3 rounded-xl border border-zinc-800/70 bg-zinc-950/70 p-3">
                     <div className="flex flex-col gap-1">
-                      <button type="button" onClick={() => moveMod(index, -1)} disabled={index === 0} className="text-gray-500 hover:text-white disabled:opacity-30">
+                      <button type="button" onClick={() => moveMod(index, -1)} disabled={index === 0} className="text-[#4a6070] hover:text-white disabled:opacity-30">
                         <ArrowUp className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" onClick={() => moveMod(index, 1)} disabled={index === enabledMods.length - 1} className="text-gray-500 hover:text-white disabled:opacity-30">
+                      <button type="button" onClick={() => moveMod(index, 1)} disabled={index === enabledMods.length - 1} className="text-[#4a6070] hover:text-white disabled:opacity-30">
                         <ArrowDown className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <div className="w-8 text-center text-xs text-gray-500">{index + 1}</div>
+                    <div className="w-8 text-center text-xs text-[#4a6070]">{index + 1}</div>
                     <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openModDetail(mod)}>
-                      <div className="truncate text-sm font-medium text-gray-100">{mod.name}</div>
-                      <div className="mt-1 text-[11px] font-mono text-gray-600">{mod.mod_id}</div>
+                      <div className="truncate text-sm font-medium text-[#d0d8e0]">{mod.name}</div>
+                      <div className="mt-1 text-[11px] font-mono text-[#4a6070]">{mod.mod_id}</div>
                     </button>
                     <Switch checked={mod.enabled} onCheckedChange={() => toggleMod(index)} className="h-5 w-9" />
-                    <Button size="icon" variant="ghost" onClick={() => removeMod(index)} className="h-8 w-8 text-gray-500 hover:text-red-400">
+                    <Button size="icon" variant="ghost" onClick={() => removeMod(index)} className="h-8 w-8 text-[#4a6070] hover:text-red-400">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -483,9 +483,9 @@ function ModsModule() {
 
         <TabsContent value="batch" className="space-y-4">
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card className="border-zinc-800 bg-black/60">
+            <Card className="border-zinc-800 bg-[#050a0e]/60">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-[#d0d8e0]">
                   <Upload className="h-4 w-4 text-tropic-gold" /> IMPORT JSON
                 </CardTitle>
               </CardHeader>
@@ -495,7 +495,7 @@ function ModsModule() {
                   onChange={(event) => setImportPayload(event.target.value)}
                   placeholder='Paste a JSON array of mods or an object with a "mods" array'
                   rows={12}
-                  className="border-zinc-800 bg-black/50 font-mono text-xs text-white"
+                  className="border-zinc-800 bg-[#050a0e]/50 font-mono text-xs text-white"
                 />
                 {importError && <p className="text-xs text-red-400">{importError}</p>}
                 <Button size="sm" onClick={importMods} disabled={!importPayload.trim() || importing} className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
@@ -505,9 +505,9 @@ function ModsModule() {
               </CardContent>
             </Card>
 
-            <Card className="border-zinc-800 bg-black/60">
+            <Card className="border-zinc-800 bg-[#050a0e]/60">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-gray-200">
+                <CardTitle className="flex items-center gap-2 text-sm tracking-[0.16em] text-[#d0d8e0]">
                   <FileJson className="h-4 w-4 text-tropic-gold" /> EXPORT + REUSE
                 </CardTitle>
               </CardHeader>
@@ -523,7 +523,7 @@ function ModsModule() {
                   onChange={(event) => setExportPayload(event.target.value)}
                   placeholder="Exported mod payload will appear here"
                   rows={12}
-                  className="border-zinc-800 bg-black/50 font-mono text-xs text-white"
+                  className="border-zinc-800 bg-[#050a0e]/50 font-mono text-xs text-white"
                 />
               </CardContent>
             </Card>
@@ -552,16 +552,16 @@ function ModsModule() {
               </div>
               {selectedMod.description && (
                 <div>
-                  <div className="text-xs font-medium text-gray-500">Description</div>
-                  <p className="mt-1 text-sm text-gray-300">{selectedMod.description}</p>
+                  <div className="text-xs font-medium text-[#4a6070]">Description</div>
+                  <p className="mt-1 text-sm text-[#8a9aa8]">{selectedMod.description}</p>
                 </div>
               )}
               {!!selectedMod.dependencies?.length && (
                 <div>
-                  <div className="text-xs font-medium text-gray-500">Dependencies</div>
+                  <div className="text-xs font-medium text-[#4a6070]">Dependencies</div>
                   <div className="mt-1 space-y-1">
                     {selectedMod.dependencies.map((dependency, index) => (
-                      <div key={`${selectedMod.mod_id}-dep-${index}`} className="text-xs text-gray-400">
+                      <div key={`${selectedMod.mod_id}-dep-${index}`} className="text-xs text-[#8a9aa8]">
                         {dependency.mod_id || dependency.modId || dependency.name || JSON.stringify(dependency)}
                       </div>
                     ))}
@@ -582,8 +582,8 @@ function ModsModule() {
 function DetailItem({ label, value, mono }) {
   return (
     <div>
-      <div className="text-[11px] font-medium text-gray-500">{label}</div>
-      <div className={`text-sm text-gray-200 ${mono ? 'font-mono' : ''}`}>{value}</div>
+      <div className="text-[11px] font-medium text-[#4a6070]">{label}</div>
+      <div className={`text-sm text-[#d0d8e0] ${mono ? 'font-mono' : ''}`}>{value}</div>
     </div>
   );
 }

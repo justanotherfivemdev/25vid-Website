@@ -124,7 +124,7 @@ export default function CorrelationPanel({ docked = false }) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-lg border bg-black/90 backdrop-blur-md relative"
+          className="h-9 w-9 rounded-lg border bg-[#050a0e]/90 backdrop-blur-md relative"
           style={{ borderColor: 'rgba(255,215,0,0.4)', color: '#FFD700' }}
           onClick={() => setIsCollapsed(false)}
           title={`${signals.length} correlation signals`}
@@ -164,7 +164,7 @@ export default function CorrelationPanel({ docked = false }) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-5 w-5 text-gray-500 hover:text-tropic-gold"
+          className="h-5 w-5 text-[#4a6070] hover:text-tropic-gold"
           onClick={() => setIsCollapsed(true)}
         >
           <ChevronRight className="h-3 w-3" />
@@ -192,7 +192,7 @@ export default function CorrelationPanel({ docked = false }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-medium text-gray-200 truncate">
+                    <span className="text-[10px] font-medium text-[#d0d8e0] truncate">
                       {signal.label}
                     </span>
                     <span
@@ -202,7 +202,7 @@ export default function CorrelationPanel({ docked = false }) {
                       {Math.round(signal.confidence * 100)}%
                     </span>
                   </div>
-                  <p className="text-[9px] text-gray-500 mt-0.5">{signal.description}</p>
+                  <p className="text-[9px] text-[#4a6070] mt-0.5">{signal.description}</p>
                 </div>
               </div>
             </div>
@@ -211,7 +211,7 @@ export default function CorrelationPanel({ docked = false }) {
       </div>
 
       <div className="px-3 py-1.5 border-t text-center" style={{ borderColor: 'rgba(255,215,0,0.15)' }}>
-        <span className="text-[8px] text-gray-600 uppercase tracking-wider">
+        <span className="text-[8px] text-[#4a6070] uppercase tracking-wider">
           Heuristic signal detection
         </span>
       </div>

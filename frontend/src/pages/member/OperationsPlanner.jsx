@@ -933,7 +933,7 @@ export default function OperationsPlanner() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[70vh] text-gray-400">
+      <div className="flex items-center justify-center h-[70vh] text-[#8a9aa8]">
         Loading plan…
       </div>
     );
@@ -943,18 +943,18 @@ export default function OperationsPlanner() {
     <div className="flex flex-col h-[calc(100vh-64px)] bg-[#080e1c] text-white overflow-hidden">
       {/* ── Top Bar ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-4 py-2 bg-[#0c1322] border-b border-[#C9A227]/20 shrink-0 flex-wrap">
-        <Link to="/hub" className="text-gray-400 hover:text-[#C9A227] transition">
+        <Link to="/hub" className="text-[#8a9aa8] hover:text-[#C9A227] transition">
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <h1
           className="text-lg font-bold tracking-wider text-[#C9A227] uppercase"
-          style={{ fontFamily: 'Rajdhani, sans-serif' }}
+          style={{ fontFamily: "'Share Tech', sans-serif" }}
         >
           Operations Planner
         </h1>
 
         {isViewOnly && (
-          <Badge className="bg-gray-700 text-gray-300 ml-2">View Only</Badge>
+          <Badge className="bg-[#111a24] text-[#8a9aa8] ml-2">View Only</Badge>
         )}
 
         {/* Session / live indicator */}
@@ -972,7 +972,7 @@ export default function OperationsPlanner() {
         {/* Active collaborators */}
         {wsParticipants.length > 0 && (
           <div className="flex items-center gap-1 ml-2">
-            <Users className="w-3.5 h-3.5 text-gray-500" />
+            <Users className="w-3.5 h-3.5 text-[#4a6070]" />
             <div className="flex -space-x-1">
               {wsParticipants.slice(0, 5).map((p) => (
                 <div
@@ -985,7 +985,7 @@ export default function OperationsPlanner() {
               ))}
             </div>
             {wsParticipants.length > 5 && (
-              <span className="text-[10px] text-gray-500">+{wsParticipants.length - 5}</span>
+              <span className="text-[10px] text-[#4a6070]">+{wsParticipants.length - 5}</span>
             )}
           </div>
         )}
@@ -1019,8 +1019,8 @@ export default function OperationsPlanner() {
             ) : (
               <>
                 {joinCode && (
-                  <div className="flex items-center gap-1 bg-gray-800/60 rounded px-2 py-1">
-                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">Code:</span>
+                  <div className="flex items-center gap-1 bg-[#111a24]/60 rounded px-2 py-1">
+                    <span className="text-[10px] text-[#4a6070] uppercase tracking-wider">Code:</span>
                     <span className="text-sm font-mono text-[#C9A227] select-all">{joinCode}</span>
                   </div>
                 )}
@@ -1030,7 +1030,7 @@ export default function OperationsPlanner() {
                   className={`${
                     allowLiveViewing
                       ? 'border-green-600 text-green-400'
-                      : 'border-gray-600 text-gray-400'
+                      : 'border-[rgba(201,162,39,0.2)] text-[#8a9aa8]'
                   }`}
                   onClick={handleToggleLiveViewing}
                   title="Allow Hub members to view this session live"
@@ -1049,12 +1049,12 @@ export default function OperationsPlanner() {
               </>
             )}
 
-            <div className="w-px h-5 bg-gray-700 mx-1" />
+            <div className="w-px h-5 bg-[#111a24] mx-1" />
 
             <Button
               size="sm"
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:border-[#C9A227] hover:text-[#C9A227]"
+              className="border-[rgba(201,162,39,0.2)] text-[#8a9aa8] hover:border-[#C9A227] hover:text-[#C9A227]"
               onClick={() => setShowUploadDialog(true)}
             >
               <Upload className="w-4 h-4 mr-1" /> Upload Map
@@ -1062,7 +1062,7 @@ export default function OperationsPlanner() {
             <Button
               size="sm"
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:border-[#C9A227] hover:text-[#C9A227]"
+              className="border-[rgba(201,162,39,0.2)] text-[#8a9aa8] hover:border-[#C9A227] hover:text-[#C9A227]"
               onClick={openLoadDialog}
             >
               <FileText className="w-4 h-4 mr-1" /> Load
@@ -1070,7 +1070,7 @@ export default function OperationsPlanner() {
             <Button
               size="sm"
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:border-[#C9A227] hover:text-[#C9A227]"
+              className="border-[rgba(201,162,39,0.2)] text-[#8a9aa8] hover:border-[#C9A227] hover:text-[#C9A227]"
               onClick={() => savePlan()}
               disabled={saving}
             >
@@ -1105,25 +1105,25 @@ export default function OperationsPlanner() {
 
       {/* ── Join Session Dialog ─────────────────────────────────────────── */}
       {showJoinDialog && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <Card className="w-full max-w-sm bg-[#0c1322] border-gray-800">
+        <div className="fixed inset-0 z-50 bg-[#050a0e]/70 flex items-center justify-center p-4">
+          <Card className="w-full max-w-sm bg-[#0c1322] border-[rgba(201,162,39,0.12)]">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[#C9A227]">Join Session</CardTitle>
                 <button onClick={() => setShowJoinDialog(false)}>
-                  <X className="w-5 h-5 text-gray-400 hover:text-white" />
+                  <X className="w-5 h-5 text-[#8a9aa8] hover:text-white" />
                 </button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-[#8a9aa8]">
                 Enter the session join code shared by the session host.
               </p>
               <Input
                 value={joinCodeInput}
                 onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
                 placeholder="e.g. A1B2C3D4"
-                className="bg-gray-900 border-gray-700 font-mono text-center text-lg tracking-widest"
+                className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] font-mono text-center text-lg tracking-widest"
                 maxLength={8}
               />
               <Button
@@ -1142,15 +1142,15 @@ export default function OperationsPlanner() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* ── Left Sidebar ─────────────────────────────────────────────── */}
         {!isViewOnly && (
-          <div className="w-72 border-r border-gray-800 bg-[#0c1322] overflow-y-auto shrink-0 hidden lg:flex lg:flex-col">
+          <div className="w-72 border-r border-[rgba(201,162,39,0.12)] bg-[#0c1322] overflow-y-auto shrink-0 hidden lg:flex lg:flex-col">
             {/* Panel tabs — two rows for expanded tool set */}
             <div className="shrink-0">
-              <div className="flex border-b border-gray-800">
+              <div className="flex border-b border-[rgba(201,162,39,0.12)]">
                 <button
                   className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
                     activePanel === 'symbols'
                       ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-[#4a6070] hover:text-[#8a9aa8]'
                   }`}
                   onClick={() => setActivePanel('symbols')}
                   title="Unit Symbols"
@@ -1162,7 +1162,7 @@ export default function OperationsPlanner() {
                   className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
                     activePanel === 'draw'
                       ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-[#4a6070] hover:text-[#8a9aa8]'
                   }`}
                   onClick={() => setActivePanel('draw')}
                   title="Drawing Tools"
@@ -1174,7 +1174,7 @@ export default function OperationsPlanner() {
                   className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
                     activePanel === 'orbat'
                       ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-[#4a6070] hover:text-[#8a9aa8]'
                   }`}
                   onClick={() => setActivePanel('orbat')}
                   title="ORBAT Builder"
@@ -1186,7 +1186,7 @@ export default function OperationsPlanner() {
                   className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
                     activePanel === 'mortar'
                       ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-[#4a6070] hover:text-[#8a9aa8]'
                   }`}
                   onClick={() => setActivePanel('mortar')}
                   title="Mortar Calculator"
@@ -1198,7 +1198,7 @@ export default function OperationsPlanner() {
                   className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
                     activePanel === 'layers'
                       ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-[#4a6070] hover:text-[#8a9aa8]'
                   }`}
                   onClick={() => setActivePanel('layers')}
                   title="Layers & Info"
@@ -1219,7 +1219,7 @@ export default function OperationsPlanner() {
                       className={`text-[10px] px-2 py-1 rounded border transition ${
                         affiliationFilter === key
                           ? 'border-[#C9A227] text-[#C9A227] bg-[#C9A227]/10'
-                          : 'border-gray-700 text-gray-500 hover:text-gray-300'
+                          : 'border-[rgba(201,162,39,0.15)] text-[#4a6070] hover:text-[#8a9aa8]'
                       }`}
                       onClick={() => setAffiliationFilter(key)}
                     >
@@ -1237,17 +1237,17 @@ export default function OperationsPlanner() {
                     return (
                       <button
                         key={`${s.sidc}-${i}`}
-                        className="flex items-center gap-2 w-full px-2 py-1.5 rounded hover:bg-gray-800/60 transition text-left"
+                        className="flex items-center gap-2 w-full px-2 py-1.5 rounded hover:bg-[#111a24]/60 transition text-left"
                         onClick={() => addUnit(s)}
                         title={`Add ${s.name}`}
                       >
                         {dataUrl ? (
                           <img src={dataUrl} alt={s.name} className="w-7 h-7 object-contain" />
                         ) : (
-                          <div className="w-7 h-7 bg-gray-700 rounded" />
+                          <div className="w-7 h-7 bg-[#111a24] rounded" />
                         )}
-                        <span className="text-sm text-gray-300">{s.name}</span>
-                        <Plus className="w-3 h-3 text-gray-600 ml-auto" />
+                        <span className="text-sm text-[#8a9aa8]">{s.name}</span>
+                        <Plus className="w-3 h-3 text-[#4a6070] ml-auto" />
                       </button>
                     );
                   })}
@@ -1255,8 +1255,8 @@ export default function OperationsPlanner() {
 
                 {/* Placed units list */}
                 {units.length > 0 && (
-                  <div className="pt-3 border-t border-gray-800">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                  <div className="pt-3 border-t border-[rgba(201,162,39,0.12)]">
+                    <p className="text-[10px] text-[#4a6070] uppercase tracking-wider mb-2">
                       Placed Units ({units.length})
                     </p>
                     <div className="space-y-1 max-h-40 overflow-y-auto">
@@ -1268,7 +1268,7 @@ export default function OperationsPlanner() {
                             className={`flex items-center gap-2 w-full px-2 py-1 rounded text-left text-xs transition ${
                               selectedUnitId === u.id
                                 ? 'bg-[#C9A227]/15 text-[#C9A227]'
-                                : 'text-gray-400 hover:bg-gray-800/40'
+                                : 'text-[#8a9aa8] hover:bg-[#111a24]/40'
                             }`}
                             onClick={() => {
                               setSelectedUnitId(u.id);
@@ -1303,8 +1303,8 @@ export default function OperationsPlanner() {
 
                 {/* Drawings list */}
                 {drawings.length > 0 && (
-                  <div className="pt-3 mt-3 border-t border-gray-800">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                  <div className="pt-3 mt-3 border-t border-[rgba(201,162,39,0.12)]">
+                    <p className="text-[10px] text-[#4a6070] uppercase tracking-wider mb-2">
                       Drawings ({drawings.length})
                     </p>
                     <div className="space-y-1 max-h-40 overflow-y-auto">
@@ -1314,7 +1314,7 @@ export default function OperationsPlanner() {
                           className={`flex items-center gap-2 w-full px-2 py-1 rounded text-left text-xs transition ${
                             selectedDrawingId === d.id
                               ? 'bg-[#C9A227]/15 text-[#C9A227]'
-                              : 'text-gray-400 hover:bg-gray-800/40'
+                              : 'text-[#8a9aa8] hover:bg-[#111a24]/40'
                           }`}
                           onClick={() => {
                             setSelectedDrawingId(d.id);
@@ -1334,8 +1334,8 @@ export default function OperationsPlanner() {
 
                 {/* Movement paths list */}
                 {movementPaths.length > 0 && (
-                  <div className="pt-3 mt-3 border-t border-gray-800">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                  <div className="pt-3 mt-3 border-t border-[rgba(201,162,39,0.12)]">
+                    <p className="text-[10px] text-[#4a6070] uppercase tracking-wider mb-2">
                       Paths ({movementPaths.length})
                     </p>
                     <div className="space-y-1 max-h-40 overflow-y-auto">
@@ -1345,7 +1345,7 @@ export default function OperationsPlanner() {
                           className={`flex items-center gap-2 w-full px-2 py-1 rounded text-left text-xs transition ${
                             selectedPathId === p.id
                               ? 'bg-[#3B82F6]/15 text-[#3B82F6]'
-                              : 'text-gray-400 hover:bg-gray-800/40'
+                              : 'text-[#8a9aa8] hover:bg-[#111a24]/40'
                           }`}
                           onClick={() => {
                             setSelectedPathId(p.id);
@@ -1369,18 +1369,18 @@ export default function OperationsPlanner() {
             {activePanel === 'metadata' && (
               <div className="p-3 space-y-3">
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     Plan Title
                   </label>
                   <Input
                     value={planTitle}
                     onChange={(e) => setPlanTitle(e.target.value)}
                     placeholder="Operation Thunder…"
-                    className="bg-gray-900 border-gray-700 text-sm"
+                    className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     Description
                   </label>
                   <Textarea
@@ -1388,29 +1388,29 @@ export default function OperationsPlanner() {
                     onChange={(e) => setPlanDescription(e.target.value)}
                     placeholder="Briefing details…"
                     rows={4}
-                    className="bg-gray-900 border-gray-700 text-sm"
+                    className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     Visibility
                   </label>
                   <select
                     value={planVisibility}
                     onChange={(e) => setPlanVisibility(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-300"
+                    className="w-full bg-[#0c1117] border border-[rgba(201,162,39,0.15)] rounded px-2 py-1.5 text-sm text-[#8a9aa8]"
                   >
                     <option value="all_members">All Members</option>
                     <option value="staff_only">Staff Only</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">Published:</span>
+                  <span className="text-xs text-[#8a9aa8]">Published:</span>
                   <Badge
                     className={
                       planPublished
                         ? 'bg-green-900/40 text-green-400 border border-green-700'
-                        : 'bg-gray-800 text-gray-500 border border-gray-700'
+                        : 'bg-[#111a24] text-[#4a6070] border border-[rgba(201,162,39,0.15)]'
                     }
                   >
                     {planPublished ? 'Yes' : 'Draft'}
@@ -1418,24 +1418,24 @@ export default function OperationsPlanner() {
                 </div>
 
                 {/* ── Threat Map Integration ──────────────────────────── */}
-                <div className="pt-2 border-t border-gray-800">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                <div className="pt-2 border-t border-[rgba(201,162,39,0.12)]">
+                  <p className="text-[10px] text-[#4a6070] uppercase tracking-wider mb-2">
                     <Globe2 className="w-3 h-3 inline mr-1" />Threat Map Integration
                   </p>
                   <div>
-                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                       Threat Map Link
                     </label>
                     <Input
                       value={threatMapLink}
                       onChange={(e) => setThreatMapLink(e.target.value)}
                       placeholder="Operation or event ID…"
-                      className="bg-gray-900 border-gray-700 text-sm"
+                      className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
-                      <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                         Geo Latitude
                       </label>
                       <Input
@@ -1444,11 +1444,11 @@ export default function OperationsPlanner() {
                         value={geoLat}
                         onChange={(e) => setGeoLat(e.target.value)}
                         placeholder="e.g. 21.49"
-                        className="bg-gray-900 border-gray-700 text-sm"
+                        className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                         Geo Longitude
                       </label>
                       <Input
@@ -1457,11 +1457,11 @@ export default function OperationsPlanner() {
                         value={geoLng}
                         onChange={(e) => setGeoLng(e.target.value)}
                         placeholder="e.g. -158.06"
-                        className="bg-gray-900 border-gray-700 text-sm"
+                        className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                       />
                     </div>
                   </div>
-                  <p className="text-[9px] text-gray-600 mt-1">
+                  <p className="text-[9px] text-[#4a6070] mt-1">
                     Optional. If set, this plan appears on the Global Threat Map.
                   </p>
                 </div>
@@ -1491,30 +1491,30 @@ export default function OperationsPlanner() {
                 />
 
                 {/* Map info */}
-                <div className="pt-3 border-t border-gray-800">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                <div className="pt-3 border-t border-[rgba(201,162,39,0.12)]">
+                  <p className="text-[10px] text-[#4a6070] uppercase tracking-wider mb-2">
                     <Grid3X3 className="w-3 h-3 inline mr-1" />Map Info
                   </p>
                   {isReforgerMap && reforgerMapConfig ? (
-                    <div className="space-y-1 text-[10px] text-gray-400">
-                      <p><span className="text-gray-600">Map:</span> {reforgerMapConfig.name}</p>
-                      <p><span className="text-gray-600">Size:</span> {(reforgerMapConfig.xMax / 1000).toFixed(1)} × {(reforgerMapConfig.yMax / 1000).toFixed(1)} km</p>
-                      <p><span className="text-gray-600">Grid:</span> {reforgerMapConfig.gridSize}m squares</p>
-                      <p><span className="text-gray-600">Coords:</span> Game coordinates (metres)</p>
+                    <div className="space-y-1 text-[10px] text-[#8a9aa8]">
+                      <p><span className="text-[#4a6070]">Map:</span> {reforgerMapConfig.name}</p>
+                      <p><span className="text-[#4a6070]">Size:</span> {(reforgerMapConfig.xMax / 1000).toFixed(1)} × {(reforgerMapConfig.yMax / 1000).toFixed(1)} km</p>
+                      <p><span className="text-[#4a6070]">Grid:</span> {reforgerMapConfig.gridSize}m squares</p>
+                      <p><span className="text-[#4a6070]">Coords:</span> Game coordinates (metres)</p>
                     </div>
                   ) : mapDimensions.w > 0 ? (
-                    <div className="space-y-1 text-[10px] text-gray-400">
-                      <p><span className="text-gray-600">Size:</span> {mapDimensions.w} × {mapDimensions.h} px</p>
-                      <p><span className="text-gray-600">Coords:</span> Normalised (0→1)</p>
+                    <div className="space-y-1 text-[10px] text-[#8a9aa8]">
+                      <p><span className="text-[#4a6070]">Size:</span> {mapDimensions.w} × {mapDimensions.h} px</p>
+                      <p><span className="text-[#4a6070]">Coords:</span> Normalised (0→1)</p>
                     </div>
                   ) : (
-                    <p className="text-[10px] text-gray-600">No map loaded</p>
+                    <p className="text-[10px] text-[#4a6070]">No map loaded</p>
                   )}
                 </div>
 
                 {/* Plan metadata link */}
                 <button
-                  className="text-[10px] text-gray-500 hover:text-[#C9A227] transition flex items-center gap-1"
+                  className="text-[10px] text-[#4a6070] hover:text-[#C9A227] transition flex items-center gap-1"
                   onClick={() => setActivePanel('metadata')}
                 >
                   <Settings className="w-3 h-3" /> Plan Settings & Metadata
@@ -1524,7 +1524,7 @@ export default function OperationsPlanner() {
 
             {/* ── Comms Channel (below panels) ───────────────────────── */}
             {planId && (
-              <div className="border-t border-gray-800">
+              <div className="border-t border-[rgba(201,162,39,0.12)]">
                 <CommsChannel
                   planId={planId}
                   sessionId={sessionId}
@@ -1548,8 +1548,8 @@ export default function OperationsPlanner() {
         {/* ── Map Canvas ───────────────────────────────────────────────── */}
         <div className="flex-1 relative min-h-0 bg-[#060a14]">
           {!mapImageUrl ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-500">
-              <MapPin className="w-16 h-16 text-gray-700" />
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-[#4a6070]">
+              <MapPin className="w-16 h-16 text-[#4a6070]" />
               <p className="text-lg">No map loaded</p>
               {!isViewOnly && (
                 <div className="flex gap-2">
@@ -1562,7 +1562,7 @@ export default function OperationsPlanner() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="border-gray-600 text-gray-400"
+                    className="border-[rgba(201,162,39,0.2)] text-[#8a9aa8]"
                     onClick={openLoadDialog}
                   >
                     <FileText className="w-4 h-4 mr-1" /> Load Existing
@@ -1584,14 +1584,14 @@ export default function OperationsPlanner() {
         </div>
 
         {/* ── Right Sidebar (Properties) ───────────────────────────────── */}
-        <div className="w-72 border-l border-gray-800 bg-[#0c1322] overflow-y-auto shrink-0 hidden xl:block">
+        <div className="w-72 border-l border-[rgba(201,162,39,0.12)] bg-[#0c1322] overflow-y-auto shrink-0 hidden xl:block">
           {/* Tab switcher for right panel */}
-          <div className="flex border-b border-gray-800">
+          <div className="flex border-b border-[rgba(201,162,39,0.12)]">
             <button
               className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
                 activePanel === 'properties' || activePanel === 'symbols'
                   ? 'text-[#C9A227] border-b-2 border-[#C9A227]'
-                  : 'text-gray-500 hover:text-gray-300'
+                  : 'text-[#4a6070] hover:text-[#8a9aa8]'
               }`}
               onClick={() => setActivePanel('properties')}
             >
@@ -1601,7 +1601,7 @@ export default function OperationsPlanner() {
               className={`flex-1 py-2 text-[10px] uppercase tracking-wider font-bold transition ${
                 activePanel === 'paths'
                   ? 'text-[#3B82F6] border-b-2 border-[#3B82F6]'
-                  : 'text-gray-500 hover:text-gray-300'
+                  : 'text-[#4a6070] hover:text-[#8a9aa8]'
               }`}
               onClick={() => setActivePanel('paths')}
             >
@@ -1647,10 +1647,10 @@ export default function OperationsPlanner() {
             />
           ) : (
             <>
-              <div className="border-b border-gray-800 px-3 py-2">
+              <div className="border-b border-[rgba(201,162,39,0.12)] px-3 py-2">
                 <h3
-                  className="text-xs uppercase tracking-wider font-bold text-gray-400"
-                  style={{ fontFamily: 'Rajdhani, sans-serif' }}
+                  className="text-xs uppercase tracking-wider font-bold text-[#8a9aa8]"
+                  style={{ fontFamily: "'Share Tech', sans-serif" }}
                 >
                   {selectedUnit ? 'Unit Properties' : 'Select a Unit or Drawing'}
                 </h3>
@@ -1665,29 +1665,29 @@ export default function OperationsPlanner() {
                   return url ? (
                     <img src={url} alt="" className="h-16 object-contain" />
                   ) : (
-                    <div className="w-16 h-16 bg-gray-700 rounded" />
+                    <div className="w-16 h-16 bg-[#111a24] rounded" />
                   );
                 })()}
               </div>
 
               {/* Editable fields */}
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                   Name
                 </label>
                 {isViewOnly ? (
-                  <p className="text-sm text-gray-300">{selectedUnit.name || '—'}</p>
+                  <p className="text-sm text-[#8a9aa8]">{selectedUnit.name || '—'}</p>
                 ) : (
                   <Input
                     value={selectedUnit.name}
                     onChange={(e) => updateUnit(selectedUnit.id, { name: e.target.value })}
-                    className="bg-gray-900 border-gray-700 text-sm"
+                    className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                   />
                 )}
               </div>
 
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                   Affiliation
                 </label>
                 <Badge
@@ -1703,19 +1703,19 @@ export default function OperationsPlanner() {
               </div>
 
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                   SIDC
                 </label>
-                <p className="text-xs text-gray-500 font-mono">{selectedUnit.symbol_code}</p>
+                <p className="text-xs text-[#4a6070] font-mono">{selectedUnit.symbol_code}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     Rotation (°)
                   </label>
                   {isViewOnly ? (
-                    <p className="text-sm text-gray-300">{selectedUnit.rotation}</p>
+                    <p className="text-sm text-[#8a9aa8]">{selectedUnit.rotation}</p>
                   ) : (
                     <Input
                       type="number"
@@ -1723,16 +1723,16 @@ export default function OperationsPlanner() {
                       onChange={(e) =>
                         updateUnit(selectedUnit.id, { rotation: parseFloat(e.target.value) || 0 })
                       }
-                      className="bg-gray-900 border-gray-700 text-sm"
+                      className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                     />
                   )}
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     Scale
                   </label>
                   {isViewOnly ? (
-                    <p className="text-sm text-gray-300">{selectedUnit.scale}</p>
+                    <p className="text-sm text-[#8a9aa8]">{selectedUnit.scale}</p>
                   ) : (
                     <Input
                       type="number"
@@ -1745,55 +1745,55 @@ export default function OperationsPlanner() {
                           scale: Math.max(0.2, Math.min(5, parseFloat(e.target.value) || 1)),
                         })
                       }
-                      className="bg-gray-900 border-gray-700 text-sm"
+                      className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                     />
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                   Notes
                 </label>
                 {isViewOnly ? (
-                  <p className="text-sm text-gray-300">{selectedUnit.notes || '—'}</p>
+                  <p className="text-sm text-[#8a9aa8]">{selectedUnit.notes || '—'}</p>
                 ) : (
                   <Textarea
                     value={selectedUnit.notes}
                     onChange={(e) => updateUnit(selectedUnit.id, { notes: e.target.value })}
                     rows={3}
-                    className="bg-gray-900 border-gray-700 text-sm"
+                    className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                   />
                 )}
               </div>
 
               {/* ── Unit Geo Coordinates ─────────────────────────── */}
-              <div className="pt-2 border-t border-gray-800">
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+              <div className="pt-2 border-t border-[rgba(201,162,39,0.12)]">
+                <p className="text-[10px] text-[#4a6070] uppercase tracking-wider mb-2">
                   <Globe2 className="w-3 h-3 inline mr-1" />Geo Location
                 </p>
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                     Location Name
                   </label>
                   {isViewOnly ? (
-                    <p className="text-sm text-gray-300">{selectedUnit.location_name || '—'}</p>
+                    <p className="text-sm text-[#8a9aa8]">{selectedUnit.location_name || '—'}</p>
                   ) : (
                     <Input
                       value={selectedUnit.location_name || ''}
                       onChange={(e) => updateUnit(selectedUnit.id, { location_name: e.target.value })}
                       placeholder="e.g. Schofield Barracks, HI"
-                      className="bg-gray-900 border-gray-700 text-sm"
+                      className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                     />
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <div>
-                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                       Latitude
                     </label>
                     {isViewOnly ? (
-                      <p className="text-sm text-gray-300">{selectedUnit.geo_lat ?? '—'}</p>
+                      <p className="text-sm text-[#8a9aa8]">{selectedUnit.geo_lat ?? '—'}</p>
                     ) : (
                       <Input
                         type="number"
@@ -1801,16 +1801,16 @@ export default function OperationsPlanner() {
                         value={selectedUnit.geo_lat ?? ''}
                         onChange={(e) => updateUnit(selectedUnit.id, { geo_lat: e.target.value })}
                         placeholder="e.g. 21.49"
-                        className="bg-gray-900 border-gray-700 text-sm"
+                        className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                       />
                     )}
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                       Longitude
                     </label>
                     {isViewOnly ? (
-                      <p className="text-sm text-gray-300">{selectedUnit.geo_lng ?? '—'}</p>
+                      <p className="text-sm text-[#8a9aa8]">{selectedUnit.geo_lng ?? '—'}</p>
                     ) : (
                       <Input
                         type="number"
@@ -1818,21 +1818,21 @@ export default function OperationsPlanner() {
                         value={selectedUnit.geo_lng ?? ''}
                         onChange={(e) => updateUnit(selectedUnit.id, { geo_lng: e.target.value })}
                         placeholder="e.g. -158.06"
-                        className="bg-gray-900 border-gray-700 text-sm"
+                        className="bg-[#0c1117] border-[rgba(201,162,39,0.15)] text-sm"
                       />
                     )}
                   </div>
                 </div>
-                <p className="text-[9px] text-gray-600 mt-1">
+                <p className="text-[9px] text-[#4a6070] mt-1">
                   Optional. Real-world coordinates for Global Threat Map placement.
                 </p>
               </div>
 
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] text-[#4a6070] uppercase tracking-wider block mb-1">
                   Position (normalised)
                 </label>
-                <p className="text-xs text-gray-500 font-mono">
+                <p className="text-xs text-[#4a6070] font-mono">
                   x: {selectedUnit.x.toFixed(4)} — y: {selectedUnit.y.toFixed(4)}
                 </p>
               </div>
@@ -1849,8 +1849,8 @@ export default function OperationsPlanner() {
               )}
             </div>
           ) : (
-            <div className="p-4 text-center text-gray-600 text-sm">
-              <Crosshair className="w-8 h-8 mx-auto mb-2 text-gray-700" />
+            <div className="p-4 text-center text-[#4a6070] text-sm">
+              <Crosshair className="w-8 h-8 mx-auto mb-2 text-[#4a6070]" />
               Click a unit or drawing on the map to view/edit its properties.
             </div>
           )}
@@ -1861,18 +1861,18 @@ export default function OperationsPlanner() {
 
       {/* ── Upload Dialog ────────────────────────────────────────────────── */}
       {showUploadDialog && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md bg-[#0c1322] border-gray-800">
+        <div className="fixed inset-0 z-50 bg-[#050a0e]/70 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md bg-[#0c1322] border-[rgba(201,162,39,0.12)]">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[#C9A227]">Upload Tactical Map</CardTitle>
                 <button onClick={() => setShowUploadDialog(false)}>
-                  <X className="w-5 h-5 text-gray-400 hover:text-white" />
+                  <X className="w-5 h-5 text-[#8a9aa8] hover:text-white" />
                 </button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-[#8a9aa8]">
                 Upload a map image (JPG, PNG, or WebP). Max 20 MB.
               </p>
               <Input
@@ -1880,7 +1880,7 @@ export default function OperationsPlanner() {
                 accept=".jpg,.jpeg,.png,.webp"
                 onChange={handleMapUpload}
                 disabled={uploading}
-                className="bg-gray-900 border-gray-700"
+                className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]"
               />
               {uploading && <p className="text-sm text-[#C9A227]">Uploading…</p>}
             </CardContent>
@@ -1890,13 +1890,13 @@ export default function OperationsPlanner() {
 
       {/* ── Load Dialog ──────────────────────────────────────────────────── */}
       {showLoadDialog && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <Card className="w-full max-w-2xl bg-[#0c1322] border-gray-800 max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-[#050a0e]/70 flex items-center justify-center p-4">
+          <Card className="w-full max-w-2xl bg-[#0c1322] border-[rgba(201,162,39,0.12)] max-h-[80vh] flex flex-col">
             <CardHeader className="pb-2 shrink-0">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[#C9A227]">Load Plan or Map</CardTitle>
                 <button onClick={() => setShowLoadDialog(false)}>
-                  <X className="w-5 h-5 text-gray-400 hover:text-white" />
+                  <X className="w-5 h-5 text-[#8a9aa8] hover:text-white" />
                 </button>
               </div>
             </CardHeader>
@@ -1904,14 +1904,14 @@ export default function OperationsPlanner() {
               {/* Existing plans */}
               {existingPlans.length > 0 && (
                 <div>
-                  <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-2">
+                  <h4 className="text-xs uppercase tracking-wider text-[#4a6070] mb-2">
                     Existing Plans
                   </h4>
                   <div className="space-y-1">
                     {existingPlans.map((p) => (
                       <button
                         key={p.id}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800/60 transition text-left"
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-[#111a24]/60 transition text-left"
                         onClick={() => {
                           setShowLoadDialog(false);
                           navigate(`/hub/operations-planner/${p.id}`);
@@ -1919,8 +1919,8 @@ export default function OperationsPlanner() {
                       >
                         <FileText className="w-4 h-4 text-[#C9A227] shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-sm text-gray-200 truncate">{p.title}</p>
-                          <p className="text-[10px] text-gray-500">
+                          <p className="text-sm text-[#d0d8e0] truncate">{p.title}</p>
+                          <p className="text-[10px] text-[#4a6070]">
                             by {p.created_by_username} •{' '}
                             {p.is_published ? 'Published' : 'Draft'}
                           </p>
@@ -1934,14 +1934,14 @@ export default function OperationsPlanner() {
               {/* Available maps */}
               {availableMaps.length > 0 && (
                 <div>
-                  <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-2">
+                  <h4 className="text-xs uppercase tracking-wider text-[#4a6070] mb-2">
                     Available Maps
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
                     {availableMaps.map((m) => (
                       <button
                         key={m.id}
-                        className="flex flex-col items-center gap-1 p-2 rounded border border-gray-800 hover:border-[#C9A227]/50 transition"
+                        className="flex flex-col items-center gap-1 p-2 rounded border border-[rgba(201,162,39,0.12)] hover:border-[#C9A227]/50 transition"
                         onClick={() => selectExistingMap(m)}
                       >
                         <img
@@ -1949,7 +1949,7 @@ export default function OperationsPlanner() {
                           alt={m.original_filename}
                           className="w-full h-20 object-cover rounded"
                         />
-                        <span className="text-[10px] text-gray-400 truncate w-full text-center">
+                        <span className="text-[10px] text-[#8a9aa8] truncate w-full text-center">
                           {m.original_filename}
                         </span>
                       </button>
@@ -1959,21 +1959,21 @@ export default function OperationsPlanner() {
               )}
 
               {existingPlans.length === 0 && availableMaps.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-6">
+                <p className="text-sm text-[#4a6070] text-center py-6">
                   No plans or maps found. Upload a map to get started.
                 </p>
               )}
 
               {/* Reforger Maps */}
               <div>
-                <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-2">
+                <h4 className="text-xs uppercase tracking-wider text-[#4a6070] mb-2">
                   Arma Reforger Maps
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
                   {REFORGER_MAPS.map((rm) => (
                     <button
                       key={rm.id}
-                      className="flex flex-col items-center gap-1 p-2 rounded border border-gray-800 hover:border-[#C9A227]/50 transition"
+                      className="flex flex-col items-center gap-1 p-2 rounded border border-[rgba(201,162,39,0.12)] hover:border-[#C9A227]/50 transition"
                       onClick={() => selectReforgerMap(rm)}
                     >
                       <img
@@ -1981,7 +1981,7 @@ export default function OperationsPlanner() {
                         alt={rm.name}
                         className="w-full h-20 object-cover rounded"
                       />
-                      <span className="text-[10px] text-gray-400 truncate w-full text-center">
+                      <span className="text-[10px] text-[#8a9aa8] truncate w-full text-center">
                         {rm.name}
                       </span>
                     </button>

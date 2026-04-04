@@ -93,15 +93,15 @@ const IntelBoard = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#050a0e]/95 backdrop-blur-xl border-b border-[rgba(201,162,39,0.15)]">
         <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/hub"><Button size="sm" variant="outline" className="border-gray-700"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
+            <Link to="/hub"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><ArrowLeft className="w-4 h-4 mr-1" />Hub</Button></Link>
             <h1 className="text-xl font-bold tracking-[0.12em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }} data-testid="intel-board-title">
               INTELLIGENCE BOARD
             </h1>
           </div>
           <div className="flex items-center space-x-3">
             {isStaff(user?.role) && <Link to="/admin/intel"><Button size="sm" variant="outline" className="border-tropic-gold/60 text-tropic-gold"><Shield className="w-4 h-4 mr-1" />Manage</Button></Link>}
-            <Link to="/"><Button size="sm" variant="outline" className="border-gray-700"><Home className="w-4 h-4" /></Button></Link>
-            <Button size="sm" variant="outline" onClick={handleLogout} className="border-gray-700"><LogOut className="w-4 h-4" /></Button>
+            <Link to="/"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]"><Home className="w-4 h-4" /></Button></Link>
+            <Button size="sm" variant="outline" onClick={handleLogout} className="border-[rgba(201,162,39,0.15)]"><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>
       </nav>
@@ -121,7 +121,7 @@ const IntelBoard = () => {
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6070]" />
               <Input value={search} onChange={e => setSearch(e.target.value)} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)] pl-10 rounded-none text-[#d0d8e0]" style={{ fontFamily: "'JetBrains Mono', monospace" }} placeholder="Search briefings..." data-testid="intel-board-search" />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -143,8 +143,8 @@ const IntelBoard = () => {
           {/* Active tag filter */}
           {filterTag && (
             <div className="flex items-center gap-2">
-              <Filter className="w-3 h-3 text-gray-500" />
-              <span className="text-xs text-gray-500">Filtered by tag:</span>
+              <Filter className="w-3 h-3 text-[#4a6070]" />
+              <span className="text-xs text-[#4a6070]">Filtered by tag:</span>
               <Badge variant="outline" className="border-[rgba(201,162,39,0.4)] text-[#e8c547] text-xs">
                 {filterTag} <button onClick={() => setFilterTag('')} className="ml-1"><X className="w-3 h-3" /></button>
               </Badge>
