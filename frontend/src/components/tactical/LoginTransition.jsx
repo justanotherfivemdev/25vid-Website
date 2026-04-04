@@ -19,11 +19,14 @@ export function LoginTransition({ username, onComplete }) {
   const [lines, setLines] = useState([]);
   const [phase, setPhase] = useState('active');
   const hasCompletedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   const fadeTimerRef = useRef(null);
 
   useEffect(() => {
     if (hasCompletedRef.current) return;
+    setLines([]);
     const loginLines = buildLoginLines(username);
     const timers = loginLines.map((line) =>
       setTimeout(() => setLines((prev) => [...prev, line]), line.delay)
@@ -35,7 +38,7 @@ export function LoginTransition({ username, onComplete }) {
         if (hasCompletedRef.current) return;
         hasCompletedRef.current = true;
         setPhase('hidden');
-        onComplete?.();
+        onCompleteRef.current?.();
       }, 500);
     }, 3200);
     return () => {
@@ -43,7 +46,7 @@ export function LoginTransition({ username, onComplete }) {
       clearTimeout(completeTimer);
       clearTimeout(fadeTimerRef.current);
     };
-  }, [username, onComplete]);
+  }, [username]);
 
   if (phase === 'hidden') return null;
 

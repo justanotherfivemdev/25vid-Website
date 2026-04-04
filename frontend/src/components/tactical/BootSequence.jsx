@@ -20,6 +20,8 @@ export function BootSequence({ onComplete, skipIfReturning = true }) {
   const skippedRef = useRef(false);
   const fadeTimerRef = useRef(null);
   const hasCompletedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (skipIfReturning) {
@@ -27,7 +29,7 @@ export function BootSequence({ onComplete, skipIfReturning = true }) {
         const hasVisited = sessionStorage.getItem('25vid_boot_done');
         if (hasVisited) {
           hasCompletedRef.current = true;
-          onComplete?.();
+          onCompleteRef.current?.();
           return;
         }
       } catch {
@@ -35,10 +37,11 @@ export function BootSequence({ onComplete, skipIfReturning = true }) {
       }
     }
     setVisible(true);
-  }, [skipIfReturning, onComplete]);
+  }, [skipIfReturning]);
 
   useEffect(() => {
     if (!visible || hasCompletedRef.current) return;
+    setLines([]);
     const timers = BOOT_LINES.map((line) =>
       setTimeout(() => setLines(prev => [...prev, line]), line.delay)
     );
@@ -50,7 +53,7 @@ export function BootSequence({ onComplete, skipIfReturning = true }) {
         if (skippedRef.current || hasCompletedRef.current) return;
         hasCompletedRef.current = true;
         setPhase('hidden');
-        onComplete?.();
+        onCompleteRef.current?.();
       }, 600);
     }, 3200);
     return () => {
@@ -58,7 +61,7 @@ export function BootSequence({ onComplete, skipIfReturning = true }) {
       clearTimeout(completeTimer);
       if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     };
-  }, [visible, onComplete]);
+  }, [visible]);
 
   const handleSkip = useCallback(() => {
     if (hasCompletedRef.current) return;
@@ -67,8 +70,8 @@ export function BootSequence({ onComplete, skipIfReturning = true }) {
     if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     setPhase('hidden');
     try { sessionStorage.setItem('25vid_boot_done', '1'); } catch { /* ignore */ }
-    onComplete?.();
-  }, [onComplete]);
+    onCompleteRef.current?.();
+  }, []);
 
   if (!visible || phase === 'hidden') return null;
 
