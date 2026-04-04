@@ -160,7 +160,8 @@ function ServerCard({ server, metrics, onStart, onStop, onRestart, onPeriodChang
   const showFooter = (canStart && onStart) || (canStop && onStop) || (canRestart && onRestart);
 
   const handleNavigate = (e) => {
-    if (onNavigate) {
+    // Only intercept plain left-clicks; let Ctrl/Cmd/middle-click open in new tab
+    if (onNavigate && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
       e.preventDefault();
       onNavigate(id, name);
     }

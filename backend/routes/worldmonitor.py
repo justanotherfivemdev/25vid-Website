@@ -245,43 +245,67 @@ _RSS_ALLOWED_DOMAINS = frozenset({
 })
 
 
-@router.get("/rss-proxy")
-async def rss_proxy(url: str = Query(..., description="RSS feed URL to fetch")):
-    """Proxy an RSS feed to bypass CORS for the World Monitor frontend."""
-    parsed = urlparse(url)
+def _build_validated_rss_url(raw_url: str) -> str:
+    """Validate an RSS URL against the allowlist and return a safe canonical form."""
+    parsed = urlparse(raw_url)
     if parsed.scheme not in ("http", "https"):
         raise HTTPException(status_code=400, detail="Only http/https URLs are allowed")
     if not parsed.hostname or parsed.hostname not in _RSS_ALLOWED_DOMAINS:
         raise HTTPException(status_code=403, detail="Domain not in RSS allowlist")
+
+    # Restrict to standard ports for the declared scheme.
+    if parsed.port is not None:
+        if parsed.scheme == "http" and parsed.port != 80:
+            raise HTTPException(status_code=400, detail="Invalid port for RSS URL")
+        if parsed.scheme == "https" and parsed.port != 443:
+            raise HTTPException(status_code=400, detail="Invalid port for RSS URL")
 
     # Reconstruct the URL from validated components to prevent URL manipulation
     # that could bypass the allowlist (e.g., user:password@evil.com).
     # Reject suspicious path traversal or control characters.
     if ".." in (parsed.path or "") or any(ord(c) < 0x20 for c in (parsed.path or "")):
         raise HTTPException(status_code=400, detail="Invalid path")
+
     safe_url = f"{parsed.scheme}://{parsed.hostname}"
-    if parsed.port and parsed.port in (80, 443):
-        pass  # omit default ports
-    elif parsed.port:
-        safe_url += f":{parsed.port}"
     safe_url += parsed.path or "/"
     if parsed.query:
         safe_url += f"?{parsed.query}"
+    return safe_url
+
+
+@router.get("/rss-proxy")
+async def rss_proxy(url: str = Query(..., description="RSS feed URL to fetch")):
+    """Proxy an RSS feed to bypass CORS for the World Monitor frontend."""
+    safe_url = _build_validated_rss_url(url)
 
     try:
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
-            resp = await client.get(
-                safe_url,
-                headers={
-                    "User-Agent": "Mozilla/5.0 WorldMonitor/1.0",
-                    "Accept": "application/rss+xml, application/xml, text/xml, */*",
-                },
-            )
-        return Response(
-            content=resp.content,
-            media_type="application/xml",
-            headers={"Cache-Control": "public, max-age=300"},
-        )
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=False) as client:
+            current_url = safe_url
+            for _ in range(5):
+                resp = await client.get(
+                    current_url,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 WorldMonitor/1.0",
+                        "Accept": "application/rss+xml, application/xml, text/xml, */*",
+                    },
+                )
+
+                if 300 <= resp.status_code < 400:
+                    location = resp.headers.get("location")
+                    if not location:
+                        raise HTTPException(status_code=502, detail="RSS redirect missing Location header")
+                    redirect_url = str(httpx.URL(location, base=current_url))
+                    current_url = _build_validated_rss_url(redirect_url)
+                    continue
+
+                return Response(
+                    content=resp.content,
+                    status_code=resp.status_code,
+                    media_type="application/xml",
+                    headers={"Cache-Control": "public, max-age=300"},
+                )
+
+        raise HTTPException(status_code=502, detail="Too many RSS redirects")
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="RSS feed timed out")
     except httpx.HTTPError as exc:
