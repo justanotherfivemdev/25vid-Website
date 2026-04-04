@@ -20,18 +20,18 @@ export default function ThreatMapHeader({ onRefresh, isLoading, mapStatus, isAdm
     <header className="relative flex h-14 items-center justify-between border-b px-4"
       style={{
         background: 'rgba(5,10,20,0.98)',
-        borderColor: 'rgba(255,215,0,0.35)',
-        borderBottom: '1px solid rgba(255,215,0,0.35)',
+        borderColor: 'rgba(201,162,39,0.35)',
+        borderBottom: '1px solid rgba(201,162,39,0.35)',
       }}
     >
       <div className="flex items-center gap-3">
         <Link
           to="/hub"
           className="flex items-center gap-1 transition-colors mr-1"
-          style={{ color: 'rgba(255,215,0,0.6)' }}
+          style={{ color: 'rgba(201,162,39,0.6)' }}
           title="Back to Hub"
           onMouseEnter={(e) => e.currentTarget.style.color = '#e8c547'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,215,0,0.6)'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(201,162,39,0.6)'}
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
@@ -44,8 +44,8 @@ export default function ThreatMapHeader({ onRefresh, isLoading, mapStatus, isAdm
             style={{
               width: 28,
               height: 28,
-              background: 'rgba(255,215,0,0.12)',
-              borderColor: 'rgba(255,215,0,0.4)',
+              background: 'rgba(201,162,39,0.12)',
+              borderColor: 'rgba(201,162,39,0.4)',
             }}
           >
             <svg width="14" height="18" viewBox="0 0 14 18" fill="none" aria-label="Tropic Lightning bolt">
@@ -56,7 +56,7 @@ export default function ThreatMapHeader({ onRefresh, isLoading, mapStatus, isAdm
           <div className="flex flex-col leading-none">
             <span
               className="text-[10px] font-black tracking-[0.22em] uppercase"
-              style={{ color: 'rgba(255,215,0,0.7)' }}
+              style={{ color: 'rgba(201,162,39,0.7)' }}
             >
               25th Infantry Division
             </span>
@@ -113,9 +113,9 @@ export default function ThreatMapHeader({ onRefresh, isLoading, mapStatus, isAdm
             variant="outline"
             className="text-[10px]"
             style={{
-              borderColor: 'rgba(255,215,0,0.4)',
+              borderColor: 'rgba(201,162,39,0.4)',
               color: '#e8c547',
-              background: 'rgba(255,215,0,0.06)',
+              background: 'rgba(201,162,39,0.06)',
             }}
           >
             {filteredEvents.length} Events
@@ -125,9 +125,9 @@ export default function ThreatMapHeader({ onRefresh, isLoading, mapStatus, isAdm
               variant="outline"
               className="text-[10px]"
               style={{
-                borderColor: dataSourceFilter === 'fictional' ? 'rgba(139,92,246,0.4)' : 'rgba(34,197,94,0.4)',
+                borderColor: dataSourceFilter === 'fictional' ? 'rgba(139,92,246,0.4)' : 'rgba(201,162,39,0.4)',
                 color: dataSourceFilter === 'fictional' ? '#a78bfa' : '#e8c547',
-                background: dataSourceFilter === 'fictional' ? 'rgba(139,92,246,0.06)' : 'rgba(34,197,94,0.06)',
+                background: dataSourceFilter === 'fictional' ? 'rgba(139,92,246,0.06)' : 'rgba(201,162,39,0.06)',
               }}
             >
               {dataSourceFilter === 'fictional' ? 'Fictional' : 'Real-World'}
@@ -153,7 +153,7 @@ export default function ThreatMapHeader({ onRefresh, isLoading, mapStatus, isAdm
             disabled={isLoading}
             title="Refresh events"
             className="hover:bg-tropic-gold/10"
-            style={{ color: 'rgba(255,215,0,0.7)' }}
+            style={{ color: 'rgba(201,162,39,0.7)' }}
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>

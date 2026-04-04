@@ -361,9 +361,9 @@ const PARTNER_COLORS = [
   '#38BDF8', // light sky
   '#60A5FA', // light blue
   '#2DD4BF', // aquamarine
-  '#c9a227', // light emerald
+  '#34D399', // light emerald
   '#818CF8', // light indigo
-  '#e8c547', // emerald
+  '#10B981', // emerald
   '#67E8F9', // ice cyan
   '#93C5FD', // pale blue
   '#5EEAD4', // pale teal
@@ -372,7 +372,7 @@ const PARTNER_COLORS = [
 
 // Counterpart / support unit palette – purples / pinks / oranges / warm tones
 const COUNTERPART_COLORS = [
-  '#8a9aa8', // purple
+  '#8a9aa8', // muted steel
   '#EC4899', // pink
   '#F97316', // orange
   '#EF4444', // red
@@ -384,7 +384,7 @@ const COUNTERPART_COLORS = [
   '#84CC16', // lime
   '#FB923C', // light orange
   '#E879F9', // light fuchsia
-  '#4a6070', // light purple
+  '#4a6070', // slate
   '#FB7185', // light rose
   '#FBBF24', // bright amber
 ];

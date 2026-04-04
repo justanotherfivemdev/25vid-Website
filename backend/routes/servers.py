@@ -2301,9 +2301,9 @@ async def execute_rcon(
         )
     except asyncio.TimeoutError:
         success, response = False, "RCON command timed out after 15 seconds"
-    except Exception as exc:
-        logger.error("RCON execution error for server %s: %s", server_id, exc)
-        success, response = False, f"RCON execution failed: {exc}"
+    except Exception:
+        logger.exception("RCON execution error for server %s", server_id)
+        success, response = False, "RCON execution failed"
 
     await record_server_log_event(
         server_id,
@@ -2741,9 +2741,9 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
                 )
             except asyncio.TimeoutError:
                 success, response = False, "RCON command timed out after 15 seconds"
-            except Exception as exc:
-                logger.error("WS RCON execution error for %s: %s", server_id, exc)
-                success, response = False, f"RCON execution failed: {exc}"
+            except Exception:
+                logger.exception("WS RCON execution error for %s", server_id)
+                success, response = False, "RCON execution failed"
 
             await record_server_log_event(
                 server_id,
