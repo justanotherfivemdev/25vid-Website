@@ -319,25 +319,28 @@ function CompareServersModule() {
               </Card>
 
               {/* Players online */}
-              {selected.players?.length > 0 || (Array.isArray(selected.players) && selected.players.length > 0) ? null : null}
-              {Array.isArray(selected.players_list || selected.players) && typeof (selected.players_list || selected.players)?.[0] === 'object' && (
-                <Card className="border-zinc-800 bg-[#0c1117]">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 font-['Share_Tech'] text-sm text-[#8a9aa8]">
-                      <Users className="h-4 w-4" /> Online Players ({(selected.players_list || selected.players)?.length || 0})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="max-h-48 overflow-y-auto">
-                    <div className="flex flex-wrap gap-2">
-                      {(selected.players_list || selected.players)?.map((p) => (
-                        <Badge key={p.bm_id || p.name} variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">
-                          {p.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {(() => {
+                const playersList = selected.players;
+                if (!Array.isArray(playersList) || playersList.length === 0 || typeof playersList[0] !== 'object') return null;
+                return (
+                  <Card className="border-zinc-800 bg-[#0c1117]">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="flex items-center gap-2 font-['Share_Tech'] text-sm text-[#8a9aa8]">
+                        <Users className="h-4 w-4" /> Online Players ({playersList.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="max-h-48 overflow-y-auto">
+                      <div className="flex flex-wrap gap-2">
+                        {playersList.map((p) => (
+                          <Badge key={p.bm_id || p.name} variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">
+                            {p.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Mod comparison */}
               <Card className="border-zinc-800 bg-[#0c1117]">

@@ -2783,6 +2783,8 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
 # ── BattleMetrics Proxy Endpoints ────────────────────────────────────────────
 
 _BM_API_BASE = "https://api.battlemetrics.com"
+# Optional: set BATTLEMETRICS_API_KEY env var for higher rate limits.
+# The public API works without authentication for basic server queries.
 _BM_API_KEY = os.environ.get("BATTLEMETRICS_API_KEY", "")
 _BM_TIMEOUT = 15
 
