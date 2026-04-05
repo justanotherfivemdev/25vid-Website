@@ -998,6 +998,6 @@ export const PIPELINE_COLORS: Record<string, string> = {
 };
 // Pipeline status colors
 export const PIPELINE_STATUS_COLORS: Record<string, string> = {
-  operating: '#44ff88',
+  operating: '#c9a227',
   construction: '#ffaa00',
 };

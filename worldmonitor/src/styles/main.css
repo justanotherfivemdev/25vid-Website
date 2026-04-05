@@ -8,7 +8,7 @@
   --accent: #e8c547;
   --accent-dim: #c9a227;
   --red: #ff4444;
-  --green: #44ff88;
+  --green: #c9a227;
   --yellow: #e8c547;
   --map-bg: #050a0e;
   --map-grid: #111a24;
@@ -2187,11 +2187,11 @@ body.playback-mode .status-dot {
   box-shadow: 0 0 6px #c9a227, 0 0 12px #c9a22740;
   z-index: 51;
   cursor: pointer;
-  border: 1px solid #00aa77;
+  border: 1px solid #c9a227;
 }
 
 .irradiator-marker:hover {
-  background: #44ffcc;
+  background: #e8c547;
   box-shadow: 0 0 10px #c9a227, 0 0 20px #c9a22760;
 }
 
@@ -2932,8 +2932,8 @@ body.playback-mode .status-dot {
 }
 
 .waterway-marker:hover .waterway-diamond {
-  background: #44ffcc;
-  box-shadow: 0 0 10px rgba(68, 255, 204, 0.8);
+  background: #e8c547;
+  box-shadow: 0 0 10px rgba(232, 197, 71, 0.8);
   transform: rotate(45deg) scale(1.2);
 }
 
@@ -3084,7 +3084,7 @@ body.playback-mode .status-dot {
 
 .legend-dot.high { background: #ff4444; box-shadow: 0 0 6px #ff4444; }
 .legend-dot.elevated { background: #ffaa00; box-shadow: 0 0 4px #ffaa00; }
-.legend-dot.low { background: #00ff88; }
+.legend-dot.low { background: #c9a227; }
 
 .conflict-click-area {
   position: absolute;
@@ -3811,7 +3811,7 @@ body.playback-mode .status-dot {
 }
 
 .flight-delay-marker.normal {
-  --flight-color: #44ff88;
+  --flight-color: #c9a227;
 }
 
 .flight-delay-marker.minor {
@@ -3859,7 +3859,7 @@ body.playback-mode .status-dot {
 }
 
 .popup-header.flight.normal {
-  --flight-color: #44ff88;
+  --flight-color: #c9a227;
 }
 
 .popup-header.flight.minor {
@@ -3897,7 +3897,7 @@ body.playback-mode .status-dot {
   transform-origin: center;
   cursor: pointer;
   z-index: 55;
-  --mil-color: #39ff14;
+  --mil-color: #c9a227;
   opacity: 0.7;
 }
 
@@ -3940,9 +3940,9 @@ body.playback-mode .status-dot {
   --mil-color: #ff4500;
 }
 
-/* Israel - spring green */
+/* Israel */
 .military-flight-marker.iaf {
-  --mil-color: #00ff7f;
+  --mil-color: #c9a227;
 }
 
 /* NATO - blue */
@@ -4004,8 +4004,8 @@ body.playback-mode .status-dot {
 .military-flight-icon.reconnaissance::after,
 .military-flight-icon.awacs::before,
 .military-flight-icon.awacs::after {
-  background: #00ffff;
-  box-shadow: 0 0 4px #00ffff;
+  background: #e8c547;
+  box-shadow: 0 0 4px #e8c547;
 }
 
 .military-flight-icon.fighter {
@@ -4081,7 +4081,7 @@ body.playback-mode .status-dot {
   transform-origin: center;
   cursor: pointer;
   z-index: 54;
-  --vessel-color: #00ffcc;
+  --vessel-color: #e8c547;
 }
 
 .military-vessel-marker.usn {
@@ -4188,7 +4188,7 @@ body.playback-mode .status-dot {
 }
 
 .military-vessel-track {
-  stroke: var(--vessel-color, #00ffcc);
+  stroke: var(--vessel-color, #e8c547);
   stroke-opacity: 0.6;
 }
 
@@ -4219,7 +4219,7 @@ body.playback-mode .status-dot {
   transform: translate(-50%, -50%);
   cursor: pointer;
   z-index: 57;
-  --cluster-color: #39ff14;
+  --cluster-color: #c9a227;
   opacity: 0.65;
 }
 
@@ -4228,11 +4228,11 @@ body.playback-mode .status-dot {
 }
 
 .military-cluster-marker.flight-cluster {
-  --cluster-color: #39ff14;
+  --cluster-color: #e8c547;
 }
 
 .military-cluster-marker.vessel-cluster {
-  --cluster-color: #00ff7f;
+  --cluster-color: #c9a227;
 }
 
 .military-cluster-marker.exercise {
@@ -4392,9 +4392,9 @@ body.playback-mode .status-dot {
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* Stat values in military popups - green for readability */
+/* Stat values in military popups */
 .popup-body .stat-value {
-  color: var(--green, #39ff14);
+  color: var(--green, #c9a227);
 }
 
 /* Attribution text - brighter */
