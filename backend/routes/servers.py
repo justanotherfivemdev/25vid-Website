@@ -2992,10 +2992,9 @@ async def battlemetrics_search(
     import httpx
 
     if page_key:
-        # Validate that the cursor URL points to the BattleMetrics API to
-        # prevent SSRF — an authenticated user could otherwise make the
-        # backend request arbitrary URLs.
-        from urllib.parse import urlparse
+        # Instead of forwarding the raw URL (SSRF risk), extract only the
+        # pagination cursor parameters and rebuild the URL server-side.
+        from urllib.parse import urlparse, parse_qs
 
         parsed = urlparse(page_key)
         if (
@@ -3007,8 +3006,19 @@ async def battlemetrics_search(
                 status_code=400,
                 detail="Invalid pagination cursor",
             )
-        url = page_key
-        params = None
+        qs = parse_qs(parsed.query)
+        url = f"{_BM_API_BASE}/servers"
+        params = {}
+        # Carry over only known BattleMetrics pagination/filter params
+        _ALLOWED_BM_PARAMS = {
+            "page[key]", "page[rel]", "page[size]",
+            "filter[game]", "filter[search]", "filter[countries][]",
+            "sort",
+        }
+        for key in _ALLOWED_BM_PARAMS:
+            values = qs.get(key)
+            if values:
+                params[key] = values[0]
     else:
         url = f"{_BM_API_BASE}/servers"
         params: dict = {
@@ -3034,10 +3044,10 @@ async def battlemetrics_search(
             status_code=exc.response.status_code,
             detail=f"BattleMetrics API error: {exc.response.status_code}",
         )
-    except httpx.RequestError as exc:
+    except httpx.RequestError:
         raise HTTPException(
             status_code=502,
-            detail=f"Failed to reach BattleMetrics API: {exc}",
+            detail="Failed to reach BattleMetrics API",
         )
 
     data = resp.json()
@@ -3074,10 +3084,10 @@ async def battlemetrics_server_detail(
             status_code=exc.response.status_code,
             detail=f"BattleMetrics API error: {exc.response.status_code}",
         )
-    except httpx.RequestError as exc:
+    except httpx.RequestError:
         raise HTTPException(
             status_code=502,
-            detail=f"Failed to reach BattleMetrics API: {exc}",
+            detail="Failed to reach BattleMetrics API",
         )
 
     payload = server_resp.json()
