@@ -88,8 +88,6 @@
   vertical-align: middle;
 }
 
-/* (removed: credit-link no longer used) */
-
 .status-indicator {
   display: flex;
   align-items: center;

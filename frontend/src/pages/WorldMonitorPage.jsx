@@ -18,7 +18,6 @@ export default function WorldMonitorPage() {
     async function mount() {
       try {
         const { mountWorldMonitor } = await import(
-          /* webpackChunkName: "worldmonitor" */
           '@/features/worldmonitor/main'
         );
         if (cancelled) return;
