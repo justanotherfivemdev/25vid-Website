@@ -75,6 +75,13 @@ DEFAULT_READINESS_TIMEOUT = 300
 READINESS_LOG_TAIL_LINES = 200
 MOD_CYCLE_LOG_TAIL_LINES = 100
 
+# Log evidence that indicates a fatal/unrecoverable startup failure.
+_FATAL_STARTUP_PATTERN = re.compile(r"fatal|segfault|SIGKILL|out of memory", re.IGNORECASE)
+
+# Provisioning stages whose failure should never poison operator-facing
+# readiness.  These are supplemental tooling, not core deployment stages.
+NON_READINESS_STAGE_NAMES = frozenset({"sat_discovery", "profile_generation"})
+
 
 # ── Provisioning stage tracking ─────────────────────────────────────────────
 
@@ -343,6 +350,10 @@ async def wait_for_server_readiness(
 ) -> Dict[str, Any]:
     """Wait for the server to become fully ready, tolerating restart cycles.
 
+    Uses **state-first** readiness: the container running state and log-based
+    readiness signals take priority over the timeout.  The timer acts as a
+    safety net, not the primary truth source.
+
     During initial provisioning, the Arma Reforger server may restart several
     times while downloading mods and mounting content.  This function tracks
     restart cycles via container status and log inspection, only declaring
@@ -392,18 +403,54 @@ async def wait_for_server_readiness(
 
         await asyncio.sleep(SERVER_PROFILE_POLL_SECONDS)
 
-    # Timeout reached — check one final time
+    # Timeout reached — state-first: check container state, not just timer
     if await _check_server_readiness(container_name):
         return {
             "server_ready": True,
             "restart_cycles": restart_count,
             "readiness_state": "ready",
         }
+
+    # Container still running without explicit readiness signals is still
+    # considered ready — the timeout is a safety net, not a failure verdict.
+    try:
+        final_status = await docker_agent.get_container_status(container_name)
+        if final_status is not None and final_status.get("running", False):
+            # Check for fatal startup evidence before declaring ready
+            try:
+                logs = await docker_agent.get_container_logs(container_name, tail=READINESS_LOG_TAIL_LINES)
+            except Exception:
+                logs = ""
+            has_fatal = bool(logs and _FATAL_STARTUP_PATTERN.search(logs))
+            if not has_fatal:
+                return {
+                    "server_ready": True,
+                    "restart_cycles": restart_count,
+                    "readiness_state": "ready",
+                    "note": f"No explicit readiness signal within {timeout}s, but container is running without fatal errors",
+                }
+            # Container is running but has fatal log evidence
+            return {
+                "server_ready": False,
+                "restart_cycles": restart_count,
+                "readiness_state": "degraded",
+                "error": f"Container is running but fatal startup errors were detected in logs",
+            }
+        # Container confirmed not running
+        return {
+            "server_ready": False,
+            "restart_cycles": restart_count,
+            "readiness_state": "degraded",
+            "error": f"Server did not signal readiness within {timeout}s and the container is not running",
+        }
+    except Exception:
+        pass
+
     return {
         "server_ready": False,
         "restart_cycles": restart_count,
         "readiness_state": "degraded",
-        "error": f"Server did not signal readiness within {timeout}s",
+        "error": f"Server did not signal readiness within {timeout}s and container state could not be confirmed",
     }
 
 
@@ -880,6 +927,8 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
 
     if result.container_started:
         result.updates["provisioning_step"] = "ready" if live_running else "running"
+        # Non-core stage failures that are NOT supplemental tooling
+        # (sat_discovery, profile_generation) should not poison readiness.
         failed = [
             s for s in result.failed_stages
             if s.name not in {"record_creation", "filesystem_preparation", "config_write", "container_creation", "initial_startup"}
@@ -892,9 +941,15 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
                 }
                 for s in failed
             ]
-            result.updates["provisioning_state"] = "warning"
-            if live_running:
-                result.updates["readiness_state"] = "degraded"
+            # Only mark provisioning as "warning" and readiness as "degraded"
+            # for stages that actually affect server operability.
+            readiness_relevant_failures = [
+                s for s in failed if s.name not in NON_READINESS_STAGE_NAMES
+            ]
+            if readiness_relevant_failures:
+                result.updates["provisioning_state"] = "warning"
+                if live_running:
+                    result.updates["readiness_state"] = "degraded"
     else:
         failed = result.failed_stages
         result.updates["provisioning_step"] = failed[0].name if failed else "unknown"

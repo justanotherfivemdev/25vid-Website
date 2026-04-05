@@ -286,6 +286,68 @@ async def record_server_log_event(
     return payload
 
 
+async def capture_log_snapshot(
+    server: Dict[str, Any],
+    trigger_line: str = "",
+    *,
+    context_lines: int = 8,
+    tail: int = 200,
+) -> List[dict]:
+    """Capture a contextual snapshot of logs around a trigger line.
+
+    Returns a list of log entries with a ``is_trigger`` marker on entries
+    matching *trigger_line*.  If *trigger_line* is empty the most recent
+    *context_lines* entries are returned as a general snapshot.
+    """
+    entries = await get_recent_server_log_entries(server, tail=tail)
+    if not entries:
+        return []
+
+    if not trigger_line:
+        snapshot_entries = entries[-context_lines:]
+        return [
+            {
+                "line": e.get("line") or e.get("raw") or "",
+                "timestamp": e.get("timestamp") or "",
+                "source": e.get("source") or "unknown",
+                "is_trigger": False,
+            }
+            for e in snapshot_entries
+        ]
+
+    trigger_lower = trigger_line.lower()
+    trigger_indices: List[int] = []
+    for idx, entry in enumerate(entries):
+        text = (entry.get("line") or entry.get("raw") or "").lower()
+        if trigger_lower in text:
+            trigger_indices.append(idx)
+
+    if not trigger_indices:
+        return [
+            {
+                "line": e.get("line") or e.get("raw") or "",
+                "timestamp": e.get("timestamp") or "",
+                "source": e.get("source") or "unknown",
+                "is_trigger": False,
+            }
+            for e in entries[-context_lines:]
+        ]
+
+    last_trigger = trigger_indices[-1]
+    start = max(0, last_trigger - context_lines)
+    end = min(len(entries), last_trigger + context_lines + 1)
+
+    return [
+        {
+            "line": entries[i].get("line") or entries[i].get("raw") or "",
+            "timestamp": entries[i].get("timestamp") or "",
+            "source": entries[i].get("source") or "unknown",
+            "is_trigger": i in trigger_indices,
+        }
+        for i in range(start, end)
+    ]
+
+
 async def stream_server_log_entries(
     server: Dict[str, Any],
     *,

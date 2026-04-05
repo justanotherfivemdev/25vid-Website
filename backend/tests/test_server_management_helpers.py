@@ -834,3 +834,144 @@ def test_read_server_file_uses_fallback_root_when_stored_paths_are_stale(tmp_pat
     assert result["name"] == "server.json"
     assert result["root"] == "config"
     assert '"name":"Test"' in result["content"]
+
+
+# ── Readiness and notification tests ─────────────────────────────────
+
+
+def test_sat_excluded_from_follow_up_checklist():
+    """SAT and profile stages should not appear in operator-facing follow-up checklists."""
+    from services.server_notifications import _collect_follow_up_checklist
+
+    server = {
+        "provisioning_warnings": [
+            {"stage": "sat_discovery", "message": "ServerAdminTools_Config.json was not discovered"},
+            {"stage": "profile_generation", "message": "Profile structure not found"},
+            {"stage": "mod_sync", "message": "Mod version mismatch"},
+        ],
+        "provisioning_stages": {
+            "sat_discovery": {"name": "sat_discovery", "status": "failed", "error": "SAT config not found"},
+            "mod_sync": {"name": "mod_sync", "status": "failed", "error": "mod version mismatch"},
+            "container_creation": {"name": "container_creation", "status": "success"},
+        },
+    }
+    checklist = _collect_follow_up_checklist(server)
+    stage_names = [item["stage"] for item in checklist]
+    assert "sat_discovery" not in stage_names, "SAT discovery should be excluded from follow-up checklist"
+    assert "profile_generation" not in stage_names, "Profile generation should be excluded from follow-up checklist"
+    assert "mod_sync" in stage_names, "Real operational warnings should still be included"
+
+
+def test_sat_failure_does_not_degrade_readiness_when_container_runs():
+    """Non-readiness stage failures (SAT, profile) should not set readiness_state to degraded."""
+    from services.reforger_orchestrator import NON_READINESS_STAGE_NAMES
+
+    result = ProvisioningResult()
+    result.stages = [
+        StageResult(name="record_creation", status="success"),
+        StageResult(name="filesystem_preparation", status="success"),
+        StageResult(name="config_write", status="success"),
+        StageResult(name="container_creation", status="success"),
+        StageResult(name="initial_startup", status="success"),
+        StageResult(name="readiness_check", status="success"),
+        StageResult(name="sat_discovery", status="failed", error="SAT config not found"),
+        StageResult(name="profile_generation", status="failed", error="Profile not found"),
+    ]
+    assert result.container_started is True
+    failed = [
+        s for s in result.failed_stages
+        if s.name not in {"record_creation", "filesystem_preparation", "config_write", "container_creation", "initial_startup"}
+    ]
+    readiness_relevant = [s for s in failed if s.name not in NON_READINESS_STAGE_NAMES]
+    assert len(readiness_relevant) == 0, "SAT/profile failures should not affect readiness"
+
+
+def test_real_stage_failure_still_degrades_readiness():
+    """Non-core stage failures that are NOT supplemental tooling should degrade readiness."""
+    from services.reforger_orchestrator import NON_READINESS_STAGE_NAMES
+
+    result = ProvisioningResult()
+    result.stages = [
+        StageResult(name="record_creation", status="success"),
+        StageResult(name="container_creation", status="success"),
+        StageResult(name="initial_startup", status="success"),
+        StageResult(name="readiness_check", status="failed", error="Server did not signal readiness"),
+        StageResult(name="sat_discovery", status="failed", error="SAT config not found"),
+    ]
+    assert result.container_started is True
+    failed = [
+        s for s in result.failed_stages
+        if s.name not in {"record_creation", "filesystem_preparation", "config_write", "container_creation", "initial_startup"}
+    ]
+    readiness_relevant = [s for s in failed if s.name not in NON_READINESS_STAGE_NAMES]
+    assert len(readiness_relevant) == 1, "readiness_check failure should still degrade readiness"
+    assert readiness_relevant[0].name == "readiness_check"
+
+
+def test_detection_model_has_human_fields():
+    """WatcherDetection model should have human-friendly fields."""
+    from models.server import WatcherDetection
+    detection = WatcherDetection(
+        server_id="srv-1",
+        title="Test Detection",
+        human_summary="Something went wrong.",
+        human_impact="Players may experience lag.",
+        human_action="Restart the server if lag persists.",
+        source_type="system",
+    )
+    assert detection.human_summary == "Something went wrong."
+    assert detection.human_impact == "Players may experience lag."
+    assert detection.human_action == "Restart the server if lag persists."
+    assert detection.source_type == "system"
+    assert detection.log_snapshot == []
+    assert detection.ignored_at is None
+
+
+def test_detection_model_supports_ignored_status():
+    """WatcherDetection should support 'ignored' as a valid status."""
+    from models.server import WatcherDetection
+    detection = WatcherDetection(
+        server_id="srv-1",
+        title="Known Issue",
+        status="ignored",
+        verdict_notes="This is expected behavior.",
+    )
+    assert detection.status == "ignored"
+
+
+def test_log_snapshot_capture_returns_entries(monkeypatch):
+    """capture_log_snapshot should return a windowed snapshot and mark trigger lines."""
+    from services import server_logs
+
+    entries = (
+        [{"line": f"line{i}", "source": "docker"} for i in range(40)]
+        + [{"line": "ERROR something broke", "source": "docker"}]
+        + [{"line": f"line{i}", "source": "docker"} for i in range(41, 81)]
+    )
+
+    async def fake_get_recent(*args, **kwargs):
+        return entries
+
+    monkeypatch.setattr(
+        server_logs,
+        "get_recent_server_log_entries",
+        fake_get_recent,
+    )
+
+    snapshot = asyncio.run(
+        server_logs.capture_log_snapshot({"id": "srv-1"}, trigger_line="ERROR something broke")
+    )
+
+    assert snapshot
+    assert len(snapshot) < len(entries)
+
+    snapshot_lines = [entry["line"] for entry in snapshot]
+    assert "ERROR something broke" in snapshot_lines
+    assert any(
+        entry["line"] == "ERROR something broke" and entry.get("is_trigger") is True
+        for entry in snapshot
+    )
+    assert "line39" in snapshot_lines
+    assert "line41" in snapshot_lines
+    assert "line0" not in snapshot_lines
+    assert "line80" not in snapshot_lines

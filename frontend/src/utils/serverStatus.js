@@ -7,7 +7,15 @@ export function normalizeServer(server) {
     next.status = 'running';
     next.deployment_state = next.deployment_state || 'created';
     next.provisioning_state = 'warning';
-    next.readiness_state = next.readiness_state || 'degraded';
+    // Only degrade readiness if there are non-SAT/non-profile provisioning
+    // warnings — supplemental tooling failures should not poison readiness.
+    if (!next.readiness_state) {
+      const warnings = next.provisioning_warnings || [];
+      const hasRealWarnings = warnings.some(
+        (w) => w.stage !== 'sat_discovery' && w.stage !== 'profile_generation',
+      );
+      next.readiness_state = hasRealWarnings ? 'degraded' : 'ready';
+    }
   }
 
   if (next.status === 'provisioning_failed') {
@@ -22,7 +30,12 @@ export function normalizeServer(server) {
   }
 
   if (next.status === 'running' && next.provisioning_state === 'warning' && !next.readiness_state) {
-    next.readiness_state = 'degraded';
+    // Same check: only degrade for real operational warnings.
+    const warnings = next.provisioning_warnings || [];
+    const hasRealWarnings = warnings.some(
+      (w) => w.stage !== 'sat_discovery' && w.stage !== 'profile_generation',
+    );
+    next.readiness_state = hasRealWarnings ? 'degraded' : 'ready';
   }
 
   return next;

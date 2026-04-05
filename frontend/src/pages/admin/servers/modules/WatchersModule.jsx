@@ -220,12 +220,12 @@ function WatchersModule() {
 
   const updateDetectionVerdict = useCallback(async (detectionId, status) => {
     try {
-      await axios.post(`${API}/servers/detections/${detectionId}/verdict`, { status });
+      await axios.post(`${API}/servers/${serverId}/detections/${detectionId}/verdict`, { status });
       await fetchData();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to update detection verdict.');
     }
-  }, [fetchData]);
+  }, [fetchData, serverId]);
 
   const enabledWatchers = watchers.filter((watcher) => watcher.enabled !== false).length;
   const systemManagedWatchers = watchers.filter((watcher) => watcher.system_managed).length;
