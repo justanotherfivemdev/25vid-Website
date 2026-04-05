@@ -272,7 +272,7 @@ function LogMonitorPage() {
                     <span className="text-white">{alert.reason}</span>
                   </div>
                   <Button size="sm" variant="ghost" className="text-[#4a6070] hover:text-green-400" onClick={() => resolveAlert(alert.id)}>
-                    <CheckCircle2 className="h-3 w-3 mr-1" /> Resolve
+                    <CheckCircle2 className="mr-1 h-3 w-3" /> Resolve
                   </Button>
                 </div>
               ))}

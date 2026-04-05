@@ -213,7 +213,7 @@ class TestNormaliseMessage:
         msg = "Failed at line 42 of module 7"
         result = normalise_message(msg)
         assert "42" not in result
-        assert "<n>" in result
+        assert "<num>" in result
 
     def test_removes_file_paths(self):
         msg = "Error in C:\\Users\\admin\\mod\\script.c"

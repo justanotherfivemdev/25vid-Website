@@ -181,7 +181,7 @@ def normalise_message(message: str) -> str:
     text = _NORM_PATH_RE.sub("<PATH>", text)
     text = _NORM_GUID_RE.sub("<GUID>", text)
     text = _NORM_HEX_RE.sub("<HEX>", text)
-    text = _NORM_NUMBERS_RE.sub("<N>", text)
+    text = _NORM_NUMBERS_RE.sub("<NUM>", text)
     text = _NORM_WHITESPACE_RE.sub(" ", text).strip().lower()
     return text
 
