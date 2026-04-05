@@ -91,6 +91,42 @@ function statusColor(status) {
   return map[status] || 'bg-[#111a24] text-[#8a9aa8] border-[rgba(201,162,39,0.15)]';
 }
 
+function attributionTone(type) {
+  const map = {
+    mod: 'border-purple-600/30 text-purple-300',
+    backend: 'border-red-600/30 text-red-300',
+    base_game: 'border-blue-600/30 text-blue-300',
+    engine: 'border-sky-600/30 text-sky-300',
+    rcon: 'border-orange-600/30 text-orange-300',
+    battleye: 'border-orange-600/30 text-orange-300',
+    config: 'border-amber-600/30 text-amber-300',
+    network: 'border-cyan-600/30 text-cyan-300',
+    performance: 'border-rose-600/30 text-rose-300',
+    unknown: 'border-zinc-700 text-zinc-300',
+  };
+  return map[type] || 'border-zinc-700 text-zinc-300';
+}
+
+function actionabilityTone(actionability) {
+  const map = {
+    actionable: 'border-red-600/30 text-red-300',
+    monitor: 'border-yellow-600/30 text-yellow-300',
+    known_safe: 'border-zinc-700 text-zinc-300',
+  };
+  return map[actionability] || 'border-zinc-700 text-zinc-300';
+}
+
+function areaTone(area) {
+  const map = {
+    'live-errors': 'border-red-600/30 text-red-300',
+    'error-patterns': 'border-blue-600/30 text-blue-300',
+    'mod-analysis': 'border-purple-600/30 text-purple-300',
+    alerts: 'border-orange-600/30 text-orange-300',
+    'troublesome-mods': 'border-rose-600/30 text-rose-300',
+  };
+  return map[area] || 'border-zinc-700 text-zinc-300';
+}
+
 function sourceTone(category) {
   const map = {
     engine: 'border-blue-600/30 text-blue-300',
@@ -120,12 +156,24 @@ function fmtDate(iso) {
   }
 }
 
+function humanizeToken(value) {
+  if (!value) return 'Unknown';
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 const VERDICT_OPTIONS = ['active', 'monitoring', 'resolved', 'false_positive'];
+const ACTIONABILITY_OPTIONS = ['actionable', 'monitor', 'known_safe'];
+const ATTRIBUTION_OPTIONS = ['unknown', 'mod', 'backend', 'base_game', 'engine', 'rcon', 'battleye', 'config', 'network', 'performance'];
+const AREA_OPTIONS = ['live-errors', 'error-patterns', 'mod-analysis', 'alerts', 'troublesome-mods'];
 
 const TABS = [
   { id: 'live-errors', label: 'Live Errors', icon: AlertTriangle },
   { id: 'error-patterns', label: 'Error Patterns', icon: Monitor },
   { id: 'mod-analysis', label: 'Mod Analysis', icon: Package },
+  { id: 'troublesome-mods', label: 'Troublesome Mods', icon: TrendingUp },
   { id: 'alerts', label: 'Alerts & Incidents', icon: Bell },
 ];
 
@@ -138,6 +186,8 @@ function ServerDiagnostics() {
   const [errorTypes, setErrorTypes] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [stats, setStats] = useState([]);
+  const [knownMods, setKnownMods] = useState([]);
+  const [troublesomeMods, setTroublesomeMods] = useState([]);
 
   /* ── state: mod issues data ────────────────────────────────────── */
   const [modIssues, setModIssues] = useState([]);
@@ -145,6 +195,7 @@ function ServerDiagnostics() {
   /* ── state: UI ─────────────────────────────────────────────────── */
   const [loading, setLoading] = useState(true);
   const [modLoading, setModLoading] = useState(true);
+  const [troublesomeLoading, setTroublesomeLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('live-errors');
 
@@ -153,6 +204,11 @@ function ServerDiagnostics() {
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [reviewStatusFilter, setReviewStatusFilter] = useState('');
+  const [attributionFilter, setAttributionFilter] = useState('');
+  const [areaFilter, setAreaFilter] = useState('');
+  const [actionabilityFilter, setActionabilityFilter] = useState('');
+  const [troublesomeOnly, setTroublesomeOnly] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
@@ -162,15 +218,29 @@ function ServerDiagnostics() {
   /* ── state: mod analysis filters ───────────────────────────────── */
   const [modSearch, setModSearch] = useState('');
   const [modStatusFilter, setModStatusFilter] = useState('');
+  const [patternSearch, setPatternSearch] = useState('');
 
   /* ── state: error type detail dialog ───────────────────────────── */
   const [selectedErrorType, setSelectedErrorType] = useState(null);
   const [typeOccurrences, setTypeOccurrences] = useState([]);
   const [typeOccLoading, setTypeOccLoading] = useState(false);
+  const [typeSaving, setTypeSaving] = useState(false);
+  const [typeReviewStatus, setTypeReviewStatus] = useState('active');
+  const [typeAttribution, setTypeAttribution] = useState('unknown');
+  const [typeArea, setTypeArea] = useState('error-patterns');
+  const [typeActionability, setTypeActionability] = useState('monitor');
+  const [typeLinkedModGuid, setTypeLinkedModGuid] = useState('');
+  const [typeLinkedModName, setTypeLinkedModName] = useState('');
+  const [typeTroublesome, setTypeTroublesome] = useState(false);
+  const [typeNotes, setTypeNotes] = useState('');
 
   /* ── state: mod issue detail dialog ────────────────────────────── */
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [issueArea, setIssueArea] = useState('mod-analysis');
+  const [issueAttribution, setIssueAttribution] = useState('mod');
+  const [issueTroublesome, setIssueTroublesome] = useState(false);
+  const [issueTroublesomeReason, setIssueTroublesomeReason] = useState('');
 
   /* ── data fetching ─────────────────────────────────────────────── */
 
@@ -179,6 +249,25 @@ function ServerDiagnostics() {
       const res = await axios.get(`${API}/log-monitor/servers`);
       setServers(Array.isArray(res.data) ? res.data : []);
     } catch { /* ignore */ }
+  }, []);
+
+  const fetchKnownMods = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/log-monitor/mods`);
+      setKnownMods(Array.isArray(res.data) ? res.data : []);
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchTroublesomeMods = useCallback(async () => {
+    setTroublesomeLoading(true);
+    try {
+      const res = await axios.get(`${API}/diagnostics/troublesome-mods`);
+      setTroublesomeMods(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setTroublesomeMods([]);
+    } finally {
+      setTroublesomeLoading(false);
+    }
   }, []);
 
   const fetchOccurrences = useCallback(async () => {
@@ -190,6 +279,11 @@ function ServerDiagnostics() {
       if (searchQuery) params.set('q', searchQuery);
       if (severityFilter) params.set('severity', severityFilter);
       if (categoryFilter) params.set('category', categoryFilter);
+      if (reviewStatusFilter) params.set('review_status', reviewStatusFilter);
+      if (attributionFilter) params.set('attribution_type', attributionFilter);
+      if (areaFilter) params.set('designated_area', areaFilter);
+      if (actionabilityFilter) params.set('actionability', actionabilityFilter);
+      if (troublesomeOnly) params.set('troublesome', 'true');
       if (dateFrom) params.set('from', dateFrom);
       if (dateTo) params.set('to', dateTo);
       params.set('page', page);
@@ -204,14 +298,24 @@ function ServerDiagnostics() {
     } finally {
       setLoading(false);
     }
-  }, [serverFilter, searchQuery, severityFilter, categoryFilter, dateFrom, dateTo, page]);
+  }, [serverFilter, searchQuery, severityFilter, categoryFilter, reviewStatusFilter, attributionFilter, areaFilter, actionabilityFilter, troublesomeOnly, dateFrom, dateTo, page]);
 
   const fetchErrorTypes = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/log-monitor/error-types`);
+      const params = new URLSearchParams();
+      if (patternSearch) params.set('q', patternSearch);
+      if (severityFilter) params.set('severity', severityFilter);
+      if (categoryFilter) params.set('category', categoryFilter);
+      if (reviewStatusFilter) params.set('review_status', reviewStatusFilter);
+      if (attributionFilter) params.set('attribution_type', attributionFilter);
+      if (areaFilter) params.set('designated_area', areaFilter);
+      if (actionabilityFilter) params.set('actionability', actionabilityFilter);
+      if (troublesomeOnly) params.set('troublesome', 'true');
+      const query = params.toString();
+      const res = await axios.get(`${API}/log-monitor/error-types${query ? `?${query}` : ''}`);
       setErrorTypes(Array.isArray(res.data) ? res.data : []);
     } catch { /* ignore */ }
-  }, []);
+  }, [patternSearch, severityFilter, categoryFilter, reviewStatusFilter, attributionFilter, areaFilter, actionabilityFilter, troublesomeOnly]);
 
   const fetchAlerts = useCallback(async () => {
     try {
@@ -231,26 +335,34 @@ function ServerDiagnostics() {
   const fetchModIssues = useCallback(async () => {
     setModLoading(true);
     try {
-      const params = modStatusFilter ? `?status=${modStatusFilter}` : '';
-      const res = await axios.get(`${API}/servers/mod-issues${params}`);
+      const params = new URLSearchParams();
+      if (modStatusFilter) params.set('status', modStatusFilter);
+      if (troublesomeOnly) params.set('troublesome', 'true');
+      if (areaFilter) params.set('area', areaFilter);
+      const query = params.toString();
+      const res = await axios.get(`${API}/servers/mod-issues${query ? `?${query}` : ''}`);
       setModIssues(Array.isArray(res.data) ? res.data : []);
     } catch { /* ignore */ }
     finally { setModLoading(false); }
-  }, [modStatusFilter]);
+  }, [modStatusFilter, troublesomeOnly, areaFilter]);
 
   const fetchAll = useCallback(() => {
     fetchServers();
+    fetchKnownMods();
     fetchOccurrences();
     fetchErrorTypes();
     fetchAlerts();
     fetchStats();
     fetchModIssues();
-  }, [fetchServers, fetchOccurrences, fetchErrorTypes, fetchAlerts, fetchStats, fetchModIssues]);
+    fetchTroublesomeMods();
+  }, [fetchServers, fetchKnownMods, fetchOccurrences, fetchErrorTypes, fetchAlerts, fetchStats, fetchModIssues, fetchTroublesomeMods]);
 
-  useEffect(() => { fetchServers(); fetchErrorTypes(); fetchAlerts(); }, [fetchServers, fetchErrorTypes, fetchAlerts]);
+  useEffect(() => { fetchServers(); fetchKnownMods(); fetchAlerts(); }, [fetchServers, fetchKnownMods, fetchAlerts]);
   useEffect(() => { fetchOccurrences(); }, [fetchOccurrences]);
+  useEffect(() => { fetchErrorTypes(); }, [fetchErrorTypes]);
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => { fetchModIssues(); }, [fetchModIssues]);
+  useEffect(() => { fetchTroublesomeMods(); }, [fetchTroublesomeMods]);
 
   /* ── error type detail ─────────────────────────────────────────── */
 
@@ -264,6 +376,18 @@ function ServerDiagnostics() {
     finally { setTypeOccLoading(false); }
   }, []);
 
+  useEffect(() => {
+    if (!selectedErrorType) return;
+    setTypeReviewStatus(selectedErrorType.review_status || 'active');
+    setTypeAttribution(selectedErrorType.attribution_type || 'unknown');
+    setTypeArea(selectedErrorType.designated_area || 'error-patterns');
+    setTypeActionability(selectedErrorType.actionability || 'monitor');
+    setTypeLinkedModGuid(selectedErrorType.linked_mod_guid || '');
+    setTypeLinkedModName(selectedErrorType.linked_mod_name || '');
+    setTypeTroublesome(Boolean(selectedErrorType.troublesome));
+    setTypeNotes(selectedErrorType.curation_notes || '');
+  }, [selectedErrorType]);
+
   /* ── alert resolve ─────────────────────────────────────────────── */
 
   const resolveAlert = useCallback(async (alertId) => {
@@ -275,20 +399,67 @@ function ServerDiagnostics() {
 
   /* ── mod issue verdict ─────────────────────────────────────────── */
 
-  const updateIssueStatus = useCallback(async (issueId, status, notes = '') => {
+  const updateIssueStatus = useCallback(async (issueId, status, notes = '', extra = {}) => {
     try {
       await axios.post(`${API}/servers/mod-issues/${issueId}/resolve`, {
         status,
         resolution_notes: notes,
+        ...extra,
       });
       if (selectedIssue?.id === issueId) {
-        setSelectedIssue((current) => current ? { ...current, status, resolution_notes: notes } : current);
+        setSelectedIssue((current) => current ? { ...current, status, resolution_notes: notes, ...extra } : current);
       }
       await fetchModIssues();
+      await fetchTroublesomeMods();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to update issue verdict.');
     }
-  }, [fetchModIssues, selectedIssue?.id]);
+  }, [fetchModIssues, fetchTroublesomeMods, selectedIssue?.id]);
+
+  const saveIssueCuration = useCallback(async () => {
+    if (!selectedIssue?.id) return;
+    await updateIssueStatus(selectedIssue.id, selectedIssue.status || 'active', resolutionNotes, {
+      designated_area: issueArea,
+      attribution_type: issueAttribution,
+      troublesome: issueTroublesome,
+      troublesome_reason: issueTroublesomeReason,
+    });
+  }, [selectedIssue, resolutionNotes, issueArea, issueAttribution, issueTroublesome, issueTroublesomeReason, updateIssueStatus]);
+
+  const saveErrorTypeCuration = useCallback(async () => {
+    if (!selectedErrorType?.id) return;
+    setTypeSaving(true);
+    try {
+      const payload = {
+        review_status: typeReviewStatus,
+        attribution_type: typeAttribution,
+        designated_area: typeArea,
+        actionability: typeActionability,
+        linked_mod_guid: typeLinkedModGuid,
+        linked_mod_name: typeLinkedModName,
+        troublesome: typeTroublesome,
+        curation_notes: typeNotes,
+      };
+      const res = await axios.patch(`${API}/log-monitor/error-types/${selectedErrorType.id}`, payload);
+      setSelectedErrorType(res.data);
+      await fetchErrorTypes();
+      await fetchOccurrences();
+      await fetchTroublesomeMods();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to save error pattern curation.');
+    } finally {
+      setTypeSaving(false);
+    }
+  }, [selectedErrorType?.id, typeReviewStatus, typeAttribution, typeArea, typeActionability, typeLinkedModGuid, typeLinkedModName, typeTroublesome, typeNotes, fetchErrorTypes, fetchOccurrences, fetchTroublesomeMods]);
+
+  useEffect(() => {
+    if (!selectedIssue) return;
+    setResolutionNotes(selectedIssue.resolution_notes || '');
+    setIssueArea(selectedIssue.designated_area || 'mod-analysis');
+    setIssueAttribution(selectedIssue.attribution_type || 'mod');
+    setIssueTroublesome(Boolean(selectedIssue.troublesome));
+    setIssueTroublesomeReason(selectedIssue.troublesome_reason || '');
+  }, [selectedIssue]);
 
   /* ── server name lookup ────────────────────────────────────────── */
 
@@ -308,8 +479,9 @@ function ServerDiagnostics() {
     const activeModIssues = modIssues.filter((i) => i.status === 'active').length;
     const activeAlerts = alerts.length;
     const modsWithIssues = new Set(modIssues.map((i) => i.mod_id).filter(Boolean)).size;
-    return { total, criticalCount, activeModIssues, activeAlerts, modsWithIssues };
-  }, [totalCount, occurrences, alerts, modIssues]);
+    const curatedPatterns = errorTypes.filter((item) => Boolean(item.reviewed_by)).length;
+    return { total, criticalCount, activeModIssues, activeAlerts, modsWithIssues, troublesomeMods: troublesomeMods.length, curatedPatterns };
+  }, [totalCount, occurrences, alerts, modIssues, troublesomeMods, errorTypes]);
 
   /* ── mod issues client-side search ─────────────────────────────── */
 
@@ -328,17 +500,36 @@ function ServerDiagnostics() {
     return haystack.includes(modSearch.toLowerCase());
   }), [modIssues, modSearch]);
 
+  const filteredTroublesomeMods = useMemo(() => troublesomeMods.filter((item) => {
+    if (!modSearch) return true;
+    const haystack = [
+      item.mod_name,
+      item.mod_id,
+      item.reason,
+      ...(item.source_categories || []),
+      ...(item.designated_areas || []),
+      ...(item.attribution_types || []),
+    ].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(modSearch.toLowerCase());
+  }), [troublesomeMods, modSearch]);
+
   /* ── filter active check ───────────────────────────────────────── */
 
-  const hasActiveFilters = serverFilter || searchQuery || severityFilter || categoryFilter || dateFrom || dateTo;
+  const hasActiveFilters = serverFilter || searchQuery || severityFilter || categoryFilter || reviewStatusFilter || attributionFilter || areaFilter || actionabilityFilter || troublesomeOnly || dateFrom || dateTo || patternSearch;
 
   const clearFilters = useCallback(() => {
     setServerFilter('');
     setSearchQuery('');
     setSeverityFilter('');
     setCategoryFilter('');
+    setReviewStatusFilter('');
+    setAttributionFilter('');
+    setAreaFilter('');
+    setActionabilityFilter('');
+    setTroublesomeOnly(false);
     setDateFrom('');
     setDateTo('');
+    setPatternSearch('');
     setPage(1);
   }, []);
 
@@ -365,13 +556,14 @@ function ServerDiagnostics() {
       </div>
 
       {/* ── Summary stat cards ────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {[
           { label: 'Total Errors', value: summaryStats.total, color: 'text-white' },
           { label: 'Critical', value: summaryStats.criticalCount, color: 'text-red-400' },
           { label: 'Active Mod Issues', value: summaryStats.activeModIssues, color: 'text-orange-400' },
           { label: 'Active Alerts', value: summaryStats.activeAlerts, color: 'text-yellow-400' },
           { label: 'Mods With Issues', value: summaryStats.modsWithIssues, color: 'text-blue-400' },
+          { label: 'Troublesome Mods', value: summaryStats.troublesomeMods, color: 'text-rose-400' },
         ].map(({ label, value, color }) => (
           <Card key={label} className="border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50">
             <CardContent className="px-4 py-3">
@@ -484,6 +676,50 @@ function ServerDiagnostics() {
               <option value="generic-error">Generic Error</option>
             </select>
 
+            <select
+              value={reviewStatusFilter}
+              onChange={(e) => { setReviewStatusFilter(e.target.value); setPage(1); }}
+              className="rounded-md border border-[rgba(201,162,39,0.15)] bg-[#0c1117] px-3 py-2 text-sm text-white"
+            >
+              <option value="">All Reviews</option>
+              {VERDICT_OPTIONS.map((status) => (
+                <option key={status} value={status}>{humanizeToken(status)}</option>
+              ))}
+            </select>
+
+            <select
+              value={attributionFilter}
+              onChange={(e) => { setAttributionFilter(e.target.value); setPage(1); }}
+              className="rounded-md border border-[rgba(201,162,39,0.15)] bg-[#0c1117] px-3 py-2 text-sm text-white"
+            >
+              <option value="">All Attribution</option>
+              {ATTRIBUTION_OPTIONS.map((item) => (
+                <option key={item} value={item}>{humanizeToken(item)}</option>
+              ))}
+            </select>
+
+            <select
+              value={areaFilter}
+              onChange={(e) => { setAreaFilter(e.target.value); setPage(1); }}
+              className="rounded-md border border-[rgba(201,162,39,0.15)] bg-[#0c1117] px-3 py-2 text-sm text-white"
+            >
+              <option value="">All Areas</option>
+              {AREA_OPTIONS.map((item) => (
+                <option key={item} value={item}>{humanizeToken(item)}</option>
+              ))}
+            </select>
+
+            <select
+              value={actionabilityFilter}
+              onChange={(e) => { setActionabilityFilter(e.target.value); setPage(1); }}
+              className="rounded-md border border-[rgba(201,162,39,0.15)] bg-[#0c1117] px-3 py-2 text-sm text-white"
+            >
+              <option value="">All Actionability</option>
+              {ACTIONABILITY_OPTIONS.map((item) => (
+                <option key={item} value={item}>{humanizeToken(item)}</option>
+              ))}
+            </select>
+
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4a6070]" />
               <Input
@@ -508,6 +744,15 @@ function ServerDiagnostics() {
               className="w-36 border-[rgba(201,162,39,0.15)] bg-[#0c1117] text-white"
               placeholder="To"
             />
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setTroublesomeOnly((current) => !current); setPage(1); }}
+              className={`border-[rgba(201,162,39,0.15)] ${troublesomeOnly ? 'text-tropic-gold' : 'text-[#8a9aa8]'} hover:text-white`}
+            >
+              {troublesomeOnly ? 'Showing Troublesome Only' : 'Show Troublesome Only'}
+            </Button>
 
             {hasActiveFilters && (
               <Button size="sm" variant="ghost" onClick={clearFilters} className="text-[#4a6070] hover:text-white">
@@ -543,6 +788,8 @@ function ServerDiagnostics() {
                       <th className="px-3 py-2 text-left text-xs uppercase tracking-wider text-[#4a6070]">Server</th>
                       <th className="px-3 py-2 text-left text-xs uppercase tracking-wider text-[#4a6070]">Severity</th>
                       <th className="px-3 py-2 text-left text-xs uppercase tracking-wider text-[#4a6070]">Category</th>
+                      <th className="px-3 py-2 text-left text-xs uppercase tracking-wider text-[#4a6070]">Attribution</th>
+                      <th className="px-3 py-2 text-left text-xs uppercase tracking-wider text-[#4a6070]">Area</th>
                       <th className="px-3 py-2 text-left text-xs uppercase tracking-wider text-[#4a6070]">Mod</th>
                       <th className="px-3 py-2 text-left text-xs uppercase tracking-wider text-[#4a6070]">Message</th>
                     </tr>
@@ -566,11 +813,38 @@ function ServerDiagnostics() {
                             {occ.category}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2 font-mono text-xs text-[#4a6070]">
-                          {occ.mod_guid ? occ.mod_guid.slice(0, 12) + '…' : '—'}
+                        <td className="px-3 py-2">
+                          <Badge variant="outline" className={`text-xs ${attributionTone(occ.attribution_type)}`}>
+                            {humanizeToken(occ.attribution_type)}
+                          </Badge>
                         </td>
-                        <td className="max-w-xs truncate px-3 py-2 text-[#8a9aa8]" title={occ.message}>
-                          {occ.message?.slice(0, 120)}
+                        <td className="px-3 py-2">
+                          <Badge variant="outline" className={`text-xs ${areaTone(occ.designated_area)}`}>
+                            {humanizeToken(occ.designated_area)}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 font-mono text-xs text-[#4a6070]">
+                          {occ.linked_mod_name || (occ.mod_guid ? occ.mod_guid.slice(0, 12) + '…' : '—')}
+                        </td>
+                        <td className="max-w-xs px-3 py-2 text-[#8a9aa8]" title={occ.message}>
+                          <div className="flex flex-wrap gap-1">
+                            {occ.review_status && (
+                              <Badge variant="outline" className={`text-[10px] ${statusColor(occ.review_status)}`}>
+                                {humanizeToken(occ.review_status)}
+                              </Badge>
+                            )}
+                            {occ.actionability && (
+                              <Badge variant="outline" className={`text-[10px] ${actionabilityTone(occ.actionability)}`}>
+                                {humanizeToken(occ.actionability)}
+                              </Badge>
+                            )}
+                            {occ.troublesome ? (
+                              <Badge variant="outline" className="border-rose-600/30 text-[10px] text-rose-300">
+                                Troublesome
+                              </Badge>
+                            ) : null}
+                          </div>
+                          <div className="mt-1 truncate">{occ.message?.slice(0, 120)}</div>
                         </td>
                       </tr>
                     ))}
@@ -614,6 +888,30 @@ function ServerDiagnostics() {
       {/* ═══════════════════════════════════════════════════════════ */}
       {activeTab === 'error-patterns' && (
         <div className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4a6070]" />
+              <Input
+                value={patternSearch}
+                onChange={(e) => setPatternSearch(e.target.value)}
+                placeholder="Search patterns, notes, or linked mod names..."
+                className="border-[rgba(201,162,39,0.15)] bg-[#0c1117] pl-10 text-white"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {troublesomeOnly ? (
+                <Badge variant="outline" className="border-rose-600/30 text-rose-300">
+                  Troublesome Only
+                </Badge>
+              ) : null}
+              {actionabilityFilter ? (
+                <Badge variant="outline" className={`text-xs ${actionabilityTone(actionabilityFilter)}`}>
+                  {humanizeToken(actionabilityFilter)}
+                </Badge>
+              ) : null}
+            </div>
+          </div>
+
           {errorTypes.length === 0 ? (
             <Card className="border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50">
               <CardContent className="flex flex-col items-center justify-center py-16 text-[#4a6070]">
@@ -638,6 +936,23 @@ function ServerDiagnostics() {
                       <Badge variant="outline" className={`text-xs ${categoryBadge(et.category)}`}>
                         {et.category}
                       </Badge>
+                      <Badge variant="outline" className={`text-xs ${statusColor(et.review_status)}`}>
+                        {humanizeToken(et.review_status)}
+                      </Badge>
+                      <Badge variant="outline" className={`text-xs ${attributionTone(et.attribution_type)}`}>
+                        {humanizeToken(et.attribution_type)}
+                      </Badge>
+                      <Badge variant="outline" className={`text-xs ${actionabilityTone(et.actionability)}`}>
+                        {humanizeToken(et.actionability)}
+                      </Badge>
+                      <Badge variant="outline" className={`text-xs ${areaTone(et.designated_area)}`}>
+                        {humanizeToken(et.designated_area)}
+                      </Badge>
+                      {et.troublesome ? (
+                        <Badge variant="outline" className="border-rose-600/30 text-xs text-rose-300">
+                          Troublesome
+                        </Badge>
+                      ) : null}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-[#4a6070]">
                       <span>{(et.total_occurrences || 0).toLocaleString()} occurrences</span>
@@ -648,6 +963,11 @@ function ServerDiagnostics() {
                   <p className="mt-1 truncate font-mono text-xs text-[#4a6070]" title={et.normalised_message}>
                     {et.normalised_message?.slice(0, 150)}
                   </p>
+                  {et.curation_notes ? (
+                    <p className="mt-2 text-xs text-[#8a9aa8]">
+                      {et.curation_notes}
+                    </p>
+                  ) : null}
                 </CardContent>
               </Card>
             ))
@@ -726,11 +1046,26 @@ function ServerDiagnostics() {
                               {issue.source_category}
                             </Badge>
                           )}
+                          {issue.attribution_type && (
+                            <Badge variant="outline" className={`text-xs ${attributionTone(issue.attribution_type)}`}>
+                              {humanizeToken(issue.attribution_type)}
+                            </Badge>
+                          )}
+                          {issue.designated_area && (
+                            <Badge variant="outline" className={`text-xs ${areaTone(issue.designated_area)}`}>
+                              {humanizeToken(issue.designated_area)}
+                            </Badge>
+                          )}
                           {issue.issue_type && (
                             <Badge variant="outline" className="border-zinc-700 text-xs text-[#8a9aa8]">
                               {issue.issue_type}
                             </Badge>
                           )}
+                          {issue.troublesome ? (
+                            <Badge variant="outline" className="border-rose-600/30 text-xs text-rose-300">
+                              Troublesome Mod
+                            </Badge>
+                          ) : null}
                         </div>
 
                         <p className="mt-2 text-sm text-[#d0d8e0]">
@@ -776,6 +1111,88 @@ function ServerDiagnostics() {
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* Tab 4: Alerts & Incidents                                 */}
       {/* ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'troublesome-mods' && (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4a6070]" />
+              <Input
+                value={modSearch}
+                onChange={(e) => setModSearch(e.target.value)}
+                placeholder="Search troublesome mods, reasons, or attribution..."
+                className="border-[rgba(201,162,39,0.15)] bg-[#0c1117] pl-10 text-white"
+              />
+            </div>
+          </div>
+
+          {troublesomeLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="h-24 animate-pulse rounded-lg bg-[#0c1117]/50" />
+              ))}
+            </div>
+          ) : filteredTroublesomeMods.length === 0 ? (
+            <Card className="border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50">
+              <CardContent className="flex flex-col items-center justify-center py-16 text-[#4a6070]">
+                <TrendingUp className="mb-4 h-12 w-12 opacity-30" />
+                <p className="text-lg font-medium">No troublesome mods curated yet</p>
+                <p className="mt-1 text-sm">
+                  Flag a mod issue or linked error pattern as troublesome to build this list.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {filteredTroublesomeMods.map((item) => (
+                <Card key={item.mod_id} className="border border-rose-900/30 bg-[#0c1117]/50">
+                  <CardContent className="py-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium text-white">{item.mod_name || item.mod_id}</span>
+                          <Badge variant="outline" className="border-rose-600/30 text-xs text-rose-300">
+                            Troublesome
+                          </Badge>
+                          {(item.attribution_types || []).map((entry) => (
+                            <Badge key={`${item.mod_id}-${entry}`} variant="outline" className={`text-xs ${attributionTone(entry)}`}>
+                              {humanizeToken(entry)}
+                            </Badge>
+                          ))}
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap gap-4 text-xs text-[#8a9aa8]">
+                          <span>{item.issue_count || 0} curated mod issues</span>
+                          <span>{item.error_type_count || 0} linked error patterns</span>
+                          <span>{(item.total_occurrences || 0) + (item.pattern_occurrences || 0)} combined signals</span>
+                          {item.last_seen && <span>Last seen: {fmtDate(item.last_seen)}</span>}
+                        </div>
+
+                        {item.reason ? (
+                          <p className="mt-3 text-sm text-[#d0d8e0]">{item.reason}</p>
+                        ) : null}
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {(item.source_categories || []).map((entry) => (
+                            <Badge key={`${item.mod_id}-${entry}`} variant="outline" className={`text-xs ${sourceTone(entry)}`}>
+                              {entry}
+                            </Badge>
+                          ))}
+                          {(item.designated_areas || []).map((entry) => (
+                            <Badge key={`${item.mod_id}-area-${entry}`} variant="outline" className={`text-xs ${areaTone(entry)}`}>
+                              {humanizeToken(entry)}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'alerts' && (
         <div className="space-y-4">
           {/* Cross-link: related mod issues */}
@@ -870,6 +1287,142 @@ function ServerDiagnostics() {
               </pre>
             </div>
 
+            <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+              <p className="mb-3 text-sm text-[#8a9aa8]">Pattern curation</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Review Status</p>
+                  <select
+                    value={typeReviewStatus}
+                    onChange={(e) => setTypeReviewStatus(e.target.value)}
+                    className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+                  >
+                    {VERDICT_OPTIONS.map((status) => (
+                      <option key={status} value={status}>{humanizeToken(status)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Attribution</p>
+                  <select
+                    value={typeAttribution}
+                    onChange={(e) => setTypeAttribution(e.target.value)}
+                    className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+                  >
+                    {ATTRIBUTION_OPTIONS.map((entry) => (
+                      <option key={entry} value={entry}>{humanizeToken(entry)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Diagnostics Area</p>
+                  <select
+                    value={typeArea}
+                    onChange={(e) => setTypeArea(e.target.value)}
+                    className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+                  >
+                    {AREA_OPTIONS.map((entry) => (
+                      <option key={entry} value={entry}>{humanizeToken(entry)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Actionability</p>
+                  <select
+                    value={typeActionability}
+                    onChange={(e) => setTypeActionability(e.target.value)}
+                    className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+                  >
+                    {ACTIONABILITY_OPTIONS.map((entry) => (
+                      <option key={entry} value={entry}>{humanizeToken(entry)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Known Mod GUID</p>
+                  <Input
+                    value={typeLinkedModGuid}
+                    onChange={(e) => setTypeLinkedModGuid(e.target.value)}
+                    className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-white"
+                    placeholder="Optional GUID"
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Known Mod Name</p>
+                  <Input
+                    value={typeLinkedModName}
+                    onChange={(e) => setTypeLinkedModName(e.target.value)}
+                    className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-white"
+                    placeholder="Optional linked mod"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Quick Fill From Known Mods</p>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const selectedGuid = e.target.value;
+                    const selectedMod = knownMods.find((item) => item.guid === selectedGuid);
+                    if (selectedMod) {
+                      setTypeLinkedModGuid(selectedMod.guid || '');
+                      setTypeLinkedModName(selectedMod.name || '');
+                    }
+                  }}
+                  className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+                >
+                  <option value="">Select a known mod...</option>
+                  {knownMods.map((item) => (
+                    <option key={item.guid || item.id} value={item.guid}>
+                      {item.name || item.guid}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setTypeTroublesome((current) => !current)}
+                  className={`border-[rgba(201,162,39,0.15)] ${typeTroublesome ? 'text-rose-300' : 'text-[#8a9aa8]'}`}
+                >
+                  {typeTroublesome ? 'Troublesome Linked Mod' : 'Mark Linked Mod As Troublesome'}
+                </Button>
+                <Badge variant="outline" className={`text-xs ${statusColor(typeReviewStatus)}`}>
+                  {humanizeToken(typeReviewStatus)}
+                </Badge>
+                <Badge variant="outline" className={`text-xs ${attributionTone(typeAttribution)}`}>
+                  {humanizeToken(typeAttribution)}
+                </Badge>
+                <Badge variant="outline" className={`text-xs ${areaTone(typeArea)}`}>
+                  {humanizeToken(typeArea)}
+                </Badge>
+              </div>
+
+              <Textarea
+                value={typeNotes}
+                onChange={(e) => setTypeNotes(e.target.value)}
+                className="mt-3 border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-white"
+                rows={3}
+                placeholder="Operator notes, false-positive rationale, or known-safe context..."
+              />
+
+              <div className="mt-3 flex justify-end">
+                <Button
+                  onClick={saveErrorTypeCuration}
+                  size="sm"
+                  variant="outline"
+                  disabled={typeSaving}
+                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white"
+                >
+                  {typeSaving ? 'Saving...' : 'Save Curation'}
+                </Button>
+              </div>
+            </div>
+
             <div>
               <p className="mb-2 text-[10px] uppercase tracking-wider text-[#4a6070]">
                 Recent occurrences ({typeOccurrences.length})
@@ -927,6 +1480,27 @@ function ServerDiagnostics() {
                   <div><span className="text-[#4a6070]">Issue type:</span> <span className="text-[#8a9aa8]">{selectedIssue.issue_type || 'unknown'}</span></div>
                   <div><span className="text-[#4a6070]">Confidence:</span> <Badge className={`ml-1 text-xs ${confidenceColor(selectedIssue.confidence_score || 0)}`}>{Math.round((selectedIssue.confidence_score || 0) * 100)}%</Badge></div>
                   <div><span className="text-[#4a6070]">Occurrences:</span> <span className="text-[#8a9aa8]">{selectedIssue.occurrence_count || 0}</span></div>
+                  <div>
+                    <span className="text-[#4a6070]">Diagnostics area:</span>
+                    <Badge variant="outline" className={`ml-1 text-xs ${areaTone(issueArea)}`}>
+                      {humanizeToken(issueArea)}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-[#4a6070]">Attribution:</span>
+                    <Badge variant="outline" className={`ml-1 text-xs ${attributionTone(issueAttribution)}`}>
+                      {humanizeToken(issueAttribution)}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-[#4a6070]">Troublesome:</span>
+                    <Badge
+                      variant="outline"
+                      className={`ml-1 text-xs ${issueTroublesome ? 'border-rose-600/30 text-rose-300' : 'border-zinc-700 text-[#8a9aa8]'}`}
+                    >
+                      {issueTroublesome ? 'Yes' : 'No'}
+                    </Badge>
+                  </div>
                 </div>
 
                 {(selectedIssue.source_streams || []).length > 0 && (
@@ -941,6 +1515,78 @@ function ServerDiagnostics() {
                     </div>
                   </div>
                 )}
+
+                <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm text-[#8a9aa8]">Issue classification</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={saveIssueCuration}
+                      className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white"
+                    >
+                      Save Classification
+                    </Button>
+                  </div>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Diagnostics Area</p>
+                      <select
+                        value={issueArea}
+                        onChange={(e) => setIssueArea(e.target.value)}
+                        className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+                      >
+                        {AREA_OPTIONS.map((entry) => (
+                          <option key={entry} value={entry}>{humanizeToken(entry)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Attribution</p>
+                      <select
+                        value={issueAttribution}
+                        onChange={(e) => setIssueAttribution(e.target.value)}
+                        className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+                      >
+                        {ATTRIBUTION_OPTIONS.map((entry) => (
+                          <option key={entry} value={entry}>{humanizeToken(entry)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setIssueTroublesome((current) => {
+                          const next = !current;
+                          if (next) {
+                            setIssueArea('troublesome-mods');
+                          }
+                          return next;
+                        });
+                      }}
+                      className={`border-[rgba(201,162,39,0.15)] ${issueTroublesome ? 'text-rose-300' : 'text-[#8a9aa8]'}`}
+                    >
+                      {issueTroublesome ? 'Troublesome Mod Flagged' : 'Mark As Troublesome Mod'}
+                    </Button>
+                    <Badge variant="outline" className={`text-xs ${areaTone(issueArea)}`}>
+                      {humanizeToken(issueArea)}
+                    </Badge>
+                    <Badge variant="outline" className={`text-xs ${attributionTone(issueAttribution)}`}>
+                      {humanizeToken(issueAttribution)}
+                    </Badge>
+                  </div>
+                  <Textarea
+                    value={issueTroublesomeReason}
+                    onChange={(e) => setIssueTroublesomeReason(e.target.value)}
+                    className="mt-3 border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-white"
+                    rows={3}
+                    placeholder="Why is this mod considered troublesome, recurring, or worth tracking?"
+                  />
+                </div>
 
                 <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
                   <p className="mb-2 text-xs text-[#4a6070]">Impact Summary</p>
@@ -1032,7 +1678,12 @@ function ServerDiagnostics() {
                         key={status}
                         size="sm"
                         variant="outline"
-                        onClick={() => updateIssueStatus(selectedIssue.id, status, resolutionNotes)}
+                        onClick={() => updateIssueStatus(selectedIssue.id, status, resolutionNotes, {
+                          designated_area: issueArea,
+                          attribution_type: issueAttribution,
+                          troublesome: issueTroublesome,
+                          troublesome_reason: issueTroublesomeReason,
+                        })}
                         className={`text-xs ${selectedIssue.status === status ? 'border-tropic-gold/40 text-tropic-gold' : 'border-zinc-700 text-[#8a9aa8]'}`}
                       >
                         {status.replace(/_/g, ' ')}
