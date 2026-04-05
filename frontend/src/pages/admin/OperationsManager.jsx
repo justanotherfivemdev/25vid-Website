@@ -191,8 +191,8 @@ const OperationsManager = () => {
     try {
       const res = await axios.get(`${API}/map/deployments/active-deployed`);
       setActiveDeployments(res.data);
-    } catch {
-      // Deployment fetch is optional — ignore errors silently
+    } catch (err) {
+      console.error('Error fetching active deployments:', err);
     }
   };
 
