@@ -80,14 +80,18 @@ async def diagnostics_mod_detail(
     # Get mod info from log_mods
     mod_info = await db.log_mods.find_one({"guid": mod_id}, {"_id": 0})
 
-    # Serialise datetimes
+    # Serialise datetimes in error occurrences
+    _DT_KEYS = ("timestamp", "created_at")
     for item in recent_errors:
-        for key in ("timestamp", "created_at"):
-            if isinstance(item.get(key), datetime):
-                item[key] = item[key].isoformat()
+        for key in _DT_KEYS:
+            val = item.get(key)
+            if isinstance(val, datetime):
+                item[key] = val.isoformat()
 
-    if mod_info and isinstance(mod_info.get("first_seen"), datetime):
-        mod_info["first_seen"] = mod_info["first_seen"].isoformat()
+    if mod_info:
+        val = mod_info.get("first_seen")
+        if isinstance(val, datetime):
+            mod_info["first_seen"] = val.isoformat()
 
     return {
         "mod_id": mod_id,

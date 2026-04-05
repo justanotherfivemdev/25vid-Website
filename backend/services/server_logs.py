@@ -308,11 +308,15 @@ async def stream_server_log_entries(
         except asyncio.TimeoutError:
             logger.debug("Queue put timeout for server %s – dropping entry", server_id)
 
+    _DOCKER_MAX_RETRIES = 10
+    _DOCKER_MAX_BACKOFF = 30.0
+    _DOCKER_BACKOFF_BASE = 1.0
+    _DOCKER_BACKOFF_CAP_EXP = 5
+
     async def pump_docker() -> None:
         """Stream Docker container logs with retry on transient failures."""
-        _MAX_RETRIES = 10
-        _retry_count = 0
-        while not stop_event.is_set() and _retry_count < _MAX_RETRIES:
+        retry_count = 0
+        while not stop_event.is_set() and retry_count < _DOCKER_MAX_RETRIES:
             try:
                 async for chunk in docker_agent.stream_container_logs(container_name, tail=0, since=since):
                     for entry in build_log_entries(chunk, source="docker"):
@@ -322,11 +326,14 @@ async def stream_server_log_entries(
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
-                _retry_count += 1
-                backoff = min(30.0, 1.0 * (2 ** min(_retry_count, 5)))
+                retry_count += 1
+                backoff = min(
+                    _DOCKER_MAX_BACKOFF,
+                    _DOCKER_BACKOFF_BASE * (2 ** min(retry_count, _DOCKER_BACKOFF_CAP_EXP)),
+                )
                 logger.debug(
                     "Docker log pump error for %s (attempt %d/%d): %s – retrying in %.1fs",
-                    server_id, _retry_count, _MAX_RETRIES, exc, backoff,
+                    server_id, retry_count, _DOCKER_MAX_RETRIES, exc, backoff,
                 )
                 await asyncio.sleep(backoff)
 
