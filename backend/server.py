@@ -72,6 +72,7 @@ from routes.worldmonitor_proxy import router as worldmonitor_proxy_router
 from routes.servers import router as servers_router
 from routes.operational_docs import router as operational_docs_router
 from routes.log_monitor import router as log_monitor_router
+from routes.diagnostics import router as diagnostics_router
 
 
 # Create the main app
@@ -109,6 +110,7 @@ api_router.include_router(worldmonitor_proxy_router)
 api_router.include_router(servers_router)
 api_router.include_router(operational_docs_router)
 api_router.include_router(log_monitor_router)
+api_router.include_router(diagnostics_router)
 
 
 @api_router.get("/")

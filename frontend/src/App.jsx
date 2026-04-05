@@ -59,6 +59,7 @@ const OperationalDocsManager = lazy(() => import('@/pages/admin/OperationalDocsM
 const ServerDashboard = lazy(() => import('@/pages/admin/servers/ServerDashboard'));
 const ModIssues = lazy(() => import('@/pages/admin/servers/ModIssues'));
 const LogMonitorPage = lazy(() => import('@/pages/admin/servers/LogMonitorPage'));
+const ServerDiagnostics = lazy(() => import('@/pages/admin/servers/ServerDiagnostics'));
 const ServerWorkspace = lazy(() => import('@/pages/admin/servers/ServerWorkspace'));
 const OverviewModule = lazy(() => import('@/pages/admin/servers/modules/OverviewModule'));
 const ConsoleModule = lazy(() => import('@/pages/admin/servers/modules/ConsoleModule'));
@@ -1445,8 +1446,10 @@ function App() {
           <Route path="/admin/users/:id" element={<AdminMemberDetail />} />
           {/* ── Server Management routes (S4/S1 only) ────────────────────── */}
           <Route path="/admin/servers" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDashboard /></ProtectedRoute>} />
-          <Route path="/admin/servers/mod-issues" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ModIssues /></ProtectedRoute>} />
-          <Route path="/admin/servers/log-monitor" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><LogMonitorPage /></ProtectedRoute>} />
+          <Route path="/admin/servers/diagnostics" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDiagnostics /></ProtectedRoute>} />
+          {/* Legacy routes — redirect to unified diagnostics page */}
+          <Route path="/admin/servers/mod-issues" element={<Navigate to="/admin/servers/diagnostics" replace />} />
+          <Route path="/admin/servers/log-monitor" element={<Navigate to="/admin/servers/diagnostics" replace />} />
           {/* Per-server workspace with nested module routes */}
           <Route path="/admin/servers/:id" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerWorkspace /></ProtectedRoute>}>
             <Route index element={<OverviewModule />} />
