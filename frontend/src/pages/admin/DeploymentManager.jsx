@@ -393,7 +393,7 @@ const DeploymentManager = () => {
       const networkMessage = err?.message && !err?.response ? `Network error: ${err.message}` : '';
       alert(formatApiError(err, responseText || networkMessage || 'Error saving deployment'));
     }
-  }, [deploymentForm, editingDeployment, fetchDeployments]);
+  }, [deploymentForm, deploymentScope, editingDeployment, fetchDeployments]);
 
   const handleToggleActive = useCallback(async (dep) => {
     try {

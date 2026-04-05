@@ -353,28 +353,39 @@ const ECHELON_SIDC_MAP = {
  * Build a full 20-character SIDC for milsymbol (MIL-STD-2525D).
  *
  * Position layout (20 chars total):
- *   [1-2]  Version / coding scheme   = "10" (MIL-STD-2525D)
- *   [3]    Standard Identity / Affil  = aff digit (3=Friendly, 6=Hostile, 4=Neutral, 1=Unknown)
- *   [4]    Symbol set                 = "1" (Land Unit / Equipment)
- *   [5-6]  Status / HQ-TF-Dummy      = "00"
- *   [7-12] Entity / Type / Subtype    = icon (6 digits from SYMBOL_TYPE_SIDC_MAP)
- *   [13-14] Echelon / Mobility        = ech (2 digits from ECHELON_SIDC_MAP)
- *   [15-20] Modifiers / padding       = "0000" (unused)
+ *   [1-2]   Version / coding scheme  = "10" (MIL-STD-2525D)
+ *   [3]     Context                   = "0"  (Reality)
+ *   [4]     Standard Identity          = aff digit (3=Friendly, 6=Hostile, 4=Neutral, 1=Unknown)
+ *   [5-6]   Symbol Set                = "10" (Land Unit / Equipment)
+ *   [7]     Status                     = "0"  (Present)
+ *   [8-9]   HQ / Task Force / Dummy   = "00"
+ *   [10]    Amplifier / Descriptor     = "0"
+ *   [11-16] Entity / Type / Subtype    = icon (6 digits from SYMBOL_TYPE_SIDC_MAP)
+ *   [17-18] Modifier 1 (Echelon)       = ech (2 digits from ECHELON_SIDC_MAP)
+ *   [19-20] Modifier 2 (Mobility)      = "00"
+ *
+ * Example: friendly infantry = "10031000001211000000"
  */
 function buildSIDC(affiliation = 'friendly', symbolType = 'infantry', echelon = 'none') {
   const aff = AFFILIATION_SIDC_DIGIT[affiliation] || '1';
   const icon = SYMBOL_TYPE_SIDC_MAP[symbolType] || '110000';
   const ech = ECHELON_SIDC_MAP[echelon] || '00';
-  return `10${aff}100${icon}${ech}0000`;
+  return `100${aff}100000${icon}${ech}00`;
 }
 
 /**
  * Render a NATO marker using milsymbol. Falls back to a simple colored circle
  * if milsymbol fails to render the SIDC.
+ * Results are cached by (sidc, size) to avoid re-creating ms.Symbol every render.
  */
+const _milsymbolCache = new Map();
 function renderNATOMarkerImage(affiliation, symbolType, echelon, size = 40) {
   const sidc = buildSIDC(affiliation, symbolType, echelon);
-  return renderMilSymbolDataUrl(sidc, size);
+  const key = `${sidc}_${size}`;
+  if (_milsymbolCache.has(key)) return _milsymbolCache.get(key);
+  const result = renderMilSymbolDataUrl(sidc, size);
+  _milsymbolCache.set(key, result);
+  return result;
 }
 
 /* ── Fallback colors used if milsymbol render fails ─────────────────────── */
@@ -1607,7 +1618,7 @@ export default function GlobalThreatMap({
                 style={{ cursor: activeDeployment ? 'pointer' : 'default' }}
               >
                 {isInTransit ? (
-                  /* milsymbol friendly HQ division marker in transit – with rotation */
+                  /* milsymbol friendly HQ division marker in transit */
                   (() => {
                     const transitImg = renderNATOMarkerImage('friendly', 'headquarters', 'division', 36);
                     return transitImg ? (
