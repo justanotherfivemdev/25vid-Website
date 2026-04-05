@@ -10,7 +10,7 @@ os.environ.setdefault("DB_NAME", "test_db")
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
-from routes.servers import _build_log_entries, _derive_troubleshooting, _normalize_server_contract, _parse_log_line, _parse_log_since, _stable_hash, _validate_player_id
+from routes.servers import _build_log_entries, _derive_troubleshooting, _normalize_server_contract, _parse_log_line, _parse_log_since, _reject_ws, _stable_hash, _validate_player_id
 from services.server_config_generator import (
     _normalize_navmesh_streaming,
     _sanitize_operating,
@@ -485,6 +485,26 @@ def test_parse_log_since_handles_docker_nanosecond_timestamps():
     nano_ts = "2026-04-03T10:00:05.123456789Z"
     result = _parse_log_since(nano_ts)
     assert result == 1775210405, f"Expected 1775210405, got {result}"
+
+
+def test_reject_ws_accepts_before_closing():
+    class FakeWebSocket:
+        def __init__(self):
+            self.accept_calls = 0
+            self.closed = []
+
+        async def accept(self):
+            self.accept_calls += 1
+
+        async def close(self, code: int, reason: str):
+            self.closed.append((code, reason))
+
+    websocket = FakeWebSocket()
+
+    asyncio.run(_reject_ws(websocket, 4001, "Authentication required"))
+
+    assert websocket.accept_calls == 1
+    assert websocket.closed == [(4001, "Authentication required")]
 
 
 def test_parse_log_line_rejects_non_iso_first_token():
