@@ -44,7 +44,7 @@ body {
   justify-content: space-between;
   padding: 8px 16px;
   background: var(--surface);
-  border-bottom: 1px solid rgba(201, 162, 39, 0.15);
+  border-bottom: 1px solid var(--border);
   height: 40px;
   flex-shrink: 0;
 }
@@ -680,7 +680,7 @@ body {
 
 .top-source.tier-1 {
   background: rgba(201, 162, 39, 0.15);
-  color: var(--green);
+  color: var(--accent);
 }
 
 .top-source.tier-2 {

@@ -68,7 +68,7 @@ function CompareServersModule() {
       if (cursorKey) {
         params.pageKey = cursorKey;
       }
-      // Always send the query so the backend can apply it as a fallback
+      // Include the original query when present so the request context is preserved.
       if (searchQuery) {
         params.q = searchQuery;
       }

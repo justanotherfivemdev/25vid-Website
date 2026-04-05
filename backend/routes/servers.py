@@ -3020,10 +3020,11 @@ async def battlemetrics_search(
             values = qs.get(key)
             if values:
                 params[key] = values[0]
-        # Always enforce game filter and defaults for safety
-        params.setdefault("filter[game]", _BM_GAME_FILTER)
-        params.setdefault("page[size]", str(per_page))
-        params.setdefault("sort", _BM_DEFAULT_SORT)
+        # Always enforce game filter and defaults for safety, even if a
+        # crafted page_key attempts to supply conflicting values.
+        params["filter[game]"] = _BM_GAME_FILTER
+        params["page[size]"] = str(per_page)
+        params["sort"] = _BM_DEFAULT_SORT
     else:
         params: dict = {
             "filter[game]": _BM_GAME_FILTER,
