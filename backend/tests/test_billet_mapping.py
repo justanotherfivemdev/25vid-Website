@@ -153,10 +153,15 @@ class TestGetBilletDisplayEdgeCases:
         assert result == {"acronym": None, "full_title": None}
 
     def test_whitespace_only(self):
-        # Stripped to empty string, but the empty string can fuzzy-match
-        # against map keys via the `key in keyword` branch.
+        # Whitespace-only input strips to empty string "".
+        # Empty string then fuzzy-matches via `key in keyword` since ""
+        # is a substring of every keyword.  This is current behaviour —
+        # the function only short-circuits on falsy input (None / ""),
+        # but the stripped result is non-falsy since `"   "` is truthy,
+        # so it proceeds to the lookup with key="".
         result = get_billet_display("   ")
-        assert result["acronym"] is not None  # fuzzy matches something
+        # The function matches because "" is contained in every BILLET_MAP key
+        assert result["acronym"] is not None
 
     def test_all_billet_map_keys_resolve(self):
         """Every key in BILLET_MAP should resolve to a valid result."""
