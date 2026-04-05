@@ -350,15 +350,22 @@ const ECHELON_SIDC_MAP = {
 };
 
 /**
- * Build a full 20-character SIDC for milsymbol.
- * Uses Set 1 (Land Unit) = "10", with appropriate affiliation + icon code.
+ * Build a full 20-character SIDC for milsymbol (MIL-STD-2525D).
+ *
+ * Position layout (20 chars total):
+ *   [1-2]  Version / coding scheme   = "10" (MIL-STD-2525D)
+ *   [3]    Standard Identity / Affil  = aff digit (3=Friendly, 6=Hostile, 4=Neutral, 1=Unknown)
+ *   [4]    Symbol set                 = "1" (Land Unit / Equipment)
+ *   [5-6]  Status / HQ-TF-Dummy      = "00"
+ *   [7-12] Entity / Type / Subtype    = icon (6 digits from SYMBOL_TYPE_SIDC_MAP)
+ *   [13-14] Echelon / Mobility        = ech (2 digits from ECHELON_SIDC_MAP)
+ *   [15-20] Modifiers / padding       = "0000" (unused)
  */
 function buildSIDC(affiliation = 'friendly', symbolType = 'infantry', echelon = 'none') {
   const aff = AFFILIATION_SIDC_DIGIT[affiliation] || '1';
   const icon = SYMBOL_TYPE_SIDC_MAP[symbolType] || '110000';
   const ech = ECHELON_SIDC_MAP[echelon] || '00';
-  // Format: 10 (version) + aff (affiliation) + 0 (battle dimension) + 10 (standard identity) + icon (6 digits) + ech (2 digits) + 0000 (padding)
-  return `10${aff}0001${icon}${ech}0000`;
+  return `10${aff}100${icon}${ech}0000`;
 }
 
 /**

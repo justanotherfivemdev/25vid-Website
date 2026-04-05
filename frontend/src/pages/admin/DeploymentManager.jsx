@@ -301,8 +301,8 @@ const DeploymentManager = () => {
 
   const openEditDeployment = useCallback((dep) => {
     setEditingDeployment(dep);
-    // Restore deployment scope from metadata (default to 'division' if not set)
-    setDeploymentScope(dep.metadata?.deployment_scope || (dep.unit_name ? 'individual' : 'division'));
+    // Restore deployment scope from metadata; default to 'division' for legacy records
+    setDeploymentScope(dep.metadata?.deployment_scope || 'division');
     let existingPoints = Array.isArray(dep.route_points)
       ? dep.route_points.map((rp) => ({
           name: rp.name || '',
