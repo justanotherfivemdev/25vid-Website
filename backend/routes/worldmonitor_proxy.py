@@ -78,7 +78,14 @@ async def gdelt_doc_proxy(
             if resp.status_code != 200:
                 raise HTTPException(status_code=resp.status_code, detail="GDELT request failed")
 
-            data = resp.json()
+            content_type = resp.headers.get("content-type", "")
+            if "json" not in content_type.lower():
+                raise HTTPException(status_code=502, detail="Invalid GDELT response")
+
+            try:
+                data = resp.json()
+            except ValueError:
+                raise HTTPException(status_code=502, detail="Invalid GDELT response")
             articles = [
                 {
                     "title": a.get("title"),
@@ -104,7 +111,7 @@ async def gdelt_doc_proxy(
 @router.get("/polymarket")
 async def polymarket_proxy(request: Request):
     """Proxy Polymarket prediction-market data."""
-    params = dict(request.query_params)
+    params = list(request.query_params.multi_items())
     try:
         async with httpx.AsyncClient(timeout=_PROXY_TIMEOUT) as client:
             resp = await client.get(
@@ -134,7 +141,7 @@ async def pizzint_proxy(path: str, request: Request):
     if not _PIZZINT_PATH_RE.match(path) or ".." in path or "//" in path:
         raise HTTPException(status_code=400, detail="Invalid path")
 
-    params = dict(request.query_params)
+    params = list(request.query_params.multi_items())
     target_url = f"https://www.pizzint.watch/api/{path}"
     try:
         async with httpx.AsyncClient(
@@ -228,7 +235,7 @@ async def earthquakes_proxy():
 @router.get("/coingecko")
 async def coingecko_proxy(request: Request):
     """Proxy CoinGecko crypto price data."""
-    params = dict(request.query_params)
+    params = list(request.query_params.multi_items())
     try:
         async with httpx.AsyncClient(timeout=_PROXY_TIMEOUT) as client:
             resp = await client.get(
@@ -291,7 +298,7 @@ async def cloudflare_outages():
 @router.get("/gdelt-geo")
 async def gdelt_geo_proxy(request: Request):
     """Proxy GDELT GEO 2.0 geolocation data."""
-    params = dict(request.query_params)
+    params = list(request.query_params.multi_items())
     try:
         async with httpx.AsyncClient(timeout=_PROXY_TIMEOUT) as client:
             resp = await client.get(
