@@ -90,7 +90,7 @@ echo ""
 apply_ufw() {
     local label="$1" from="$2" to="$3"
     echo "  ufw allow $from:$to/udp  ($label)"
-    ufw allow "$from:$to/udp" comment "25vid $label" >/dev/null
+    ufw allow "$from:$to/udp" --comment "25vid $label" >/dev/null
 }
 
 apply_firewalld() {
@@ -102,8 +102,8 @@ apply_firewalld() {
 apply_iptables() {
     local label="$1" from="$2" to="$3"
     echo "  iptables -A INPUT -p udp --dport $from:$to -j ACCEPT  ($label)"
-    iptables -A INPUT -p udp --dport "$from:$to" -j ACCEPT \
-        -m comment --comment "25vid $label"
+    iptables -A INPUT -p udp --dport "$from:$to" \
+        -m comment --comment "25vid $label" -j ACCEPT
 }
 
 case "$FW" in
