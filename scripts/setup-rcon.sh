@@ -236,4 +236,4 @@ echo ""
 echo "For detailed information, see: docs/rcon-setup.md"
 echo ""
 
-exit $ISSUES
+exit $(( ISSUES > 0 ? 1 : 0 ))

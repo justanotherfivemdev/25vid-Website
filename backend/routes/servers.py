@@ -3225,9 +3225,15 @@ def _safe_resolve(base: str, relative: str) -> Path:
     Returns the resolved absolute path.  Raises HTTPException(400) if the
     result escapes *base*.
     """
+    # Reject path components that are clearly malicious
+    if ".." in relative.replace("\\", "/").split("/"):
+        raise HTTPException(status_code=400, detail="Path traversal is not allowed")
     base_path = Path(base).resolve()
     target = (base_path / relative).resolve()
-    if not (target == base_path or str(target).startswith(str(base_path) + os.sep)):
+    # Use relative_to() — raises ValueError if target is outside base_path
+    try:
+        target.relative_to(base_path)
+    except ValueError:
         raise HTTPException(status_code=400, detail="Path traversal is not allowed")
     return target
 
@@ -3335,7 +3341,9 @@ async def read_server_file(
         raise HTTPException(status_code=400, detail=f"File is too large ({size} bytes, max {_FM_MAX_FILE_SIZE})")
 
     try:
-        content = target.read_text(encoding="utf-8", errors="replace")
+        content = target.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File contains invalid UTF-8 and cannot be displayed as text")
     except PermissionError:
         raise HTTPException(status_code=403, detail="Permission denied reading file")
 
