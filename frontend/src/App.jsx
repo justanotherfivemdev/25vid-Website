@@ -58,6 +58,7 @@ const DeploymentManager = lazy(() => import('@/pages/admin/DeploymentManager'));
 const OperationalDocsManager = lazy(() => import('@/pages/admin/OperationalDocsManager'));
 const ServerDashboard = lazy(() => import('@/pages/admin/servers/ServerDashboard'));
 const ModIssues = lazy(() => import('@/pages/admin/servers/ModIssues'));
+const LogMonitorPage = lazy(() => import('@/pages/admin/servers/LogMonitorPage'));
 const ServerWorkspace = lazy(() => import('@/pages/admin/servers/ServerWorkspace'));
 const OverviewModule = lazy(() => import('@/pages/admin/servers/modules/OverviewModule'));
 const ConsoleModule = lazy(() => import('@/pages/admin/servers/modules/ConsoleModule'));
@@ -1444,6 +1445,7 @@ function App() {
           {/* ── Server Management routes (S4/S1 only) ────────────────────── */}
           <Route path="/admin/servers" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerDashboard /></ProtectedRoute>} />
           <Route path="/admin/servers/mod-issues" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ModIssues /></ProtectedRoute>} />
+          <Route path="/admin/servers/log-monitor" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><LogMonitorPage /></ProtectedRoute>} />
           {/* Per-server workspace with nested module routes */}
           <Route path="/admin/servers/:id" element={<ProtectedRoute allowedRoles={['admin', 's1_personnel', 's4_logistics']}><ServerWorkspace /></ProtectedRoute>}>
             <Route index element={<OverviewModule />} />

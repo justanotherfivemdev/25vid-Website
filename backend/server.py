@@ -25,6 +25,7 @@ from config import (
     SERVER_HEALTH_CHECK_INTERVAL, SERVER_METRICS_INTERVAL,
     SERVER_LOG_ANALYSIS_INTERVAL, WORKSHOP_REFRESH_INTERVAL_HOURS,
     SERVER_METRICS_RETENTION_DAYS,
+    LOG_MONITOR_INTERVAL,
 )
 from database import db, client
 
@@ -70,6 +71,7 @@ from routes.worldmonitor import router as worldmonitor_router
 from routes.worldmonitor_proxy import router as worldmonitor_proxy_router
 from routes.servers import router as servers_router
 from routes.operational_docs import router as operational_docs_router
+from routes.log_monitor import router as log_monitor_router
 
 
 # Create the main app
@@ -106,6 +108,7 @@ api_router.include_router(worldmonitor_router)
 api_router.include_router(worldmonitor_proxy_router)
 api_router.include_router(servers_router)
 api_router.include_router(operational_docs_router)
+api_router.include_router(log_monitor_router)
 
 
 @api_router.get("/")
@@ -228,6 +231,7 @@ _mod_issue_analysis_task = None
 _schedule_executor_task = None
 _watcher_executor_task = None
 _workshop_refresh_task = None
+_log_monitor_task = None
 
 _OPENAI_THREAT_QUERIES = [
     "Summarize the top 5 active global military conflicts and security threats right now",
@@ -495,6 +499,7 @@ async def startup_event():
     global _background_ingestion_task, _loa_expiration_task
     global _server_health_task, _metrics_collector_task
     global _mod_issue_analysis_task, _schedule_executor_task, _watcher_executor_task, _workshop_refresh_task
+    global _log_monitor_task
     vlog = logging.getLogger("valyu")
 
     # Backfill map_events from existing entities
@@ -599,6 +604,22 @@ async def startup_event():
         await db.server_watchers.create_index("id", unique=True)
         await db.server_detections.create_index([("server_id", 1), ("last_seen", -1)])
         await db.server_detections.create_index([("server_id", 1), ("detection_key", 1)], unique=True)
+        # Log Monitor indexes
+        await db.log_error_types.create_index("id", unique=True)
+        await db.log_error_types.create_index("fingerprint", unique=True)
+        await db.log_error_types.create_index("category")
+        await db.log_error_types.create_index("severity")
+        await db.log_occurrences.create_index("id", unique=True)
+        await db.log_occurrences.create_index([("server_id", 1), ("timestamp", -1)])
+        await db.log_occurrences.create_index([("error_type_id", 1), ("timestamp", -1)])
+        await db.log_occurrences.create_index([("mod_guid", 1), ("timestamp", -1)])
+        await db.log_occurrences.create_index("timestamp")
+        await db.log_occurrences.create_index("category")
+        await db.log_mods.create_index("guid", unique=True)
+        await db.log_mods.create_index("id", unique=True)
+        await db.log_alerts.create_index("id", unique=True)
+        await db.log_alerts.create_index([("server_id", 1), ("resolved", 1)])
+        await db.log_alerts.create_index([("error_type_id", 1), ("server_id", 1), ("resolved", 1)])
     except Exception as e:
         vlog.warning(f"Index creation note: {e}")
 
@@ -625,6 +646,7 @@ async def startup_event():
     from services.schedule_executor import schedule_execution_loop
     from services.server_watchers import watchers_loop
     from services.workshop_ingest import workshop_refresh_loop
+    from services.log_monitor import log_monitor_loop
 
     _server_health_task = asyncio.create_task(
         server_health_loop(check_interval=SERVER_HEALTH_CHECK_INTERVAL)
@@ -644,6 +666,9 @@ async def startup_event():
     _workshop_refresh_task = asyncio.create_task(
         workshop_refresh_loop(interval_hours=WORKSHOP_REFRESH_INTERVAL_HOURS)
     )
+    _log_monitor_task = asyncio.create_task(
+        log_monitor_loop(interval=LOG_MONITOR_INTERVAL)
+    )
     vlog.info("Startup complete – all background services scheduled")
 
 
@@ -658,6 +683,7 @@ async def shutdown_db_client():
         _schedule_executor_task,
         _watcher_executor_task,
         _workshop_refresh_task,
+        _log_monitor_task,
     ):
         if task and not task.done():
             task.cancel()

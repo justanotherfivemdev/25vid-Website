@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   Map,
   Server,
+  Monitor,
   Puzzle,
 } from 'lucide-react';
 
@@ -215,6 +216,12 @@ export const ADMIN_NAV_GROUPS = [
         path: '/admin/servers/mod-issues',
         label: 'Mod Issues',
         icon: AlertTriangle,
+        show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
+      },
+      {
+        path: '/admin/servers/log-monitor',
+        label: 'Log Monitor',
+        icon: Monitor,
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
       },
     ],
