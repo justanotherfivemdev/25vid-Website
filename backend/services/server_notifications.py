@@ -18,6 +18,7 @@ CORE_PROVISIONING_STAGES = {
 
 # Stages that are supplemental tooling — their failure should never poison
 # operator-facing readiness or follow-up checklists.
+# Keep in sync with NON_READINESS_STAGE_NAMES in reforger_orchestrator.py.
 NON_READINESS_STAGES = {
     "sat_discovery",
     "profile_generation",

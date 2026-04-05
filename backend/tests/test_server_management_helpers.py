@@ -864,6 +864,8 @@ def test_sat_excluded_from_follow_up_checklist():
 
 def test_sat_failure_does_not_degrade_readiness_when_container_runs():
     """Non-readiness stage failures (SAT, profile) should not set readiness_state to degraded."""
+    from services.reforger_orchestrator import NON_READINESS_STAGE_NAMES
+
     result = ProvisioningResult()
     result.stages = [
         StageResult(name="record_creation", status="success"),
@@ -880,13 +882,14 @@ def test_sat_failure_does_not_degrade_readiness_when_container_runs():
         s for s in result.failed_stages
         if s.name not in {"record_creation", "filesystem_preparation", "config_write", "container_creation", "initial_startup"}
     ]
-    NON_READINESS_STAGE_NAMES = {"sat_discovery", "profile_generation"}
     readiness_relevant = [s for s in failed if s.name not in NON_READINESS_STAGE_NAMES]
     assert len(readiness_relevant) == 0, "SAT/profile failures should not affect readiness"
 
 
 def test_real_stage_failure_still_degrades_readiness():
     """Non-core stage failures that are NOT supplemental tooling should degrade readiness."""
+    from services.reforger_orchestrator import NON_READINESS_STAGE_NAMES
+
     result = ProvisioningResult()
     result.stages = [
         StageResult(name="record_creation", status="success"),
@@ -900,7 +903,6 @@ def test_real_stage_failure_still_degrades_readiness():
         s for s in result.failed_stages
         if s.name not in {"record_creation", "filesystem_preparation", "config_write", "container_creation", "initial_startup"}
     ]
-    NON_READINESS_STAGE_NAMES = {"sat_discovery", "profile_generation"}
     readiness_relevant = [s for s in failed if s.name not in NON_READINESS_STAGE_NAMES]
     assert len(readiness_relevant) == 1, "readiness_check failure should still degrade readiness"
     assert readiness_relevant[0].name == "readiness_check"

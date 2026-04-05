@@ -525,7 +525,7 @@ function OverviewModule() {
               className="flex items-center gap-1 hover:text-[#8a9aa8] transition-colors"
             >
               {showIgnored ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              {showIgnored ? 'Hide archived' : `Show archived${ignoredDetections.length > 0 ? ` (${ignoredDetections.length})` : ''}`}
+              {showIgnored ? 'Hide archived' : 'Show archived'}
             </button>
           </div>
         </div>

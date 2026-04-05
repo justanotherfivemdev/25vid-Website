@@ -75,6 +75,13 @@ DEFAULT_READINESS_TIMEOUT = 300
 READINESS_LOG_TAIL_LINES = 200
 MOD_CYCLE_LOG_TAIL_LINES = 100
 
+# Log evidence that indicates a fatal/unrecoverable startup failure.
+_FATAL_STARTUP_PATTERN = re.compile(r"fatal|segfault|SIGKILL|out of memory", re.IGNORECASE)
+
+# Provisioning stages whose failure should never poison operator-facing
+# readiness.  These are supplemental tooling, not core deployment stages.
+NON_READINESS_STAGE_NAMES = frozenset({"sat_discovery", "profile_generation"})
+
 
 # ── Provisioning stage tracking ─────────────────────────────────────────────
 
@@ -414,7 +421,7 @@ async def wait_for_server_readiness(
                 logs = await docker_agent.get_container_logs(container_name, tail=READINESS_LOG_TAIL_LINES)
             except Exception:
                 logs = ""
-            has_fatal = bool(logs and re.search(r"(?i)fatal|segfault|SIGKILL|out of memory", logs))
+            has_fatal = bool(logs and _FATAL_STARTUP_PATTERN.search(logs))
             if not has_fatal:
                 return {
                     "server_ready": True,
@@ -908,7 +915,6 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
         result.updates["provisioning_step"] = "ready" if live_running else "running"
         # Non-core stage failures that are NOT supplemental tooling
         # (sat_discovery, profile_generation) should not poison readiness.
-        NON_READINESS_STAGE_NAMES = {"sat_discovery", "profile_generation"}
         failed = [
             s for s in result.failed_stages
             if s.name not in {"record_creation", "filesystem_preparation", "config_write", "container_creation", "initial_startup"}
