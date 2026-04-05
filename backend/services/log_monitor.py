@@ -19,6 +19,28 @@ from database import db
 
 logger = logging.getLogger(__name__)
 
+ERROR_REVIEW_STATUSES = {"active", "monitoring", "resolved", "false_positive"}
+ERROR_ATTRIBUTION_TYPES = {
+    "unknown",
+    "mod",
+    "backend",
+    "base_game",
+    "engine",
+    "rcon",
+    "battleye",
+    "config",
+    "network",
+    "performance",
+}
+ERROR_DESIGNATED_AREAS = {
+    "live-errors",
+    "error-patterns",
+    "mod-analysis",
+    "alerts",
+    "troublesome-mods",
+}
+ERROR_ACTIONABILITY = {"actionable", "monitor", "known_safe"}
+
 # ---------------------------------------------------------------------------
 # Error detection patterns
 # ---------------------------------------------------------------------------
@@ -191,6 +213,56 @@ def compute_fingerprint(normalised: str) -> str:
     return hashlib.md5(normalised.encode("utf-8", errors="replace")).hexdigest()
 
 
+def derive_error_type_defaults(parsed: dict) -> dict[str, Any]:
+    """Return default curation metadata for a newly discovered error type."""
+    category = str(parsed.get("category") or "generic-error")
+    mod_guid = str(parsed.get("mod_guid") or "").upper()
+    severity = str(parsed.get("severity") or "low")
+
+    if mod_guid or category in {"addon-load", "mod-mismatch"}:
+        attribution_type = "mod"
+    elif category == "backend-error":
+        attribution_type = "backend"
+    elif category == "config-error":
+        attribution_type = "config"
+    elif category == "network-error":
+        attribution_type = "network"
+    elif category in {"world-error", "resource-error", "fragmentizer", "physics-error", "ai-error"}:
+        attribution_type = "base_game"
+    elif category == "crash":
+        attribution_type = "engine"
+    else:
+        attribution_type = "unknown"
+
+    if attribution_type == "mod":
+        designated_area = "mod-analysis"
+    elif severity == "critical" or category in {"backend-error", "crash"}:
+        designated_area = "alerts"
+    else:
+        designated_area = "error-patterns"
+
+    if severity in {"critical", "high"}:
+        actionability = "actionable"
+    elif attribution_type in {"config", "network", "backend"}:
+        actionability = "monitor"
+    else:
+        actionability = "monitor"
+
+    return {
+        "review_status": "active",
+        "attribution_type": attribution_type,
+        "designated_area": designated_area,
+        "actionability": actionability,
+        "linked_mod_guid": mod_guid,
+        "linked_mod_name": "",
+        "troublesome": False,
+        "curation_notes": "",
+        "reviewed_by": "",
+        "reviewed_at": None,
+        "source_streams": [str(parsed.get("source_stream") or "docker")],
+    }
+
+
 def parse_log_line(line: str) -> Optional[Dict[str, Any]]:
     """Parse a raw log line and return structured data if it matches an error pattern.
 
@@ -252,20 +324,28 @@ async def ensure_error_type(parsed: dict) -> str:
     """
     fingerprint = parsed["fingerprint"]
     existing = await db.log_error_types.find_one(
-        {"fingerprint": fingerprint}, {"_id": 0, "id": 1}
+        {"fingerprint": fingerprint},
+        {
+            "_id": 0,
+            "id": 1,
+            "source_streams": 1,
+        },
     )
     if existing:
         # Bump the last-seen timestamp and occurrence counter
+        source_stream = str(parsed.get("source_stream") or "docker")
         await db.log_error_types.update_one(
             {"fingerprint": fingerprint},
             {
                 "$set": {"last_seen": datetime.now(timezone.utc)},
                 "$inc": {"total_occurrences": 1},
+                "$addToSet": {"source_streams": source_stream},
             },
         )
         return existing["id"]
 
     error_type_id = f"et_{uuid.uuid4().hex[:12]}"
+    defaults = derive_error_type_defaults(parsed)
     await db.log_error_types.insert_one(
         {
             "id": error_type_id,
@@ -278,6 +358,7 @@ async def ensure_error_type(parsed: dict) -> str:
             "total_occurrences": 1,
             "first_seen": datetime.now(timezone.utc),
             "last_seen": datetime.now(timezone.utc),
+            **defaults,
         }
     )
     return error_type_id
@@ -331,6 +412,7 @@ async def store_occurrence(
             "error_type_id": error_type_id,
             "severity": parsed["severity"],
             "category": parsed["category"],
+            "source_stream": str(parsed.get("source_stream") or "docker"),
             "message": parsed["message"],
             "raw": parsed["raw"],
             "timestamp": ts,
@@ -340,7 +422,12 @@ async def store_occurrence(
     return occ_id
 
 
-async def ingest_log_line(server_id: str, raw_line: str) -> Optional[str]:
+async def ingest_log_line(
+    server_id: str,
+    raw_line: str,
+    *,
+    source_stream: str = "docker",
+) -> Optional[str]:
     """Full pipeline: parse → ensure types/mods → store occurrence.
 
     Returns the occurrence id if the line was an error, else ``None``.
@@ -348,6 +435,7 @@ async def ingest_log_line(server_id: str, raw_line: str) -> Optional[str]:
     parsed = parse_log_line(raw_line)
     if parsed is None:
         return None
+    parsed["source_stream"] = source_stream or "docker"
 
     error_type_id = await ensure_error_type(parsed)
 
@@ -418,10 +506,23 @@ async def _check_alert(
     should_alert = False
     alert_reason = ""
 
-    # Check: first time this error type was seen
     et = await db.log_error_types.find_one(
-        {"id": error_type_id}, {"_id": 0, "total_occurrences": 1}
+        {"id": error_type_id},
+        {
+            "_id": 0,
+            "total_occurrences": 1,
+            "review_status": 1,
+            "actionability": 1,
+        },
     )
+    if not et:
+        return
+    if et.get("review_status") == "false_positive":
+        return
+    if et.get("actionability") == "known_safe":
+        return
+
+    # Check: first time this error type was seen
     if et and et.get("total_occurrences", 0) <= 1:
         should_alert = True
         alert_reason = "New error type detected"

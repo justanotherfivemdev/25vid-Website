@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import '@/App.css';
@@ -1406,6 +1406,16 @@ function RouteFallback() {
   );
 }
 
+function LegacyServerOverviewRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/admin/servers/${id}`} replace />;
+}
+
+function LegacyOrbatPlannerRedirect() {
+  const { operationId } = useParams();
+  return <Navigate to={`/hub/operations-planner/${operationId}`} replace />;
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -1468,7 +1478,7 @@ function App() {
             <Route path="admin/incidents" element={<IncidentsModule />} />
           </Route>
           {/* Legacy detail route redirect */}
-          <Route path="/admin/servers/:id/overview" element={<Navigate to=".." replace />} />
+          <Route path="/admin/servers/:id/overview" element={<LegacyServerOverviewRedirect />} />
         </Route>
         <Route path="/recruit" element={<ProtectedRoute allowRecruit><RecruitDashboard /></ProtectedRoute>} />
         {/* ── Member routes with sidebar layout ─────────────────────────── */}
@@ -1498,7 +1508,7 @@ function App() {
         <Route path="/hub/operations-planner/:id" element={<ProtectedRoute><ErrorBoundary><OperationsPlanner /></ErrorBoundary></ProtectedRoute>} />
         {/* Legacy tool routes — redirect to unified Operations Planner */}
         <Route path="/hub/orbat-mapper" element={<Navigate to="/hub/operations-planner" replace />} />
-        <Route path="/hub/orbat-mapper/:operationId" element={<Navigate to="/hub/operations-planner" replace />} />
+        <Route path="/hub/orbat-mapper/:operationId" element={<LegacyOrbatPlannerRedirect />} />
         <Route path="/hub/reforger-maps" element={<Navigate to="/hub/operations-planner" replace />} />
         <Route path="/hub/mortar-calc" element={<Navigate to="/hub/operations-planner" replace />} />
         <Route path="/partner-login" element={<PartnerLoginPage />} />

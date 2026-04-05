@@ -268,6 +268,10 @@ class ModIssue(BaseModel):
     evidence: List[Dict[str, Any]] = Field(default_factory=list)
     recommended_actions: List[str] = Field(default_factory=list)
     status: str = "active"
+    designated_area: str = "mod-analysis"
+    attribution_type: str = "mod"
+    troublesome: bool = False
+    troublesome_reason: str = ""
     resolved_by: Optional[str] = None
     resolved_at: Optional[datetime] = None
     resolution_notes: str = ""
