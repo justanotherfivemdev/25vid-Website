@@ -36,9 +36,9 @@ const TrainingPage = () => {
   const filtered = searchQuery
     ? training.filter(
         (t) =>
-          t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t.description.toLowerCase().includes(searchQuery.toLowerCase())
+          (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (t.instructor || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (t.description || '').toLowerCase().includes(searchQuery.toLowerCase())
       )
     : training;
 
@@ -104,7 +104,7 @@ const TrainingPage = () => {
             className="text-2xl font-bold text-[#e8c547]"
             style={{ fontFamily: "'Share Tech', sans-serif" }}
           >
-            {new Set(training.map((t) => t.instructor)).size}
+            {new Set(training.map((t) => t.instructor).filter(Boolean)).size}
           </div>
           <div className="text-xs text-[#4a6070] uppercase tracking-wider mt-1" style={{ fontFamily: "'Oswald', sans-serif" }}>
             Instructors
