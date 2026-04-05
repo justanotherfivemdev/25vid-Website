@@ -176,9 +176,11 @@ function RconModule() {
           if (payload.type === 'error') {
             const friendlyMessage = classifyError(payload);
 
-            // If this error is for a pending command, attach it
+            // Resolve any pending command entry — use pendingEntryIdRef regardless of
+            // whether payload.command is present (e.g. invalid_command / rate_limited
+            // now include it, but we fall back to the ref so the UI never stays stuck).
             const pendingId = pendingEntryIdRef.current;
-            if (pendingId != null && payload.command) {
+            if (pendingId != null) {
               setHistory((prev) => prev.map((item) => (
                 item.id === pendingId
                   ? { ...item, error: friendlyMessage, duration_ms: payload.duration_ms }
@@ -193,7 +195,7 @@ function RconModule() {
               // RCON not configured — update status
               setRconStatus({ state: 'disabled', detail: friendlyMessage });
               setWsState('error');
-            } else if (!payload.command) {
+            } else {
               // Non-command error — show as status
               setRconStatus((prev) => ({ ...prev, detail: friendlyMessage }));
             }
@@ -380,9 +382,6 @@ function RconModule() {
     setSavedSnippets(updated);
     localStorage.setItem(SAVED_SNIPPETS_KEY, JSON.stringify(updated));
   }, [savedSnippets]);
-
-  // Compute user-facing status
-  const statusDetail = rconStatus?.detail || STATUS_TEXT[rconStatus?.state] || 'Unknown RCON state.';
 
   const socketDetail = {
     idle: 'Connecting...',

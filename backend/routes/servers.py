@@ -54,7 +54,6 @@ from services.server_notifications import (
     sync_server_notifications,
 )
 from services.server_logs import (
-from services.log_streamer import log_streamer
     build_log_entries,
     build_log_entry,
     get_recent_server_log_entries,
@@ -63,6 +62,7 @@ from services.log_streamer import log_streamer
     stable_hash,
     stream_server_log_entries,
 )
+from services.log_streamer import log_streamer
 from services.rcon_bridge import bercon_client
 from services.server_runtime_host import get_server_runtime_host
 from services.sat_config_service import discover_sat_config, load_sat_config, overlay_baseline_if_configured, save_sat_config
@@ -2721,7 +2721,12 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
 
     await websocket.accept()
 
-    tail = int(websocket.query_params.get("tail", "500"))
+    tail_str = websocket.query_params.get("tail", "500")
+    try:
+        tail = int(tail_str)
+    except (TypeError, ValueError):
+        tail = 500
+    tail = max(0, min(5000, tail))
     since_seq_str = websocket.query_params.get("since_seq", "")
     since_seq = int(since_seq_str) if since_seq_str and since_seq_str.isdigit() else None
     since = _parse_log_since(websocket.query_params.get("since"))
@@ -2794,16 +2799,17 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
             server_id, backfill_count, is_reconnect,
         )
 
-        # 4. Transition to live streaming
+        # 4. Subscribe before signalling live to avoid missing entries produced
+        #    between the backfill snapshot and the subscription.
+        sub_id, queue = session.subscribe()
+
+        # 5. Transition to live streaming
         await websocket.send_json({
             "type": "status",
             "state": "live",
             "backfill_count": backfill_count,
             "last_seq": session.last_seq,
         })
-
-        # 5. Subscribe to fan-out and stream live entries
-        sub_id, queue = session.subscribe()
 
         while True:
             try:
@@ -2974,6 +2980,7 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
                     "type": "error",
                     "code": "invalid_command",
                     "message": str(ve),
+                    "command": command,
                 })
                 continue
 
@@ -2984,6 +2991,8 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
                     "type": "error",
                     "code": "rate_limited",
                     "message": "Rate limit exceeded — please wait before sending more commands",
+                    "command": command,
+                    "remaining": remaining,
                 })
                 continue
 

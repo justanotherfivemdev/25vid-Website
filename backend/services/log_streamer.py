@@ -11,12 +11,9 @@ import asyncio
 import logging
 import time
 from collections import deque
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any, Dict, Optional
 
-from services.server_logs import (
-    get_recent_server_log_entries,
-    stream_server_log_entries,
-)
+from services.server_logs import stream_server_log_entries
 
 logger = logging.getLogger(__name__)
 
@@ -106,9 +103,11 @@ class _StreamSession:
                 self._ring.append(entry)
                 self.entries_total += 1
 
-                # Fan out to all subscribers
+                # Fan out to all subscribers. Iterate over a snapshot so
+                # subscribe()/unsubscribe() can safely mutate the dict without
+                # invalidating this loop.
                 dead_subs: list[int] = []
-                for sub_id, queue in self._subscribers.items():
+                for sub_id, queue in list(self._subscribers.items()):
                     try:
                         queue.put_nowait(entry)
                     except asyncio.QueueFull:
