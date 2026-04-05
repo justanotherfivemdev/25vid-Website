@@ -88,16 +88,34 @@ class BERConClient:
         if task is None or task.done():
             self._workers[key] = asyncio.create_task(self._queue_worker(key))
 
+    # How long (seconds) a queue worker waits for the next command before
+    # shutting itself down and releasing its resources.
+    _WORKER_IDLE_TIMEOUT: float = 300  # 5 minutes
+
     async def _queue_worker(self, key: Tuple[str, int]) -> None:
-        """Process queued commands one at a time for *key* (host, port)."""
+        """Process queued commands one at a time for *key* (host, port).
+
+        The worker shuts itself down after ``_WORKER_IDLE_TIMEOUT`` seconds of
+        inactivity so we don't leak tasks/queues for deprovisioned servers.
+        """
         queue = self._queues[key]
         while True:
-            future, password, command = await queue.get()
+            try:
+                future, password, command = await asyncio.wait_for(
+                    queue.get(), timeout=self._WORKER_IDLE_TIMEOUT
+                )
+            except asyncio.TimeoutError:
+                # No commands for a while — clean up and exit.
+                self._queues.pop(key, None)
+                self._workers.pop(key, None)
+                return
             try:
                 result = await self._execute_impl(key[0], key[1], password, command)
-                future.set_result(result)
+                if not future.done():
+                    future.set_result(result)
             except Exception as exc:
-                future.set_exception(exc)
+                if not future.done():
+                    future.set_exception(exc)
             finally:
                 queue.task_done()
 

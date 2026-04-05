@@ -4,8 +4,8 @@
 # ============================================================
 #
 # Opens the UDP port ranges needed by dynamically-provisioned
-# Arma Reforger Docker containers.  Supports both ufw (Ubuntu)
-# and firewalld (RHEL/CentOS/Fedora).
+# Arma Reforger Docker containers.  Supports ufw (Ubuntu),
+# firewalld (RHEL/CentOS/Fedora), and iptables.
 #
 # Each provisioned server uses three UDP ports (game, query, RCON).
 # Ports are allocated starting from a configurable base and

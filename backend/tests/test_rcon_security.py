@@ -181,6 +181,18 @@ class TestSecurityHeadersMiddleware:
         assert "frame-ancestors 'none'" in csp
         assert "object-src 'none'" in csp
 
+    def test_csp_relaxed_for_docs(self, app):
+        """FastAPI docs routes get a relaxed CSP that allows CDN assets."""
+        @app.get("/docs")
+        def _docs():
+            return {"ok": True}
+
+        client = TestClient(app)
+        r = client.get("/docs")
+        csp = r.headers["Content-Security-Policy"]
+        assert "cdn.jsdelivr.net" in csp
+        assert "unsafe-inline" in csp
+
     def test_permissions_policy(self, app):
         client = TestClient(app)
         r = client.get("/test")
