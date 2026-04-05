@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 
 from database import db
 from models.server import ServerNotification
+from services.reforger_orchestrator import NON_READINESS_STAGE_NAMES
 
 CORE_PROVISIONING_STAGES = {
     "record_creation",
@@ -14,14 +15,6 @@ CORE_PROVISIONING_STAGES = {
     "config_write",
     "container_creation",
     "initial_startup",
-}
-
-# Stages that are supplemental tooling — their failure should never poison
-# operator-facing readiness or follow-up checklists.
-# Keep in sync with NON_READINESS_STAGE_NAMES in reforger_orchestrator.py.
-NON_READINESS_STAGES = {
-    "sat_discovery",
-    "profile_generation",
 }
 
 
@@ -45,7 +38,7 @@ def _collect_follow_up_checklist(server: Dict[str, Any]) -> List[Dict[str, str]]
 
     for warning in server.get("provisioning_warnings") or []:
         stage = str(warning.get("stage") or "unknown")
-        if stage in NON_READINESS_STAGES:
+        if stage in NON_READINESS_STAGE_NAMES:
             continue
         message = str(warning.get("message") or "Follow-up attention required")
         key = (stage, message)
@@ -60,7 +53,7 @@ def _collect_follow_up_checklist(server: Dict[str, Any]) -> List[Dict[str, str]]
         stage_name = str(stage.get("name") or "unknown")
         if stage_name in CORE_PROVISIONING_STAGES:
             continue
-        if stage_name in NON_READINESS_STAGES:
+        if stage_name in NON_READINESS_STAGE_NAMES:
             continue
         message = str(stage.get("error") or stage.get("message") or "Stage completed with warnings")
         key = (stage_name, message)

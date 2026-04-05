@@ -300,6 +300,7 @@ WatcherSeverity = Literal["low", "medium", "high", "critical"]
 WatcherMetric = Literal["cpu_percent", "memory_mb", "player_count", "server_fps", "avg_player_ping_ms"]
 WatcherComparison = Literal["gt", "gte", "lt", "lte"]
 DetectionStatus = Literal["active", "monitoring", "resolved", "false_positive", "ignored"]
+SourceType = Literal["watcher", "system", "provisioning"]
 
 
 class ServerWatcher(BaseModel):
@@ -374,7 +375,7 @@ class WatcherDetection(BaseModel):
     severity: WatcherSeverity = "medium"
     status: DetectionStatus = "active"
     source_category: str = "runtime-script"
-    source_type: str = "watcher"  # "watcher" | "system" | "provisioning"
+    source_type: SourceType = "watcher"
     source_streams: List[str] = Field(default_factory=list)
     occurrence_count: int = 0
     confidence_score: float = 0.0

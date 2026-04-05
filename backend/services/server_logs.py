@@ -304,7 +304,7 @@ async def capture_log_snapshot(
         return []
 
     if not trigger_line:
-        snapshot_entries = entries[-(context_lines * 2):]
+        snapshot_entries = entries[-context_lines:]
         return [
             {
                 "line": e.get("line") or e.get("raw") or "",

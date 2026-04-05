@@ -2081,8 +2081,9 @@ class DetectionVerdictUpdate(BaseModel):
     verdict_notes: str = ""
 
 
-@router.post("/servers/detections/{detection_id}/verdict")
+@router.post("/servers/{server_id}/detections/{detection_id}/verdict")
 async def update_detection_verdict(
+    server_id: str,
     detection_id: str,
     body: DetectionVerdictUpdate,
     current_user: dict = Depends(_require_servers),
@@ -2097,13 +2098,16 @@ async def update_detection_verdict(
     if body.status in {"ignored", "false_positive"}:
         updates["ignored_at"] = datetime.now(timezone.utc)
         updates["ignored_by"] = current_user.get("username") or current_user.get("id") or ""
+    else:
+        updates["ignored_at"] = None
+        updates["ignored_by"] = ""
     result = await db.server_detections.update_one(
-        {"id": detection_id},
+        {"id": detection_id, "server_id": server_id},
         {"$set": updates},
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Detection not found")
-    detection = await db.server_detections.find_one({"id": detection_id}, {"_id": 0})
+    detection = await db.server_detections.find_one({"id": detection_id, "server_id": server_id}, {"_id": 0})
     return _serialize_doc(detection)
 
 

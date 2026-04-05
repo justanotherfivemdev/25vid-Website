@@ -322,7 +322,7 @@ function OverviewModule() {
   const handleMarkSafe = useCallback(async (detectionId) => {
     setVerdictBusy(true);
     try {
-      await axios.post(`${API}/servers/detections/${detectionId}/verdict`, {
+      await axios.post(`${API}/servers/${serverId}/detections/${detectionId}/verdict`, {
         status: 'ignored',
         verdict_notes: 'Marked safe by operator',
       });
@@ -330,12 +330,12 @@ function OverviewModule() {
     } finally {
       setVerdictBusy(false);
     }
-  }, [fetchOverviewData]);
+  }, [fetchOverviewData, serverId]);
 
   const handleReactivate = useCallback(async (detectionId) => {
     setVerdictBusy(true);
     try {
-      await axios.post(`${API}/servers/detections/${detectionId}/verdict`, {
+      await axios.post(`${API}/servers/${serverId}/detections/${detectionId}/verdict`, {
         status: 'active',
         verdict_notes: 'Reactivated by operator',
       });
@@ -343,18 +343,24 @@ function OverviewModule() {
     } finally {
       setVerdictBusy(false);
     }
-  }, [fetchOverviewData]);
+  }, [fetchOverviewData, serverId]);
 
   const activeDetections = useMemo(
     () => detections.filter((d) => d.status === 'active' || d.status === 'monitoring'),
     [detections],
   );
   const ignoredDetections = useMemo(
-    () => detections.filter((d) => d.status === 'ignored' || d.status === 'false_positive'),
+    () => detections.filter((d) => d.status === 'ignored' || d.status === 'false_positive' || d.status === 'resolved'),
     [detections],
   );
-  const hasProvisioningStages = server?.provisioning_stages && Object.keys(server.provisioning_stages).length > 0;
-  const showDiagnostics = activeDetections.length > 0 || ignoredDetections.length > 0 || isServerDegraded(server) || server?.status === 'error' || hasProvisioningStages;
+  const hasProvisioningIssues = useMemo(() => {
+    const stages = server?.provisioning_stages;
+    if (!stages || typeof stages !== 'object') return false;
+    return Object.values(stages).some(
+      (stage) => stage && typeof stage === 'object' && (stage.status === 'failed' || stage.status === 'warning'),
+    );
+  }, [server?.provisioning_stages]);
+  const showDiagnostics = activeDetections.length > 0 || ignoredDetections.length > 0 || isServerDegraded(server) || server?.status === 'error' || hasProvisioningIssues;
 
   const formatUptime = (seconds) => {
     if (!seconds) return '—';
@@ -451,7 +457,7 @@ function OverviewModule() {
           )}
 
           {/* Provisioning stages (collapsed by default when no issues) */}
-          {hasProvisioningStages && (isServerDegraded(server) || server?.status === 'error') && (
+          {hasProvisioningIssues && (isServerDegraded(server) || server?.status === 'error') && (
             <CollapsibleSection
               title="PROVISIONING STAGES"
               icon={Activity}

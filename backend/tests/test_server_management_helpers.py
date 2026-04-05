@@ -939,13 +939,39 @@ def test_detection_model_supports_ignored_status():
     assert detection.status == "ignored"
 
 
-def test_log_snapshot_capture_returns_entries():
-    """capture_log_snapshot should handle empty log scenarios gracefully."""
-    from services.server_logs import build_log_entries
+def test_log_snapshot_capture_returns_entries(monkeypatch):
+    """capture_log_snapshot should return a windowed snapshot and mark trigger lines."""
+    from services import server_logs
 
-    entries = build_log_entries(
-        "line1\nline2\nERROR something broke\nline4\nline5",
-        source="docker",
+    entries = (
+        [{"line": f"line{i}", "source": "docker"} for i in range(40)]
+        + [{"line": "ERROR something broke", "source": "docker"}]
+        + [{"line": f"line{i}", "source": "docker"} for i in range(41, 81)]
     )
-    assert len(entries) == 5
-    assert "ERROR something broke" in entries[2]["line"]
+
+    async def fake_get_recent(*args, **kwargs):
+        return entries
+
+    monkeypatch.setattr(
+        server_logs,
+        "get_recent_server_log_entries",
+        fake_get_recent,
+    )
+
+    snapshot = asyncio.run(
+        server_logs.capture_log_snapshot({"id": "srv-1"}, trigger_line="ERROR something broke")
+    )
+
+    assert snapshot
+    assert len(snapshot) < len(entries)
+
+    snapshot_lines = [entry["line"] for entry in snapshot]
+    assert "ERROR something broke" in snapshot_lines
+    assert any(
+        entry["line"] == "ERROR something broke" and entry.get("is_trigger") is True
+        for entry in snapshot
+    )
+    assert "line39" in snapshot_lines
+    assert "line41" in snapshot_lines
+    assert "line0" not in snapshot_lines
+    assert "line80" not in snapshot_lines

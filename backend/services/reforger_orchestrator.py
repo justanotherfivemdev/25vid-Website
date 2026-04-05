@@ -429,6 +429,20 @@ async def wait_for_server_readiness(
                     "readiness_state": "ready",
                     "note": f"No explicit readiness signal within {timeout}s, but container is running without fatal errors",
                 }
+            # Container is running but has fatal log evidence
+            return {
+                "server_ready": False,
+                "restart_cycles": restart_count,
+                "readiness_state": "degraded",
+                "error": f"Container is running but fatal startup errors were detected in logs",
+            }
+        # Container confirmed not running
+        return {
+            "server_ready": False,
+            "restart_cycles": restart_count,
+            "readiness_state": "degraded",
+            "error": f"Server did not signal readiness within {timeout}s and the container is not running",
+        }
     except Exception:
         pass
 
