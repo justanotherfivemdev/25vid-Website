@@ -301,13 +301,34 @@ async def stream_server_log_entries(
         for entry in await get_recent_server_log_entries(server, tail=tail, since=since):
             yield entry
 
-    async def pump_docker() -> None:
+    async def _queue_put_safe(entry: dict) -> None:
+        """Put an entry on the queue with a timeout to prevent indefinite blocking."""
         try:
-            async for chunk in docker_agent.stream_container_logs(container_name, tail=0, since=since):
-                for entry in build_log_entries(chunk, source="docker"):
-                    await queue.put(entry)
-        except Exception as exc:
-            logger.debug("Docker log pump stopped for %s: %s", server_id, exc)
+            await asyncio.wait_for(queue.put(entry), timeout=5.0)
+        except asyncio.TimeoutError:
+            logger.debug("Queue put timeout for server %s – dropping entry", server_id)
+
+    async def pump_docker() -> None:
+        """Stream Docker container logs with retry on transient failures."""
+        _MAX_RETRIES = 10
+        _retry_count = 0
+        while not stop_event.is_set() and _retry_count < _MAX_RETRIES:
+            try:
+                async for chunk in docker_agent.stream_container_logs(container_name, tail=0, since=since):
+                    for entry in build_log_entries(chunk, source="docker"):
+                        await _queue_put_safe(entry)
+                # Stream ended normally (container stopped) — no retry needed
+                break
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                _retry_count += 1
+                backoff = min(30.0, 1.0 * (2 ** min(_retry_count, 5)))
+                logger.debug(
+                    "Docker log pump error for %s (attempt %d/%d): %s – retrying in %.1fs",
+                    server_id, _retry_count, _MAX_RETRIES, exc, backoff,
+                )
+                await asyncio.sleep(backoff)
 
     async def pump_profile_files() -> None:
         positions: dict[str, dict[str, int]] = {}
@@ -352,13 +373,13 @@ async def stream_server_log_entries(
                                 cursor_hint=f"L{line_number}",
                                 fallback_timestamp=fallback_timestamp,
                             )
-                            await queue.put(entry)
+                            await _queue_put_safe(entry)
                         positions[path_str] = {"byte": stat.st_size, "line": previous_line + len(delta_lines)}
                     else:
                         positions[path_str] = {"byte": stat.st_size, "line": previous_line}
             except Exception as exc:
-                logger.debug("Profile log pump stopped for %s: %s", server_id, exc)
-            await asyncio.sleep(1.0)
+                logger.debug("Profile log pump error for %s: %s", server_id, exc)
+            await asyncio.sleep(0.2)
 
     async def pump_rcon_events() -> None:
         last_seen = since
@@ -373,15 +394,15 @@ async def stream_server_log_entries(
                     ts = int(parse_log_timestamp(entry["timestamp"]).timestamp())
                     if last_seen is not None and ts < last_seen:
                         continue
-                    await queue.put(entry)
+                    await _queue_put_safe(entry)
                     if cursor:
                         seen_cursors.add(cursor)
                         if len(seen_cursors) > 2000:
                             seen_cursors = set(list(seen_cursors)[-1000:])
                     last_seen = max(last_seen or 0, ts)
             except Exception as exc:
-                logger.debug("RCON log pump stopped for %s: %s", server_id, exc)
-            await asyncio.sleep(1.0)
+                logger.debug("RCON log pump error for %s: %s", server_id, exc)
+            await asyncio.sleep(0.2)
 
     tasks = [
         asyncio.create_task(pump_docker()),

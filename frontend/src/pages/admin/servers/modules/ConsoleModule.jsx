@@ -163,11 +163,14 @@ function ConsoleModule() {
 
     const connect = () => {
       if (disposed) return;
+      // On reconnect, request recent history to backfill any missed entries.
+      // The backend deduplication via seen_cursors will handle overlaps.
+      const isReconnect = reconnectAttemptRef.current > 0;
       const url = buildServerWsUrl(`/api/ws/servers/${serverId}/logs`, {
-        tail: 0,
+        tail: isReconnect ? 100 : 0,
         since: lastSeenTimestampRef.current || '',
       });
-      setConnectionState(reconnectAttemptRef.current > 0 ? 'reconnecting' : 'connecting');
+      setConnectionState(isReconnect ? 'reconnecting' : 'connecting');
 
       try {
         const ws = new WebSocket(url);
@@ -206,8 +209,17 @@ function ConsoleModule() {
           scheduleFlush();
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
           if (disposed || server?.status !== 'running') return;
+          // Stop reconnecting on authentication / permission failures
+          if (event.code === 4001) {
+            setConnectionState('auth_failed');
+            return;
+          }
+          if (event.code === 4003) {
+            setConnectionState('no_permission');
+            return;
+          }
           reconnectAttemptRef.current += 1;
           const nextDelay = Math.min(10_000, 1000 * 2 ** Math.min(reconnectAttemptRef.current, 3));
           setConnectionState('reconnecting');
@@ -280,6 +292,8 @@ function ConsoleModule() {
     connecting: 'Connecting to live stream',
     live: 'Live stream connected',
     reconnecting: 'Reconnecting to live stream',
+    auth_failed: 'Authentication failed — please refresh and log in',
+    no_permission: 'Insufficient permissions for live console',
   }[connectionState] || 'Waiting to connect';
 
   const dotColor = {
@@ -287,6 +301,8 @@ function ConsoleModule() {
     connecting: 'bg-amber-400',
     live: 'bg-[#c9a227]',
     reconnecting: 'bg-amber-300',
+    auth_failed: 'bg-red-500',
+    no_permission: 'bg-red-500',
   }[connectionState] || 'bg-zinc-600';
 
   const textColor = {
@@ -294,6 +310,8 @@ function ConsoleModule() {
     connecting: 'text-amber-300',
     live: 'text-[#c9a227]',
     reconnecting: 'text-amber-300',
+    auth_failed: 'text-red-400',
+    no_permission: 'text-red-400',
   }[connectionState] || 'text-zinc-500';
 
   const handleTogglePause = useCallback(() => {
