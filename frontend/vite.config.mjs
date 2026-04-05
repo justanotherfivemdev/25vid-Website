@@ -312,13 +312,6 @@ export default defineConfig(({ mode }) => {
           replacement: path.resolve(workspaceRoot, "src"),
         },
         {
-          find: /^mapbox-gl$/,
-          replacement: path.resolve(
-            workspaceRoot,
-            "node_modules/mapbox-gl/dist/esm-min/mapbox-gl.js",
-          ),
-        },
-        {
           find: "milsymbol-modern",
           replacement: path.resolve(
             workspaceRoot,
@@ -368,19 +361,9 @@ export default defineConfig(({ mode }) => {
             const packageName = getNodeModulePackageName(normalized);
 
             if (
-              normalized.includes("/node_modules/mapbox-gl/dist/esm-min/mapbox-gl.js")
+              packageName === "mapbox-gl"
             ) {
               return "vendor-mapbox-core";
-            }
-            if (
-              normalized.includes("/node_modules/mapbox-gl/dist/esm-min/shared.js")
-            ) {
-              return "vendor-mapbox-shared";
-            }
-            if (
-              normalized.includes("/node_modules/mapbox-gl/dist/esm-min/worker.js")
-            ) {
-              return "vendor-mapbox-worker";
             }
             if (
               normalized.includes("/node_modules/mapbox-gl/dist/style-spec/")

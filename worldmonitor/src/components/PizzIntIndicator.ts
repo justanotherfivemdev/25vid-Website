@@ -165,7 +165,7 @@ export class PizzIntIndicator {
       .pizzint-location-status.high { background: #ff4400; color: #fff; }
       .pizzint-location-status.elevated { background: #ffaa00; color: #000; }
       .pizzint-location-status.nominal { background: #00aaff; color: #fff; }
-      .pizzint-location-status.quiet { background: #00ff88; color: #000; }
+      .pizzint-location-status.quiet { background: #c9a227; color: #000; }
       .pizzint-location-status.closed { background: #444; color: #888; }
       .pizzint-tensions {
         padding: 12px 16px;
@@ -194,7 +194,7 @@ export class PizzIntIndicator {
       .pizzint-tension-value { color: #fff; font-weight: bold; }
       .pizzint-tension-trend { font-size: 10px; }
       .pizzint-tension-trend.rising { color: #ff4400; }
-      .pizzint-tension-trend.falling { color: #00ff88; }
+      .pizzint-tension-trend.falling { color: #c9a227; }
       .pizzint-tension-trend.stable { color: #888; }
       .pizzint-footer {
         display: flex;
