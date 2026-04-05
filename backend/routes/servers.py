@@ -2798,9 +2798,27 @@ def _bm_headers() -> dict:
 
 
 def _sanitize_bm_server(server_data: dict) -> dict:
-    """Extract safe fields from a BattleMetrics server JSON:API resource."""
+    """Extract safe fields from a BattleMetrics server JSON:API resource.
+
+    The Arma Reforger details live under ``attributes.details.reforger``
+    and mods are objects ``{modId, name, version}`` rather than flat arrays.
+    """
     attrs = server_data.get("attributes", {})
     details = attrs.get("details", {})
+    reforger = details.get("reforger", {})
+
+    # Mods come as [{modId, name, version}, ...]
+    raw_mods = reforger.get("mods") or []
+    mods = [
+        {
+            "mod_id": m.get("modId", ""),
+            "name": m.get("name", ""),
+            "version": m.get("version", ""),
+        }
+        for m in raw_mods
+        if isinstance(m, dict)
+    ]
+
     return {
         "bm_id": server_data.get("id", ""),
         "name": attrs.get("name", ""),
@@ -2811,18 +2829,19 @@ def _sanitize_bm_server(server_data: dict) -> dict:
         "status": attrs.get("status", "unknown"),
         "country": attrs.get("country", ""),
         "rank": attrs.get("rank"),
-        "map": details.get("map", ""),
-        "game_mode": details.get("gameMode", ""),
-        "mods": details.get("mods", []),
-        "mod_ids": details.get("modIds", []),
+        "scenario": reforger.get("scenarioName", ""),
         "version": details.get("version", ""),
+        "password": details.get("password", False),
+        "official": details.get("official", False),
+        "battleye": reforger.get("battlEye", False),
+        "mods": mods,
     }
 
 
 @router.get("/servers/battlemetrics/search")
 async def battlemetrics_search(
     q: str = Query("", description="Search query for server name"),
-    page: int = Query(1, ge=1, description="Page number"),
+    page_key: Optional[str] = Query(None, alias="pageKey", description="Cursor for next page"),
     per_page: int = Query(25, ge=1, le=100, description="Results per page"),
     country: Optional[str] = Query(None, description="Country code filter"),
     current_user: dict = Depends(_require_servers),
@@ -2830,23 +2849,30 @@ async def battlemetrics_search(
     """Search BattleMetrics for Arma Reforger servers.
 
     Proxied to avoid CORS issues and to keep any API key server-side.
+    Uses cursor-based pagination via ``pageKey`` (forward from ``links.next``).
     """
     import httpx
 
-    params: dict = {
-        "filter[game]": "arma-reforger",
-        "filter[search]": q,
-        "page[size]": str(per_page),
-        "page[offset]": str((page - 1) * per_page),
-        "sort": "-players",
-    }
-    if country:
-        params["filter[countries][]"] = country
+    if page_key:
+        # Follow the cursor URL directly (already contains all filters)
+        url = page_key
+        params = None
+    else:
+        url = f"{_BM_API_BASE}/servers"
+        params: dict = {
+            "filter[game]": "reforger",
+            "page[size]": str(per_page),
+            "sort": "-players",
+        }
+        if q:
+            params["filter[search]"] = q
+        if country:
+            params["filter[countries][]"] = country
 
     try:
         async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
             resp = await client.get(
-                f"{_BM_API_BASE}/servers",
+                url,
                 params=params,
                 headers=_bm_headers(),
             )
@@ -2868,8 +2894,7 @@ async def battlemetrics_search(
 
     return {
         "servers": servers,
-        "page": page,
-        "per_page": per_page,
+        "next_page_key": links.get("next"),
         "has_next": "next" in links,
     }
 
@@ -2879,7 +2904,7 @@ async def battlemetrics_server_detail(
     bm_server_id: str,
     current_user: dict = Depends(_require_servers),
 ):
-    """Get detailed info about a BattleMetrics server including mods and player list."""
+    """Get detailed info about a BattleMetrics Arma Reforger server."""
     import httpx
 
     if not re.fullmatch(r"\d{1,20}", bm_server_id):
@@ -2889,7 +2914,6 @@ async def battlemetrics_server_detail(
         async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
             server_resp = await client.get(
                 f"{_BM_API_BASE}/servers/{bm_server_id}",
-                params={"include": "player"},
                 headers=_bm_headers(),
             )
             server_resp.raise_for_status()
@@ -2906,19 +2930,4 @@ async def battlemetrics_server_detail(
 
     payload = server_resp.json()
     server_data = payload.get("data", {})
-    included = payload.get("included", [])
-
-    result = _sanitize_bm_server(server_data)
-
-    # Extract player list from included resources
-    players = []
-    for item in included:
-        if item.get("type") == "player":
-            p_attrs = item.get("attributes", {})
-            players.append({
-                "bm_id": item.get("id", ""),
-                "name": p_attrs.get("name", ""),
-            })
-    result["players"] = players
-
-    return result
+    return _sanitize_bm_server(server_data)

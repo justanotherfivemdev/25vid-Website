@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,9 +14,11 @@ import {
   ExternalLink,
   Globe,
   Loader2,
+  Lock,
   Package,
   Search,
   Server,
+  Shield,
   Users,
 } from 'lucide-react';
 import { API } from '@/utils/api';
@@ -39,8 +41,8 @@ function CompareServersModule() {
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState(null);
-  const [page, setPage] = useState(1);
-  const [hasNext, setHasNext] = useState(false);
+  const [nextPageKey, setNextPageKey] = useState(null);
+  const [pageHistory, setPageHistory] = useState([]);
 
   /* selected server state */
   const [selected, setSelected] = useState(null);
@@ -56,18 +58,23 @@ function CompareServersModule() {
 
   /* ── search ────────────────────────────────────────────────────────────── */
 
-  const doSearch = useCallback(async (searchQuery, pageNum) => {
+  const doSearch = useCallback(async (searchQuery, cursorKey) => {
     setSearching(true);
     setSearchError(null);
     try {
-      const res = await axios.get(`${API}/servers/battlemetrics/search`, {
-        params: { q: searchQuery, page: pageNum, per_page: 25 },
-      });
+      const params = { per_page: 25 };
+      if (cursorKey) {
+        params.pageKey = cursorKey;
+      } else {
+        params.q = searchQuery;
+      }
+      const res = await axios.get(`${API}/servers/battlemetrics/search`, { params });
       setResults(res.data.servers || []);
-      setHasNext(res.data.has_next || false);
+      setNextPageKey(res.data.next_page_key || null);
     } catch (err) {
       setSearchError(err.response?.data?.detail || 'Search failed');
       setResults([]);
+      setNextPageKey(null);
     } finally {
       setSearching(false);
     }
@@ -75,15 +82,26 @@ function CompareServersModule() {
 
   const handleSearch = useCallback((e) => {
     e?.preventDefault?.();
-    setPage(1);
     setSelected(null);
-    doSearch(query, 1);
+    setPageHistory([]);
+    setNextPageKey(null);
+    doSearch(query, null);
   }, [query, doSearch]);
 
-  const handlePage = useCallback((newPage) => {
-    setPage(newPage);
-    doSearch(query, newPage);
-  }, [query, doSearch]);
+  const handleNextPage = useCallback(() => {
+    if (!nextPageKey) return;
+    setPageHistory((prev) => [...prev, results]);
+    doSearch(query, nextPageKey);
+  }, [query, nextPageKey, results, doSearch]);
+
+  const handlePrevPage = useCallback(() => {
+    if (pageHistory.length === 0) return;
+    const prev = [...pageHistory];
+    const lastPage = prev.pop();
+    setPageHistory(prev);
+    setResults(lastPage);
+    setNextPageKey(null);
+  }, [pageHistory]);
 
   /* ── select a server ───────────────────────────────────────────────────── */
 
@@ -107,14 +125,14 @@ function CompareServersModule() {
   const handleCopyMods = useCallback(async () => {
     if (!selected || !canManage) return;
 
-    const modNames = selected.mods || [];
-    const modIds = selected.mod_ids || [];
-    if (modIds.length === 0 && modNames.length === 0) return;
+    const remoteMods = selected.mods || [];
+    if (remoteMods.length === 0) return;
 
-    const modsPayload = modIds.map((modId, index) => ({
-      mod_id: modId,
-      modId: modId,
-      name: modNames[index] || modId,
+    const modsPayload = remoteMods.map((mod) => ({
+      mod_id: mod.mod_id,
+      modId: mod.mod_id,
+      name: mod.name || mod.mod_id,
+      version: mod.version || '',
       enabled: true,
     }));
 
@@ -155,7 +173,7 @@ function CompareServersModule() {
           Compare Servers
         </h1>
         <p className="mt-1 font-['Inter'] text-sm text-[#8a9aa8]">
-          Search BattleMetrics for Arma Reforger servers. Compare their mods and player activity, then import their mod list with one click.
+          Search BattleMetrics for Arma Reforger servers. Compare their mods and configuration, then import their entire mod list with one click.
         </p>
       </div>
 
@@ -207,7 +225,8 @@ function CompareServersModule() {
                   <p className="truncate font-['Share_Tech'] text-sm font-semibold text-white">{srv.name}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#8a9aa8]">
                     <span className="flex items-center gap-1"><Users className="h-3 w-3" />{srv.players}/{srv.max_players}</span>
-                    {srv.map && <span>• {srv.map}</span>}
+                    {srv.scenario && <span>• {srv.scenario}</span>}
+                    {srv.mods?.length > 0 && <span>• {srv.mods.length} mods</span>}
                     {srv.country && <span className="flex items-center gap-1"><Globe className="h-3 w-3" />{srv.country}</span>}
                   </div>
                 </div>
@@ -224,18 +243,18 @@ function CompareServersModule() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page <= 1}
-                onClick={() => handlePage(page - 1)}
+                disabled={pageHistory.length === 0}
+                onClick={handlePrevPage}
                 className="h-7 border-zinc-800 text-xs text-[#8a9aa8]"
               >
                 Previous
               </Button>
-              <span>Page {page}</span>
+              <span>Page {pageHistory.length + 1}</span>
               <Button
                 variant="outline"
                 size="sm"
-                disabled={!hasNext}
-                onClick={() => handlePage(page + 1)}
+                disabled={!nextPageKey}
+                onClick={handleNextPage}
                 className="h-7 border-zinc-800 text-xs text-[#8a9aa8]"
               >
                 Next
@@ -283,12 +302,8 @@ function CompareServersModule() {
                     <span className="text-white">{selected.players} / {selected.max_players}</span>
                   </div>
                   <div>
-                    <span className="block text-[#4a6070]">Map</span>
-                    <span className="text-white">{selected.map || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[#4a6070]">Game Mode</span>
-                    <span className="text-white">{selected.game_mode || '—'}</span>
+                    <span className="block text-[#4a6070]">Scenario</span>
+                    <span className="text-white">{selected.scenario || '—'}</span>
                   </div>
                   <div>
                     <span className="block text-[#4a6070]">Country</span>
@@ -305,9 +320,27 @@ function CompareServersModule() {
                     </div>
                   )}
                   <div>
+                    <span className="block text-[#4a6070]">Protection</span>
+                    <div className="mt-1 flex items-center gap-2">
+                      {selected.battleye && (
+                        <Badge variant="outline" className="border-green-600/30 text-[10px] text-green-400">
+                          <Shield className="mr-1 h-2.5 w-2.5" /> BattlEye
+                        </Badge>
+                      )}
+                      {selected.password && (
+                        <Badge variant="outline" className="border-amber-600/30 text-[10px] text-amber-300">
+                          <Lock className="mr-1 h-2.5 w-2.5" /> Password
+                        </Badge>
+                      )}
+                      {!selected.battleye && !selected.password && (
+                        <span className="text-[#4a6070]">None</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
                     <span className="block text-[#4a6070]">BattleMetrics</span>
                     <a
-                      href={`https://www.battlemetrics.com/servers/arma-reforger/${selected.bm_id}`}
+                      href={`https://www.battlemetrics.com/servers/reforger/${selected.bm_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-[#c9a227] hover:underline"
@@ -317,30 +350,6 @@ function CompareServersModule() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Players online */}
-              {(() => {
-                const playersList = selected.players;
-                if (!Array.isArray(playersList) || playersList.length === 0 || typeof playersList[0] !== 'object') return null;
-                return (
-                  <Card className="border-zinc-800 bg-[#0c1117]">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center gap-2 font-['Share_Tech'] text-sm text-[#8a9aa8]">
-                        <Users className="h-4 w-4" /> Online Players ({playersList.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="max-h-48 overflow-y-auto">
-                      <div className="flex flex-wrap gap-2">
-                        {playersList.map((p) => (
-                          <Badge key={p.bm_id || p.name} variant="outline" className="border-zinc-700 text-[10px] text-[#8a9aa8]">
-                            {p.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })()}
 
               {/* Mod comparison */}
               <Card className="border-zinc-800 bg-[#0c1117]">
@@ -361,12 +370,12 @@ function CompareServersModule() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {selected.mods?.length === 0 && selected.mod_ids?.length === 0 ? (
+                  {(!selected.mods || selected.mods.length === 0) ? (
                     <p className="text-xs text-[#4a6070]">No mod data available for this server.</p>
                   ) : (
                     <div className="space-y-2">
                       {/* Copy all mods button */}
-                      {canManage && selected.mod_ids?.length > 0 && (
+                      {canManage && (
                         <div className="mb-3 flex items-center gap-2">
                           <Button
                             size="sm"
@@ -385,7 +394,7 @@ function CompareServersModule() {
                           </Button>
                           {copySuccess && (
                             <span className="text-xs text-green-400">
-                              Successfully imported {selected.mod_ids.length} mods. Check the Mods tab.
+                              Successfully imported {selected.mods.length} mods. Check the Mods tab.
                             </span>
                           )}
                         </div>
@@ -393,19 +402,25 @@ function CompareServersModule() {
 
                       {/* Mod list */}
                       <div className="max-h-72 overflow-y-auto">
-                        {(selected.mods || []).map((modName, index) => {
-                          const modId = selected.mod_ids?.[index] || '';
-                          const isLocal = modId && localModIds.has(modId);
+                        {selected.mods.map((mod, index) => {
+                          const isLocal = mod.mod_id && localModIds.has(mod.mod_id);
                           return (
                             <div
-                              key={`${modId}-${index}`}
+                              key={`${mod.mod_id}-${index}`}
                               className="flex items-center justify-between border-b border-zinc-800/50 py-2 last:border-b-0"
                             >
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-xs text-white">{modName}</p>
-                                {modId && (
-                                  <p className="truncate font-mono text-[10px] text-[#4a6070]">{modId}</p>
-                                )}
+                                <p className="truncate text-xs text-white">{mod.name}</p>
+                                <div className="flex items-center gap-2">
+                                  {mod.mod_id && (
+                                    <span className="truncate font-mono text-[10px] text-[#4a6070]">{mod.mod_id}</span>
+                                  )}
+                                  {mod.version && (
+                                    <Badge variant="outline" className="border-zinc-700 text-[9px] text-[#4a6070]">
+                                      v{mod.version}
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                               {showComparison && (
                                 <Badge
@@ -434,7 +449,7 @@ function CompareServersModule() {
             <div className="flex flex-col items-center justify-center rounded-lg border border-zinc-800 bg-[#050a0e]/40 py-12 text-[#4a6070]">
               <ArrowRight className="mb-3 h-10 w-10 rotate-180 xl:rotate-0" />
               <p className="text-sm">Select a server from the search results</p>
-              <p className="mt-1 text-xs">View mods, players, and compare with your server</p>
+              <p className="mt-1 text-xs">View mods, configuration, and compare with your server</p>
             </div>
           )}
         </div>
