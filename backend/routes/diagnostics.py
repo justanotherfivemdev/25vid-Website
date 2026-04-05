@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -289,8 +291,6 @@ async def ai_analyze_error_pattern(
         + "\n---\n".join(sample_messages[:5])
     )
 
-    import httpx, json  # noqa: E401 – local import to keep module lightweight
-
     headers = {
         "Authorization": f"Bearer {_OPENAI_API_KEY}",
         "Content-Type": "application/json",
@@ -324,12 +324,16 @@ async def ai_analyze_error_pattern(
             data.get("choices", [{}])[0].get("message", {}).get("content", "")
         )
 
-        # Strip markdown fences if present
+        # Strip markdown fences if present (handles ```json etc.)
         cleaned = raw_content.strip()
         if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[-1]
+            first_newline = cleaned.find("\n")
+            if first_newline != -1:
+                cleaned = cleaned[first_newline + 1:]
+            else:
+                cleaned = cleaned[3:]
         if cleaned.endswith("```"):
-            cleaned = cleaned.rsplit("```", 1)[0]
+            cleaned = cleaned[:-3]
         cleaned = cleaned.strip()
 
         try:

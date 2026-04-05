@@ -1391,7 +1391,7 @@ function ServerDiagnostics() {
                         AI severity: {aiAnalysis.severity_assessment}
                       </Badge>
                     )}
-                    {aiAnalysis.is_safe_to_ignore != null && (
+                    {aiAnalysis.is_safe_to_ignore !== null && aiAnalysis.is_safe_to_ignore !== undefined && (
                       <Badge variant="outline" className={`text-[10px] ${
                         aiAnalysis.is_safe_to_ignore
                           ? 'border-green-600/30 text-green-300'
