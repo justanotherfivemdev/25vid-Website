@@ -46,13 +46,19 @@ async def get_gdelt_intel(
     if topic:
         topics = [t for t in GDELT_INTEL_TOPICS if t["label"].lower() == topic.lower()]
         if not topics:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unknown topic: {topic}. Available: {[t['label'] for t in GDELT_INTEL_TOPICS]}",
-            )
+            return {
+                "topics": {},
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "source": "gdelt",
+                "message": f"Unknown topic: {topic}. Available: {[t['label'] for t in GDELT_INTEL_TOPICS]}",
+            }
 
     for t in topics:
-        articles = await fetch_gdelt_articles(t["query"], max_records=max_records)
+        try:
+            articles = await fetch_gdelt_articles(t["query"], max_records=max_records)
+        except Exception as exc:
+            logger.warning(f"GDELT topic '{t['label']}' fetch error: {exc}")
+            articles = []
         results[t["label"]] = articles
 
     return {
@@ -69,7 +75,11 @@ async def get_gdelt_intel(
 @router.get("/earthquakes")
 async def get_earthquakes():
     """Fetch recent M2.5+ earthquakes from USGS."""
-    quakes = await fetch_earthquakes()
+    try:
+        quakes = await fetch_earthquakes()
+    except Exception as exc:
+        logger.warning(f"Earthquakes endpoint failed: {exc}")
+        quakes = []
     return {
         "earthquakes": quakes,
         "count": len(quakes),
@@ -85,7 +95,11 @@ async def get_earthquakes():
 @router.get("/weather")
 async def get_weather_alerts():
     """Fetch active weather alerts from National Weather Service."""
-    alerts = await fetch_weather_alerts()
+    try:
+        alerts = await fetch_weather_alerts()
+    except Exception as exc:
+        logger.warning(f"Weather alerts endpoint failed: {exc}")
+        alerts = []
     return {
         "alerts": alerts,
         "count": len(alerts),
@@ -103,11 +117,19 @@ async def get_economic_data():
     """Fetch latest FRED economic indicators."""
     api_key = os.environ.get("FRED_API_KEY", "")
     if not api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="FRED_API_KEY not configured",
-        )
-    indicators = await fetch_fred_data(api_key)
+        return {
+            "indicators": [],
+            "count": 0,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "fred",
+            "status": "unconfigured",
+            "message": "FRED_API_KEY not configured",
+        }
+    try:
+        indicators = await fetch_fred_data(api_key)
+    except Exception as exc:
+        logger.warning(f"Economic data endpoint failed: {exc}")
+        indicators = []
     return {
         "indicators": indicators,
         "count": len(indicators),
@@ -123,7 +145,11 @@ async def get_economic_data():
 @router.get("/predictions")
 async def get_predictions(limit: int = Query(20, ge=1, le=100)):
     """Fetch active prediction market events from Polymarket."""
-    events = await fetch_polymarket_events(limit=limit)
+    try:
+        events = await fetch_polymarket_events(limit=limit)
+    except Exception as exc:
+        logger.warning(f"Predictions endpoint failed: {exc}")
+        events = []
     return {
         "events": events,
         "count": len(events),
@@ -142,11 +168,19 @@ async def get_protests():
     api_key = os.environ.get("ACLED_ACCESS_TOKEN", "")
     email = os.environ.get("ACLED_EMAIL", "")
     if not api_key or not email:
-        raise HTTPException(
-            status_code=503,
-            detail="ACLED_ACCESS_TOKEN and ACLED_EMAIL not configured",
-        )
-    protests = await fetch_acled_protests(api_key, email)
+        return {
+            "protests": [],
+            "count": 0,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "acled",
+            "status": "unconfigured",
+            "message": "ACLED_ACCESS_TOKEN and ACLED_EMAIL not configured",
+        }
+    try:
+        protests = await fetch_acled_protests(api_key, email)
+    except Exception as exc:
+        logger.warning(f"Protests endpoint failed: {exc}")
+        protests = []
     return {
         "protests": protests,
         "count": len(protests),
