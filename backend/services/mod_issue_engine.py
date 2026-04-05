@@ -18,6 +18,22 @@ from services.server_logs import get_recent_server_log_entries
 logger = logging.getLogger(__name__)
 
 
+def _issue_attribution_type(mod_id: str, source_category: str) -> str:
+    if mod_id and mod_id != "unattributed":
+        return "mod"
+    if source_category == "battleye-rcon":
+        return "rcon"
+    if source_category == "config":
+        return "config"
+    if source_category == "network":
+        return "network"
+    if source_category == "performance":
+        return "performance"
+    if source_category == "engine":
+        return "engine"
+    return "unknown"
+
+
 ISSUE_PATTERNS: list[dict] = [
     {
         "pattern": re.compile(r"curl error 23|failed to download|workshop.*failed|download.*failed", re.IGNORECASE),
@@ -178,6 +194,13 @@ async def analyze_server_logs(server: dict) -> List[Dict]:
             next_status = "active"
             if existing and existing.get("status") == "false_positive":
                 next_status = "false_positive"
+            designated_area = str((existing or {}).get("designated_area") or "mod-analysis")
+            troublesome = bool((existing or {}).get("troublesome", False))
+            troublesome_reason = str((existing or {}).get("troublesome_reason") or "")
+            attribution_type = str(
+                (existing or {}).get("attribution_type")
+                or _issue_attribution_type(finding["mod_id"], finding["source_category"])
+            )
 
             await db.mod_issues.update_one(
                 {"error_signature": finding["error_signature"]},
@@ -196,6 +219,10 @@ async def analyze_server_logs(server: dict) -> List[Dict]:
                         "source_category": finding["source_category"],
                         "issue_type": finding["issue_type"],
                         "source_streams": finding["source_streams"],
+                        "designated_area": designated_area,
+                        "attribution_type": attribution_type,
+                        "troublesome": troublesome,
+                        "troublesome_reason": troublesome_reason,
                     },
                     "$setOnInsert": {
                         "id": f"mi_{uuid.uuid4().hex[:12]}",

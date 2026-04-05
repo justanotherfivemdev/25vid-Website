@@ -1892,12 +1892,18 @@ async def create_incident(
 @router.get("/servers/mod-issues")
 async def list_mod_issues(
     status: Optional[str] = Query(None),
+    designated_area: Optional[str] = Query(None, alias="area"),
+    troublesome: Optional[bool] = Query(None),
     current_user: dict = Depends(_require_servers),
 ):
     """List mod issues across all servers, sorted by confidence score."""
     query = {}
     if status:
         query["status"] = status
+    if designated_area:
+        query["designated_area"] = designated_area
+    if troublesome is not None:
+        query["troublesome"] = troublesome
     issues = await db.mod_issues.find(query, {"_id": 0}) \
         .sort("confidence_score", -1).to_list(200)
     return issues
@@ -1915,6 +1921,10 @@ async def get_mod_issue(issue_id: str, current_user: dict = Depends(_require_ser
 class ModIssueResolve(BaseModel):
     status: str = "resolved"
     resolution_notes: str = ""
+    designated_area: Optional[str] = None
+    attribution_type: Optional[str] = None
+    troublesome: Optional[bool] = None
+    troublesome_reason: Optional[str] = ""
 
 
 @router.post("/servers/mod-issues/{issue_id}/resolve")
@@ -1931,16 +1941,32 @@ async def resolve_mod_issue(
     status = body.status or "resolved"
     if status not in {"active", "monitoring", "resolved", "false_positive"}:
         raise HTTPException(status_code=400, detail="Unsupported issue status")
+    if body.designated_area is not None and body.designated_area not in {"live-errors", "error-patterns", "mod-analysis", "alerts", "troublesome-mods"}:
+        raise HTTPException(status_code=400, detail="Unsupported designated area")
+    if body.attribution_type is not None and body.attribution_type not in {"unknown", "mod", "backend", "base_game", "engine", "rcon", "battleye", "config", "network", "performance"}:
+        raise HTTPException(status_code=400, detail="Unsupported attribution type")
 
     now = datetime.now(timezone.utc).isoformat()
+    update_fields = {
+        "status": status,
+        "resolved_by": current_user["id"],
+        "resolved_at": now,
+        "resolution_notes": body.resolution_notes,
+    }
+    if body.designated_area is not None:
+        update_fields["designated_area"] = body.designated_area
+    if body.attribution_type is not None:
+        update_fields["attribution_type"] = body.attribution_type
+    if body.troublesome is not None:
+        update_fields["troublesome"] = body.troublesome
+        if body.troublesome and "designated_area" not in update_fields:
+            update_fields["designated_area"] = "troublesome-mods"
+    if body.troublesome_reason is not None:
+        update_fields["troublesome_reason"] = body.troublesome_reason
+
     await db.mod_issues.update_one(
         {"id": issue_id},
-        {"$set": {
-            "status": status,
-            "resolved_by": current_user["id"],
-            "resolved_at": now,
-            "resolution_notes": body.resolution_notes,
-        }},
+        {"$set": update_fields},
     )
     return {"message": "Issue updated", "id": issue_id, "status": status}
 
