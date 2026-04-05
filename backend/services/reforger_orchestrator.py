@@ -241,6 +241,7 @@ def build_startup_parameters(server: Dict[str, Any]) -> List[str]:
 def build_container_environment(server: Dict[str, Any]) -> Dict[str, str]:
     config = generate_reforger_config(server)
     rcon = config.get("rcon") or {}
+    ports = server.get("ports") or {}
     return {
         "ARMA_CONFIG": SERVER_CONFIG_FILENAME,
         "ARMA_PROFILE": "/home/profile",
@@ -248,6 +249,7 @@ def build_container_environment(server: Dict[str, Any]) -> Dict[str, str]:
         "ARMA_MAX_FPS": str(server.get("max_fps") or 120),
         "ARMA_PARAMS": " ".join(build_startup_parameters(server)),
         "RCON_PASSWORD": str(rcon.get("password") or ""),
+        "RCON_PORT": str(rcon.get("port") or ports.get("rcon") or 19999),
         "RCON_PERMISSION": str(rcon.get("permission") or "admin"),
     }
 
