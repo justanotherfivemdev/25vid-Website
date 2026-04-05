@@ -199,6 +199,21 @@ async def list_deployments(current_user: dict = Depends(get_current_user)):
     return deployments
 
 
+@router.get("/map/deployments/active-deployed")
+async def list_active_deployed(current_user: dict = Depends(get_current_user)):
+    """Return deployments currently in the 'deployed' phase (active and is_active).
+
+    Used by the Operations Manager to let admins attribute operations
+    to a specific live deployment.
+    """
+    await _auto_advance_deployment_phases()
+    deployments = await db.deployments.find(
+        {"status": "deployed", "is_active": True},
+        {"_id": 0, "id": 1, "title": 1, "unit_name": 1, "origin_type": 1, "status": 1},
+    ).sort("created_at", -1).to_list(100)
+    return deployments
+
+
 @router.get("/map/deployments/{deployment_id}")
 async def get_deployment(
     deployment_id: str,

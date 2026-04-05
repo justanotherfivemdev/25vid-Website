@@ -176,11 +176,25 @@ const OperationsManager = () => {
     severity: 'medium',
     is_public_recruiting: false,
     activity_state: 'planned',
+    deployment_id: '',
   });
+
+  // Active deployed deployments for the deployment selector
+  const [activeDeployments, setActiveDeployments] = useState([]);
 
   useEffect(() => {
     fetchOperations();
+    fetchActiveDeployments();
   }, []);
+
+  const fetchActiveDeployments = async () => {
+    try {
+      const res = await axios.get(`${API}/map/deployments/active-deployed`);
+      setActiveDeployments(res.data);
+    } catch {
+      // Deployment fetch is optional — ignore errors silently
+    }
+  };
 
   const fetchOperations = async () => {
     try {
@@ -214,6 +228,7 @@ const OperationsManager = () => {
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : null,
         lat: latValue,
         lng: lngValue,
+        deployment_id: formData.deployment_id || null,
       };
 
       if (editingOp) {
@@ -251,6 +266,7 @@ const OperationsManager = () => {
       severity: op.severity || 'medium',
       is_public_recruiting: !!op.is_public_recruiting,
       activity_state: op.activity_state || 'planned',
+      deployment_id: op.deployment_id || '',
     });
     setIsDialogOpen(true);
   };
@@ -291,6 +307,7 @@ const OperationsManager = () => {
       severity: 'medium',
       is_public_recruiting: false,
       activity_state: 'planned',
+      deployment_id: '',
     });
     setEditingOp(null);
   };
@@ -500,6 +517,23 @@ const OperationsManager = () => {
                         <Input value={formData.objective_id} onChange={(e) => setFormData({...formData, objective_id: e.target.value})} className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]" placeholder="Objective UUID" />
                       </div>
                     </div>
+                    <div>
+                      <Label>Active Deployment (optional)</Label>
+                      <Select value={formData.deployment_id || '_none'} onValueChange={(value) => setFormData({...formData, deployment_id: value === '_none' ? '' : value})}>
+                        <SelectTrigger className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]">
+                          <SelectValue placeholder="No deployment" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#0c1117] border-[rgba(201,162,39,0.15)]">
+                          <SelectItem value="_none">No deployment</SelectItem>
+                          {activeDeployments.map((dep) => (
+                            <SelectItem key={dep.id} value={dep.id}>
+                              {dep.title} — {dep.unit_name || dep.origin_type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-[#4a6070] mt-1">Link this operation to a live deployment that is currently in the deployed phase.</p>
+                    </div>
                   </FormSection>
 
                   {/* ── Map Placement (collapsible) ───────────────────── */}
@@ -626,6 +660,15 @@ const OperationsManager = () => {
                         {(op.theater || op.region_label || op.grid_ref) && (
                           <p className="text-xs text-[#4a6070] mt-2">{op.theater || 'Theater'}{op.region_label ? ` • ${op.region_label}` : ''}{op.grid_ref ? ` • Grid ${op.grid_ref}` : ''}</p>
                         )}
+                        {op.deployment_id && (() => {
+                          const dep = activeDeployments.find((d) => d.id === op.deployment_id);
+                          return (
+                            <p className="text-[11px] text-green-400 mt-1 flex items-center gap-1">
+                              <Shield className="w-3 h-3" />
+                              <span className="font-mono">Deployment: {dep ? dep.title : op.deployment_id}</span>
+                            </p>
+                          );
+                        })()}
                         <div className="flex items-center space-x-4 mt-3 text-sm text-[#4a6070]">
                           <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" />{op.date}</span>
                           <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{op.time}</span>
