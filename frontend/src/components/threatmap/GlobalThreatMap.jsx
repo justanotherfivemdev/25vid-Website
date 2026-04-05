@@ -380,12 +380,16 @@ function buildSIDC(affiliation = 'friendly', symbolType = 'infantry', echelon = 
  */
 const _milsymbolCache = new Map();
 function renderNATOMarkerImage(affiliation, symbolType, echelon, size = 40) {
-  const sidc = buildSIDC(affiliation, symbolType, echelon);
-  const key = `${sidc}_${size}`;
-  if (_milsymbolCache.has(key)) return _milsymbolCache.get(key);
-  const result = renderMilSymbolDataUrl(sidc, size);
-  _milsymbolCache.set(key, result);
-  return result;
+  try {
+    const sidc = buildSIDC(affiliation, symbolType, echelon);
+    const key = `${sidc}_${size}`;
+    if (_milsymbolCache.has(key)) return _milsymbolCache.get(key);
+    const result = renderMilSymbolDataUrl(sidc, size);
+    _milsymbolCache.set(key, result);
+    return result;
+  } catch {
+    return null;
+  }
 }
 
 /* ── Fallback colors used if milsymbol render fails ─────────────────────── */
