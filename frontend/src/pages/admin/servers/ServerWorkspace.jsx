@@ -85,7 +85,7 @@ const NAV_SECTIONS = [
   {
     label: 'TOOLS',
     items: [
-      { to: 'tools/files', label: 'Troubleshooting', icon: Wrench },
+      { to: 'tools/files', label: 'File Manager', icon: Wrench },
       { to: 'schedules', label: 'Schedules', icon: CalendarClock },
       { to: 'tools/exec', label: 'Trigger / Exec', icon: Wrench },
       { to: 'tools/reports', label: 'Reports', icon: Wrench },
