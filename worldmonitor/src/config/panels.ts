@@ -72,13 +72,13 @@ export const MOBILE_DEFAULT_MAP_LAYERS: MapLayers = {
 };
 
 export const MONITOR_COLORS = [
-  '#44ff88',
+  '#e8c547',
   '#ff8844',
   '#4488ff',
   '#ff44ff',
   '#ffff44',
   '#ff4444',
-  '#44ffff',
+  '#c9a227',
   '#88ff44',
   '#ff88ff',
   '#88ffff',

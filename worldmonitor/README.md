@@ -1,14 +1,14 @@
-# World Monitor [Black Swan Edition] Forked from Koala73's Worldmonitor Project
-![World Monitor Dashboard](Screenshot2.png)
-Utilizing X.com algorithm + Bayesian + Martingale and Black swan theory to isolate and predict confluence of events and black swan indicators.
+# 25th ID World Monitor [Black Swan Edition]
+
+Adapted from [Koala73's World Monitor](https://github.com/Koala73) for the 25th Infantry Division.
+
+Bayesian + Martingale analysis with Black Swan theory to isolate and predict confluence of events and indicators.
 
 Real-time global intelligence dashboard aggregating news, markets, geopolitical data, and infrastructure monitoring into a unified situation awareness interface.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white)
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3.js&logoColor=white)
-
-![World Monitor Dashboard](Screenshot.png)
 
 ## Features
 

@@ -54,7 +54,7 @@ export class MonitorPanel extends Panel {
     const monitor: Monitor = {
       id: generateId(),
       keywords: keywords.split(',').map((k) => k.trim().toLowerCase()),
-      color: MONITOR_COLORS[this.monitors.length % MONITOR_COLORS.length] ?? '#44ff88',
+      color: MONITOR_COLORS[this.monitors.length % MONITOR_COLORS.length] ?? '#e8c547',
     };
 
     this.monitors.push(monitor);

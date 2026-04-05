@@ -120,7 +120,7 @@ export class BlackSwanPanel {
         
         <div class="panel-footer">
           <div class="footer-timestamp" id="lastAnalysisTime">Last Update: --:--:--</div>
-          <div class="footer-brand">CYBER-INTEL ENGINE v2.0</div>
+          <div class="footer-brand">25th ID INTEL ENGINE v2.0</div>
         </div>
       </div>
     `;
