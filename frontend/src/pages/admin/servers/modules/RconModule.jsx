@@ -32,9 +32,9 @@ const SAVED_SNIPPETS_KEY = 'rcon_saved_snippets';
 
 const STATUS_TEXT = {
   offline: 'Server is offline.',
-  disabled: 'RCON is disabled because no password is configured.',
-  auth_failed: 'RCON rejected the configured credentials.',
-  unavailable: 'RCON is not reachable on the Docker host.',
+  disabled: 'RCON is disabled because no password is configured. Set one in Server Settings → RCON, then restart.',
+  auth_failed: 'RCON rejected the configured credentials. Restart the server after changing the password in Server Settings.',
+  unavailable: 'RCON is not reachable. Check that the firewall allows UDP on the RCON port and the container published it (see docs/rcon-setup.md).',
   error: 'RCON returned an unexpected error.',
   connected: 'BattlEye RCON is connected.',
 };
