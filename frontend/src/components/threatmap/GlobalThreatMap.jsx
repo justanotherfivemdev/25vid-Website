@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Map, {
+import MapView, {
   NavigationControl,
   GeolocateControl,
   ScaleControl,
@@ -1237,7 +1237,7 @@ export default function GlobalThreatMap({
           </div>
         </div>
       )}
-      <Map
+      <MapView
         ref={mapRef}
         {...viewport}
         projection="globe"
@@ -1952,7 +1952,7 @@ export default function GlobalThreatMap({
             </div>
           </Popup>
         )}
-      </Map>
+      </MapView>
 
       {/* Deployment Legend – positioned above the bottom-left control buttons (zIndex 15 to stay on top).
           Uses 288px (= 18rem at default 16px root font) as a fixed pixel value so it's unaffected
