@@ -2915,6 +2915,12 @@ _BM_API_KEY_ENV = os.environ.get("BATTLEMETRICS_API_KEY", "")
 _BM_TIMEOUT = 15
 _BM_GAME_FILTER = "reforger"
 _BM_DEFAULT_SORT = "-players"
+# Query-string keys that may be forwarded from a BattleMetrics pagination URL.
+_BM_ALLOWED_PAGINATION_PARAMS = frozenset({
+    "page[key]", "page[rel]", "page[size]",
+    "filter[game]", "filter[search]", "filter[countries][]",
+    "sort",
+})
 
 
 async def _get_bm_api_key() -> str:
@@ -3009,13 +3015,7 @@ async def battlemetrics_search(
         qs = parse_qs(parsed.query)
         url = f"{_BM_API_BASE}/servers"
         params = {}
-        # Carry over only known BattleMetrics pagination/filter params
-        _ALLOWED_BM_PARAMS = {
-            "page[key]", "page[rel]", "page[size]",
-            "filter[game]", "filter[search]", "filter[countries][]",
-            "sort",
-        }
-        for key in _ALLOWED_BM_PARAMS:
+        for key in _BM_ALLOWED_PAGINATION_PARAMS:
             values = qs.get(key)
             if values:
                 params[key] = values[0]
