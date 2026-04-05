@@ -3176,3 +3176,249 @@ async def battlemetrics_server_detail(
     payload = server_resp.json()
     server_data = payload.get("data", {})
     return _sanitize_bm_server(server_data)
+
+
+# ── File Manager ─────────────────────────────────────────────────────────────
+
+# Maximum file size that can be read/written via the file manager (1 MB).
+_FM_MAX_FILE_SIZE = 1_048_576
+
+# Extensions we consider safe to view/edit in the panel.
+_FM_EDITABLE_EXTENSIONS = {
+    ".json", ".txt", ".cfg", ".ini", ".xml", ".log", ".conf", ".yaml", ".yml",
+    ".toml", ".properties", ".md", ".csv", ".sh", ".bat", ".py", ".lua",
+}
+
+
+def _resolve_server_root(server: dict, root_key: str) -> str:
+    """Return the validated host-side directory for a root_key.
+
+    Supported root_key values:
+      - config  → parent of config_path (the Configs directory)
+      - profile → profile_path
+      - workshop → workshop_path
+
+    Raises HTTPException(400) when the root_key is unknown or the path is not
+    configured.
+    """
+    if root_key == "config":
+        raw = server.get("config_path", "")
+        if raw:
+            return str(Path(raw).parent)
+    elif root_key == "profile":
+        raw = server.get("profile_path", "")
+        if raw:
+            return raw
+    elif root_key == "workshop":
+        raw = server.get("workshop_path", "")
+        if raw:
+            return raw
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown root: {root_key}")
+
+    raise HTTPException(status_code=400, detail=f"Server has no {root_key} path configured")
+
+
+def _safe_resolve(base: str, relative: str) -> Path:
+    """Resolve *relative* under *base*, preventing path-traversal attacks.
+
+    Returns the resolved absolute path. Raises HTTPException(400) if the
+    input is invalid or the result escapes *base*.
+    """
+    if relative is None:
+        raise HTTPException(status_code=400, detail="Path is required")
+
+    # Normalize whitespace and separators early
+    rel_str = str(relative).strip()
+    if not rel_str:
+        raise HTTPException(status_code=400, detail="Path is required")
+
+    # Normalize backslashes to forward slashes for consistent checks
+    rel_norm = rel_str.replace("\\", "/")
+
+    # Disallow absolute or root-relative paths
+    if rel_norm.startswith("/"):
+        raise HTTPException(status_code=400, detail="Absolute paths are not allowed")
+    if Path(rel_str).is_absolute():
+        raise HTTPException(status_code=400, detail="Absolute paths are not allowed")
+
+    # Reject path components that are clearly malicious (.. traversal)
+    if ".." in rel_norm.split("/"):
+        raise HTTPException(status_code=400, detail="Path traversal is not allowed")
+
+    base_path = Path(base).resolve()
+    target = (base_path / rel_str).resolve()
+
+    # Use relative_to() — raises ValueError if target is outside base_path
+    try:
+        target.relative_to(base_path)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Path traversal is not allowed")
+
+    return target
+
+
+class FileWriteBody(BaseModel):
+    content: str
+
+
+@router.get("/servers/{server_id}/files/roots")
+async def list_file_roots(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Return the available filesystem roots for a server."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    roots = []
+    for key, label in [("config", "Configs"), ("profile", "Profile"), ("workshop", "Workshop")]:
+        try:
+            path = _resolve_server_root(server, key)
+            exists = Path(path).is_dir()
+        except HTTPException:
+            path = ""
+            exists = False
+        roots.append({"key": key, "label": label, "path": path, "exists": exists})
+    return roots
+
+
+@router.get("/servers/{server_id}/files/browse")
+async def browse_server_files(
+    server_id: str,
+    root: str = Query("config", description="Root: config, profile, or workshop"),
+    path: str = Query("", description="Relative path within the root"),
+    current_user: dict = Depends(_require_servers),
+):
+    """Browse files and directories under a server root."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    base = _resolve_server_root(server, root)
+    target = _safe_resolve(base, path)
+
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="Path does not exist")
+    if not target.is_dir():
+        raise HTTPException(status_code=400, detail="Path is not a directory")
+
+    entries = []
+    try:
+        for child in sorted(target.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())):
+            relative = str(child.relative_to(Path(base).resolve()))
+            entry = {
+                "name": child.name,
+                "path": relative,
+                "is_dir": child.is_dir(),
+            }
+            if not child.is_dir():
+                try:
+                    stat = child.stat()
+                    entry["size"] = stat.st_size
+                    entry["modified"] = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+                except OSError:
+                    entry["size"] = 0
+                    entry["modified"] = None
+                entry["editable"] = child.suffix.lower() in _FM_EDITABLE_EXTENSIONS and (entry.get("size", 0) <= _FM_MAX_FILE_SIZE)
+            entries.append(entry)
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Permission denied reading directory")
+
+    return {
+        "root": root,
+        "path": path or "",
+        "base": base,
+        "entries": entries,
+    }
+
+
+@router.get("/servers/{server_id}/files/read")
+async def read_server_file(
+    server_id: str,
+    root: str = Query(..., description="Root: config, profile, or workshop"),
+    path: str = Query(..., description="Relative path to file"),
+    current_user: dict = Depends(_require_servers),
+):
+    """Read the content of a text file under a server root."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    base = _resolve_server_root(server, root)
+    target = _safe_resolve(base, path)
+
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="File does not exist")
+    if not target.is_file():
+        raise HTTPException(status_code=400, detail="Path is not a file")
+    if target.suffix.lower() not in _FM_EDITABLE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="File type is not viewable")
+
+    try:
+        size = target.stat().st_size
+    except OSError:
+        size = 0
+    if size > _FM_MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail=f"File is too large ({size} bytes, max {_FM_MAX_FILE_SIZE})")
+
+    try:
+        content = target.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File contains invalid UTF-8 and cannot be displayed as text")
+    except (PermissionError, OSError) as exc:
+        raise HTTPException(status_code=403, detail=f"Cannot read file: {exc}")
+
+    return {
+        "root": root,
+        "path": path,
+        "name": target.name,
+        "content": content,
+        "size": size,
+        "modified": datetime.fromtimestamp(target.stat().st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+@router.put("/servers/{server_id}/files/write")
+async def write_server_file(
+    server_id: str,
+    body: FileWriteBody,
+    root: str = Query(..., description="Root: config, profile, or workshop"),
+    path: str = Query(..., description="Relative path to file"),
+    current_user: dict = Depends(_require_servers),
+):
+    """Write content to a text file under a server root."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    base = _resolve_server_root(server, root)
+    target = _safe_resolve(base, path)
+
+    if target.is_dir():
+        raise HTTPException(status_code=400, detail="Cannot write to a directory")
+    if target.suffix.lower() not in _FM_EDITABLE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="File type is not editable")
+    if len(body.content.encode("utf-8")) > _FM_MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail=f"Content exceeds maximum size ({_FM_MAX_FILE_SIZE} bytes)")
+
+    # Ensure the parent directory exists
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        target.write_text(body.content, encoding="utf-8")
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Permission denied writing file")
+
+    await log_audit(
+        user_id=current_user["id"],
+        action_type="file_edit",
+        resource_type="server",
+        resource_id=server_id,
+        metadata={"root": root, "path": path, "size": len(body.content)},
+    )
+
+    return {
+        "message": "File saved successfully",
+        "root": root,
+        "path": path,
+        "size": len(body.content),
+    }

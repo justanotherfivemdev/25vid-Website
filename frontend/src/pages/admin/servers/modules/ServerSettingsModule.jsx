@@ -99,6 +99,8 @@ function ReferenceCard({ item }) {
 
 function ServerSettingsModule() {
   const { server, serverId, fetchServer } = useOutletContext();
+  const serverRef = React.useRef(server);
+  React.useEffect(() => { serverRef.current = server; }, [server]);
   const [config, setConfig] = useState(null);
   const [runtime, setRuntime] = useState(normalizeRuntime(server));
   const [configHistory, setConfigHistory] = useState([]);
@@ -176,19 +178,21 @@ function ServerSettingsModule() {
 
   useEffect(() => {
     setLoading(true);
+    const srv = serverRef.current;
     Promise.allSettled([
       axios.get(`${API}/servers/${serverId}/config`),
       axios.get(`${API}/servers/${serverId}/config/history`),
     ]).then(([cfgRes, histRes]) => {
       if (cfgRes.status === 'fulfilled') {
-        initializeEditors(cfgRes.value.data?.config || cfgRes.value.data || server?.config || {}, server);
+        initializeEditors(cfgRes.value.data?.config || cfgRes.value.data || srv?.config || {}, srv);
       } else {
-        initializeEditors(server?.config || {}, server);
+        initializeEditors(srv?.config || {}, srv);
       }
       if (histRes.status === 'fulfilled') setConfigHistory(histRes.value.data?.history || histRes.value.data || []);
       else setConfigHistory([]);
     }).finally(() => setLoading(false));
-  }, [initializeEditors, server, serverId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverId]);
 
   useEffect(() => {
     if (activeTab === 'json' && config) {
