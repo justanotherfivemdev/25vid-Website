@@ -20,6 +20,7 @@ import ADSBFilterPanel from './ADSBFilterPanel';
 import useADSBAircraft from '@/hooks/useADSBAircraft';
 import axios from 'axios';
 import { API } from '@/utils/api';
+import { renderMilSymbolDataUrl } from '@/lib/milsymbol';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 const CLUSTER_MAX_ZOOM = 14;
@@ -278,74 +279,104 @@ const campaignLabelLayer = {
   },
 };
 
-/* ── NATO Symbology SVG Renderer (APP-6 Inspired) ──────────────────────── */
+/* ── NATO Symbology via milsymbol (MIL-STD-2525) ───────────────────────── */
 
+/**
+ * Affiliation digit (position 2 in SIDC):
+ *   3 = Friendly, 6 = Hostile, 4 = Neutral, 1 = Unknown
+ */
+const AFFILIATION_SIDC_DIGIT = {
+  friendly: '3',
+  hostile: '6',
+  neutral: '4',
+  unknown: '1',
+};
+
+/**
+ * Symbol type → SIDC icon code (positions 5-10 in a 20-char SIDC).
+ * Uses MIL-STD-2525D / APP-6D numeric SIDCs.
+ * Format: SSAACCCCCCCCCCCCCCCC  (Set, Affiliation, ..., Symbol code)
+ */
+const SYMBOL_TYPE_SIDC_MAP = {
+  infantry:              '121100',
+  armor:                 '120500',
+  aviation:              '140700',
+  artillery:             '130300',
+  logistics:             '160000',
+  headquarters:          '110000',
+  medical:               '160200',
+  recon:                 '121100',
+  signal:                '111800',
+  engineer:              '111400',
+  air_defense:           '130200',
+  naval:                 '150000',
+  special_operations:    '121600',
+  military_police:       '111600',
+  chemical:              '111300',
+  maintenance:           '160100',
+  transportation:        '161200',
+  supply:                '160600',
+  missile:               '130100',
+  cyber:                 '112200',
+  civil_affairs:         '111200',
+  psychological_operations: '111700',
+  unmanned_aerial:       '140702',
+  electronic_warfare:    '112300',
+  objective:             '110000',
+  waypoint:              '110000',
+  staging_area:          '110000',
+  custom:                '110000',
+};
+
+/**
+ * Echelon → SIDC modifier digit (position 12 in 20-char SIDC).
+ * MIL-STD-2525D echelon amplifiers.
+ */
+const ECHELON_SIDC_MAP = {
+  none:       '00',
+  team:       '11',
+  squad:      '12',
+  section:    '13',
+  platoon:    '14',
+  company:    '15',
+  battalion:  '16',
+  regiment:   '17',
+  brigade:    '18',
+  division:   '19',
+  corps:      '20',
+  army:       '21',
+  army_group: '22',
+  theater:    '23',
+};
+
+/**
+ * Build a full 20-character SIDC for milsymbol.
+ * Uses Set 1 (Land Unit) = "10", with appropriate affiliation + icon code.
+ */
+function buildSIDC(affiliation = 'friendly', symbolType = 'infantry', echelon = 'none') {
+  const aff = AFFILIATION_SIDC_DIGIT[affiliation] || '1';
+  const icon = SYMBOL_TYPE_SIDC_MAP[symbolType] || '110000';
+  const ech = ECHELON_SIDC_MAP[echelon] || '00';
+  // Format: 10 (version) + aff (affiliation) + 0 (battle dimension) + 10 (standard identity) + icon (6 digits) + ech (2 digits) + 0000 (padding)
+  return `10${aff}0001${icon}${ech}0000`;
+}
+
+/**
+ * Render a NATO marker using milsymbol. Falls back to a simple colored circle
+ * if milsymbol fails to render the SIDC.
+ */
+function renderNATOMarkerImage(affiliation, symbolType, echelon, size = 40) {
+  const sidc = buildSIDC(affiliation, symbolType, echelon);
+  return renderMilSymbolDataUrl(sidc, size);
+}
+
+/* ── Fallback colors used if milsymbol render fails ─────────────────────── */
 const NATO_AFFILIATION_COLORS = {
   friendly: { fill: '#80b0ff', stroke: '#3366cc', bg: '#1a3a6e' },
   hostile: { fill: '#ff8080', stroke: '#cc3333', bg: '#6e1a1a' },
   neutral: { fill: '#80ff80', stroke: '#33aa33', bg: '#1a6e1a' },
   unknown: { fill: '#ffff80', stroke: '#cccc33', bg: '#6e6e1a' },
 };
-
-const NATO_SYMBOL_ICONS = {
-  infantry: 'M4,12 L16,4 L28,12 L16,20 Z',
-  armor: (sz) => `<ellipse cx="${sz/2}" cy="${sz/2}" rx="${sz*0.38}" ry="${sz*0.28}" fill="none" stroke="currentColor" stroke-width="1.5"/>`,
-  aviation: 'M6,18 L16,6 L26,18',
-  artillery: 'M10,8 L22,8 M16,8 L16,24',
-  logistics: 'M8,10 L24,10 L24,22 L8,22 Z',
-  headquarters: 'M8,16 L24,16 M8,8 L8,24',
-  medical: 'M14,8 L18,8 L18,14 L24,14 L24,18 L18,18 L18,24 L14,24 L14,18 L8,18 L8,14 L14,14 Z',
-  recon: 'M8,16 L16,8 L24,16 L16,24 Z',
-  signal: 'M8,20 Q12,6 16,16 Q20,26 24,12',
-  engineer: 'M8,8 L24,24 M24,8 L8,24',
-  objective: 'M16,6 L16,26 M6,16 L26,16',
-  waypoint: 'M16,4 L20,14 L28,16 L20,18 L16,28 L12,18 L4,16 L12,14 Z',
-  air_defense: 'M8,22 L16,8 L24,22 M8,16 L24,16',
-  naval: 'M6,16 Q10,10 16,16 Q22,22 26,16',
-  special_operations: 'M16,6 L19,13 L26,14 L21,19 L22,26 L16,22 L10,26 L11,19 L6,14 L13,13 Z',
-  military_police: 'M10,8 L22,8 L22,24 L10,24 Z M16,8 L16,24',
-  chemical: 'M10,10 L22,10 L22,22 L10,22 Z M10,10 L22,22 M22,10 L10,22',
-  maintenance: 'M8,16 L24,16 M16,8 L16,24 M10,10 L22,22',
-  transportation: 'M6,20 L16,10 L26,20 M11,15 L21,15',
-  supply: 'M8,12 L24,12 L24,20 L8,20 Z',
-  missile: 'M16,6 L16,26 M12,10 L16,6 L20,10',
-  cyber: 'M8,16 L12,10 L20,10 L24,16 L20,22 L12,22 Z',
-  civil_affairs: 'M10,16 L16,10 L22,16 L16,22 Z M16,10 L16,6 M16,22 L16,26',
-  psychological_operations: 'M10,8 L22,8 Q26,16 22,24 L10,24 Q6,16 10,8 Z',
-  unmanned_aerial: 'M8,16 L16,8 L24,16 M12,22 L16,16 L20,22',
-  electronic_warfare: 'M8,16 Q12,8 16,16 Q20,24 24,16 M8,12 L24,12',
-  staging_area: 'M8,8 L24,8 L24,24 L8,24 Z M12,12 L20,12 L20,20 L12,20 Z',
-  custom: 'M16,6 L16,26 M6,16 L26,16 M10,10 L22,22 M22,10 L10,22',
-};
-
-function buildNATOMarkerSVG(affiliation, symbolType, size = 32) {
-  const colors = NATO_AFFILIATION_COLORS[affiliation] || NATO_AFFILIATION_COLORS.unknown;
-  let shape;
-  if (affiliation === 'friendly') {
-    shape = `<rect x="3" y="6" width="${size-6}" height="${size-12}" rx="2" fill="${colors.bg}" stroke="${colors.stroke}" stroke-width="2"/>`;
-  } else if (affiliation === 'hostile') {
-    shape = `<polygon points="${size/2},3 ${size-3},${size/2} ${size/2},${size-3} 3,${size/2}" fill="${colors.bg}" stroke="${colors.stroke}" stroke-width="2"/>`;
-  } else if (affiliation === 'neutral') {
-    shape = `<rect x="4" y="4" width="${size-8}" height="${size-8}" fill="${colors.bg}" stroke="${colors.stroke}" stroke-width="2"/>`;
-  } else {
-    shape = `<rect x="4" y="4" width="${size-8}" height="${size-8}" rx="${size/4}" fill="${colors.bg}" stroke="${colors.stroke}" stroke-width="2"/>`;
-  }
-
-  let icon = '';
-  const sym = NATO_SYMBOL_ICONS[symbolType];
-  if (typeof sym === 'function') {
-    icon = sym(size);
-  } else if (typeof sym === 'string') {
-    if (sym.startsWith('M') || sym.startsWith('m')) {
-      icon = `<path d="${sym}" fill="none" stroke="${colors.fill}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
-    }
-  }
-  if (symbolType === 'medical') {
-    icon = `<path d="${NATO_SYMBOL_ICONS.medical}" fill="${colors.fill}" stroke="none"/>`;
-  }
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${shape}${icon}</svg>`;
-}
 
 /* ── Deployment path colours per unit ────────────────────────────────────── */
 // 25th ID fixed branded color
@@ -1412,12 +1443,6 @@ export default function GlobalThreatMap({
 
             const pos = interpolateAlongLine(coords, progress);
 
-            // Compute heading (degrees, 0 = north) from path tangent at current position
-            const aheadPos = interpolateAlongLine(coords, Math.min(1, progress + 0.01));
-            const dLon = aheadPos[0] - pos[0];
-            const dLat = aheadPos[1] - pos[1];
-            const heading = (Math.atan2(dLon, dLat) * 180) / Math.PI;
-
             return (
               <Marker
                 key={`dep-plane-${d.id}`}
@@ -1440,34 +1465,25 @@ export default function GlobalThreatMap({
                   style={{ cursor: 'pointer' }}
                   title={`${d.title} — ${Math.round(progress * 100)}%`}
                 >
-                  {/* C-17 tactical silhouette – compact, centered, nose-up */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 32 32"
-                    aria-label={`${d.unit_name || d.title} — deployment aircraft`}
-                    style={{
-                      transform: `rotate(${heading}deg)`,
-                      filter: `drop-shadow(0 0 4px ${color}aa)`,
-                      transition: 'transform 1s cubic-bezier(0.4,0,0.2,1)',
-                    }}
-                  >
-                    <title>{d.unit_name || d.title} — C-17 in transit</title>
-                    {/* Fuselage */}
-                    <path d="M16,3 C15,5.5 14.5,8 14.5,12 L14.5,22 C14.8,24 15.3,26 16,29 C16.7,26 17.2,24 17.5,22 L17.5,12 C17.5,8 17,5.5 16,3 Z" fill={color} />
-                    {/* Wings */}
-                    <path d="M14.5,11 L3,15.5 L3,16.8 L14.5,13.5 Z" fill={color} />
-                    <path d="M17.5,11 L29,15.5 L29,16.8 L17.5,13.5 Z" fill={color} />
-                    {/* Engines */}
-                    <ellipse cx="6" cy="15.8" rx="1.8" ry="0.7" fill={color} opacity="0.85" />
-                    <ellipse cx="10" cy="14.5" rx="1.6" ry="0.65" fill={color} opacity="0.85" />
-                    <ellipse cx="22" cy="14.5" rx="1.6" ry="0.65" fill={color} opacity="0.85" />
-                    <ellipse cx="26" cy="15.8" rx="1.8" ry="0.7" fill={color} opacity="0.85" />
-                    {/* Tail stabilizers */}
-                    <path d="M14.5,22 L9.5,25.5 L10,26.5 L14.5,24 Z" fill={color} opacity="0.9" />
-                    <path d="M17.5,22 L22.5,25.5 L22,26.5 L17.5,24 Z" fill={color} opacity="0.9" />
-                  </svg>
+                  {/* milsymbol unit marker for deployment */}
+                  {(() => {
+                    const affiliation = d.origin_type === '25th' ? 'friendly'
+                      : d.origin_type === 'counterpart' ? 'neutral' : 'friendly';
+                    const depImg = renderNATOMarkerImage(affiliation, 'infantry', 'division', 32);
+                    return depImg ? (
+                      <img
+                        src={depImg}
+                        alt={`${d.unit_name || d.title} — deployment unit`}
+                        style={{
+                          width: 32,
+                          height: 32,
+                          filter: `drop-shadow(0 0 4px ${color}aa)`,
+                        }}
+                      />
+                    ) : (
+                      <div style={{ width: 24, height: 24, borderRadius: '50%', background: color, border: '2px solid rgba(0,0,0,0.5)' }} />
+                    );
+                  })()}
                   <span
                     className="text-[8px] font-bold mt-0.5 whitespace-nowrap px-1 py-0.5 rounded tracking-wide"
                     style={{
@@ -1485,39 +1501,54 @@ export default function GlobalThreatMap({
           })
         }
 
-        {/* NATO Markers */}
-        {natoMarkers.map((marker) => (
-          <Marker
-            key={marker.id}
-            longitude={marker.longitude}
-            latitude={marker.latitude}
-            anchor="center"
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
-              setDeploymentPopup({
-                longitude: marker.longitude,
-                latitude: marker.latitude,
-                type: 'nato',
-                data: marker,
-              });
-            }}
-          >
-            <div
-              title={`${marker.title} (${marker.affiliation} ${marker.symbol_type})`}
-              style={{ cursor: 'pointer' }}
-              dangerouslySetInnerHTML={{
-                __html: buildNATOMarkerSVG(marker.affiliation, marker.symbol_type, 36),
+        {/* NATO Markers — rendered with milsymbol (MIL-STD-2525) */}
+        {natoMarkers.map((marker) => {
+          const milSymImg = renderNATOMarkerImage(marker.affiliation, marker.symbol_type, marker.echelon, 40);
+          return (
+            <Marker
+              key={marker.id}
+              longitude={marker.longitude}
+              latitude={marker.latitude}
+              anchor="center"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                setDeploymentPopup({
+                  longitude: marker.longitude,
+                  latitude: marker.latitude,
+                  type: 'nato',
+                  data: marker,
+                });
               }}
-            />
-          </Marker>
-        ))}
+            >
+              {milSymImg ? (
+                <img
+                  src={milSymImg}
+                  alt={`${marker.title} (${marker.affiliation} ${marker.symbol_type})`}
+                  title={`${marker.title} (${marker.affiliation} ${marker.symbol_type})`}
+                  style={{ cursor: 'pointer', width: 40, height: 40 }}
+                />
+              ) : (
+                <div
+                  title={`${marker.title} (${marker.affiliation} ${marker.symbol_type})`}
+                  style={{
+                    cursor: 'pointer',
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: (NATO_AFFILIATION_COLORS[marker.affiliation] || NATO_AFFILIATION_COLORS.unknown).bg,
+                    border: `2px solid ${(NATO_AFFILIATION_COLORS[marker.affiliation] || NATO_AFFILIATION_COLORS.unknown).stroke}`,
+                  }}
+                />
+              )}
+            </Marker>
+          );
+        })}
 
         {/* 25th ID Division Location Marker – moves along deployment path when deploying.
             Shows a C-17 silhouette while in transit (deploying/rtb) and the NATO HQ symbol at rest. */}
         {divisionDisplayLocation && (() => {
           let markerLng = divisionDisplayLocation.longitude;
           let markerLat = divisionDisplayLocation.latitude;
-          let divHeading = 0;
           let divProgress = null;
 
           if (activeDeployment && VISIBLE_DEPLOYMENT_PHASES.includes(activeDeployment.status)) {
@@ -1540,12 +1571,6 @@ export default function GlobalThreatMap({
               const pos = interpolateAlongLine(coords, divProgress);
               markerLng = pos[0];
               markerLat = pos[1];
-
-              // Compute heading for C-17 icon orientation
-              const aheadPos = interpolateAlongLine(coords, Math.min(1, divProgress + 0.01));
-              const dLon = aheadPos[0] - pos[0];
-              const dLat = aheadPos[1] - pos[1];
-              divHeading = (Math.atan2(dLon, dLat) * 180) / Math.PI;
             }
           }
 
@@ -1575,42 +1600,40 @@ export default function GlobalThreatMap({
                 style={{ cursor: activeDeployment ? 'pointer' : 'default' }}
               >
                 {isInTransit ? (
-                  /* C-17 tactical silhouette for 25th ID – gold with glow */
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="28"
-                    height="28"
-                    viewBox="0 0 32 32"
-                    aria-label="25th Infantry Division — C-17 in transit"
-                    style={{
-                      transform: `rotate(${divHeading}deg)`,
-                      filter: 'drop-shadow(0 0 6px #FFD700aa)',
-                      transition: 'transform 1s cubic-bezier(0.4,0,0.2,1)',
-                    }}
-                  >
-                    <title>25th Infantry Division — C-17 in transit</title>
-                    <path d="M16,3 C15,5.5 14.5,8 14.5,12 L14.5,22 C14.8,24 15.3,26 16,29 C16.7,26 17.2,24 17.5,22 L17.5,12 C17.5,8 17,5.5 16,3 Z" fill="#FFD700" />
-                    <path d="M14.5,11 L3,15.5 L3,16.8 L14.5,13.5 Z" fill="#FFD700" />
-                    <path d="M17.5,11 L29,15.5 L29,16.8 L17.5,13.5 Z" fill="#FFD700" />
-                    <ellipse cx="6" cy="15.8" rx="1.8" ry="0.7" fill="#FFD700" opacity="0.85" />
-                    <ellipse cx="10" cy="14.5" rx="1.6" ry="0.65" fill="#FFD700" opacity="0.85" />
-                    <ellipse cx="22" cy="14.5" rx="1.6" ry="0.65" fill="#FFD700" opacity="0.85" />
-                    <ellipse cx="26" cy="15.8" rx="1.8" ry="0.7" fill="#FFD700" opacity="0.85" />
-                    <path d="M14.5,22 L9.5,25.5 L10,26.5 L14.5,24 Z" fill="#FFD700" opacity="0.9" />
-                    <path d="M17.5,22 L22.5,25.5 L22,26.5 L17.5,24 Z" fill="#FFD700" opacity="0.9" />
-                  </svg>
+                  /* milsymbol friendly HQ division marker in transit – with rotation */
+                  (() => {
+                    const transitImg = renderNATOMarkerImage('friendly', 'headquarters', 'division', 36);
+                    return transitImg ? (
+                      <img
+                        src={transitImg}
+                        alt="25th Infantry Division — in transit"
+                        style={{
+                          width: 36,
+                          height: 36,
+                          filter: 'drop-shadow(0 0 6px #FFD700aa)',
+                        }}
+                      />
+                    ) : (
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#1a3a6e', border: '2px solid #3366cc' }} />
+                    );
+                  })()
                 ) : (
-                  /* NATO HQ marker at rest / deployed */
-                  <div className="relative">
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: buildNATOMarkerSVG('friendly', 'headquarters', 40),
-                      }}
-                    />
-                    {divisionDisplayLocation.state !== 'home_station' && (
-                      <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-tropic-gold rounded-full animate-pulse border border-black/80" />
-                    )}
-                  </div>
+                  /* milsymbol NATO HQ marker at rest / deployed */
+                  (() => {
+                    const restImg = renderNATOMarkerImage('friendly', 'headquarters', 'division', 44);
+                    return (
+                      <div className="relative">
+                        {restImg ? (
+                          <img src={restImg} alt="25th Infantry Division HQ" style={{ width: 44, height: 44 }} />
+                        ) : (
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#1a3a6e', border: '2px solid #3366cc' }} />
+                        )}
+                        {divisionDisplayLocation.state !== 'home_station' && (
+                          <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-tropic-gold rounded-full animate-pulse border border-black/80" />
+                        )}
+                      </div>
+                    );
+                  })()
                 )}
                 <span
                   className="text-[8px] font-black whitespace-nowrap px-1.5 py-0.5 rounded tracking-widest uppercase mt-0.5"
@@ -1654,11 +1677,14 @@ export default function GlobalThreatMap({
               }}
             >
               <div className="flex flex-col items-center" style={{ cursor: 'pointer' }}>
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: buildNATOMarkerSVG('friendly', 'objective', 28),
-                  }}
-                />
+                {(() => {
+                  const objImg = renderNATOMarkerImage('friendly', 'objective', 'none', 28);
+                  return objImg ? (
+                    <img src={objImg} alt={lastRp.name || d.title} style={{ width: 28, height: 28 }} />
+                  ) : (
+                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#1a3a6e', border: '2px solid #3366cc' }} />
+                  );
+                })()}
                 <span
                   className="text-[8px] mt-0.5 whitespace-nowrap px-1 py-0.5 rounded max-w-[100px] truncate font-mono"
                   style={{ color, background: 'rgba(0,0,0,0.8)', border: `1px solid ${color}33` }}

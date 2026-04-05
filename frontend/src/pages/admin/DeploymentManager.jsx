@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, MapPin, Navigation, RefreshCw, ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Navigation, RefreshCw, ChevronUp, ChevronDown, Search, Users, Shield } from 'lucide-react';
 import Map, { Marker as MapMarker, Source as MapSource, Layer as MapLayer } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { API } from '@/utils/api';
@@ -94,6 +94,7 @@ const DeploymentManager = () => {
   const [deploymentDialogOpen, setDeploymentDialogOpen] = useState(false);
   const [editingDeployment, setEditingDeployment] = useState(null);
   const [deploymentForm, setDeploymentForm] = useState({ ...EMPTY_DEPLOYMENT });
+  const [deploymentScope, setDeploymentScope] = useState('division'); // 'division' | 'individual'
   const [originTypeFilter, setOriginTypeFilter] = useState('all');
 
   // Location entities for entity picker
@@ -287,6 +288,7 @@ const DeploymentManager = () => {
     const initialRoutePoints = defaultOriginType === '25th'
       ? [{ name: SCHOFIELD_BARRACKS.name, latitude: SCHOFIELD_BARRACKS.latitude, longitude: SCHOFIELD_BARRACKS.longitude, description: '', stop_duration_hours: 0 }]
       : [];
+    setDeploymentScope('division');
     setDeploymentForm({ ...EMPTY_DEPLOYMENT, origin_type: defaultOriginType, route_points: initialRoutePoints });
     setDeploymentDialogOpen(true);
   }, [user]);
@@ -299,6 +301,8 @@ const DeploymentManager = () => {
 
   const openEditDeployment = useCallback((dep) => {
     setEditingDeployment(dep);
+    // Restore deployment scope from metadata (default to 'division' if not set)
+    setDeploymentScope(dep.metadata?.deployment_scope || (dep.unit_name ? 'individual' : 'division'));
     let existingPoints = Array.isArray(dep.route_points)
       ? dep.route_points.map((rp) => ({
           name: rp.name || '',
@@ -347,16 +351,20 @@ const DeploymentManager = () => {
         return;
       }
 
+      const effectiveUnitName = (deploymentForm.origin_type === '25th' && deploymentScope === 'division')
+        ? '25th Infantry Division'
+        : (deploymentForm.unit_name || '');
+
       const payload = {
         title: trimmedTitle,
-        unit_name: deploymentForm.unit_name || '',
+        unit_name: effectiveUnitName,
         origin_type: deploymentForm.origin_type || '25th',
         status: deploymentForm.status || 'planning',
         is_active: deploymentForm.is_active ?? false,
         total_duration_hours: safeFloat(deploymentForm.total_duration_hours) ?? 24,
         return_duration_hours: safeFloat(deploymentForm.return_duration_hours) ?? 0,
         notes: deploymentForm.notes || '',
-        metadata: deploymentForm.metadata || {},
+        metadata: { ...(deploymentForm.metadata || {}), deployment_scope: deploymentScope },
         route_points: (deploymentForm.route_points || [])
           .map((rp, idx) => ({
             order: idx,
@@ -948,15 +956,60 @@ const DeploymentManager = () => {
                 />
               </div>
 
-              <div>
-                <Label>Unit Name</Label>
-                <Input
-                  value={deploymentForm.unit_name}
-                  onChange={(e) => setDeploymentForm({ ...deploymentForm, unit_name: e.target.value })}
-                  className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
-                  placeholder="e.g., 2nd Brigade Combat Team"
-                />
-              </div>
+              {/* Deployment Scope Toggle — Division (default) vs Individual Unit */}
+              {deploymentForm.origin_type === '25th' && (
+                <div className="border border-[rgba(201,162,39,0.12)] rounded-lg p-3">
+                  <Label className="text-xs text-tropic-gold tracking-wider font-bold mb-2 block">DEPLOYMENT SCOPE</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={deploymentScope === 'division' ? 'default' : 'outline'}
+                      size="sm"
+                      className={deploymentScope === 'division'
+                        ? 'bg-tropic-gold hover:bg-tropic-gold-dark text-black flex-1'
+                        : 'border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white flex-1'}
+                      onClick={() => {
+                        setDeploymentScope('division');
+                        setDeploymentForm((prev) => ({ ...prev, unit_name: '' }));
+                      }}
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Entire Division
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={deploymentScope === 'individual' ? 'default' : 'outline'}
+                      size="sm"
+                      className={deploymentScope === 'individual'
+                        ? 'bg-tropic-gold hover:bg-tropic-gold-dark text-black flex-1'
+                        : 'border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white flex-1'}
+                      onClick={() => setDeploymentScope('individual')}
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Individual Units
+                    </Button>
+                  </div>
+                  {deploymentScope === 'division' && (
+                    <p className="text-[10px] text-[#4a6070] mt-2">
+                      Deploying the entire 25th Infantry Division. Unit name will be auto-set.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Unit Name — shown when scope is 'individual' OR for non-25th deployments */}
+              {(deploymentForm.origin_type !== '25th' || deploymentScope === 'individual') && (
+                <div>
+                  <Label>Unit Name {deploymentScope === 'individual' ? '*' : ''}</Label>
+                  <Input
+                    value={deploymentForm.unit_name}
+                    onChange={(e) => setDeploymentForm({ ...deploymentForm, unit_name: e.target.value })}
+                    className="bg-[#050a0e] border-[rgba(201,162,39,0.15)]"
+                    placeholder="e.g., 2nd Brigade Combat Team"
+                    required={deploymentScope === 'individual' && deploymentForm.origin_type === '25th'}
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
