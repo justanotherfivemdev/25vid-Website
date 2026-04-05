@@ -318,6 +318,13 @@ export default defineConfig(({ mode }) => {
             "node_modules/milsymbol/index.mjs",
           ),
         },
+        {
+          find: "milsymbol-symbol",
+          replacement: path.resolve(
+            workspaceRoot,
+            "node_modules/milsymbol/src/ms/symbol.js",
+          ),
+        },
       ],
     },
     define: {
