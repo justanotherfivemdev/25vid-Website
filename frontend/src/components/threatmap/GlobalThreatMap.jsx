@@ -453,6 +453,11 @@ const UNIT_DEPLOYMENT_COLORS = [
 // Phases considered "visible" on the map (everything except planning/completed)
 const VISIBLE_DEPLOYMENT_PHASES = ['deploying', 'deployed', 'endex', 'rtb'];
 
+// Phases that show navigation-specific UI (route lines, stops, arrows, countdowns,
+// intermediate markers, destination markers).  "deployed" and "endex" are at-rest
+// phases — units have arrived and should only show the unit marker at destination.
+const NAVIGATION_PHASES = ['deploying', 'rtb'];
+
 // Maximum zoom level when tracking active deployment
 // Cap zoom during tracking so the user can see the broader region, not zoomed-in
 const TRACKING_ZOOM_CAP = 5;
@@ -909,7 +914,7 @@ export default function GlobalThreatMap({
   const deploymentPathsGeoJson = useMemo(() => ({
     type: 'FeatureCollection',
     features: deployments
-      .filter((d) => d.route_points && d.route_points.length >= 2 && VISIBLE_DEPLOYMENT_PHASES.includes(d.status))
+      .filter((d) => d.route_points && d.route_points.length >= 2 && NAVIGATION_PHASES.includes(d.status))
       .map((d) => {
         const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
         const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
@@ -1335,9 +1340,9 @@ export default function GlobalThreatMap({
           </Source>
         )}
 
-        {/* Countdown timer UI boxes at midpoint of each active deployment path */}
+        {/* Countdown timer UI boxes at midpoint of each active deployment path (navigation phases only) */}
         {deployments
-          .filter((d) => VISIBLE_DEPLOYMENT_PHASES.includes(d.status) && d.route_points && d.route_points.length >= 2 && d.started_at)
+          .filter((d) => NAVIGATION_PHASES.includes(d.status) && d.route_points && d.route_points.length >= 2 && d.started_at)
           .map((d) => {
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
@@ -1674,9 +1679,9 @@ export default function GlobalThreatMap({
           );
         })()}
 
-        {/* Deployment destination markers */}
+        {/* Deployment destination markers (navigation phases only — deployed units show only the unit marker) */}
         {deployments
-          .filter((d) => d.route_points && d.route_points.length > 0 && VISIBLE_DEPLOYMENT_PHASES.includes(d.status))
+          .filter((d) => d.route_points && d.route_points.length > 0 && NAVIGATION_PHASES.includes(d.status))
           .map((d) => {
             const lastRp = [...d.route_points].sort((a, b) => a.order - b.order).pop();
             if (!lastRp) return null;
@@ -1719,9 +1724,9 @@ export default function GlobalThreatMap({
             );
           })}
 
-        {/* Intermediate route point stop markers */}
+        {/* Intermediate route point stop markers (navigation phases only) */}
         {deployments
-          .filter((d) => VISIBLE_DEPLOYMENT_PHASES.includes(d.status) && Array.isArray(d.route_points) && d.route_points.length > 2)
+          .filter((d) => NAVIGATION_PHASES.includes(d.status) && Array.isArray(d.route_points) && d.route_points.length > 2)
           .flatMap((d) => {
             const unitKey = d.origin_unit_id || (d.origin_type === 'counterpart' ? d.id : null);
             const unitIdx = unitKey ? (partnerUnitIndexMap[unitKey] ?? 0) : -1;
@@ -1877,8 +1882,8 @@ export default function GlobalThreatMap({
                     {deploymentPopup.data.title}
                   </h3>
 
-                  {/* Origin → Destination */}
-                  {(() => {
+                  {/* Origin → Destination (navigation phases only) */}
+                  {NAVIGATION_PHASES.includes(deploymentPopup.data.status) && (() => {
                     const rps = Array.isArray(deploymentPopup.data.route_points)
                       ? [...deploymentPopup.data.route_points].sort((a, b) => a.order - b.order)
                       : [];
@@ -1896,7 +1901,25 @@ export default function GlobalThreatMap({
                     return null;
                   })()}
 
-                  {/* Countdown */}
+                  {/* Deployed location (deployed/endex only) */}
+                  {(deploymentPopup.data.status === 'deployed' || deploymentPopup.data.status === 'endex') && (() => {
+                    const rps = Array.isArray(deploymentPopup.data.route_points)
+                      ? [...deploymentPopup.data.route_points].sort((a, b) => a.order - b.order)
+                      : [];
+                    const lastName = rps.length > 1 ? rps[rps.length - 1].name : '';
+                    if (lastName) {
+                      return (
+                        <p className="text-[11px] text-[#8a9aa8] mt-1 flex items-center gap-1">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                          <span className="font-mono">{lastName}</span>
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Countdown (navigation phases only) */}
+                  {NAVIGATION_PHASES.includes(deploymentPopup.data.status) && (
                   <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                       <circle cx="5" cy="5" r="4" stroke="#FFD700" strokeWidth="1" opacity="0.7" />
@@ -1907,6 +1930,7 @@ export default function GlobalThreatMap({
                       {computeCountdownLabel(deploymentPopup.data) || 'Arrived'}
                     </span>
                   </div>
+                  )}
 
                   {/* Start time */}
                   {deploymentPopup.data.started_at && (
@@ -1917,8 +1941,8 @@ export default function GlobalThreatMap({
                     </p>
                   )}
 
-                  {/* Route points */}
-                  {Array.isArray(deploymentPopup.data.route_points) && deploymentPopup.data.route_points.length > 0 && (
+                  {/* Route points (navigation phases only) */}
+                  {NAVIGATION_PHASES.includes(deploymentPopup.data.status) && Array.isArray(deploymentPopup.data.route_points) && deploymentPopup.data.route_points.length > 0 && (
                     <div className="mt-2 border-t pt-2" style={{ borderColor: 'rgba(255,215,0,0.2)' }}>
                       <p className="text-[9px] font-black tracking-[0.15em] text-tropic-gold uppercase mb-1">
                         Route
