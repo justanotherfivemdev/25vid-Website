@@ -205,7 +205,7 @@ if [[ -n "$RUNTIME_HOST" ]]; then
     ok "SERVER_RUNTIME_HOST is set to: ${RUNTIME_HOST}"
 else
     # Check if host.docker.internal resolves
-    if getent hosts host.docker.internal &>/dev/null 2>&1; then
+    if getent hosts host.docker.internal &>/dev/null; then
         ok "host.docker.internal resolves (will be used automatically)"
     else
         warn "host.docker.internal does not resolve"

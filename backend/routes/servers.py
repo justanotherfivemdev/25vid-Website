@@ -3344,8 +3344,8 @@ async def read_server_file(
         content = target.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="File contains invalid UTF-8 and cannot be displayed as text")
-    except PermissionError:
-        raise HTTPException(status_code=403, detail="Permission denied reading file")
+    except (PermissionError, OSError) as exc:
+        raise HTTPException(status_code=403, detail=f"Cannot read file: {exc}")
 
     return {
         "root": root,
