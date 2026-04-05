@@ -9,6 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { API } from '@/utils/api';
 import {
+  chooseFileManagerRoot,
+  formatFileManagerPath,
+  getDiscardMessage,
+  shouldConfirmDiscard,
+} from './fileManagerUtils';
+import {
   AlertTriangle,
   ArrowLeft,
   ChevronRight,
@@ -102,6 +108,17 @@ function FileManagerModule() {
     fetchRoots();
   }, [fetchRoots]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (!editDirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [editDirty]);
+
   // Browse a directory
   const browse = useCallback(async (root, path) => {
     setBrowsing(true);
@@ -121,15 +138,30 @@ function FileManagerModule() {
     }
   }, [serverId]);
 
+  const resetEditor = useCallback(() => {
+    setEditFile(null);
+    setEditContent('');
+    setEditDirty(false);
+    setSaveError(null);
+    setReadError(null);
+  }, []);
+
+  const confirmDiscardChanges = useCallback((action, nextFile = null) => {
+    if (!shouldConfirmDiscard(editDirty, editFile, nextFile)) return true;
+    return window.confirm(getDiscardMessage(editFile?.name || 'this file', action));
+  }, [editDirty, editFile]);
+
+  const browseWithGuard = useCallback(async (root, path, action) => {
+    if (!confirmDiscardChanges(action)) return;
+    resetEditor();
+    await browse(root, path);
+  }, [browse, confirmDiscardChanges, resetEditor]);
+
   // Initial browse when roots load
   useEffect(() => {
-    if (roots.length > 0) {
-      const initial = activeTab === 'profile'
-        ? roots.find((r) => r.key === 'profile' && r.exists)
-        : roots.find((r) => r.exists);
-      if (initial) {
-        browse(initial.key, '');
-      }
+    const initialRoot = chooseFileManagerRoot(roots, activeTab, activeRoot);
+    if (initialRoot) {
+      browse(initialRoot.key, '');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roots]);
@@ -137,21 +169,25 @@ function FileManagerModule() {
   // Navigate into a directory
   const navigateInto = useCallback((entry) => {
     if (entry.is_dir) {
-      browse(activeRoot, entry.path);
+      browseWithGuard(activeRoot, entry.path, `open ${entry.name}`);
     }
-  }, [activeRoot, browse]);
+  }, [activeRoot, browseWithGuard]);
 
   // Navigate up
   const navigateUp = useCallback(() => {
     if (!currentPath) return;
     const parts = currentPath.split('/').filter(Boolean);
     parts.pop();
-    browse(activeRoot, parts.join('/'));
-  }, [activeRoot, currentPath, browse]);
+    browseWithGuard(activeRoot, parts.join('/'), 'leave the current file');
+  }, [activeRoot, currentPath, browseWithGuard]);
 
   // Open a file for editing
   const openFile = useCallback(async (entry) => {
     if (entry.is_dir) return;
+    const nextFile = { root: activeRoot, path: entry.path };
+    if (editFile?.root === nextFile.root && editFile?.path === nextFile.path) return;
+    if (!confirmDiscardChanges(`open ${entry.name}`, nextFile)) return;
+    resetEditor();
     setReading(true);
     setReadError(null);
     try {
@@ -172,7 +208,7 @@ function FileManagerModule() {
     } finally {
       setReading(false);
     }
-  }, [activeRoot, serverId]);
+  }, [activeRoot, confirmDiscardChanges, editFile, resetEditor, serverId]);
 
   // Save file
   const saveFile = useCallback(async () => {
@@ -197,12 +233,9 @@ function FileManagerModule() {
 
   // Close editor
   const closeEditor = useCallback(() => {
-    setEditFile(null);
-    setEditContent('');
-    setEditDirty(false);
-    setSaveError(null);
-    setReadError(null);
-  }, []);
+    if (!confirmDiscardChanges('close the editor')) return;
+    resetEditor();
+  }, [confirmDiscardChanges, resetEditor]);
 
   // Breadcrumb segments
   const breadcrumbs = useMemo(() => {
@@ -225,20 +258,18 @@ function FileManagerModule() {
 
   // Switch to profile tab
   const handleTabChange = useCallback((tab) => {
+    if (tab === activeTab) return;
+    const nextRoot = chooseFileManagerRoot(roots, tab, activeRoot);
+    const actionLabel = tab === 'profile'
+      ? 'switch to the deployed profile view'
+      : 'switch to the all files view';
+    if (!confirmDiscardChanges(actionLabel)) return;
     setActiveTab(tab);
-    closeEditor();
-    if (tab === 'profile') {
-      const profileRoot = roots.find((r) => r.key === 'profile' && r.exists);
-      if (profileRoot) {
-        browse('profile', '');
-      }
-    } else if (tab === 'browser' && activeRoot === 'profile') {
-      const configRoot = roots.find((r) => r.key === 'config' && r.exists);
-      if (configRoot) {
-        browse('config', '');
-      }
+    resetEditor();
+    if (nextRoot) {
+      browse(nextRoot.key, '');
     }
-  }, [activeRoot, browse, closeEditor, roots]);
+  }, [activeRoot, activeTab, browse, confirmDiscardChanges, resetEditor, roots]);
 
   if (rootsLoading) {
     return (
@@ -275,7 +306,7 @@ function FileManagerModule() {
             {roots.map((root) => (
               <button
                 key={root.key}
-                onClick={() => { closeEditor(); browse(root.key, ''); }}
+                onClick={() => browseWithGuard(root.key, '', `switch to the ${root.label} root`)}
                 disabled={!root.exists}
                 className={`flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs transition-colors ${
                   activeRoot === root.key && activeTab === 'browser'
@@ -322,7 +353,7 @@ function FileManagerModule() {
             <React.Fragment key={crumb.path}>
               {i > 0 && <ChevronRight className="h-3 w-3 text-[#4a6070]" />}
               <button
-                onClick={() => browse(activeRoot, crumb.path)}
+                onClick={() => browseWithGuard(activeRoot, crumb.path, `browse ${crumb.label}`)}
                 className={`rounded px-1.5 py-0.5 transition-colors ${
                   i === breadcrumbs.length - 1
                     ? 'text-tropic-gold'
@@ -480,7 +511,7 @@ function FileManagerModule() {
                     </div>
                   </div>
                   <div className="mt-1 font-mono text-[10px] text-[#4a6070]">
-                    {editFile.root}:/{editFile.path}
+                    {formatFileManagerPath(editFile.root, editFile.path)}
                   </div>
                 </CardHeader>
                 <CardContent>

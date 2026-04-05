@@ -2,6 +2,10 @@ import os
 import sys
 import asyncio
 from datetime import timedelta
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -10,7 +14,8 @@ os.environ.setdefault("DB_NAME", "test_db")
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
-from routes.servers import _build_log_entries, _derive_troubleshooting, _normalize_server_contract, _parse_log_line, _parse_log_since, _reject_ws, _stable_hash, _validate_player_id
+import routes.servers as server_routes
+from routes.servers import _build_log_entries, _derive_troubleshooting, _normalize_server_contract, _parse_log_line, _parse_log_since, _reject_ws, _resolve_server_root, _safe_resolve, _stable_hash, _validate_player_id
 from services.server_config_generator import (
     _normalize_navmesh_streaming,
     _sanitize_operating,
@@ -172,7 +177,6 @@ def test_normalize_server_config_is_idempotent():
 # ── mission header validation test ───────────────────────────────────
 
 from routes.servers import _validate_mission_header
-import pytest
 
 
 def test_validate_mission_header_rejects_non_object():
@@ -685,3 +689,148 @@ def test_build_container_environment_rcon_port_uses_default_when_missing():
     }
     env = build_container_environment(server)
     assert env["RCON_PORT"] == "19999"
+
+
+class _FakeManagedServersCollection:
+    def __init__(self, server):
+        self.server = server
+
+    async def find_one(self, query, projection=None):
+        if not self.server or query.get("id") != self.server.get("id"):
+            return None
+        return self.server
+
+
+def _file_manager_server(tmp_path, server_id="srv-files", stale_config=False):
+    config_root = tmp_path / "configs"
+    profile_root = tmp_path / "profiles"
+    workshop_root = tmp_path / "workshop"
+    config_dir = config_root / server_id
+    profile_dir = profile_root / server_id
+    workshop_dir = workshop_root / server_id
+
+    config_dir.mkdir(parents=True)
+    profile_dir.mkdir(parents=True)
+    workshop_dir.mkdir(parents=True)
+
+    config_file = config_dir / "server.json"
+    config_file.write_text('{"name":"Test"}', encoding="utf-8")
+    (profile_dir / "mod-config.json").write_text('{"enabled":true}', encoding="utf-8")
+    (workshop_dir / "readme.txt").write_text("hello", encoding="utf-8")
+
+    if stale_config:
+        config_path = (tmp_path / "stale" / "Configs" / "server.json").as_posix()
+    else:
+        config_path = config_file.as_posix()
+
+    return {
+        "id": server_id,
+        "config_path": config_path,
+        "profile_path": "",
+        "workshop_path": "",
+        "volumes": {
+            config_root.as_posix(): "/reforger/Configs",
+            profile_root.as_posix(): "/home/profile",
+            workshop_root.as_posix(): "/reforger/workshop",
+        },
+    }, {
+        "config_dir": config_dir,
+        "profile_dir": profile_dir,
+        "workshop_dir": workshop_dir,
+    }
+
+
+def test_safe_resolve_allows_root_only_when_requested(tmp_path):
+    base = tmp_path / "root"
+    base.mkdir()
+
+    assert _safe_resolve(base.as_posix(), "", allow_root=True) == base.resolve()
+
+    with pytest.raises(server_routes.HTTPException, match="Path is required"):
+        _safe_resolve(base.as_posix(), "")
+
+    with pytest.raises(server_routes.HTTPException, match="Path traversal is not allowed"):
+        _safe_resolve(base.as_posix(), "../outside", allow_root=True)
+
+
+def test_resolve_server_root_falls_back_to_server_scoped_paths(tmp_path):
+    server, paths = _file_manager_server(tmp_path)
+    server["config_path"] = ""
+
+    assert Path(_resolve_server_root(server, "config")) == paths["config_dir"]
+    assert Path(_resolve_server_root(server, "profile")) == paths["profile_dir"]
+    assert Path(_resolve_server_root(server, "workshop")) == paths["workshop_dir"]
+
+
+def test_resolve_server_root_prefers_existing_derived_path_over_stale_record(tmp_path):
+    server, paths = _file_manager_server(tmp_path, stale_config=True)
+
+    assert Path(_resolve_server_root(server, "config")) == paths["config_dir"]
+
+
+def test_list_file_roots_uses_fallback_paths_without_leaking_host_paths(tmp_path, monkeypatch):
+    server, _ = _file_manager_server(tmp_path)
+    server["config_path"] = ""
+
+    monkeypatch.setattr(
+        server_routes,
+        "db",
+        SimpleNamespace(managed_servers=_FakeManagedServersCollection(server)),
+    )
+
+    roots = asyncio.run(server_routes.list_file_roots(server["id"], current_user={"id": "tester"}))
+
+    assert {root["key"]: root["exists"] for root in roots} == {
+        "config": True,
+        "profile": True,
+        "workshop": True,
+    }
+    assert all("path" not in root for root in roots)
+
+
+def test_browse_server_files_accepts_empty_root_path_and_uses_fallbacks(tmp_path, monkeypatch):
+    server, paths = _file_manager_server(tmp_path, stale_config=True)
+
+    monkeypatch.setattr(
+        server_routes,
+        "db",
+        SimpleNamespace(managed_servers=_FakeManagedServersCollection(server)),
+    )
+
+    result = asyncio.run(
+        server_routes.browse_server_files(
+            server["id"],
+            root="config",
+            path="",
+            current_user={"id": "tester"},
+        )
+    )
+
+    assert result["root"] == "config"
+    assert result["path"] == ""
+    assert "base" not in result
+    assert any(entry["name"] == "server.json" for entry in result["entries"])
+    assert paths["config_dir"] == Path(_resolve_server_root(server, "config"))
+
+
+def test_read_server_file_uses_fallback_root_when_stored_paths_are_stale(tmp_path, monkeypatch):
+    server, _ = _file_manager_server(tmp_path, stale_config=True)
+
+    monkeypatch.setattr(
+        server_routes,
+        "db",
+        SimpleNamespace(managed_servers=_FakeManagedServersCollection(server)),
+    )
+
+    result = asyncio.run(
+        server_routes.read_server_file(
+            server["id"],
+            root="config",
+            path="server.json",
+            current_user={"id": "tester"},
+        )
+    )
+
+    assert result["name"] == "server.json"
+    assert result["root"] == "config"
+    assert '"name":"Test"' in result["content"]

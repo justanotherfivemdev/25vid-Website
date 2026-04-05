@@ -235,7 +235,10 @@ def _derive_troubleshooting(server: dict, runtime: Optional[dict] = None) -> dic
     profile_destinations = ("/home/profile", "/app/profiles", "/profile", "/app/profile")
     workshop_destinations = ("/reforger/workshop", "/app/workshop")
 
-    config_directory = _normalize_host_path(Path(server["config_path"]).parent.as_posix()) if server.get("config_path") else ""
+    config_path = _normalize_host_path(server.get("config_path"))
+    config_directory = ""
+    if config_path and Path(config_path).parent.is_dir():
+        config_directory = _normalize_host_path(Path(config_path).parent.as_posix())
     if not config_directory:
         config_root = _find_mount_source(mounts, config_destinations) or next(
             (host for host, container in volumes.items() if container in config_destinations),
@@ -244,6 +247,8 @@ def _derive_troubleshooting(server: dict, runtime: Optional[dict] = None) -> dic
         config_directory = _server_scoped_path(config_root, server_id)
 
     profile_directory = _normalize_host_path(server.get("profile_path"))
+    if profile_directory and not Path(profile_directory).is_dir():
+        profile_directory = ""
     if not profile_directory:
         profile_root = _find_mount_source(mounts, profile_destinations) or next(
             (host for host, container in volumes.items() if container in profile_destinations),
@@ -252,6 +257,8 @@ def _derive_troubleshooting(server: dict, runtime: Optional[dict] = None) -> dic
         profile_directory = _server_scoped_path(profile_root, server_id)
 
     workshop_directory = _normalize_host_path(server.get("workshop_path"))
+    if workshop_directory and not Path(workshop_directory).is_dir():
+        workshop_directory = ""
     if not workshop_directory:
         workshop_root = _find_mount_source(mounts, workshop_destinations) or next(
             (host for host, container in volumes.items() if container in workshop_destinations),
@@ -259,7 +266,7 @@ def _derive_troubleshooting(server: dict, runtime: Optional[dict] = None) -> dic
         )
         workshop_directory = _server_scoped_path(workshop_root, server_id)
 
-    config_file = _normalize_host_path(server.get("config_path")) or (
+    config_file = config_path if config_path and Path(config_path).parent.is_dir() else (
         f"{config_directory}/server.json" if config_directory else ""
     )
     working_directory = _normalize_host_path(runtime.get("working_dir")) or profile_directory or config_directory
@@ -3201,25 +3208,31 @@ def _resolve_server_root(server: dict, root_key: str) -> str:
     Raises HTTPException(400) when the root_key is unknown or the path is not
     configured.
     """
+    details = _derive_troubleshooting(server)
+
     if root_key == "config":
-        raw = server.get("config_path", "")
-        if raw:
-            return str(Path(raw).parent)
+        stored = _normalize_host_path(Path(server["config_path"]).parent.as_posix()) if server.get("config_path") else ""
+        derived = _normalize_host_path(details.get("config_directory"))
     elif root_key == "profile":
-        raw = server.get("profile_path", "")
-        if raw:
-            return raw
+        stored = _normalize_host_path(server.get("profile_path"))
+        derived = _normalize_host_path(details.get("profile_directory"))
     elif root_key == "workshop":
-        raw = server.get("workshop_path", "")
-        if raw:
-            return raw
+        stored = _normalize_host_path(server.get("workshop_path"))
+        derived = _normalize_host_path(details.get("workshop_directory"))
     else:
         raise HTTPException(status_code=400, detail=f"Unknown root: {root_key}")
+
+    for candidate in (stored, derived):
+        if candidate and Path(candidate).is_dir():
+            return candidate
+    for candidate in (stored, derived):
+        if candidate:
+            return candidate
 
     raise HTTPException(status_code=400, detail=f"Server has no {root_key} path configured")
 
 
-def _safe_resolve(base: str, relative: str) -> Path:
+def _safe_resolve(base: str, relative: str, *, allow_root: bool = False) -> Path:
     """Resolve *relative* under *base*, preventing path-traversal attacks.
 
     Returns the resolved absolute path. Raises HTTPException(400) if the
@@ -3231,6 +3244,8 @@ def _safe_resolve(base: str, relative: str) -> Path:
     # Normalize whitespace and separators early
     rel_str = str(relative).strip()
     if not rel_str:
+        if allow_root:
+            return Path(base).resolve()
         raise HTTPException(status_code=400, detail="Path is required")
 
     # Normalize backslashes to forward slashes for consistent checks
@@ -3258,6 +3273,11 @@ def _safe_resolve(base: str, relative: str) -> Path:
     return target
 
 
+def _format_file_manager_target(root_key: str, relative: str = "") -> str:
+    rel = str(relative or "").replace("\\", "/").strip().lstrip("/")
+    return f"{root_key}:/{rel}" if rel else f"{root_key}:/"
+
+
 class FileWriteBody(BaseModel):
     content: str
 
@@ -3275,9 +3295,8 @@ async def list_file_roots(server_id: str, current_user: dict = Depends(_require_
             path = _resolve_server_root(server, key)
             exists = Path(path).is_dir()
         except HTTPException:
-            path = ""
             exists = False
-        roots.append({"key": key, "label": label, "path": path, "exists": exists})
+        roots.append({"key": key, "label": label, "exists": exists})
     return roots
 
 
@@ -3294,12 +3313,13 @@ async def browse_server_files(
         raise HTTPException(status_code=404, detail="Server not found")
 
     base = _resolve_server_root(server, root)
-    target = _safe_resolve(base, path)
+    target = _safe_resolve(base, path, allow_root=True)
+    target_label = _format_file_manager_target(root, path)
 
     if not target.exists():
-        raise HTTPException(status_code=404, detail="Path does not exist")
+        raise HTTPException(status_code=404, detail=f"Cannot find path {target_label}")
     if not target.is_dir():
-        raise HTTPException(status_code=400, detail="Path is not a directory")
+        raise HTTPException(status_code=400, detail=f"Path {target_label} is not a directory")
 
     entries = []
     try:
@@ -3326,7 +3346,6 @@ async def browse_server_files(
     return {
         "root": root,
         "path": path or "",
-        "base": base,
         "entries": entries,
     }
 
@@ -3345,13 +3364,14 @@ async def read_server_file(
 
     base = _resolve_server_root(server, root)
     target = _safe_resolve(base, path)
+    target_label = _format_file_manager_target(root, path)
 
     if not target.exists():
-        raise HTTPException(status_code=404, detail="File does not exist")
+        raise HTTPException(status_code=404, detail=f"Cannot find file {target_label}")
     if not target.is_file():
-        raise HTTPException(status_code=400, detail="Path is not a file")
+        raise HTTPException(status_code=400, detail=f"Path {target_label} is not a file")
     if target.suffix.lower() not in _FM_EDITABLE_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="File type is not viewable")
+        raise HTTPException(status_code=400, detail=f"File type for {target_label} is not viewable")
 
     try:
         size = target.stat().st_size
@@ -3392,11 +3412,12 @@ async def write_server_file(
 
     base = _resolve_server_root(server, root)
     target = _safe_resolve(base, path)
+    target_label = _format_file_manager_target(root, path)
 
     if target.is_dir():
-        raise HTTPException(status_code=400, detail="Cannot write to a directory")
+        raise HTTPException(status_code=400, detail=f"Cannot write to directory {target_label}")
     if target.suffix.lower() not in _FM_EDITABLE_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="File type is not editable")
+        raise HTTPException(status_code=400, detail=f"File type for {target_label} is not editable")
     if len(body.content.encode("utf-8")) > _FM_MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail=f"Content exceeds maximum size ({_FM_MAX_FILE_SIZE} bytes)")
 
