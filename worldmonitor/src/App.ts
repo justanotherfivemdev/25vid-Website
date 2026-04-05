@@ -523,7 +523,7 @@ export class App {
       <div class="header">
         <div class="header-left">
           <a href="/" class="back-link" title="Return to 25th ID">← MAIN SITE</a>
-          <span class="logo">25ID WORLD MONITOR</span><span class="version">v1.2</span>
+          <span class="logo">25th ID WORLD MONITOR</span><span class="version">v1.2</span>
           <div class="status-indicator">
             <span class="status-dot"></span>
             <span>LIVE</span>
