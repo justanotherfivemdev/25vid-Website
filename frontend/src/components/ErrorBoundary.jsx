@@ -22,6 +22,8 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
+    // Errors are logged to console. Add an error reporting service
+    // (e.g. Sentry) here for production visibility.
     console.error('[ErrorBoundary] Uncaught error:', error, info?.componentStack);
   }
 

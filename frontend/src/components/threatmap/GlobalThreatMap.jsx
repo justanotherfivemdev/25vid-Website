@@ -387,7 +387,8 @@ function renderNATOMarkerImage(affiliation, symbolType, echelon, size = 40) {
     const result = renderMilSymbolDataUrl(sidc, size);
     _milsymbolCache.set(key, result);
     return result;
-  } catch {
+  } catch (err) {
+    console.warn('[ThreatMap] NATO marker render failed:', { affiliation, symbolType, echelon }, err);
     return null;
   }
 }
