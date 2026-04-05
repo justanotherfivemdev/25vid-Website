@@ -31,6 +31,8 @@ function statusBadge(status) {
   return 'border-amber-600/40 text-amber-300 bg-amber-900/20';
 }
 
+const DEFAULT_PAGE_SIZE = 25;
+
 /* ── Main component ───────────────────────────────────────────────────────── */
 
 function CompareServersModule() {
@@ -62,7 +64,7 @@ function CompareServersModule() {
     setSearching(true);
     setSearchError(null);
     try {
-      const params = { per_page: 25 };
+      const params = { per_page: DEFAULT_PAGE_SIZE };
       if (cursorKey) {
         params.pageKey = cursorKey;
       } else {

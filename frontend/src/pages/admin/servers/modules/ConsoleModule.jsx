@@ -55,7 +55,10 @@ function sourceTone(source) {
 }
 
 const MAX_LOG_BUFFER = 2000;
+/** Distance in pixels from scroll bottom to consider user "at bottom". */
 const SCROLL_THRESHOLD = 60;
+const MAX_CURSOR_CACHE = 5000;
+const TRIMMED_CURSOR_CACHE = 3000;
 
 function ConsoleModule() {
   const { server: rawServer, serverId } = useOutletContext();
@@ -194,9 +197,9 @@ function ConsoleModule() {
           if (seenCursorsRef.current.has(entry.cursor)) return;
           seenCursorsRef.current.add(entry.cursor);
           // Trim cursor cache to prevent memory leak
-          if (seenCursorsRef.current.size > 5000) {
+          if (seenCursorsRef.current.size > MAX_CURSOR_CACHE) {
             const arr = [...seenCursorsRef.current];
-            seenCursorsRef.current = new Set(arr.slice(-3000));
+            seenCursorsRef.current = new Set(arr.slice(-TRIMMED_CURSOR_CACHE));
           }
           lastSeenTimestampRef.current = entry.ts;
           pendingEntriesRef.current.push(entry);

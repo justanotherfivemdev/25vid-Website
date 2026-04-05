@@ -2815,9 +2815,11 @@ async def get_integration_settings(
         doc = {"id": _INTEGRATION_SETTINGS_ID}
 
     # Mask API keys — only show last 4 chars
+    _MASK = "••••"
+    _VISIBLE_TAIL = 4
     raw_key = doc.get("battlemetrics_api_key") or ""
     doc["battlemetrics_api_key_masked"] = (
-        f"••••{raw_key[-4:]}" if len(raw_key) > 4 else ("••••" if raw_key else "")
+        f"{_MASK}{raw_key[-_VISIBLE_TAIL:]}" if len(raw_key) > _VISIBLE_TAIL else (_MASK if raw_key else "")
     )
     doc["battlemetrics_api_key_set"] = bool(raw_key)
     # Never return the raw key to the frontend
@@ -2875,7 +2877,7 @@ async def test_battlemetrics_connection(
         async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
             resp = await client.get(
                 f"{_BM_API_BASE}/servers",
-                params={"filter[game]": "reforger", "page[size]": "1"},
+                params={"filter[game]": _BM_GAME_FILTER, "page[size]": "1"},
                 headers=headers,
             )
             resp.raise_for_status()
@@ -2911,6 +2913,8 @@ _BM_API_BASE = "https://api.battlemetrics.com"
 # Fallback: env var is used when no key is stored in the database.
 _BM_API_KEY_ENV = os.environ.get("BATTLEMETRICS_API_KEY", "")
 _BM_TIMEOUT = 15
+_BM_GAME_FILTER = "reforger"
+_BM_DEFAULT_SORT = "-players"
 
 
 async def _get_bm_api_key() -> str:
@@ -2994,9 +2998,9 @@ async def battlemetrics_search(
     else:
         url = f"{_BM_API_BASE}/servers"
         params: dict = {
-            "filter[game]": "reforger",
+            "filter[game]": _BM_GAME_FILTER,
             "page[size]": str(per_page),
-            "sort": "-players",
+            "sort": _BM_DEFAULT_SORT,
         }
         if q:
             params["filter[search]"] = q
