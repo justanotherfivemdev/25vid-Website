@@ -2780,20 +2780,154 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
             pass
 
 
+# ── Integration Settings ─────────────────────────────────────────────────────
+
+_INTEGRATION_SETTINGS_ID = "integration_settings"
+
+# Allowlist of keys that can be stored via the integrations API.
+# This prevents callers from injecting arbitrary fields.
+_ALLOWED_INTEGRATION_KEYS = frozenset({
+    "battlemetrics_api_key",
+})
+
+
+class IntegrationSettingsUpdate(BaseModel):
+    """Payload for updating integration settings."""
+    battlemetrics_api_key: Optional[str] = None
+
+    @field_validator("battlemetrics_api_key", mode="before")
+    @classmethod
+    def strip_key(cls, v):
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
+
+@router.get("/servers/integrations")
+async def get_integration_settings(
+    current_user: dict = Depends(_require_servers),
+):
+    """Return integration settings, masking sensitive values."""
+    doc = await db.integration_settings.find_one(
+        {"id": _INTEGRATION_SETTINGS_ID}, {"_id": 0}
+    )
+    if not doc:
+        doc = {"id": _INTEGRATION_SETTINGS_ID}
+
+    # Mask API keys — only show last 4 chars
+    raw_key = doc.get("battlemetrics_api_key") or ""
+    doc["battlemetrics_api_key_masked"] = (
+        f"••••{raw_key[-4:]}" if len(raw_key) > 4 else ("••••" if raw_key else "")
+    )
+    doc["battlemetrics_api_key_set"] = bool(raw_key)
+    # Never return the raw key to the frontend
+    doc.pop("battlemetrics_api_key", None)
+
+    return doc
+
+
+@router.put("/servers/integrations")
+async def update_integration_settings(
+    body: IntegrationSettingsUpdate,
+    current_user: dict = Depends(_require_servers),
+):
+    """Update integration settings.  Empty strings clear a key."""
+    updates: dict = {}
+    for field_name in _ALLOWED_INTEGRATION_KEYS:
+        value = getattr(body, field_name, None)
+        if value is not None:
+            updates[field_name] = value
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    updates["updated_by"] = current_user.get("username") or current_user.get("id", "")
+
+    await db.integration_settings.update_one(
+        {"id": _INTEGRATION_SETTINGS_ID},
+        {"$set": updates},
+        upsert=True,
+    )
+
+    await log_audit(
+        current_user,
+        "update_integration_settings",
+        {"fields": list(updates.keys())},
+    )
+
+    return {"message": "Integration settings updated"}
+
+
+@router.post("/servers/integrations/test-battlemetrics")
+async def test_battlemetrics_connection(
+    current_user: dict = Depends(_require_servers),
+):
+    """Test the BattleMetrics API connection with the stored key."""
+    import httpx
+
+    api_key = await _get_bm_api_key()
+    headers = {"Accept": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    try:
+        async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
+            resp = await client.get(
+                f"{_BM_API_BASE}/servers",
+                params={"filter[game]": "reforger", "page[size]": "1"},
+                headers=headers,
+            )
+            resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        return {
+            "success": False,
+            "status": exc.response.status_code,
+            "message": f"BattleMetrics returned HTTP {exc.response.status_code}",
+            "api_key_configured": bool(api_key),
+        }
+    except httpx.RequestError as exc:
+        return {
+            "success": False,
+            "status": 0,
+            "message": f"Connection failed: {exc}",
+            "api_key_configured": bool(api_key),
+        }
+
+    data = resp.json()
+    server_count = len(data.get("data", []))
+
+    return {
+        "success": True,
+        "status": resp.status_code,
+        "message": f"Connected successfully — found {server_count} server(s) in test query",
+        "api_key_configured": bool(api_key),
+    }
+
+
 # ── BattleMetrics Proxy Endpoints ────────────────────────────────────────────
 
 _BM_API_BASE = "https://api.battlemetrics.com"
-# Optional: set BATTLEMETRICS_API_KEY env var for higher rate limits.
-# The public API works without authentication for basic server queries.
-_BM_API_KEY = os.environ.get("BATTLEMETRICS_API_KEY", "")
+# Fallback: env var is used when no key is stored in the database.
+_BM_API_KEY_ENV = os.environ.get("BATTLEMETRICS_API_KEY", "")
 _BM_TIMEOUT = 15
 
 
-def _bm_headers() -> dict:
+async def _get_bm_api_key() -> str:
+    """Return the BattleMetrics API key — DB value takes priority over env var."""
+    doc = await db.integration_settings.find_one(
+        {"id": _INTEGRATION_SETTINGS_ID}, {"_id": 0, "battlemetrics_api_key": 1}
+    )
+    key = (doc or {}).get("battlemetrics_api_key", "")
+    return key if key else _BM_API_KEY_ENV
+
+
+async def _bm_headers() -> dict:
     """Build request headers for BattleMetrics API calls."""
     headers = {"Accept": "application/json"}
-    if _BM_API_KEY:
-        headers["Authorization"] = f"Bearer {_BM_API_KEY}"
+    api_key = await _get_bm_api_key()
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     return headers
 
 
@@ -2874,7 +3008,7 @@ async def battlemetrics_search(
             resp = await client.get(
                 url,
                 params=params,
-                headers=_bm_headers(),
+                headers=await _bm_headers(),
             )
             resp.raise_for_status()
     except httpx.HTTPStatusError as exc:
@@ -2914,7 +3048,7 @@ async def battlemetrics_server_detail(
         async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
             server_resp = await client.get(
                 f"{_BM_API_BASE}/servers/{bm_server_id}",
-                headers=_bm_headers(),
+                headers=await _bm_headers(),
             )
             server_resp.raise_for_status()
     except httpx.HTTPStatusError as exc:

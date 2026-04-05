@@ -17,6 +17,7 @@ import {
   Circle,
   Globe,
   Info,
+  Key,
   Loader2,
   Monitor,
   Puzzle,
@@ -78,6 +79,7 @@ const NAV_SECTIONS = [
       { to: 'config/server', label: 'Server Settings', icon: Settings },
       { to: 'config/system', label: 'Infrastructure', icon: Settings },
       { to: 'config/admin-tools', label: 'Admin Tools', icon: ShieldAlert },
+      { to: 'config/integrations', label: 'Integrations', icon: Key },
     ],
   },
   {
