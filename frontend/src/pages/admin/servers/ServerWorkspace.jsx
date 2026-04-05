@@ -15,6 +15,7 @@ import {
   CalendarClock,
   CheckCircle,
   Circle,
+  Globe,
   Info,
   Loader2,
   Monitor,
@@ -88,6 +89,7 @@ const NAV_SECTIONS = [
       { to: 'tools/reports', label: 'Reports', icon: Wrench },
       { to: 'tools/todos', label: 'ToDo List', icon: Wrench },
       { to: 'tools/watchers', label: 'Watchers', icon: Wrench },
+      { to: 'tools/compare', label: 'Compare Servers', icon: Globe },
     ],
   },
   {

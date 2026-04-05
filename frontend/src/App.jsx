@@ -76,6 +76,7 @@ const TriggerExecModule = lazy(() => import('@/pages/admin/servers/modules/Trigg
 const ReportsModule = lazy(() => import('@/pages/admin/servers/modules/ReportsModule'));
 const TodoModule = lazy(() => import('@/pages/admin/servers/modules/TodoModule'));
 const WatchersModule = lazy(() => import('@/pages/admin/servers/modules/WatchersModule'));
+const CompareServersModule = lazy(() => import('@/pages/admin/servers/modules/CompareServersModule'));
 const SharedArea = lazy(() => import('@/pages/member/SharedArea'));
 const PartnerSharedArea = lazy(() => import('@/pages/partner/PartnerSharedArea'));
 const OperationsPlanner = lazy(() => import('@/pages/member/OperationsPlanner'));
@@ -1458,6 +1459,7 @@ function App() {
             <Route path="tools/reports" element={<ReportsModule />} />
             <Route path="tools/todos" element={<TodoModule />} />
             <Route path="tools/watchers" element={<WatchersModule />} />
+            <Route path="tools/compare" element={<CompareServersModule />} />
             <Route path="admin/notes" element={<NotesModule />} />
             <Route path="admin/notifications" element={<NotificationsModule />} />
             <Route path="admin/incidents" element={<IncidentsModule />} />

@@ -9,6 +9,7 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 import json
 import logging
 import asyncio
+import os
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -2777,3 +2778,145 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
             await websocket.close(code=1011, reason="Internal error")
         except Exception:
             pass
+
+
+# ── BattleMetrics Proxy Endpoints ────────────────────────────────────────────
+
+_BM_API_BASE = "https://api.battlemetrics.com"
+_BM_API_KEY = os.environ.get("BATTLEMETRICS_API_KEY", "")
+_BM_TIMEOUT = 15
+
+
+def _bm_headers() -> dict:
+    """Build request headers for BattleMetrics API calls."""
+    headers = {"Accept": "application/json"}
+    if _BM_API_KEY:
+        headers["Authorization"] = f"Bearer {_BM_API_KEY}"
+    return headers
+
+
+def _sanitize_bm_server(server_data: dict) -> dict:
+    """Extract safe fields from a BattleMetrics server JSON:API resource."""
+    attrs = server_data.get("attributes", {})
+    details = attrs.get("details", {})
+    return {
+        "bm_id": server_data.get("id", ""),
+        "name": attrs.get("name", ""),
+        "ip": attrs.get("ip", ""),
+        "port": attrs.get("port"),
+        "players": attrs.get("players", 0),
+        "max_players": attrs.get("maxPlayers", 0),
+        "status": attrs.get("status", "unknown"),
+        "country": attrs.get("country", ""),
+        "rank": attrs.get("rank"),
+        "map": details.get("map", ""),
+        "game_mode": details.get("gameMode", ""),
+        "mods": details.get("mods", []),
+        "mod_ids": details.get("modIds", []),
+        "version": details.get("version", ""),
+    }
+
+
+@router.get("/servers/battlemetrics/search")
+async def battlemetrics_search(
+    q: str = Query("", description="Search query for server name"),
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(25, ge=1, le=100, description="Results per page"),
+    country: Optional[str] = Query(None, description="Country code filter"),
+    current_user: dict = Depends(_require_servers),
+):
+    """Search BattleMetrics for Arma Reforger servers.
+
+    Proxied to avoid CORS issues and to keep any API key server-side.
+    """
+    import httpx
+
+    params: dict = {
+        "filter[game]": "arma-reforger",
+        "filter[search]": q,
+        "page[size]": str(per_page),
+        "page[offset]": str((page - 1) * per_page),
+        "sort": "-players",
+    }
+    if country:
+        params["filter[countries][]"] = country
+
+    try:
+        async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
+            resp = await client.get(
+                f"{_BM_API_BASE}/servers",
+                params=params,
+                headers=_bm_headers(),
+            )
+            resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=exc.response.status_code,
+            detail=f"BattleMetrics API error: {exc.response.status_code}",
+        )
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to reach BattleMetrics API: {exc}",
+        )
+
+    data = resp.json()
+    servers = [_sanitize_bm_server(s) for s in data.get("data", [])]
+    links = data.get("links", {})
+
+    return {
+        "servers": servers,
+        "page": page,
+        "per_page": per_page,
+        "has_next": "next" in links,
+    }
+
+
+@router.get("/servers/battlemetrics/{bm_server_id}")
+async def battlemetrics_server_detail(
+    bm_server_id: str,
+    current_user: dict = Depends(_require_servers),
+):
+    """Get detailed info about a BattleMetrics server including mods and player list."""
+    import httpx
+
+    if not re.fullmatch(r"\d{1,20}", bm_server_id):
+        raise HTTPException(status_code=400, detail="Invalid BattleMetrics server ID")
+
+    try:
+        async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
+            server_resp = await client.get(
+                f"{_BM_API_BASE}/servers/{bm_server_id}",
+                params={"include": "player"},
+                headers=_bm_headers(),
+            )
+            server_resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=exc.response.status_code,
+            detail=f"BattleMetrics API error: {exc.response.status_code}",
+        )
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to reach BattleMetrics API: {exc}",
+        )
+
+    payload = server_resp.json()
+    server_data = payload.get("data", {})
+    included = payload.get("included", [])
+
+    result = _sanitize_bm_server(server_data)
+
+    # Extract player list from included resources
+    players = []
+    for item in included:
+        if item.get("type") == "player":
+            p_attrs = item.get("attributes", {})
+            players.append({
+                "bm_id": item.get("id", ""),
+                "name": p_attrs.get("name", ""),
+            })
+    result["players"] = players
+
+    return result
