@@ -2244,6 +2244,12 @@ async def add_server_note(
 class RconCommand(BaseModel):
     command: str
 
+    @field_validator("command")
+    @classmethod
+    def _validate_command(cls, v: str) -> str:
+        from services.rcon_bridge import validate_rcon_command
+        return validate_rcon_command(v)
+
 
 @router.get("/servers/{server_id}/rcon/status")
 async def get_rcon_status(server_id: str, current_user: dict = Depends(_require_servers)):
@@ -2277,6 +2283,15 @@ async def execute_rcon(
     if server.get("status") != "running":
         raise HTTPException(status_code=400, detail="Server is not running")
 
+    # Rate-limit check
+    from middleware.rate_limiter import rcon_rate_limiter
+    allowed, remaining = rcon_rate_limiter.check(current_user["id"], server_id)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="RCON rate limit exceeded — please wait before sending more commands",
+        )
+
     await log_audit(
         user_id=current_user["id"],
         action_type="rcon_command",
@@ -2305,6 +2320,8 @@ async def execute_rcon(
     except Exception:
         logger.exception("RCON execution error for server %s", server_id)
         success, response = False, "RCON execution failed"
+    finally:
+        rcon_rate_limiter.record(current_user["id"], server_id)
 
     await record_server_log_event(
         server_id,
@@ -2682,6 +2699,8 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
     """
     from middleware.rbac import has_permission, Permission
     from services.audit_service import log_audit as ws_log_audit
+    from services.rcon_bridge import validate_rcon_command
+    from middleware.rate_limiter import rcon_rate_limiter
 
     user = await _authenticate_ws(websocket)
     if not user:
@@ -2720,6 +2739,25 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
             if not command:
                 continue
 
+            # Validate command input
+            try:
+                command = validate_rcon_command(command)
+            except ValueError as ve:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": str(ve),
+                })
+                continue
+
+            # Rate-limit check
+            allowed, remaining = rcon_rate_limiter.check(user["id"], server_id)
+            if not allowed:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Rate limit exceeded — please wait before sending more commands",
+                })
+                continue
+
             # Audit log the command
             await ws_log_audit(
                 user_id=user["id"],
@@ -2745,6 +2783,8 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
             except Exception:
                 logger.exception("WS RCON execution error for %s", server_id)
                 success, response = False, "RCON execution failed"
+            finally:
+                rcon_rate_limiter.record(user["id"], server_id)
 
             await record_server_log_event(
                 server_id,

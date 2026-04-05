@@ -130,6 +130,12 @@ if FRONTEND_URL and FRONTEND_URL not in cors_origins:
 if not cors_origins:
     cors_origins = ["http://localhost:3000"]
 
+# Security-headers middleware (CSP, HSTS, X-Frame-Options, etc.)
+# Registered *before* CORSMiddleware so security headers are applied
+# to CORS preflight (OPTIONS) responses as well.
+from middleware.security_headers import SecurityHeadersMiddleware
+app.add_middleware(SecurityHeadersMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

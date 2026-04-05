@@ -23,6 +23,7 @@ from services.server_config_generator import (
 from services.docker_agent import _normalize_host_cpu_percent
 from services.reforger_orchestrator import ProvisioningResult, StageResult, extract_config_errors
 import services.reforger_orchestrator as reforger_orchestrator
+from services.reforger_orchestrator import build_container_environment
 from services.sat_config_service import normalize_sat_config
 from services.server_metrics_collector import _PERIOD_DELTAS
 
@@ -627,3 +628,40 @@ def test_normalize_sat_config_dedupes_message_objects_by_payload():
         {"message": "Server restart soon", "hour": 22, "minute": 0},
         {"message": "Other message", "hour": 23, "minute": 30},
     ]
+
+
+def test_build_container_environment_includes_rcon_port():
+    """Container env should expose RCON_PORT matching the server's allocated port."""
+    server = {
+        "id": "srv-rcon-port",
+        "name": "RCON Port Test",
+        "ports": {"game": 2011, "query": 17787, "rcon": 20009},
+        "config": {
+            "rcon": {"password": "testpass", "permission": "admin"},
+            "game": {"scenarioId": "{ECC61978EDCC2B5A}Missions/23_campaign.conf"},
+        },
+        "mods": [],
+        "max_fps": 60,
+        "startup_parameters": [],
+    }
+    env = build_container_environment(server)
+    assert env["RCON_PORT"] == "20009"
+    assert env["RCON_PASSWORD"] == "testpass"
+    assert env["RCON_PERMISSION"] == "admin"
+
+
+def test_build_container_environment_rcon_port_uses_default_when_missing():
+    """When no RCON port is configured, RCON_PORT env should default to 19999."""
+    server = {
+        "id": "srv-rcon-default",
+        "name": "Default RCON",
+        "ports": {"game": 2001, "query": 17777},
+        "config": {
+            "game": {"scenarioId": "{ECC61978EDCC2B5A}Missions/23_campaign.conf"},
+        },
+        "mods": [],
+        "max_fps": 120,
+        "startup_parameters": [],
+    }
+    env = build_container_environment(server)
+    assert env["RCON_PORT"] == "19999"
