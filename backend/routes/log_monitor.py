@@ -14,6 +14,7 @@ Provides:
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -22,7 +23,6 @@ from pydantic import BaseModel, Field
 
 from config import LOG_COLLECTOR_API_KEY
 from database import db
-from middleware.auth import get_current_user
 from middleware.rbac import require_permission, Permission
 from services.log_monitor import ingest_log_line
 
@@ -30,6 +30,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _require_servers = require_permission(Permission.MANAGE_SERVERS)
+
+# Maximum length for user-supplied search/regex strings
+_MAX_SEARCH_LEN = 200
+
+
+def _safe_regex(raw: str) -> str:
+    """Escape and cap a user-supplied string for safe use in ``$regex``."""
+    return re.escape(raw)[:_MAX_SEARCH_LEN]
 
 # ---------------------------------------------------------------------------
 # Request / response models
@@ -109,7 +117,8 @@ async def list_errors(
     if category:
         query["category"] = category
     if search:
-        query["message"] = {"$regex": search, "$options": "i"}
+        safe = _safe_regex(search)
+        query["message"] = {"$regex": safe, "$options": "i"}
 
     # Date range
     ts_filter: dict = {}
@@ -171,9 +180,10 @@ async def list_error_types(
     if severity:
         query["severity"] = severity
     if search:
+        safe = _safe_regex(search)
         query["$or"] = [
-            {"label": {"$regex": search, "$options": "i"}},
-            {"normalised_message": {"$regex": search, "$options": "i"}},
+            {"label": {"$regex": safe, "$options": "i"}},
+            {"normalised_message": {"$regex": safe, "$options": "i"}},
         ]
 
     cursor = db.log_error_types.find(query, {"_id": 0}).sort("total_occurrences", -1)
@@ -200,9 +210,10 @@ async def list_mods(
     """Return all mods seen in log errors."""
     query: dict = {}
     if search:
+        safe = _safe_regex(search)
         query["$or"] = [
-            {"guid": {"$regex": search, "$options": "i"}},
-            {"name": {"$regex": search, "$options": "i"}},
+            {"guid": {"$regex": safe, "$options": "i"}},
+            {"name": {"$regex": safe, "$options": "i"}},
         ]
     cursor = db.log_mods.find(query, {"_id": 0}).sort("first_seen", -1)
     items = await cursor.to_list(500)

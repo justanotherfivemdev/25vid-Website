@@ -13,7 +13,7 @@ import logging
 import re
 import uuid
 from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from database import db
 
@@ -373,6 +373,30 @@ async def ingest_log_line(server_id: str, raw_line: str) -> Optional[str]:
 _rate_windows: Dict[str, list] = {}
 _RATE_WINDOW_SECONDS = 300  # 5-minute window
 _RATE_THRESHOLD = 20        # alert when >20 errors of same type in 5 min
+_RATE_WINDOWS_MAX_KEYS = 5000  # cap to prevent unbounded memory growth
+_rate_windows_last_eviction = datetime.now(timezone.utc)
+_RATE_EVICTION_INTERVAL = 60  # evict idle keys every 60 seconds
+
+
+def _evict_stale_rate_windows() -> None:
+    """Remove rate-window entries whose newest timestamp is older than the cutoff."""
+    global _rate_windows_last_eviction
+    now = datetime.now(timezone.utc)
+    if (now - _rate_windows_last_eviction).total_seconds() < _RATE_EVICTION_INTERVAL:
+        return
+    _rate_windows_last_eviction = now
+    cutoff = now - timedelta(seconds=_RATE_WINDOW_SECONDS)
+    stale_keys = [
+        k for k, timestamps in _rate_windows.items()
+        if not timestamps or timestamps[-1] <= cutoff
+    ]
+    for k in stale_keys:
+        del _rate_windows[k]
+    # Hard cap: if still too large, drop oldest entries
+    if len(_rate_windows) > _RATE_WINDOWS_MAX_KEYS:
+        excess = len(_rate_windows) - _RATE_WINDOWS_MAX_KEYS
+        for k in list(_rate_windows.keys())[:excess]:
+            del _rate_windows[k]
 
 
 async def _check_alert(
@@ -381,6 +405,7 @@ async def _check_alert(
     error_type_id: str,
 ) -> None:
     """Check if an alert should be fired (new error type or rate spike)."""
+    _evict_stale_rate_windows()
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(seconds=_RATE_WINDOW_SECONDS)
 
@@ -445,9 +470,14 @@ async def _check_alert(
 # Background log collector
 # ---------------------------------------------------------------------------
 
+# Per-container cursor: container_name → last-processed epoch timestamp
+_collector_cursors: Dict[str, int] = {}
+
+
 async def _collect_server_logs(server: dict) -> int:
     """Tail recent Docker container logs for a server and ingest new lines.
 
+    Uses a per-container ``since`` cursor to avoid re-processing lines.
     Returns the number of error occurrences created.
     """
     from services.docker_agent import DockerAgent
@@ -458,12 +488,19 @@ async def _collect_server_logs(server: dict) -> int:
     if not container_name:
         return 0
 
+    since = _collector_cursors.get(container_name)
+
     try:
-        # Get recent logs (last 60 seconds worth)
-        logs = await docker.get_container_logs(container_name, tail=200)
+        logs = await docker.get_container_logs(
+            container_name, tail=200, since=since
+        )
     except Exception as exc:
         logger.debug("Could not fetch logs for %s: %s", container_name, exc)
         return 0
+
+    # Advance cursor to current time *after* fetching so the next cycle
+    # only retrieves lines produced after this point.
+    _collector_cursors[container_name] = int(datetime.now(timezone.utc).timestamp())
 
     if not logs:
         return 0

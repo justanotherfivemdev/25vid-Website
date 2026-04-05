@@ -170,8 +170,11 @@ function LogMonitorPage() {
     fetchStats();
   }, [fetchServers, fetchOccurrences, fetchErrorTypes, fetchAlerts, fetchStats]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // Initial mount — fetch everything once
+  useEffect(() => { fetchServers(); fetchErrorTypes(); fetchAlerts(); }, [fetchServers, fetchErrorTypes, fetchAlerts]);
+  // Re-fetch occurrences when filters/pagination change
   useEffect(() => { fetchOccurrences(); }, [fetchOccurrences]);
+  // Re-fetch stats when server filter changes
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
   /* ── error type detail ──────────────────────────────────────────── */
@@ -207,11 +210,20 @@ function LogMonitorPage() {
 
   const summaryStats = useMemo(() => {
     const total = totalCount;
-    const criticalCount = errorTypes.filter(e => e.severity === 'critical').reduce((s, e) => s + (e.total_occurrences || 0), 0);
-    const highCount = errorTypes.filter(e => e.severity === 'high').reduce((s, e) => s + (e.total_occurrences || 0), 0);
+    const criticalCount = occurrences.reduce(
+      (sum, occ) => sum + (occ.severity === 'critical' ? 1 : 0),
+      0
+    );
+    const highCount = occurrences.reduce(
+      (sum, occ) => sum + (occ.severity === 'high' ? 1 : 0),
+      0
+    );
     const activeAlerts = alerts.length;
-    return { total, criticalCount, highCount, activeAlerts, uniqueTypes: errorTypes.length };
-  }, [totalCount, errorTypes, alerts]);
+    const uniqueTypes = new Set(
+      occurrences.map((occ) => occ.error_type_id).filter(Boolean)
+    ).size;
+    return { total, criticalCount, highCount, activeAlerts, uniqueTypes };
+  }, [totalCount, occurrences, alerts]);
 
   /* ── render ─────────────────────────────────────────────────────── */
 
@@ -364,9 +376,13 @@ function LogMonitorPage() {
           <option value="script-error">Script Error</option>
           <option value="resource-error">Resource Error</option>
           <option value="network-error">Network Error</option>
+          <option value="world-error">World/Terrain Error</option>
           <option value="crash">Crash / Fatal</option>
           <option value="null-reference">Null Reference</option>
+          <option value="mod-mismatch">Mod Mismatch</option>
           <option value="config-error">Config Error</option>
+          <option value="physics-error">Physics Error</option>
+          <option value="ai-error">AI Error</option>
           <option value="generic-error">Generic Error</option>
         </select>
 

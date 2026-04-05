@@ -135,7 +135,9 @@ WORKSHOP_REFRESH_INTERVAL_HOURS = int(os.environ.get("WORKSHOP_REFRESH_INTERVAL_
 
 # Log monitor — API key used by external log collectors to POST /api/log
 LOG_COLLECTOR_API_KEY = os.environ.get("LOG_COLLECTOR_API_KEY", "").strip()
-LOG_MONITOR_INTERVAL = int(os.environ.get("LOG_MONITOR_INTERVAL", 30))
+LOG_MONITOR_INTERVAL = _validate_positive_int(
+    "LOG_MONITOR_INTERVAL", int(os.environ.get("LOG_MONITOR_INTERVAL", 30))
+)
 
 # Configure logging
 logging.basicConfig(
