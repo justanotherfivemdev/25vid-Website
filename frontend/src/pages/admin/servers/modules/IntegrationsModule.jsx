@@ -242,6 +242,7 @@ function IntegrationsModule() {
                   <button
                     type="button"
                     onClick={() => setBmKeyVisible((v) => !v)}
+                    aria-label={bmKeyVisible ? 'Hide API key' : 'Show API key'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a6070] hover:text-[#8a9aa8]"
                   >
                     {bmKeyVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -305,9 +306,9 @@ function IntegrationsModule() {
         <CardContent className="p-4">
           <p className="text-xs leading-relaxed text-[#4a6070]">
             <strong className="text-[#8a9aa8]">Note:</strong> API keys are stored
-            encrypted in the database and never exposed in full to the browser.
-            Changes take effect immediately for all server management features —
-            no restart is required. You can also set <code className="rounded bg-zinc-800 px-1 text-[10px]">BATTLEMETRICS_API_KEY</code> as
+            server-side and never exposed in full to the browser. Changes take
+            effect immediately for all server management features — no restart
+            is required. You can also set <code className="rounded bg-zinc-800 px-1 text-[10px]">BATTLEMETRICS_API_KEY</code> as
             an environment variable as a fallback; the value configured here takes priority.
           </p>
         </CardContent>

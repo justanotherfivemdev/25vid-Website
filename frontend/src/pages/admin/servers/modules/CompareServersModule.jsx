@@ -92,17 +92,17 @@ function CompareServersModule() {
 
   const handleNextPage = useCallback(() => {
     if (!nextPageKey) return;
-    setPageHistory((prev) => [...prev, results]);
+    setPageHistory((prev) => [...prev, { results, nextPageKey }]);
     doSearch(query, nextPageKey);
   }, [query, nextPageKey, results, doSearch]);
 
   const handlePrevPage = useCallback(() => {
     if (pageHistory.length === 0) return;
     const prev = [...pageHistory];
-    const lastPage = prev.pop();
+    const lastEntry = prev.pop();
     setPageHistory(prev);
-    setResults(lastPage);
-    setNextPageKey(null);
+    setResults(lastEntry.results);
+    setNextPageKey(lastEntry.nextPageKey);
   }, [pageHistory]);
 
   /* ── select a server ───────────────────────────────────────────────────── */
@@ -219,7 +219,16 @@ function CompareServersModule() {
               className={`cursor-pointer border-zinc-800 bg-[#0c1117] transition-colors hover:border-[rgba(201,162,39,0.3)] ${
                 selected?.bm_id === srv.bm_id ? 'border-[rgba(201,162,39,0.5)] bg-[rgba(201,162,39,0.04)]' : ''
               }`}
+              role="button"
+              tabIndex={0}
+              aria-pressed={selected?.bm_id === srv.bm_id}
               onClick={() => handleSelect(srv)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelect(srv);
+                }
+              }}
             >
               <CardContent className="flex items-center gap-4 p-4">
                 <Server className="h-5 w-5 shrink-0 text-[#4a6070]" />

@@ -2888,11 +2888,11 @@ async def test_battlemetrics_connection(
             "message": f"BattleMetrics returned HTTP {exc.response.status_code}",
             "api_key_configured": bool(api_key),
         }
-    except httpx.RequestError as exc:
+    except httpx.RequestError:
         return {
             "success": False,
             "status": 0,
-            "message": f"Connection failed: {exc}",
+            "message": "Connection failed — unable to reach BattleMetrics API",
             "api_key_configured": bool(api_key),
         }
 
@@ -2992,7 +2992,21 @@ async def battlemetrics_search(
     import httpx
 
     if page_key:
-        # Follow the cursor URL directly (already contains all filters)
+        # Validate that the cursor URL points to the BattleMetrics API to
+        # prevent SSRF — an authenticated user could otherwise make the
+        # backend request arbitrary URLs.
+        from urllib.parse import urlparse
+
+        parsed = urlparse(page_key)
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "api.battlemetrics.com"
+            or not parsed.path.startswith("/servers")
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid pagination cursor",
+            )
         url = page_key
         params = None
     else:
