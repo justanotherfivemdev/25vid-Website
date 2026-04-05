@@ -87,6 +87,7 @@ const OperationsPlanView = lazy(() => import('@/pages/member/OperationsPlanView'
 const JoinUs = lazy(() => import('@/pages/JoinUs'));
 const MemberLayout = lazy(() => import('@/components/MemberLayout'));
 const AdminLayout = lazy(() => import('@/components/admin/AdminLayout'));
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || window.location.origin || '').replace(/\/$/, '');
 const API = `${BACKEND_URL}/api`;
@@ -1492,12 +1493,12 @@ function App() {
         {/* Profile allows recruits, still gets sidebar layout */}
         <Route path="/hub/profile" element={<ProtectedRoute allowRecruit><MemberLayout><EditProfile /></MemberLayout></ProtectedRoute>} />
         {/* Threat map: full-screen layout, no sidebar */}
-        <Route path="/hub/threat-map" element={<ProtectedRoute><ThreatMapPage /></ProtectedRoute>} />
+        <Route path="/hub/threat-map" element={<ProtectedRoute><ErrorBoundary><ThreatMapPage /></ErrorBoundary></ProtectedRoute>} />
         {/* Legacy world-monitor routes — redirect to standalone World Monitor app */}
         <Route path="/hub/threat-map/world-monitor" element={<ExternalRedirect to="/worldmonitor/" />} />
         {/* Operations Planner: full-screen layout, no sidebar */}
-        <Route path="/hub/operations-planner" element={<ProtectedRoute><OperationsPlanner /></ProtectedRoute>} />
-        <Route path="/hub/operations-planner/:id" element={<ProtectedRoute><OperationsPlanner /></ProtectedRoute>} />
+        <Route path="/hub/operations-planner" element={<ProtectedRoute><ErrorBoundary><OperationsPlanner /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/hub/operations-planner/:id" element={<ProtectedRoute><ErrorBoundary><OperationsPlanner /></ErrorBoundary></ProtectedRoute>} />
         {/* Legacy tool routes — redirect to unified Operations Planner */}
         <Route path="/hub/orbat-mapper" element={<Navigate to="/hub/operations-planner" replace />} />
         <Route path="/hub/orbat-mapper/:operationId" element={<Navigate to="/hub/operations-planner" replace />} />
@@ -1509,7 +1510,7 @@ function App() {
         <Route path="/partner-admin" element={<PartnerAdmin />} />
         <Route path="/partner/discussions" element={<DiscussionForum />} />
         <Route path="/partner/discussions/:id" element={<DiscussionThread />} />
-        <Route path="/partner/threat-map" element={<PartnerThreatMap />} />
+        <Route path="/partner/threat-map" element={<ErrorBoundary><PartnerThreatMap /></ErrorBoundary>} />
         {/* Legacy world-monitor route — redirect to standalone World Monitor app */}
         <Route path="/partner/threat-map/world-monitor" element={<ExternalRedirect to="/worldmonitor/" />} />
         <Route path="/partner/shared" element={<PartnerSharedArea />} />

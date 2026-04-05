@@ -35,9 +35,8 @@ function ensureMilSymbolConfigured() {
 }
 
 export function renderMilSymbolDataUrl(sidc, size = 40) {
-  ensureMilSymbolConfigured();
-
   try {
+    ensureMilSymbolConfigured();
     const symbol = new MilSymbol(sidc, { size });
     return symbol.toDataURL();
   } catch {
