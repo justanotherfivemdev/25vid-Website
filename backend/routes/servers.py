@@ -2956,9 +2956,10 @@ _BM_TIMEOUT = 15
 _BM_GAME_FILTER = "reforger"
 _BM_DEFAULT_SORT = "-players"
 # Query-string keys that may be forwarded from a BattleMetrics pagination URL.
-_BM_ALLOWED_PAGINATION_PARAMS = frozenset({
-    "page[key]", "page[rel]", "page[size]",
-    "filter[game]", "filter[search]", "filter[countries][]",
+_BM_ALLOWED_FILTER_PARAMS = frozenset({
+    "filter[game]", "filter[search]",
+    "filter[countries][]", "filter[countries]",
+    "filter[status]",
     "sort",
 })
 
@@ -3041,7 +3042,7 @@ async def battlemetrics_search(
 
     if page_key:
         # Instead of forwarding the raw URL (SSRF risk), extract only the
-        # pagination cursor parameters and rebuild the URL server-side.
+        # pagination and filter parameters and rebuild the URL server-side.
         from urllib.parse import urlparse, parse_qs
 
         parsed = urlparse(page_key)
@@ -3056,15 +3057,22 @@ async def battlemetrics_search(
             )
         qs = parse_qs(parsed.query)
         params: dict = {}
-        for key in _BM_ALLOWED_PAGINATION_PARAMS:
-            values = qs.get(key)
-            if values:
+        # Forward all page[*] parameters (supports cursor, offset, and
+        # number-based pagination) plus known filter parameters.
+        for key, values in qs.items():
+            if key.startswith("page[") or key in _BM_ALLOWED_FILTER_PARAMS:
                 params[key] = values[0]
         # Always enforce game filter and defaults for safety, even if a
         # crafted page_key attempts to supply conflicting values.
         params["filter[game]"] = _BM_GAME_FILTER
         params["page[size]"] = str(per_page)
         params["sort"] = _BM_DEFAULT_SORT
+        # Preserve the original search context if BattleMetrics did not
+        # embed filter params in the pagination URL.
+        if q and "filter[search]" not in params:
+            params["filter[search]"] = q
+        if country and "filter[countries][]" not in params and "filter[countries]" not in params:
+            params["filter[countries][]"] = country
     else:
         params: dict = {
             "filter[game]": _BM_GAME_FILTER,
