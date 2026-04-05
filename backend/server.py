@@ -135,6 +135,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Security-headers middleware (CSP, HSTS, X-Frame-Options, etc.)
+from middleware.security_headers import SecurityHeadersMiddleware
+app.add_middleware(SecurityHeadersMiddleware)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
