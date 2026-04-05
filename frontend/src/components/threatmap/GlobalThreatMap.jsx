@@ -282,7 +282,7 @@ const campaignLabelLayer = {
 /* ── NATO Symbology via milsymbol (MIL-STD-2525) ───────────────────────── */
 
 /**
- * Affiliation digit (position 2 in SIDC):
+ * Affiliation digit (4th character / position 4 in the SIDC layout; e.g. `100${aff}...`):
  *   3 = Friendly, 6 = Hostile, 4 = Neutral, 1 = Unknown
  */
 const AFFILIATION_SIDC_DIGIT = {
@@ -293,9 +293,9 @@ const AFFILIATION_SIDC_DIGIT = {
 };
 
 /**
- * Symbol type → SIDC icon code (positions 5-10 in a 20-char SIDC).
+ * Symbol type → 6-digit SIDC entity/type/subtype segment (positions 11-16 in a 20-char SIDC).
  * Uses MIL-STD-2525D / APP-6D numeric SIDCs.
- * Format: SSAACCCCCCCCCCCCCCCC  (Set, Affiliation, ..., Symbol code)
+ * Format: SSAA------EEEEEE----  (Set, Affiliation, ..., Entity/Type/Subtype, ...)
  */
 const SYMBOL_TYPE_SIDC_MAP = {
   infantry:              '121100',
@@ -329,7 +329,7 @@ const SYMBOL_TYPE_SIDC_MAP = {
 };
 
 /**
- * Echelon → SIDC modifier digit (position 12 in 20-char SIDC).
+ * Echelon → SIDC Modifier 1 two-digit segment (positions 17-18 in the 20-char SIDC).
  * MIL-STD-2525D echelon amplifiers.
  */
 const ECHELON_SIDC_MAP = {

@@ -6,12 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, BookOpen, Clock, User, Calendar, ChevronRight, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/context/AuthContext';
 import { useMemberLayout } from '@/components/MemberLayout';
 import { BACKEND_URL, API } from '@/utils/api';
 
 const TrainingPage = () => {
-  const { user } = useAuth();
   const inLayout = useMemberLayout();
   const [training, setTraining] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -138,7 +136,16 @@ const TrainingPage = () => {
             <Card
               key={t.id}
               className="bg-[#0c1117] border-[rgba(201,162,39,0.1)] hover:border-[#e8c547]/30 transition-colors cursor-pointer"
+              role="button"
+              tabIndex={0}
+              aria-expanded={selectedProgram?.id === t.id}
               onClick={() => setSelectedProgram(selectedProgram?.id === t.id ? null : t)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedProgram(selectedProgram?.id === t.id ? null : t);
+                }
+              }}
             >
               {t.image_url && (
                 <div className="w-full h-40 overflow-hidden">
