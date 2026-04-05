@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 from datetime import datetime
+from typing import Optional
 
-from fastapi import APIRouter, Depends
+import httpx
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
 from database import db
 from middleware.rbac import Permission, require_permission
@@ -14,6 +19,32 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _require_servers = require_permission(Permission.MANAGE_SERVERS)
+
+# ---------------------------------------------------------------------------
+# AI diagnostics analysis – uses the same OPENAI_API_KEY as research_agent
+# ---------------------------------------------------------------------------
+_OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
+_DIAGNOSTICS_AI_MODEL: str = os.environ.get(
+    "DIAGNOSTICS_AI_MODEL", "gpt-4o-mini"
+).strip() or "gpt-4o-mini"
+
+_DIAGNOSTICS_SYSTEM_PROMPT = """\
+You are a concise game-server diagnostics assistant for Arma Reforger dedicated \
+servers.  Given an error pattern and its recent occurrences, produce a short, \
+plain-English analysis that a non-technical server administrator can understand.
+
+Respond in **valid JSON** with exactly these keys (no markdown fences):
+{
+  "summary": "1-2 sentence plain-English explanation of what this error means.",
+  "root_cause": "Most likely root cause in plain English.",
+  "impact": "How this error affects the server or players.",
+  "recommended_actions": ["action 1", "action 2"],
+  "severity_assessment": "one of: harmless | low | moderate | high | critical",
+  "is_safe_to_ignore": true or false
+}
+
+Keep each field brief (1-3 sentences max).  Focus on practical guidance.
+"""
 
 
 @router.get("/diagnostics/summary")
@@ -206,3 +237,126 @@ async def diagnostics_mod_detail(
         "issue_count": len(mod_issues),
         "error_count": len(recent_errors),
     }
+
+
+# ---------------------------------------------------------------------------
+# AI-powered error pattern analysis
+# ---------------------------------------------------------------------------
+
+class AIAnalysisRequest(BaseModel):
+    error_type_id: str = Field(..., max_length=200)
+
+
+@router.post("/diagnostics/ai-analyze")
+async def ai_analyze_error_pattern(
+    body: AIAnalysisRequest,
+    current_user: dict = Depends(_require_servers),
+):
+    """Use OpenAI to produce a plain-English analysis of an error pattern."""
+    if not _OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="AI analysis is not available – OPENAI_API_KEY is not configured.",
+        )
+
+    # Fetch the error type document
+    error_type = await db.log_error_types.find_one(
+        {"id": body.error_type_id}, {"_id": 0}
+    )
+    if not error_type:
+        raise HTTPException(status_code=404, detail="Error type not found")
+
+    # Fetch a handful of recent occurrences for context
+    recent_occs = (
+        await db.log_occurrences.find(
+            {"error_type_id": body.error_type_id}, {"_id": 0, "raw": 1, "message": 1}
+        )
+        .sort("timestamp", -1)
+        .limit(5)
+        .to_list(5)
+    )
+    sample_messages = [
+        (occ.get("raw") or occ.get("message") or "")[:400] for occ in recent_occs
+    ]
+
+    user_prompt = (
+        f"Error label: {error_type.get('label', 'Unknown')}\n"
+        f"Severity: {error_type.get('severity', 'unknown')}\n"
+        f"Category: {error_type.get('category', 'unknown')}\n"
+        f"Normalised pattern: {error_type.get('normalised_message', '')}\n"
+        f"Example raw message: {(error_type.get('example_raw') or '')[:600]}\n"
+        f"Total occurrences: {error_type.get('total_occurrences', 0)}\n"
+        f"Curation notes: {error_type.get('curation_notes', '')}\n"
+        f"\nRecent occurrence samples:\n"
+        + "\n---\n".join(sample_messages[:5])
+    )
+
+    headers = {
+        "Authorization": f"Bearer {_OPENAI_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": _DIAGNOSTICS_AI_MODEL,
+        "messages": [
+            {"role": "system", "content": _DIAGNOSTICS_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
+        "temperature": 0.3,
+        "max_tokens": 600,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+        if resp.status_code != 200:
+            logger.warning("OpenAI API error %s: %s", resp.status_code, resp.text[:300])
+            raise HTTPException(
+                status_code=502,
+                detail="AI service returned an error. Please try again later.",
+            )
+
+        data = resp.json()
+        raw_content = (
+            data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        )
+
+        # Strip markdown fences if present (handles ```json etc.)
+        cleaned = raw_content.strip()
+        if cleaned.startswith("```"):
+            first_newline = cleaned.find("\n")
+            if first_newline != -1:
+                cleaned = cleaned[first_newline + 1:]
+            else:
+                cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+
+        try:
+            analysis = json.loads(cleaned)
+        except json.JSONDecodeError:
+            analysis = {
+                "summary": cleaned[:500] if cleaned else "Unable to parse AI response.",
+                "root_cause": "",
+                "impact": "",
+                "recommended_actions": [],
+                "severity_assessment": "unknown",
+                "is_safe_to_ignore": False,
+            }
+
+        return {
+            "analysis": analysis,
+            "error_type_id": body.error_type_id,
+            "model": _DIAGNOSTICS_AI_MODEL,
+        }
+
+    except httpx.HTTPError as exc:
+        logger.warning("OpenAI request failed: %s", exc)
+        raise HTTPException(
+            status_code=502,
+            detail="Could not reach AI service. Please try again later.",
+        )

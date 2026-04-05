@@ -6,12 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertTriangle,
   Bell,
+  Bot,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Clock,
   Eye,
   Monitor,
@@ -19,6 +23,7 @@ import {
   RefreshCw,
   Search,
   Server,
+  Sparkles,
   TrendingUp,
   X,
 } from 'lucide-react';
@@ -234,6 +239,13 @@ function ServerDiagnostics() {
   const [typeTroublesome, setTypeTroublesome] = useState(false);
   const [typeNotes, setTypeNotes] = useState('');
 
+  /* ── state: AI analysis ────────────────────────────────────────── */
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [showRawMessage, setShowRawMessage] = useState(false);
+  const [showOccurrences, setShowOccurrences] = useState(false);
+
   /* ── state: mod issue detail dialog ────────────────────────────── */
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
@@ -368,6 +380,10 @@ function ServerDiagnostics() {
 
   const openErrorTypeDetail = useCallback(async (et) => {
     setSelectedErrorType(et);
+    setAiAnalysis(null);
+    setAiError('');
+    setShowRawMessage(false);
+    setShowOccurrences(false);
     setTypeOccLoading(true);
     try {
       const res = await axios.get(`${API}/log-monitor/errors?type=${et.id}&per_page=20`);
@@ -375,6 +391,22 @@ function ServerDiagnostics() {
     } catch { setTypeOccurrences([]); }
     finally { setTypeOccLoading(false); }
   }, []);
+
+  const runAiAnalysis = useCallback(async () => {
+    if (!selectedErrorType?.id) return;
+    setAiLoading(true);
+    setAiError('');
+    try {
+      const res = await axios.post(`${API}/diagnostics/ai-analyze`, {
+        error_type_id: selectedErrorType.id,
+      });
+      setAiAnalysis(res.data.analysis || null);
+    } catch (err) {
+      setAiError(err.response?.data?.detail || 'AI analysis failed. Please try again.');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [selectedErrorType?.id]);
 
   useEffect(() => {
     if (!selectedErrorType) return;
@@ -1254,185 +1286,312 @@ function ServerDiagnostics() {
       {/* Error Type detail dialog                                  */}
       {/* ═══════════════════════════════════════════════════════════ */}
       <Dialog open={!!selectedErrorType} onOpenChange={() => setSelectedErrorType(null)}>
-        <DialogContent className="max-w-2xl border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-white">
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-white">
           <DialogHeader>
-            <DialogTitle className="text-[#e8c547]">
+            <DialogTitle className="text-[#e8c547] text-base leading-tight">
               {selectedErrorType?.label}
             </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className={`text-xs ${severityBadge(selectedErrorType?.severity)}`}>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <Badge variant="outline" className={`text-[10px] ${severityBadge(selectedErrorType?.severity)}`}>
                 {selectedErrorType?.severity}
               </Badge>
-              <Badge variant="outline" className={`text-xs ${categoryBadge(selectedErrorType?.category)}`}>
+              <Badge variant="outline" className={`text-[10px] ${categoryBadge(selectedErrorType?.category)}`}>
                 {selectedErrorType?.category}
               </Badge>
-              <span className="text-xs text-[#4a6070]">
+              <span className="text-[10px] text-[#4a6070]">
                 {(selectedErrorType?.total_occurrences || 0).toLocaleString()} occurrences
               </span>
+              {selectedErrorType?.first_seen && (
+                <span className="text-[10px] text-[#4a6070]">
+                  First: {fmtDate(selectedErrorType.first_seen)}
+                </span>
+              )}
+              {selectedErrorType?.last_seen && (
+                <span className="text-[10px] text-[#4a6070]">
+                  Last: {fmtDate(selectedErrorType.last_seen)}
+                </span>
+              )}
             </div>
+          </DialogHeader>
 
-            <div>
-              <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Example raw message</p>
-              <pre className="max-h-32 overflow-auto rounded bg-[#0c1117] p-3 font-mono text-xs text-[#8a9aa8] whitespace-pre-wrap break-all">
-                {selectedErrorType?.example_raw}
-              </pre>
-            </div>
+          <Tabs defaultValue="analysis" className="mt-1">
+            <TabsList className="h-8 w-full bg-[#0c1117] border border-[rgba(201,162,39,0.12)]">
+              <TabsTrigger value="analysis" className="text-xs data-[state=active]:bg-[#111a24] data-[state=active]:text-[#e8c547]">
+                <Sparkles className="mr-1 h-3 w-3" /> AI Analysis
+              </TabsTrigger>
+              <TabsTrigger value="curation" className="text-xs data-[state=active]:bg-[#111a24] data-[state=active]:text-[#e8c547]">
+                <Eye className="mr-1 h-3 w-3" /> Curation
+              </TabsTrigger>
+              <TabsTrigger value="occurrences" className="text-xs data-[state=active]:bg-[#111a24] data-[state=active]:text-[#e8c547]">
+                <Monitor className="mr-1 h-3 w-3" /> Occurrences ({typeOccurrences.length})
+              </TabsTrigger>
+            </TabsList>
 
-            <div>
-              <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Normalised pattern</p>
-              <pre className="rounded bg-[#0c1117] p-3 font-mono text-xs text-[#4a6070] whitespace-pre-wrap break-all">
-                {selectedErrorType?.normalised_message}
-              </pre>
-            </div>
-
-            <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
-              <p className="mb-3 text-sm text-[#8a9aa8]">Pattern curation</p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Review Status</p>
-                  <select
-                    value={typeReviewStatus}
-                    onChange={(e) => setTypeReviewStatus(e.target.value)}
-                    className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+            {/* ── AI Analysis tab ──────────────────────────────── */}
+            <TabsContent value="analysis" className="space-y-3 mt-3">
+              {!aiAnalysis && !aiLoading && !aiError && (
+                <div className="flex flex-col items-center gap-3 rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-6">
+                  <Bot className="h-8 w-8 text-[#4a6070]" />
+                  <p className="text-center text-sm text-[#8a9aa8]">
+                    Use AI to get a plain-English explanation of this error, its likely root cause, and recommended actions.
+                  </p>
+                  <Button
+                    onClick={runAiAnalysis}
+                    size="sm"
+                    className="border-[rgba(201,162,39,0.3)] bg-[#111a24] text-[#e8c547] hover:bg-[#1a2430]"
                   >
-                    {VERDICT_OPTIONS.map((status) => (
-                      <option key={status} value={status}>{humanizeToken(status)}</option>
+                    <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Run AI Analysis
+                  </Button>
+                </div>
+              )}
+
+              {aiLoading && (
+                <div className="flex items-center gap-2 rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 px-4 py-6">
+                  <RefreshCw className="h-4 w-4 animate-spin text-[#e8c547]" />
+                  <span className="text-sm text-[#8a9aa8]">Analysing error pattern…</span>
+                </div>
+              )}
+
+              {aiError && (
+                <div className="rounded-lg border border-red-800/30 bg-red-950/20 p-3">
+                  <p className="text-sm text-red-300">{aiError}</p>
+                  <Button onClick={runAiAnalysis} size="sm" variant="ghost" className="mt-2 text-xs text-red-300 hover:text-white">
+                    Retry
+                  </Button>
+                </div>
+              )}
+
+              {aiAnalysis && (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+                    <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Summary</p>
+                    <p className="text-sm text-[#d0d8e0]">{aiAnalysis.summary}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+                      <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Root Cause</p>
+                      <p className="text-sm text-[#d0d8e0]">{aiAnalysis.root_cause || '—'}</p>
+                    </div>
+                    <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+                      <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Impact</p>
+                      <p className="text-sm text-[#d0d8e0]">{aiAnalysis.impact || '—'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {aiAnalysis.severity_assessment && (
+                      <Badge variant="outline" className={`text-[10px] ${
+                        aiAnalysis.severity_assessment === 'critical' || aiAnalysis.severity_assessment === 'high'
+                          ? 'border-red-600/30 text-red-300'
+                          : aiAnalysis.severity_assessment === 'moderate'
+                            ? 'border-yellow-600/30 text-yellow-300'
+                            : 'border-green-600/30 text-green-300'
+                      }`}>
+                        AI severity: {aiAnalysis.severity_assessment}
+                      </Badge>
+                    )}
+                    {aiAnalysis.is_safe_to_ignore !== null && aiAnalysis.is_safe_to_ignore !== undefined && (
+                      <Badge variant="outline" className={`text-[10px] ${
+                        aiAnalysis.is_safe_to_ignore
+                          ? 'border-green-600/30 text-green-300'
+                          : 'border-orange-600/30 text-orange-300'
+                      }`}>
+                        {aiAnalysis.is_safe_to_ignore ? 'Safe to ignore' : 'Needs attention'}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {(aiAnalysis.recommended_actions || []).length > 0 && (
+                    <div className="rounded-lg border border-[rgba(201,162,39,0.12)] bg-[#0c1117]/50 p-3">
+                      <p className="mb-2 text-[10px] uppercase tracking-wider text-[#4a6070]">Recommended Actions</p>
+                      <ul className="space-y-1">
+                        {aiAnalysis.recommended_actions.map((action, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-[#d0d8e0]">
+                            <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[#4a6070]" />
+                            {action}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <Button onClick={runAiAnalysis} size="sm" variant="ghost" className="text-xs text-[#4a6070] hover:text-white">
+                    <RefreshCw className="mr-1 h-3 w-3" /> Re-analyse
+                  </Button>
+                </div>
+              )}
+
+              {/* Collapsible raw message */}
+              <button
+                type="button"
+                onClick={() => setShowRawMessage((v) => !v)}
+                className="flex w-full items-center gap-1 text-[10px] uppercase tracking-wider text-[#4a6070] hover:text-[#8a9aa8]"
+              >
+                {showRawMessage ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                Raw message &amp; pattern
+              </button>
+              {showRawMessage && (
+                <div className="space-y-2">
+                  <pre className="max-h-24 overflow-auto rounded bg-[#0c1117] p-2 font-mono text-[10px] text-[#8a9aa8] whitespace-pre-wrap break-all">
+                    {selectedErrorType?.example_raw}
+                  </pre>
+                  <pre className="rounded bg-[#0c1117] p-2 font-mono text-[10px] text-[#4a6070] whitespace-pre-wrap break-all">
+                    {selectedErrorType?.normalised_message}
+                  </pre>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* ── Pattern Curation tab ─────────────────────────── */}
+            <TabsContent value="curation" className="mt-3">
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Review Status</p>
+                    <select
+                      value={typeReviewStatus}
+                      onChange={(e) => setTypeReviewStatus(e.target.value)}
+                      className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-2 py-1.5 text-xs text-white"
+                    >
+                      {VERDICT_OPTIONS.map((status) => (
+                        <option key={status} value={status}>{humanizeToken(status)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Attribution</p>
+                    <select
+                      value={typeAttribution}
+                      onChange={(e) => setTypeAttribution(e.target.value)}
+                      className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-2 py-1.5 text-xs text-white"
+                    >
+                      {ATTRIBUTION_OPTIONS.map((entry) => (
+                        <option key={entry} value={entry}>{humanizeToken(entry)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Diagnostics Area</p>
+                    <select
+                      value={typeArea}
+                      onChange={(e) => setTypeArea(e.target.value)}
+                      className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-2 py-1.5 text-xs text-white"
+                    >
+                      {AREA_OPTIONS.map((entry) => (
+                        <option key={entry} value={entry}>{humanizeToken(entry)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Actionability</p>
+                    <select
+                      value={typeActionability}
+                      onChange={(e) => setTypeActionability(e.target.value)}
+                      className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-2 py-1.5 text-xs text-white"
+                    >
+                      {ACTIONABILITY_OPTIONS.map((entry) => (
+                        <option key={entry} value={entry}>{humanizeToken(entry)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Known Mod GUID</p>
+                    <Input
+                      value={typeLinkedModGuid}
+                      onChange={(e) => setTypeLinkedModGuid(e.target.value)}
+                      className="h-8 border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-xs text-white"
+                      placeholder="Optional GUID"
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Known Mod Name</p>
+                    <Input
+                      value={typeLinkedModName}
+                      onChange={(e) => setTypeLinkedModName(e.target.value)}
+                      className="h-8 border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-xs text-white"
+                      placeholder="Optional linked mod"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Quick Fill From Known Mods</p>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const selectedGuid = e.target.value;
+                      const selectedMod = knownMods.find((item) => item.guid === selectedGuid);
+                      if (selectedMod) {
+                        setTypeLinkedModGuid(selectedMod.guid || '');
+                        setTypeLinkedModName(selectedMod.name || '');
+                      }
+                    }}
+                    className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-2 py-1.5 text-xs text-white"
+                  >
+                    <option value="">Select a known mod...</option>
+                    {knownMods.map((item) => (
+                      <option key={item.guid || item.id} value={item.guid}>
+                        {item.name || item.guid}
+                      </option>
                     ))}
                   </select>
                 </div>
-                <div>
-                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Attribution</p>
-                  <select
-                    value={typeAttribution}
-                    onChange={(e) => setTypeAttribution(e.target.value)}
-                    className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setTypeTroublesome((current) => !current)}
+                    className={`text-xs border-[rgba(201,162,39,0.15)] ${typeTroublesome ? 'text-rose-300' : 'text-[#8a9aa8]'}`}
                   >
-                    {ATTRIBUTION_OPTIONS.map((entry) => (
-                      <option key={entry} value={entry}>{humanizeToken(entry)}</option>
-                    ))}
-                  </select>
+                    {typeTroublesome ? 'Troublesome Linked Mod' : 'Mark Linked Mod As Troublesome'}
+                  </Button>
+                  <Badge variant="outline" className={`text-[10px] ${statusColor(typeReviewStatus)}`}>
+                    {humanizeToken(typeReviewStatus)}
+                  </Badge>
+                  <Badge variant="outline" className={`text-[10px] ${attributionTone(typeAttribution)}`}>
+                    {humanizeToken(typeAttribution)}
+                  </Badge>
+                  <Badge variant="outline" className={`text-[10px] ${areaTone(typeArea)}`}>
+                    {humanizeToken(typeArea)}
+                  </Badge>
                 </div>
-                <div>
-                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Diagnostics Area</p>
-                  <select
-                    value={typeArea}
-                    onChange={(e) => setTypeArea(e.target.value)}
-                    className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
+
+                <Textarea
+                  value={typeNotes}
+                  onChange={(e) => setTypeNotes(e.target.value)}
+                  className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-xs text-white"
+                  rows={2}
+                  placeholder="Operator notes, false-positive rationale, or known-safe context..."
+                />
+
+                <div className="flex justify-end">
+                  <Button
+                    onClick={saveErrorTypeCuration}
+                    size="sm"
+                    variant="outline"
+                    disabled={typeSaving}
+                    className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white"
                   >
-                    {AREA_OPTIONS.map((entry) => (
-                      <option key={entry} value={entry}>{humanizeToken(entry)}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Actionability</p>
-                  <select
-                    value={typeActionability}
-                    onChange={(e) => setTypeActionability(e.target.value)}
-                    className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
-                  >
-                    {ACTIONABILITY_OPTIONS.map((entry) => (
-                      <option key={entry} value={entry}>{humanizeToken(entry)}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Known Mod GUID</p>
-                  <Input
-                    value={typeLinkedModGuid}
-                    onChange={(e) => setTypeLinkedModGuid(e.target.value)}
-                    className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-white"
-                    placeholder="Optional GUID"
-                  />
-                </div>
-                <div>
-                  <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Known Mod Name</p>
-                  <Input
-                    value={typeLinkedModName}
-                    onChange={(e) => setTypeLinkedModName(e.target.value)}
-                    className="border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-white"
-                    placeholder="Optional linked mod"
-                  />
+                    {typeSaving ? 'Saving...' : 'Save Curation'}
+                  </Button>
                 </div>
               </div>
+            </TabsContent>
 
-              <div className="mt-3">
-                <p className="mb-1 text-[10px] uppercase tracking-wider text-[#4a6070]">Quick Fill From Known Mods</p>
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const selectedGuid = e.target.value;
-                    const selectedMod = knownMods.find((item) => item.guid === selectedGuid);
-                    if (selectedMod) {
-                      setTypeLinkedModGuid(selectedMod.guid || '');
-                      setTypeLinkedModName(selectedMod.name || '');
-                    }
-                  }}
-                  className="w-full rounded-md border border-[rgba(201,162,39,0.15)] bg-[#050a0e] px-3 py-2 text-sm text-white"
-                >
-                  <option value="">Select a known mod...</option>
-                  {knownMods.map((item) => (
-                    <option key={item.guid || item.id} value={item.guid}>
-                      {item.name || item.guid}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setTypeTroublesome((current) => !current)}
-                  className={`border-[rgba(201,162,39,0.15)] ${typeTroublesome ? 'text-rose-300' : 'text-[#8a9aa8]'}`}
-                >
-                  {typeTroublesome ? 'Troublesome Linked Mod' : 'Mark Linked Mod As Troublesome'}
-                </Button>
-                <Badge variant="outline" className={`text-xs ${statusColor(typeReviewStatus)}`}>
-                  {humanizeToken(typeReviewStatus)}
-                </Badge>
-                <Badge variant="outline" className={`text-xs ${attributionTone(typeAttribution)}`}>
-                  {humanizeToken(typeAttribution)}
-                </Badge>
-                <Badge variant="outline" className={`text-xs ${areaTone(typeArea)}`}>
-                  {humanizeToken(typeArea)}
-                </Badge>
-              </div>
-
-              <Textarea
-                value={typeNotes}
-                onChange={(e) => setTypeNotes(e.target.value)}
-                className="mt-3 border-[rgba(201,162,39,0.15)] bg-[#050a0e] text-white"
-                rows={3}
-                placeholder="Operator notes, false-positive rationale, or known-safe context..."
-              />
-
-              <div className="mt-3 flex justify-end">
-                <Button
-                  onClick={saveErrorTypeCuration}
-                  size="sm"
-                  variant="outline"
-                  disabled={typeSaving}
-                  className="border-[rgba(201,162,39,0.15)] text-[#8a9aa8] hover:text-white"
-                >
-                  {typeSaving ? 'Saving...' : 'Save Curation'}
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-[10px] uppercase tracking-wider text-[#4a6070]">
-                Recent occurrences ({typeOccurrences.length})
-              </p>
+            {/* ── Occurrences tab ──────────────────────────────── */}
+            <TabsContent value="occurrences" className="mt-3">
               {typeOccLoading ? (
                 <div className="h-20 animate-pulse rounded bg-[#0c1117]/50" />
               ) : typeOccurrences.length === 0 ? (
-                <p className="text-sm text-[#4a6070]">No occurrences found.</p>
+                <p className="py-4 text-center text-sm text-[#4a6070]">No occurrences found.</p>
               ) : (
-                <div className="max-h-64 space-y-2 overflow-y-auto">
+                <div className="max-h-[50vh] space-y-2 overflow-y-auto">
                   {typeOccurrences.map((occ) => (
                     <div key={occ.id} className="rounded bg-[#0c1117]/60 px-3 py-2 text-xs">
                       <div className="flex items-center gap-2 text-[#4a6070]">
@@ -1452,8 +1611,8 @@ function ServerDiagnostics() {
                   ))}
                 </div>
               )}
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
