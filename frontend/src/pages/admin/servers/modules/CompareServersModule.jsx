@@ -67,7 +67,9 @@ function CompareServersModule() {
       const params = { per_page: DEFAULT_PAGE_SIZE };
       if (cursorKey) {
         params.pageKey = cursorKey;
-      } else {
+      }
+      // Include the original query when present so the request context is preserved.
+      if (searchQuery) {
         params.q = searchQuery;
       }
       const res = await axios.get(`${API}/servers/battlemetrics/search`, { params });
@@ -210,7 +212,7 @@ function CompareServersModule() {
         <div className="flex flex-col gap-3">
           {results.length > 0 && (
             <h2 className="font-['Share_Tech'] text-sm font-semibold text-[#8a9aa8]">
-              Search Results
+              Search Results {query && <span className="font-normal text-[#4a6070]">for &ldquo;{query}&rdquo;</span>}
             </h2>
           )}
           {results.map((srv) => (
@@ -250,25 +252,27 @@ function CompareServersModule() {
 
           {/* Pagination */}
           {results.length > 0 && (
-            <div className="flex items-center justify-between text-xs text-[#4a6070]">
+            <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-[#0c1117] px-4 py-2 text-xs text-[#4a6070]">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={pageHistory.length === 0}
+                disabled={pageHistory.length === 0 || searching}
                 onClick={handlePrevPage}
-                className="h-7 border-zinc-800 text-xs text-[#8a9aa8]"
+                className="h-7 border-zinc-700 text-xs text-[#8a9aa8] hover:border-[rgba(201,162,39,0.3)] hover:text-[#e8c547] disabled:opacity-40"
               >
-                Previous
+                ← Previous
               </Button>
-              <span>Page {pageHistory.length + 1}</span>
+              <span className="text-[#8a9aa8]">
+                Page {pageHistory.length + 1} · {results.length} result{results.length !== 1 ? 's' : ''}
+              </span>
               <Button
                 variant="outline"
                 size="sm"
-                disabled={!nextPageKey}
+                disabled={!nextPageKey || searching}
                 onClick={handleNextPage}
-                className="h-7 border-zinc-800 text-xs text-[#8a9aa8]"
+                className="h-7 border-zinc-700 text-xs text-[#8a9aa8] hover:border-[rgba(201,162,39,0.3)] hover:text-[#e8c547] disabled:opacity-40"
               >
-                Next
+                Next →
               </Button>
             </div>
           )}

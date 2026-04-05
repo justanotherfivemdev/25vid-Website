@@ -1,17 +1,19 @@
 :root {
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --border: #2a2a2a;
-  --text: #e8e8e8;
-  --text-dim: #888;
-  --accent: #fff;
+  --bg: #050a0e;
+  --surface: #0c1117;
+  --border: rgba(201, 162, 39, 0.12);
+  --text: #d0d8e0;
+  --text-dim: #8a9aa8;
+  --muted: #4a6070;
+  --accent: #e8c547;
+  --accent-dim: #c9a227;
   --red: #ff4444;
   --green: #44ff88;
-  --yellow: #ffaa00;
-  --map-bg: #020a08;
-  --map-grid: #0a2a20;
-  --map-country: #0a2018;
-  --map-stroke: #0f5040;
+  --yellow: #e8c547;
+  --map-bg: #050a0e;
+  --map-grid: #111a24;
+  --map-country: #0c1117;
+  --map-stroke: rgba(201, 162, 39, 0.25);
 }
 
 * {
@@ -21,7 +23,7 @@
 }
 
 body {
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
   font-size: 12px;
   line-height: 1.5;
   background: var(--bg);
@@ -54,6 +56,7 @@ body {
 }
 
 .logo {
+  font-family: 'Share Tech', sans-serif;
   font-weight: bold;
   font-size: 14px;
   letter-spacing: 2px;
@@ -70,19 +73,7 @@ body {
   vertical-align: middle;
 }
 
-.credit-link {
-  font-size: 9px;
-  color: var(--muted);
-  opacity: 0.6;
-  font-weight: normal;
-  letter-spacing: 0.5px;
-  text-decoration: none;
-  transition: opacity 0.2s;
-}
-.credit-link:hover {
-  opacity: 1;
-  color: var(--accent);
-}
+/* (removed: credit-link no longer used) */
 
 .status-indicator {
   display: flex;
@@ -96,7 +87,7 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--green);
+  background: var(--accent);
   animation: pulse-dot 2s infinite;
 }
 
@@ -122,13 +113,14 @@ body {
 }
 
 .view-btn:hover {
-  border-color: var(--text-dim);
+  border-color: var(--accent-dim);
+  color: var(--accent);
 }
 
 .view-btn.active {
-  background: var(--text);
+  background: var(--accent);
   color: var(--bg);
-  border-color: var(--text);
+  border-color: var(--accent);
 }
 
 .header-right {
@@ -153,7 +145,8 @@ body {
 }
 
 .settings-btn:hover {
-  border-color: var(--text-dim);
+  border-color: var(--accent-dim);
+  color: var(--accent);
 }
 
 .fullscreen-btn {
@@ -168,7 +161,8 @@ body {
 }
 
 .fullscreen-btn:hover {
-  border-color: var(--text-dim);
+  border-color: var(--accent-dim);
+  color: var(--accent);
 }
 
 .fullscreen-btn.active {
@@ -176,16 +170,18 @@ body {
   border-color: var(--accent);
 }
 
-.github-link {
-  color: var(--text-dim);
-  margin-left: 8px;
+.back-link {
+  font-size: 10px;
+  color: var(--accent-dim);
+  text-decoration: none;
+  letter-spacing: 0.5px;
   display: flex;
   align-items: center;
+  gap: 4px;
   transition: color 0.2s;
 }
-
-.github-link:hover {
-  color: var(--text);
+.back-link:hover {
+  color: var(--accent);
 }
 
 .search-btn {
@@ -399,7 +395,7 @@ body {
 .panel.dragging {
   opacity: 0.5;
   transform: scale(1.02);
-  box-shadow: 0 8px 24px rgba(0, 255, 136, 0.2);
+  box-shadow: 0 8px 24px rgba(201, 162, 39, 0.2);
 }
 
 .panel-header {
@@ -407,7 +403,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(201, 162, 39, 0.03);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -683,8 +679,8 @@ body {
 }
 
 .top-source.tier-1 {
-  background: rgba(0, 255, 136, 0.15);
-  color: var(--green);
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--accent);
 }
 
 .top-source.tier-2 {
@@ -717,7 +713,7 @@ body {
   padding: 8px;
   border-radius: 8px;
   background: rgba(7, 22, 17, 0.7);
-  border: 1px solid rgba(0, 255, 170, 0.2);
+  border: 1px solid rgba(201, 162, 39, 0.2);
 }
 
 .related-assets-header {
@@ -749,15 +745,15 @@ body {
   padding: 6px 8px;
   border-radius: 6px;
   background: rgba(10, 34, 26, 0.8);
-  border: 1px solid rgba(0, 255, 170, 0.15);
+  border: 1px solid rgba(201, 162, 39, 0.15);
   color: var(--text);
   cursor: pointer;
   text-align: left;
 }
 
 .related-asset:hover {
-  border-color: rgba(0, 255, 170, 0.5);
-  box-shadow: 0 0 10px rgba(0, 255, 170, 0.2);
+  border-color: rgba(201, 162, 39, 0.5);
+  box-shadow: 0 0 10px rgba(201, 162, 39, 0.2);
 }
 
 .related-asset-type {
@@ -1542,10 +1538,10 @@ body.playback-mode .status-dot {
 /* Cable paths */
 .cable-path {
   fill: none;
-  stroke: #00ffaa;
+  stroke: #c9a227;
   stroke-width: 1.5;
   opacity: 0.6;
-  filter: drop-shadow(0 0 3px #00ffaa);
+  filter: drop-shadow(0 0 3px #c9a227);
   cursor: pointer;
   pointer-events: stroke;
   transition: all 0.2s ease;
@@ -1554,7 +1550,7 @@ body.playback-mode .status-dot {
 .cable-path:hover {
   stroke-width: 3;
   opacity: 1;
-  filter: drop-shadow(0 0 8px #00ffaa) drop-shadow(0 0 15px #00ffaa);
+  filter: drop-shadow(0 0 8px #c9a227) drop-shadow(0 0 15px #c9a227);
   animation: cable-pulse 0.6s ease-in-out infinite;
 }
 
@@ -1624,7 +1620,7 @@ body.playback-mode .status-dot {
 .datacenter-marker.asset-highlight,
 .nuclear-marker.asset-highlight {
   z-index: 30;
-  box-shadow: 0 0 12px rgba(0, 255, 170, 0.6);
+  box-shadow: 0 0 12px rgba(201, 162, 39, 0.6);
 }
 
 .pipeline-path.asset-highlight {
@@ -1636,7 +1632,7 @@ body.playback-mode .status-dot {
 .cable-path.asset-highlight {
   stroke-width: 3.5;
   opacity: 1;
-  filter: drop-shadow(0 0 10px rgba(0, 255, 170, 0.8));
+  filter: drop-shadow(0 0 10px rgba(201, 162, 39, 0.8));
   animation: asset-pulse-glow 1.2s ease-in-out infinite;
 }
 
@@ -1675,7 +1671,7 @@ body.playback-mode .status-dot {
 
 /* Cable popup header */
 .popup-header.cable {
-  border-bottom-color: #00ffaa;
+  border-bottom-color: #c9a227;
 }
 
 /* Cable advisory & repair ship markers */
@@ -1720,7 +1716,7 @@ body.playback-mode .status-dot {
 }
 
 .repair-ship-marker.on-station {
-  --repair-ship-color: #00ffaa;
+  --repair-ship-color: #c9a227;
 }
 
 .repair-ship-icon {
@@ -2187,8 +2183,8 @@ body.playback-mode .status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #00ffaa;
-  box-shadow: 0 0 6px #00ffaa, 0 0 12px #00ffaa40;
+  background: #c9a227;
+  box-shadow: 0 0 6px #c9a227, 0 0 12px #c9a22740;
   z-index: 51;
   cursor: pointer;
   border: 1px solid #00aa77;
@@ -2196,7 +2192,7 @@ body.playback-mode .status-dot {
 
 .irradiator-marker:hover {
   background: #44ffcc;
-  box-shadow: 0 0 10px #00ffaa, 0 0 20px #00ffaa60;
+  box-shadow: 0 0 10px #c9a227, 0 0 20px #c9a22760;
 }
 
 .irradiator-label {
@@ -2207,7 +2203,7 @@ body.playback-mode .status-dot {
   transform-origin: top center;
   white-space: nowrap;
   font-size: 6px;
-  color: #00ffaa;
+  color: #c9a227;
   text-shadow: 0 0 4px var(--bg), 0 0 8px var(--bg);
   font-weight: bold;
   text-transform: uppercase;
@@ -2216,7 +2212,7 @@ body.playback-mode .status-dot {
 
 .popup-header.irradiator {
   background: linear-gradient(135deg, #00442220, #00221110);
-  border-left: 3px solid #00ffaa;
+  border-left: 3px solid #c9a227;
 }
 
 /* AI Data Centers */
@@ -2929,9 +2925,9 @@ body.playback-mode .status-dot {
 .waterway-diamond {
   width: 10px;
   height: 10px;
-  background: #00ffaa;
+  background: #c9a227;
   transform: rotate(45deg);
-  box-shadow: 0 0 6px rgba(0, 255, 170, 0.6);
+  box-shadow: 0 0 6px rgba(201, 162, 39, 0.6);
   transition: all 0.2s ease;
 }
 
@@ -3032,7 +3028,7 @@ body.playback-mode .status-dot {
 
 /* Map grid lines */
 .map-grid-line {
-  stroke: rgba(0, 255, 136, 0.15);
+  stroke: rgba(201, 162, 39, 0.15);
   stroke-width: 0.5;
   fill: none;
 }
@@ -3071,10 +3067,10 @@ body.playback-mode .status-dot {
   font-size: 10px;
 }
 
-.map-legend-icon.ship { color: #00ffaa; }
+.map-legend-icon.ship { color: #c9a227; }
 .map-legend-icon.nuke { color: #ffff00; }
 .map-legend-icon.base { color: #4488ff; }
-.map-legend-icon.cable { color: #00ffaa; }
+.map-legend-icon.cable { color: #c9a227; }
 .map-legend-icon.conflict { color: #ff4444; }
 .map-legend-icon.earthquake { color: #ffaa00; }
 .map-legend-icon.apt { color: #ff6600; }

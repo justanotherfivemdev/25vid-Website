@@ -822,7 +822,6 @@ The entire UI is hand-crafted DOM manipulation—no React, Vue, or Angular. This
 
 ```bash
 # Clone the repository
-git clone https://github.com/koala73/worldmonitor.git
 cd worldmonitor
 
 # Install dependencies
