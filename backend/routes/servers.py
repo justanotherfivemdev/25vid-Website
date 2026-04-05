@@ -3222,19 +3222,39 @@ def _resolve_server_root(server: dict, root_key: str) -> str:
 def _safe_resolve(base: str, relative: str) -> Path:
     """Resolve *relative* under *base*, preventing path-traversal attacks.
 
-    Returns the resolved absolute path.  Raises HTTPException(400) if the
-    result escapes *base*.
+    Returns the resolved absolute path. Raises HTTPException(400) if the
+    input is invalid or the result escapes *base*.
     """
-    # Reject path components that are clearly malicious
-    if ".." in relative.replace("\\", "/").split("/"):
+    if relative is None:
+        raise HTTPException(status_code=400, detail="Path is required")
+
+    # Normalize whitespace and separators early
+    rel_str = str(relative).strip()
+    if not rel_str:
+        raise HTTPException(status_code=400, detail="Path is required")
+
+    # Normalize backslashes to forward slashes for consistent checks
+    rel_norm = rel_str.replace("\\", "/")
+
+    # Disallow absolute or root-relative paths
+    if rel_norm.startswith("/"):
+        raise HTTPException(status_code=400, detail="Absolute paths are not allowed")
+    if Path(rel_str).is_absolute():
+        raise HTTPException(status_code=400, detail="Absolute paths are not allowed")
+
+    # Reject path components that are clearly malicious (.. traversal)
+    if ".." in rel_norm.split("/"):
         raise HTTPException(status_code=400, detail="Path traversal is not allowed")
+
     base_path = Path(base).resolve()
-    target = (base_path / relative).resolve()
+    target = (base_path / rel_str).resolve()
+
     # Use relative_to() — raises ValueError if target is outside base_path
     try:
         target.relative_to(base_path)
     except ValueError:
         raise HTTPException(status_code=400, detail="Path traversal is not allowed")
+
     return target
 
 
