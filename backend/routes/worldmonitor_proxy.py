@@ -1,14 +1,11 @@
 """
 World Monitor frontend API proxy routes.
 
-The World Monitor SPA calls /api/rss-proxy, /api/gdelt-doc, /api/finnhub,
-etc.  In production, Nginx rewrites some of these to /api/worldmonitor/*
-and proxies others directly to external APIs.  When Nginx is absent (or
-not yet configured), the backend returns 404 for these paths because the
-worldmonitor router lives under the /api/worldmonitor/ prefix.
-
-This module registers the short paths the frontend actually uses so they
-work with or without Nginx.
+The World Monitor (now integrated into the main React frontend) calls
+/api/rss-proxy, /api/gdelt-doc, /api/finnhub, etc.  In production,
+Nginx may rewrite some of these; this module registers the short paths
+so they work with or without Nginx.  All endpoints degrade gracefully
+on failure — errors are logged and empty results returned.
 """
 
 import os

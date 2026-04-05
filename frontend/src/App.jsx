@@ -1395,12 +1395,6 @@ const LoginPage = () => {
 // APP
 // ============================================================================
 
-/** Redirect component for external URLs (outside the React SPA). */
-function ExternalRedirect({ to }) {
-  React.useEffect(() => { window.location.replace(to); }, [to]);
-  return null;
-}
-
 function RouteFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#050a0e] text-[#d0d8e0]">

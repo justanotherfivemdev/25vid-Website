@@ -2,9 +2,9 @@
 WorldMonitor-aligned data API routes.
 
 Exposes GDELT, USGS, NWS, FRED, Polymarket, and ACLED data through
-REST endpoints, mirroring the data sources used by the worldmonitor-
-bayesian overlay system.  Also provides RSS and Finnhub proxy endpoints
-so the standalone World Monitor SPA can bypass CORS restrictions.
+REST endpoints.  All endpoints return valid JSON responses even when
+external APIs fail — errors are logged and empty results returned.
+Also provides RSS and Finnhub proxy endpoints for CORS bypass.
 """
 
 import os

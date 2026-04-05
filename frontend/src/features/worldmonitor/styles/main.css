@@ -1,38 +1,53 @@
 :root {
-  --bg: #050a0e;
-  --surface: #0c1117;
-  --border: rgba(201, 162, 39, 0.12);
-  --text: #d0d8e0;
-  --text-dim: #8a9aa8;
-  --muted: #4a6070;
-  --accent: #e8c547;
-  --accent-dim: #c9a227;
-  --red: #ff4444;
-  --green: #c9a227;
-  --yellow: #e8c547;
-  --map-bg: #050a0e;
-  --map-grid: #111a24;
-  --map-country: #0c1117;
-  --map-stroke: rgba(201, 162, 39, 0.25);
+  --wm-bg: #050a0e;
+  --wm-surface: #0c1117;
+  --wm-border: rgba(201, 162, 39, 0.12);
+  --wm-text: #d0d8e0;
+  --wm-text-dim: #8a9aa8;
+  --wm-muted: #4a6070;
+  --wm-accent: #e8c547;
+  --wm-accent-dim: #c9a227;
+  --wm-red: #ff4444;
+  --wm-green: #c9a227;
+  --wm-yellow: #e8c547;
+  --wm-map-bg: #050a0e;
+  --wm-map-grid: #111a24;
+  --wm-map-country: #0c1117;
+  --wm-map-stroke: rgba(201, 162, 39, 0.25);
+  /* Keep non-prefixed aliases for backwards compatibility within worldmonitor components */
+  --bg: var(--wm-bg);
+  --surface: var(--wm-surface);
+  --border: var(--wm-border);
+  --text: var(--wm-text);
+  --text-dim: var(--wm-text-dim);
+  --muted: var(--wm-muted);
+  --accent: var(--wm-accent);
+  --accent-dim: var(--wm-accent-dim);
+  --red: var(--wm-red);
+  --green: var(--wm-green);
+  --yellow: var(--wm-yellow);
+  --map-bg: var(--wm-map-bg);
+  --map-grid: var(--wm-map-grid);
+  --map-country: var(--wm-map-country);
+  --map-stroke: var(--wm-map-stroke);
 }
 
-* {
+/* Scoped reset — only applies within the worldmonitor container */
+#worldmonitor-root *,
+#worldmonitor-root *::before,
+#worldmonitor-root *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-body {
+#worldmonitor-root {
   font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
   font-size: 12px;
   line-height: 1.5;
   background: var(--bg);
   color: var(--text);
   overflow: hidden;
-  height: 100vh;
-}
-
-#app {
   height: 100vh;
   display: flex;
   flex-direction: column;
