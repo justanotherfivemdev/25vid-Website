@@ -312,9 +312,9 @@ const MemberHub = () => {
             <a href="#ops" className="bg-[#0c1117] border border-[rgba(201,162,39,0.1)] p-3 sm:p-4 hover:border-[#e8c547]/30 active:bg-[#111a24] transition-colors text-center">
               <Calendar className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1.5 sm:mb-2 text-[#e8c547]" /><span className="font-medium text-xs sm:text-sm">Operations</span>
             </a>
-            <a href="#training" className="bg-[#0c1117] border border-[rgba(201,162,39,0.1)] p-3 sm:p-4 hover:border-[#e8c547]/30 active:bg-[#111a24] transition-colors text-center">
+            <Link to="/hub/training" className="bg-[#0c1117] border border-[rgba(201,162,39,0.1)] p-3 sm:p-4 hover:border-[#e8c547]/30 active:bg-[#111a24] transition-colors text-center">
               <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1.5 sm:mb-2 text-[#e8c547]" /><span className="font-medium text-xs sm:text-sm">Training</span>
-            </a>
+            </Link>
             <Link to="/hub/intel" className="bg-[#0c1117] border border-[rgba(201,162,39,0.1)] p-3 sm:p-4 hover:border-[#e8c547]/30 active:bg-[#111a24] transition-colors text-center" data-testid="hub-nav-intel">
               <Megaphone className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1.5 sm:mb-2 text-[#e8c547]" /><span className="font-medium text-xs sm:text-sm">Intel Board</span>
             </Link>
@@ -491,6 +491,7 @@ const MemberHub = () => {
           <section id="training">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-2xl font-bold text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>TRAINING PROGRAMS</h3>
+              <Link to="/hub/training"><Button size="sm" variant="outline" className="border-[rgba(201,162,39,0.15)]">View All <ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
             </div>
             {training.length === 0 ? <p className="text-[#4a6070]">No training scheduled.</p> : (
               <div className="grid md:grid-cols-3 gap-4">

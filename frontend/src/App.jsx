@@ -33,6 +33,7 @@ const IntelBoard = lazy(() => import('@/pages/member/IntelBoard'));
 const CampaignMap = lazy(() => import('@/pages/member/CampaignMap'));
 const ThreatMapPage = lazy(() => import('@/pages/member/ThreatMapPage'));
 const GalleryHub = lazy(() => import('@/pages/member/GalleryHub'));
+const TrainingPage = lazy(() => import('@/pages/member/TrainingPage'));
 const AdminMemberDetail = lazy(() => import('@/pages/admin/AdminMemberDetail'));
 const HistoryManager = lazy(() => import('@/pages/admin/HistoryManager'));
 const RecruitDashboard = lazy(() => import('@/pages/RecruitDashboard'));
@@ -1479,6 +1480,7 @@ function App() {
           <Route path="/hub/intel" element={<IntelBoard />} />
           <Route path="/hub/campaign" element={<CampaignMap />} />
           <Route path="/hub/gallery" element={<GalleryHub />} />
+          <Route path="/hub/training" element={<TrainingPage />} />
           <Route path="/hub/loa" element={<LOARequest />} />
           <Route path="/hub/shared" element={<SharedArea />} />
           <Route path="/hub/plans/:id" element={<OperationsPlanView />} />
