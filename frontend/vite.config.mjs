@@ -319,6 +319,9 @@ export default defineConfig(({ mode }) => {
           ),
         },
         {
+          // Deep import into milsymbol internals – pinned to exact version
+          // in package.json.  Must be updated if milsymbol changes its
+          // internal layout.  See src/lib/milsymbol.js for details.
           find: "milsymbol-symbol",
           replacement: path.resolve(
             workspaceRoot,
