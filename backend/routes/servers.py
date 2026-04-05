@@ -3097,12 +3097,25 @@ async def battlemetrics_search(
 
     data = resp.json()
     servers = [_sanitize_bm_server(s) for s in data.get("data", [])]
-    links = data.get("links", {})
+
+    # BattleMetrics may return links as either:
+    #  - a dict: {"next": "https://...", "prev": "https://..."}
+    #  - a list of link objects: [{"rel": "next", "href": "https://..."}, ...]
+    raw_links = data.get("links", {})
+    next_page_key: str | None = None
+
+    if isinstance(raw_links, dict):
+        next_page_key = raw_links.get("next")
+    elif isinstance(raw_links, list):
+        for link_obj in raw_links:
+            if isinstance(link_obj, dict) and link_obj.get("rel") == "next":
+                next_page_key = link_obj.get("href")
+                break
 
     return {
         "servers": servers,
-        "next_page_key": links.get("next"),
-        "has_next": "next" in links,
+        "next_page_key": next_page_key,
+        "has_next": next_page_key is not None,
     }
 
 

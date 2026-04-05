@@ -213,15 +213,9 @@ export const ADMIN_NAV_GROUPS = [
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
       },
       {
-        path: '/admin/servers/mod-issues',
-        label: 'Mod Issues',
+        path: '/admin/servers/diagnostics',
+        label: 'Diagnostics',
         icon: AlertTriangle,
-        show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
-      },
-      {
-        path: '/admin/servers/log-monitor',
-        label: 'Log Monitor',
-        icon: Monitor,
         show: (role) => hasPermission(role, PERMISSIONS.MANAGE_SERVERS),
       },
     ],
