@@ -84,7 +84,7 @@ export const MEMBER_NAV_GROUPS = [
     label: 'TRAINING',
     defaultOpen: false,
     items: [
-      { path: '/hub', label: 'Training Programs', icon: BookOpen, hash: '#training', exact: true },
+      { path: '/hub/training', label: 'Training Programs', icon: BookOpen },
     ],
   },
   {
