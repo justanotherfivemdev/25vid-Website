@@ -11,7 +11,7 @@ import os
 import re
 import logging
 from datetime import datetime, timezone
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from fastapi import APIRouter, Query, HTTPException, Response
@@ -294,7 +294,7 @@ async def rss_proxy(url: str = Query(..., description="RSS feed URL to fetch")):
                     location = resp.headers.get("location")
                     if not location:
                         raise HTTPException(status_code=502, detail="RSS redirect missing Location header")
-                    redirect_url = str(httpx.URL(location, base=current_url))
+                    redirect_url = urljoin(current_url, location)
                     current_url = _build_validated_rss_url(redirect_url)
                     continue
 

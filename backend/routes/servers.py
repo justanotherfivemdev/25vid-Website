@@ -2997,6 +2997,8 @@ async def battlemetrics_search(
     """
     import httpx
 
+    url = f"{_BM_API_BASE}/servers"
+
     if page_key:
         # Instead of forwarding the raw URL (SSRF risk), extract only the
         # pagination cursor parameters and rebuild the URL server-side.
@@ -3013,14 +3015,16 @@ async def battlemetrics_search(
                 detail="Invalid pagination cursor",
             )
         qs = parse_qs(parsed.query)
-        url = f"{_BM_API_BASE}/servers"
-        params = {}
+        params: dict = {}
         for key in _BM_ALLOWED_PAGINATION_PARAMS:
             values = qs.get(key)
             if values:
                 params[key] = values[0]
+        # Always enforce game filter and defaults for safety
+        params.setdefault("filter[game]", _BM_GAME_FILTER)
+        params.setdefault("page[size]", str(per_page))
+        params.setdefault("sort", _BM_DEFAULT_SORT)
     else:
-        url = f"{_BM_API_BASE}/servers"
         params: dict = {
             "filter[game]": _BM_GAME_FILTER,
             "page[size]": str(per_page),
@@ -3080,6 +3084,11 @@ async def battlemetrics_server_detail(
             )
             server_resp.raise_for_status()
     except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            raise HTTPException(
+                status_code=404,
+                detail=f"BattleMetrics server {bm_server_id} not found",
+            )
         raise HTTPException(
             status_code=exc.response.status_code,
             detail=f"BattleMetrics API error: {exc.response.status_code}",
