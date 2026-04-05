@@ -6,7 +6,7 @@ import {
 } from 'milsymbol-modern';
 
 // Import Symbol constructor directly instead of relying on ms.Symbol being set
-// via a side-effect in milsymbol's re-export chain.  Vite/Rollup can optimise
+// via a side-effect in milsymbol's re-export chain.  Vite/Rollup can optimize
 // away the intermediate src/milsymbol.js module that does `ms.Symbol = Symbol`,
 // leaving ms.Symbol undefined in production builds (the "Ce is not a constructor"
 // error).  The "milsymbol-symbol" alias is defined in vite.config.mjs.
