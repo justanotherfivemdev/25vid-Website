@@ -35,8 +35,8 @@ export default function ThreatMapPage() {
     setAnimDone(true);
   }, []);
 
-  // This page always renders the Globe view. World Monitor is a standalone app
-  // at /worldmonitor/ (served by Nginx), not a React route.
+  // This page always renders the Globe view. World Monitor is accessible
+  // at /worldmonitor via React Router.
   useLayoutEffect(() => {
     setMapViewMode('globe');
   }, [setMapViewMode]);

@@ -47,7 +47,7 @@ const PartnerHub = lazy(() => import('@/pages/partner/PartnerHub'));
 const PartnerAdmin = lazy(() => import('@/pages/partner/PartnerAdmin'));
 const PartnerApply = lazy(() => import('@/pages/partner/PartnerApply'));
 const PartnerThreatMap = lazy(() => import('@/pages/partner/PartnerThreatMap'));
-const WorldMonitorNginxFallback = lazy(() => import('@/components/threatmap/WorldMonitorNginxFallback'));
+const WorldMonitorPage = lazy(() => import('@/pages/WorldMonitorPage'));
 const PartnerApplicationsReview = lazy(() => import('@/pages/admin/PartnerApplicationsReview'));
 const AuditLogsManager = lazy(() => import('@/pages/admin/AuditLogsManager'));
 const ErrorLogsManager = lazy(() => import('@/pages/admin/ErrorLogsManager'));
@@ -1395,12 +1395,6 @@ const LoginPage = () => {
 // APP
 // ============================================================================
 
-/** Redirect component for external URLs (outside the React SPA). */
-function ExternalRedirect({ to }) {
-  React.useEffect(() => { window.location.replace(to); }, [to]);
-  return null;
-}
-
 function RouteFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#050a0e] text-[#d0d8e0]">
@@ -1497,8 +1491,8 @@ function App() {
         <Route path="/hub/profile" element={<ProtectedRoute allowRecruit><MemberLayout><EditProfile /></MemberLayout></ProtectedRoute>} />
         {/* Threat map: full-screen layout, no sidebar */}
         <Route path="/hub/threat-map" element={<ProtectedRoute><ErrorBoundary><ThreatMapPage /></ErrorBoundary></ProtectedRoute>} />
-        {/* Legacy world-monitor routes — redirect to standalone World Monitor app */}
-        <Route path="/hub/threat-map/world-monitor" element={<ExternalRedirect to="/worldmonitor/" />} />
+        {/* World Monitor routes — redirect legacy paths to integrated route */}
+        <Route path="/hub/threat-map/world-monitor" element={<Navigate to="/worldmonitor" replace />} />
         {/* Operations Planner: full-screen layout, no sidebar */}
         <Route path="/hub/operations-planner" element={<ProtectedRoute><ErrorBoundary><OperationsPlanner /></ErrorBoundary></ProtectedRoute>} />
         <Route path="/hub/operations-planner/:id" element={<ProtectedRoute><ErrorBoundary><OperationsPlanner /></ErrorBoundary></ProtectedRoute>} />
@@ -1514,15 +1508,12 @@ function App() {
         <Route path="/partner/discussions" element={<DiscussionForum />} />
         <Route path="/partner/discussions/:id" element={<DiscussionThread />} />
         <Route path="/partner/threat-map" element={<ErrorBoundary><PartnerThreatMap /></ErrorBoundary>} />
-        {/* Legacy world-monitor route — redirect to standalone World Monitor app */}
-        <Route path="/partner/threat-map/world-monitor" element={<ExternalRedirect to="/worldmonitor/" />} />
+        {/* World Monitor — redirect legacy partner path to integrated route */}
+        <Route path="/partner/threat-map/world-monitor" element={<Navigate to="/worldmonitor" replace />} />
         <Route path="/partner/shared" element={<PartnerSharedArea />} />
-        {/* Defensive fallback: if Nginx is misconfigured and serves the React app
-            at /worldmonitor/, show a diagnostic message instead of a black screen.
-            In a correctly configured deployment, Nginx serves the standalone
-            worldmonitor Vite app at this path and React never sees these requests. */}
-        <Route path="/worldmonitor" element={<WorldMonitorNginxFallback />} />
-        <Route path="/worldmonitor/*" element={<WorldMonitorNginxFallback />} />
+        {/* World Monitor — integrated into the main frontend (no Nginx dependency) */}
+        <Route path="/worldmonitor" element={<ErrorBoundary><WorldMonitorPage /></ErrorBoundary>} />
+        <Route path="/worldmonitor/*" element={<ErrorBoundary><WorldMonitorPage /></ErrorBoundary>} />
       </Routes>
       </Suspense>
     </BrowserRouter>

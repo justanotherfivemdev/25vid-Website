@@ -1,14 +1,11 @@
 """
 World Monitor frontend API proxy routes.
 
-The World Monitor SPA calls /api/rss-proxy, /api/gdelt-doc, /api/finnhub,
-etc.  In production, Nginx rewrites some of these to /api/worldmonitor/*
-and proxies others directly to external APIs.  When Nginx is absent (or
-not yet configured), the backend returns 404 for these paths because the
-worldmonitor router lives under the /api/worldmonitor/ prefix.
-
-This module registers the short paths the frontend actually uses so they
-work with or without Nginx.
+The World Monitor (now integrated into the main React frontend) calls
+/api/rss-proxy, /api/gdelt-doc, /api/finnhub, etc.  In production,
+Nginx may rewrite some of these; this module registers the short paths
+so they work with or without Nginx.  All endpoints degrade gracefully
+on failure — errors are logged and empty results returned.
 """
 
 import os
@@ -16,7 +13,7 @@ import re
 import logging
 
 import httpx
-from fastapi import APIRouter, Query, Request, Response, HTTPException
+from fastapi import APIRouter, Query, Request, Response
 
 # Re-use the validated RSS proxy and Finnhub handlers from the main
 # worldmonitor module — they already implement allowlist checking, key
@@ -76,16 +73,19 @@ async def gdelt_doc_proxy(
                 params=params,
             )
             if resp.status_code != 200:
-                raise HTTPException(status_code=resp.status_code, detail="GDELT request failed")
+                logger.warning(f"GDELT DOC proxy returned {resp.status_code}")
+                return {"articles": [], "query": query}
 
             content_type = resp.headers.get("content-type", "")
             if "json" not in content_type.lower():
-                raise HTTPException(status_code=502, detail="Invalid GDELT response")
+                logger.warning("GDELT DOC proxy returned non-JSON response")
+                return {"articles": [], "query": query}
 
             try:
                 data = resp.json()
             except ValueError:
-                raise HTTPException(status_code=502, detail="Invalid GDELT response")
+                logger.warning("GDELT DOC proxy returned invalid JSON")
+                return {"articles": [], "query": query}
             articles = [
                 {
                     "title": a.get("title"),
@@ -99,8 +99,9 @@ async def gdelt_doc_proxy(
                 for a in (data.get("articles") or [])
             ]
             return {"articles": articles, "query": query}
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"GDELT fetch failed: {exc}")
+    except Exception as exc:
+        logger.warning(f"GDELT DOC proxy error: {exc}")
+        return {"articles": [], "query": query}
 
 
 # ---------------------------------------------------------------------------
@@ -123,8 +124,9 @@ async def polymarket_proxy(request: Request):
                 status_code=resp.status_code,
                 media_type="application/json",
             )
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"Polymarket fetch failed: {exc}")
+    except Exception as exc:
+        logger.warning(f"Polymarket proxy error: {exc}")
+        return Response(content=b"[]", status_code=200, media_type="application/json")
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +141,7 @@ _PIZZINT_PATH_RE = re.compile(r"^[A-Za-z0-9/_\-\.]+$")
 async def pizzint_proxy(path: str, request: Request):
     """Proxy PizzINT dashboard and GDELT tension data."""
     if not _PIZZINT_PATH_RE.match(path) or ".." in path or "//" in path:
-        raise HTTPException(status_code=400, detail="Invalid path")
+        return Response(content=b'{"error":"Invalid path"}', status_code=400, media_type="application/json")
 
     params = list(request.query_params.multi_items())
     target_url = f"https://www.pizzint.watch/api/{path}"
@@ -153,8 +155,9 @@ async def pizzint_proxy(path: str, request: Request):
                 status_code=resp.status_code,
                 media_type="application/json",
             )
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"PizzINT fetch failed: {exc}")
+    except Exception as exc:
+        logger.warning(f"PizzINT proxy error: {exc}")
+        return Response(content=b'{}', status_code=200, media_type="application/json")
 
 
 # ---------------------------------------------------------------------------
@@ -173,10 +176,10 @@ async def fred_data_proxy(
     """Proxy FRED API with server-side key injection."""
     api_key = os.environ.get("FRED_API_KEY", "")
     if not api_key:
-        raise HTTPException(status_code=503, detail="FRED_API_KEY not configured")
+        return Response(content=b'{"observations":[]}', status_code=200, media_type="application/json")
 
     if not _FRED_SERIES_RE.match(series_id):
-        raise HTTPException(status_code=400, detail="Invalid series_id")
+        return Response(content=b'{"error":"Invalid series_id"}', status_code=400, media_type="application/json")
 
     params = {
         "series_id": series_id,
@@ -201,8 +204,9 @@ async def fred_data_proxy(
                 status_code=resp.status_code,
                 media_type="application/json",
             )
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"FRED fetch failed: {exc}")
+    except Exception as exc:
+        logger.warning(f"FRED proxy error: {exc}")
+        return Response(content=b'{"observations":[]}', status_code=200, media_type="application/json")
 
 
 # ---------------------------------------------------------------------------
@@ -223,8 +227,9 @@ async def earthquakes_proxy():
                 status_code=resp.status_code,
                 media_type="application/json",
             )
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"USGS fetch failed: {exc}")
+    except Exception as exc:
+        logger.warning(f"USGS earthquake proxy error: {exc}")
+        return Response(content=b'{"features":[]}', status_code=200, media_type="application/json")
 
 
 # ---------------------------------------------------------------------------
@@ -247,8 +252,9 @@ async def coingecko_proxy(request: Request):
                 status_code=resp.status_code,
                 media_type="application/json",
             )
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"CoinGecko fetch failed: {exc}")
+    except Exception as exc:
+        logger.warning(f"CoinGecko proxy error: {exc}")
+        return Response(content=b'{}', status_code=200, media_type="application/json")
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +268,7 @@ _YF_SYMBOL_RE = re.compile(r"^[A-Za-z0-9^=.\-]{1,20}$")
 async def yahoo_finance_proxy(symbol: str = Query(...)):
     """Proxy Yahoo Finance chart data."""
     if not _YF_SYMBOL_RE.match(symbol):
-        raise HTTPException(status_code=400, detail="Invalid symbol")
+        return Response(content=b'{"error":"Invalid symbol"}', status_code=400, media_type="application/json")
 
     try:
         async with httpx.AsyncClient(timeout=_PROXY_TIMEOUT) as client:
@@ -275,8 +281,9 @@ async def yahoo_finance_proxy(symbol: str = Query(...)):
                 status_code=resp.status_code,
                 media_type="application/json",
             )
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"Yahoo Finance fetch failed: {exc}")
+    except Exception as exc:
+        logger.warning(f"Yahoo Finance proxy error: {exc}")
+        return Response(content=b'{"chart":{"result":null}}', status_code=200, media_type="application/json")
 
 
 # ---------------------------------------------------------------------------
@@ -286,8 +293,8 @@ async def yahoo_finance_proxy(symbol: str = Query(...)):
 
 @router.get("/cloudflare-outages")
 async def cloudflare_outages():
-    """Cloudflare outage data is not available without a token."""
-    raise HTTPException(status_code=503, detail="cloudflare_outages_unavailable")
+    """Cloudflare outage data is not available without a token — return empty data gracefully."""
+    return Response(content=b'{"outages":[]}', status_code=200, media_type="application/json")
 
 
 # ---------------------------------------------------------------------------
@@ -310,5 +317,6 @@ async def gdelt_geo_proxy(request: Request):
                 status_code=resp.status_code,
                 media_type="application/json",
             )
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"GDELT GEO fetch failed: {exc}")
+    except Exception as exc:
+        logger.warning(f"GDELT GEO proxy error: {exc}")
+        return Response(content=b'{"features":[]}', status_code=200, media_type="application/json")
