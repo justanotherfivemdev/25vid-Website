@@ -24,6 +24,7 @@ class Operation(BaseModel):
     severity: Optional[Literal["low", "medium", "high", "critical"]] = None
     is_public_recruiting: bool = False
     activity_state: Literal["planned", "ongoing", "completed"] = "planned"
+    deployment_id: Optional[str] = None
     rsvps: List[dict] = Field(default_factory=list)
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -50,6 +51,7 @@ class OperationCreate(BaseModel):
     severity: Optional[Literal["low", "medium", "high", "critical"]] = None
     is_public_recruiting: bool = False
     activity_state: Literal["planned", "ongoing", "completed"] = "planned"
+    deployment_id: Optional[str] = None
 
 
 class RSVPSubmit(BaseModel):

@@ -2588,6 +2588,18 @@ async def _authenticate_ws(websocket: WebSocket) -> Optional[dict]:
         return None
 
 
+async def _reject_ws(websocket: WebSocket, code: int, reason: str) -> None:
+    """Accept then close so clients receive a WebSocket close code instead of a failed handshake."""
+    try:
+        await websocket.accept()
+    except Exception:
+        pass
+    try:
+        await websocket.close(code=code, reason=reason)
+    except Exception:
+        pass
+
+
 _ISO_TS_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')
 _NANO_FRAC_RE = re.compile(r'(\.\d{6})\d+')
 
@@ -2621,16 +2633,16 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
 
     user = await _authenticate_ws(websocket)
     if not user:
-        await websocket.close(code=4001, reason="Authentication required")
+        await _reject_ws(websocket, code=4001, reason="Authentication required")
         return
 
     if not has_permission(user.get("role", ""), Permission.MANAGE_SERVERS):
-        await websocket.close(code=4003, reason="Insufficient permissions")
+        await _reject_ws(websocket, code=4003, reason="Insufficient permissions")
         return
 
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
-        await websocket.close(code=4004, reason="Server not found")
+        await _reject_ws(websocket, code=4004, reason="Server not found")
         return
 
     await websocket.accept()
@@ -2704,20 +2716,20 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
 
     user = await _authenticate_ws(websocket)
     if not user:
-        await websocket.close(code=4001, reason="Authentication required")
+        await _reject_ws(websocket, code=4001, reason="Authentication required")
         return
 
     if not has_permission(user.get("role", ""), Permission.MANAGE_SERVERS):
-        await websocket.close(code=4003, reason="Insufficient permissions")
+        await _reject_ws(websocket, code=4003, reason="Insufficient permissions")
         return
 
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
-        await websocket.close(code=4004, reason="Server not found")
+        await _reject_ws(websocket, code=4004, reason="Server not found")
         return
 
     if server.get("status") != "running":
-        await websocket.close(code=4000, reason="Server is not running")
+        await _reject_ws(websocket, code=4000, reason="Server is not running")
         return
 
     await websocket.accept()
