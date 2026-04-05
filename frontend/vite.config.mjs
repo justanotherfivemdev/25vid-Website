@@ -308,6 +308,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: [
         {
+          find: "@wm",
+          replacement: path.resolve(workspaceRoot, "src/features/worldmonitor"),
+        },
+        {
           find: "@",
           replacement: path.resolve(workspaceRoot, "src"),
         },
