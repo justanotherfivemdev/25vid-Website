@@ -292,14 +292,14 @@ class ServerBackup(BaseModel):
 
 
 WATCHER_TYPES = ["health", "log", "threshold"]
-WATCHER_VERDICTS = ["active", "monitoring", "resolved", "false_positive"]
+WATCHER_VERDICTS = ["active", "monitoring", "resolved", "false_positive", "ignored"]
 WATCHER_COMPARISONS = ["gt", "gte", "lt", "lte"]
 
 WatcherType = Literal["health", "log", "threshold"]
 WatcherSeverity = Literal["low", "medium", "high", "critical"]
 WatcherMetric = Literal["cpu_percent", "memory_mb", "player_count", "server_fps", "avg_player_ping_ms"]
 WatcherComparison = Literal["gt", "gte", "lt", "lte"]
-DetectionStatus = Literal["active", "monitoring", "resolved", "false_positive"]
+DetectionStatus = Literal["active", "monitoring", "resolved", "false_positive", "ignored"]
 
 
 class ServerWatcher(BaseModel):
@@ -374,14 +374,21 @@ class WatcherDetection(BaseModel):
     severity: WatcherSeverity = "medium"
     status: DetectionStatus = "active"
     source_category: str = "runtime-script"
+    source_type: str = "watcher"  # "watcher" | "system" | "provisioning"
     source_streams: List[str] = Field(default_factory=list)
     occurrence_count: int = 0
     confidence_score: float = 0.0
     first_seen: datetime = Field(default_factory=_utc_now)
     last_seen: datetime = Field(default_factory=_utc_now)
     evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    log_snapshot: List[Dict[str, Any]] = Field(default_factory=list)
     recommended_actions: List[str] = Field(default_factory=list)
+    human_summary: str = ""
+    human_impact: str = ""
+    human_action: str = ""
     verdict_notes: str = ""
+    ignored_at: Optional[datetime] = None
+    ignored_by: str = ""
     updated_at: datetime = Field(default_factory=_utc_now)
 
 

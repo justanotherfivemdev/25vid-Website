@@ -16,6 +16,13 @@ CORE_PROVISIONING_STAGES = {
     "initial_startup",
 }
 
+# Stages that are supplemental tooling — their failure should never poison
+# operator-facing readiness or follow-up checklists.
+NON_READINESS_STAGES = {
+    "sat_discovery",
+    "profile_generation",
+}
+
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -37,6 +44,8 @@ def _collect_follow_up_checklist(server: Dict[str, Any]) -> List[Dict[str, str]]
 
     for warning in server.get("provisioning_warnings") or []:
         stage = str(warning.get("stage") or "unknown")
+        if stage in NON_READINESS_STAGES:
+            continue
         message = str(warning.get("message") or "Follow-up attention required")
         key = (stage, message)
         if key in seen:
@@ -49,6 +58,8 @@ def _collect_follow_up_checklist(server: Dict[str, Any]) -> List[Dict[str, str]]
             continue
         stage_name = str(stage.get("name") or "unknown")
         if stage_name in CORE_PROVISIONING_STAGES:
+            continue
+        if stage_name in NON_READINESS_STAGES:
             continue
         message = str(stage.get("error") or stage.get("message") or "Stage completed with warnings")
         key = (stage_name, message)

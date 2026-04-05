@@ -2061,11 +2061,17 @@ async def delete_watcher(server_id: str, watcher_id: str, current_user: dict = D
 async def list_server_detections(
     server_id: str,
     status: Optional[str] = Query(None),
+    source_type: Optional[str] = Query(None),
+    include_ignored: bool = Query(False),
     current_user: dict = Depends(_require_servers),
 ):
-    query = {"server_id": server_id}
+    query: dict = {"server_id": server_id}
     if status:
         query["status"] = status
+    elif not include_ignored:
+        query["status"] = {"$nin": ["ignored", "false_positive"]}
+    if source_type:
+        query["source_type"] = source_type
     detections = await db.server_detections.find(query, {"_id": 0}).sort("last_seen", -1).to_list(200)
     return _serialize_doc(detections)
 
@@ -2081,15 +2087,19 @@ async def update_detection_verdict(
     body: DetectionVerdictUpdate,
     current_user: dict = Depends(_require_servers),
 ):
-    if body.status not in {"active", "monitoring", "resolved", "false_positive"}:
+    if body.status not in {"active", "monitoring", "resolved", "false_positive", "ignored"}:
         raise HTTPException(status_code=400, detail="Unsupported detection status")
+    updates: dict = {
+        "status": body.status,
+        "verdict_notes": body.verdict_notes,
+        "updated_at": datetime.now(timezone.utc),
+    }
+    if body.status in {"ignored", "false_positive"}:
+        updates["ignored_at"] = datetime.now(timezone.utc)
+        updates["ignored_by"] = current_user.get("username") or current_user.get("id") or ""
     result = await db.server_detections.update_one(
         {"id": detection_id},
-        {"$set": {
-            "status": body.status,
-            "verdict_notes": body.verdict_notes,
-            "updated_at": datetime.now(timezone.utc),
-        }},
+        {"$set": updates},
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Detection not found")
