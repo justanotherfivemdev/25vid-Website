@@ -12,6 +12,19 @@ import {
 // error).  The "milsymbol-symbol" alias is defined in vite.config.mjs.
 import MilSymbol from 'milsymbol-symbol';
 
+// Fail-fast: surface a clear diagnostic instead of the cryptic minified
+// "Ce is not a constructor" error that appears in production bundles when
+// the Vite alias or milsymbol internal layout changes.
+if (typeof MilSymbol !== 'function') {
+  console.error(
+    '[milsymbol] Symbol constructor not available (got %s). ' +
+      'Check the "milsymbol-symbol" Vite alias in vite.config.mjs — ' +
+      'it must resolve to milsymbol/src/ms/symbol.js which should ' +
+      'export a default function.',
+    typeof MilSymbol,
+  );
+}
+
 let milsymbolConfigured = false;
 
 function ensureMilSymbolConfigured() {
@@ -39,7 +52,8 @@ export function renderMilSymbolDataUrl(sidc, size = 40) {
     ensureMilSymbolConfigured();
     const symbol = new MilSymbol(sidc, { size });
     return symbol.toDataURL();
-  } catch {
+  } catch (err) {
+    console.warn('[milsymbol] render failed for SIDC %s:', sidc, err);
     return null;
   }
 }
