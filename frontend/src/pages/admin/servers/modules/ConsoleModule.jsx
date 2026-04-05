@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import axios from 'axios';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +14,6 @@ import {
   Terminal,
   Trash2,
 } from 'lucide-react';
-import { API } from '@/utils/api';
 import { buildServerWsUrl } from '@/utils/serverRealtime';
 import { normalizeServer } from '@/utils/serverStatus';
 
@@ -23,6 +21,7 @@ function normalizeEntry(entry, fallbackId) {
   return {
     id: entry.cursor || fallbackId,
     cursor: entry.cursor || String(fallbackId),
+    seq: entry.seq || 0,
     text: entry.line || entry.raw || '',
     ts: entry.timestamp || new Date().toISOString(),
     source: entry.source || entry.stream || 'docker',
@@ -55,7 +54,6 @@ function sourceTone(source) {
 }
 
 const MAX_LOG_BUFFER = 2000;
-/** Distance in pixels from scroll bottom to consider user "at bottom". */
 const SCROLL_THRESHOLD = 60;
 const MAX_CURSOR_CACHE = 5000;
 const TRIMMED_CURSOR_CACHE = 3000;
@@ -68,36 +66,33 @@ function ConsoleModule() {
   const [paused, setPaused] = useState(false);
   const [filter, setFilter] = useState('');
   const [connectionState, setConnectionState] = useState('idle');
+  const [backfillInfo, setBackfillInfo] = useState(null);
 
   const logRef = useRef(null);
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const seenCursorsRef = useRef(new Set());
-  const lastSeenTimestampRef = useRef(null);
+  const lastSeqRef = useRef(0);
   const pendingEntriesRef = useRef([]);
   const flushRafRef = useRef(null);
   const isNearBottomRef = useRef(true);
   const pausedRef = useRef(paused);
 
-  // Keep paused ref in sync
   useEffect(() => {
     pausedRef.current = paused;
   }, [paused]);
 
-  // Detect user scrolling to auto-pause/resume
   const handleScroll = useCallback(() => {
     const el = logRef.current;
     if (!el) return;
     const atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < SCROLL_THRESHOLD;
     isNearBottomRef.current = atBottom;
-    // Auto-resume if user scrolls back to bottom
     if (atBottom && pausedRef.current) {
       setPaused(false);
     }
   }, []);
 
-  // Flush pending log entries in batches using rAF for smooth rendering
   const scheduleFlush = useCallback(() => {
     if (flushRafRef.current) return;
     flushRafRef.current = requestAnimationFrame(() => {
@@ -119,41 +114,11 @@ function ConsoleModule() {
     if (flushRafRef.current) cancelAnimationFrame(flushRafRef.current);
   }, []);
 
-  // Load initial history
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setLogs([]);
-    seenCursorsRef.current = new Set();
-    lastSeenTimestampRef.current = null;
-    pendingEntriesRef.current = [];
-
-    axios.get(`${API}/servers/${serverId}/logs/recent?tail=500`)
-      .then((res) => {
-        if (cancelled) return;
-        const entries = Array.isArray(res.data?.entries)
-          ? res.data.entries.map((entry, index) => normalizeEntry(entry, `${index}`))
-          : [];
-        entries.forEach((entry) => seenCursorsRef.current.add(entry.cursor));
-        if (entries.length > 0) {
-          lastSeenTimestampRef.current = entries[entries.length - 1].ts;
-        }
-        setLogs(entries);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [serverId]);
-
-  // WebSocket connection for live streaming
+  // WebSocket connection — this is now the ONLY data path (no REST initial fetch)
   useEffect(() => {
     if (server?.status !== 'running') {
       setConnectionState('offline');
+      setLoading(false);
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       if (wsRef.current) wsRef.current.close();
       return undefined;
@@ -163,14 +128,31 @@ function ConsoleModule() {
 
     const connect = () => {
       if (disposed) return;
-      // On reconnect, request recent history to backfill any missed entries.
-      // The backend deduplication via seen_cursors will handle overlaps.
       const isReconnect = reconnectAttemptRef.current > 0;
-      const url = buildServerWsUrl(`/api/ws/servers/${serverId}/logs`, {
-        tail: isReconnect ? 100 : 0,
-        since: lastSeenTimestampRef.current || '',
-      });
+
+      // Build URL with sequence-based reconnect
+      const params = {};
+      if (isReconnect && lastSeqRef.current > 0) {
+        // Reconnect: use sequence number for precise backfill
+        params.since_seq = lastSeqRef.current;
+        params.tail = 0;
+      } else {
+        // First connect: request full initial history
+        params.tail = 500;
+      }
+
+      const url = buildServerWsUrl(`/api/ws/servers/${serverId}/logs`, params);
       setConnectionState(isReconnect ? 'reconnecting' : 'connecting');
+      setLoading(!isReconnect);
+
+      // Reset state for first connect
+      if (!isReconnect) {
+        setLogs([]);
+        seenCursorsRef.current = new Set();
+        lastSeqRef.current = 0;
+        pendingEntriesRef.current = [];
+        setBackfillInfo(null);
+      }
 
       try {
         const ws = new WebSocket(url);
@@ -178,7 +160,7 @@ function ConsoleModule() {
 
         ws.onopen = () => {
           reconnectAttemptRef.current = 0;
-          setConnectionState('live');
+          // Don't set 'live' yet — wait for backend status message
         };
 
         ws.onmessage = (event) => {
@@ -189,48 +171,110 @@ function ConsoleModule() {
             payload = { type: 'log', line: event.data };
           }
 
+          // Handle status messages from backend
           if (payload.type === 'status') {
-            setConnectionState(payload.state === 'connected' ? 'live' : payload.state || 'live');
+            if (payload.state === 'connected') {
+              setConnectionState('connecting');
+            } else if (payload.state === 'backfilling') {
+              setConnectionState('backfilling');
+              setBackfillInfo({ count: payload.count || 0 });
+            } else if (payload.state === 'live') {
+              setConnectionState('live');
+              setLoading(false);
+              setBackfillInfo(null);
+            }
             return;
           }
-          if (payload.type === 'pong' || payload.type === 'heartbeat') return;
+
+          // Handle heartbeat
+          if (payload.type === 'heartbeat') {
+            // Connection is alive — no action needed
+            return;
+          }
+
+          // Handle errors from backend
+          if (payload.type === 'error') {
+            console.error('[Console] Stream error:', payload.code, payload.message);
+            setConnectionState('stream_failed');
+            return;
+          }
+
           if (payload.type !== 'log') return;
 
-          const entry = normalizeEntry(payload, Date.now());
-          if (seenCursorsRef.current.has(entry.cursor)) return;
-          seenCursorsRef.current.add(entry.cursor);
-          // Trim cursor cache to prevent memory leak
-          if (seenCursorsRef.current.size > MAX_CURSOR_CACHE) {
-            const arr = [...seenCursorsRef.current];
-            seenCursorsRef.current = new Set(arr.slice(-TRIMMED_CURSOR_CACHE));
+          const entry = normalizeEntry(payload, `${Date.now()}-${Math.random()}`);
+
+          // Dedup by cursor
+          if (entry.cursor && seenCursorsRef.current.has(entry.cursor)) return;
+          if (entry.cursor) {
+            seenCursorsRef.current.add(entry.cursor);
+            if (seenCursorsRef.current.size > MAX_CURSOR_CACHE) {
+              const arr = [...seenCursorsRef.current];
+              seenCursorsRef.current = new Set(arr.slice(-TRIMMED_CURSOR_CACHE));
+            }
           }
-          lastSeenTimestampRef.current = entry.ts;
+
+          // Track sequence number for reconnect
+          if (entry.seq > lastSeqRef.current) {
+            lastSeqRef.current = entry.seq;
+          }
+
           pendingEntriesRef.current.push(entry);
           scheduleFlush();
         };
 
         ws.onclose = (event) => {
-          if (disposed || server?.status !== 'running') return;
-          // Stop reconnecting on authentication / permission failures
-          if (event.code === 4001) {
-            setConnectionState('auth_failed');
+          if (disposed) return;
+
+          // Non-retriable close codes — stop reconnecting
+          switch (event.code) {
+            case 4001:
+              setConnectionState('auth_failed');
+              setLoading(false);
+              return;
+            case 4003:
+              setConnectionState('no_permission');
+              setLoading(false);
+              return;
+            case 4004:
+              setConnectionState('server_not_found');
+              setLoading(false);
+              return;
+            case 4005:
+              setConnectionState('container_not_found');
+              setLoading(false);
+              return;
+            case 4006:
+              setConnectionState('server_not_running');
+              setLoading(false);
+              return;
+            default:
+              break;
+          }
+
+          // Don't reconnect if server is no longer running
+          if (server?.status !== 'running') {
+            setConnectionState('offline');
+            setLoading(false);
             return;
           }
-          if (event.code === 4003) {
-            setConnectionState('no_permission');
-            return;
-          }
+
+          // Retriable — reconnect with exponential backoff
           reconnectAttemptRef.current += 1;
-          const nextDelay = Math.min(10_000, 1000 * 2 ** Math.min(reconnectAttemptRef.current, 3));
+          const attempt = reconnectAttemptRef.current;
+          // 1s, 2s, 4s, 8s, 10s cap
+          const nextDelay = Math.min(10_000, 1000 * 2 ** Math.min(attempt - 1, 3));
           setConnectionState('reconnecting');
           reconnectTimerRef.current = setTimeout(connect, nextDelay);
         };
 
         ws.onerror = () => {
-          setConnectionState('reconnecting');
+          // onerror always fires before onclose; let onclose handle state
         };
       } catch {
+        reconnectAttemptRef.current += 1;
+        const nextDelay = Math.min(10_000, 1000 * 2 ** Math.min(reconnectAttemptRef.current, 3));
         setConnectionState('reconnecting');
+        reconnectTimerRef.current = setTimeout(connect, nextDelay);
       }
     };
 
@@ -243,12 +287,11 @@ function ConsoleModule() {
     };
   }, [server?.status, serverId, scheduleFlush]);
 
-  // Auto-scroll to bottom when new logs arrive (unless paused or user scrolled up)
+  // Auto-scroll
   useEffect(() => {
     if (paused) return;
     const el = logRef.current;
     if (!el) return;
-    // Use rAF for smooth scroll anchoring
     requestAnimationFrame(() => {
       if (isNearBottomRef.current) {
         el.scrollTop = el.scrollHeight;
@@ -290,35 +333,51 @@ function ConsoleModule() {
     idle: 'Waiting to connect',
     offline: 'Server offline',
     connecting: 'Connecting to live stream',
+    backfilling: backfillInfo
+      ? `Loading ${backfillInfo.count} recent lines...`
+      : 'Loading recent history...',
     live: 'Live stream connected',
     reconnecting: 'Reconnecting to live stream',
+    stream_failed: 'Stream source failed — check server status',
     auth_failed: 'Authentication failed — please refresh and log in',
     no_permission: 'Insufficient permissions for live console',
+    server_not_found: 'Server not found',
+    container_not_found: 'Server container not found — it may have been removed',
+    server_not_running: 'Server is not running',
   }[connectionState] || 'Waiting to connect';
 
   const dotColor = {
     offline: 'bg-zinc-600',
     connecting: 'bg-amber-400',
+    backfilling: 'bg-blue-400',
     live: 'bg-[#c9a227]',
     reconnecting: 'bg-amber-300',
+    stream_failed: 'bg-red-500',
     auth_failed: 'bg-red-500',
     no_permission: 'bg-red-500',
+    server_not_found: 'bg-red-500',
+    container_not_found: 'bg-red-500',
+    server_not_running: 'bg-zinc-600',
   }[connectionState] || 'bg-zinc-600';
 
   const textColor = {
     offline: 'text-zinc-500',
     connecting: 'text-amber-300',
+    backfilling: 'text-blue-300',
     live: 'text-[#c9a227]',
     reconnecting: 'text-amber-300',
+    stream_failed: 'text-red-400',
     auth_failed: 'text-red-400',
     no_permission: 'text-red-400',
+    server_not_found: 'text-red-400',
+    container_not_found: 'text-red-400',
+    server_not_running: 'text-zinc-500',
   }[connectionState] || 'text-zinc-500';
 
   const handleTogglePause = useCallback(() => {
     setPaused((current) => {
       const next = !current;
       if (!next && logRef.current) {
-        // Resuming — jump to bottom
         isNearBottomRef.current = true;
         requestAnimationFrame(() => {
           if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -361,7 +420,7 @@ function ConsoleModule() {
       </div>
 
       <div className="flex items-center gap-2 text-xs">
-        <span className={`h-2 w-2 rounded-full ${dotColor} ${connectionState === 'live' ? 'animate-pulse' : ''}`} />
+        <span className={`h-2 w-2 rounded-full ${dotColor} ${connectionState === 'live' ? 'animate-pulse' : ''} ${connectionState === 'backfilling' ? 'animate-pulse' : ''}`} />
         <span className={textColor}>{connectionLabel}</span>
         {paused && (
           <Badge variant="outline" className="ml-2 border-amber-500/30 text-[10px] text-amber-300">

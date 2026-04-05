@@ -11,6 +11,7 @@ import logging
 import asyncio
 import os
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
@@ -61,6 +62,7 @@ from services.server_logs import (
     stable_hash,
     stream_server_log_entries,
 )
+from services.log_streamer import log_streamer
 from services.rcon_bridge import bercon_client
 from services.server_runtime_host import get_server_runtime_host
 from services.sat_config_service import discover_sat_config, load_sat_config, overlay_baseline_if_configured, save_sat_config
@@ -2612,6 +2614,7 @@ async def get_server_logs(
     }
 
 
+
 # ── WebSocket: Live Log Streaming ────────────────────────────────────────────
 
 async def _authenticate_ws(websocket: WebSocket) -> Optional[dict]:
@@ -2667,94 +2670,232 @@ def _parse_log_since(value: Optional[str]) -> Optional[int]:
     return parse_log_since(value)
 
 
+# ── WebSocket: ws_server_logs ──────────────────────────────────────────────
+
 @router.websocket("/ws/servers/{server_id}/logs")
 async def ws_server_logs(websocket: WebSocket, server_id: str):
-    """Stream merged logs in real-time via WebSocket.
+    """Stream merged logs in real-time via WebSocket using shared fan-out.
 
     Query params:
       - token: JWT auth token
-      - tail: number of initial history lines (default 100)
-      - since: unix timestamp or ISO timestamp for reconnect backfill
+      - tail: number of initial history lines (default 500)
+      - since_seq: sequence number for reconnect backfill (preferred over 'since')
+      - since: unix timestamp or ISO timestamp for reconnect backfill (legacy)
     """
     from middleware.rbac import has_permission, Permission
+    from services.log_streamer import log_streamer
 
     user = await _authenticate_ws(websocket)
     if not user:
+        logger.info("ws_console.auth_failed server=%s reason=no_token", server_id)
         await _reject_ws(websocket, code=4001, reason="Authentication required")
         return
 
     if not has_permission(user.get("role", ""), Permission.MANAGE_SERVERS):
+        logger.info(
+            "ws_console.auth_failed server=%s user=%s reason=insufficient_permissions",
+            server_id, user.get("id"),
+        )
         await _reject_ws(websocket, code=4003, reason="Insufficient permissions")
         return
 
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
+        logger.info("ws_console.rejected server=%s reason=not_found", server_id)
         await _reject_ws(websocket, code=4004, reason="Server not found")
+        return
+
+    # Check server status — provide explicit error if not running
+    server_status = server.get("status", "unknown")
+    if server_status in ("stopped", "error", "unknown"):
+        logger.info(
+            "ws_console.rejected server=%s reason=not_running status=%s",
+            server_id, server_status,
+        )
+        await _reject_ws(
+            websocket,
+            code=4006,
+            reason=f"Server is not running (status: {server_status})",
+        )
         return
 
     await websocket.accept()
 
-    tail = int(websocket.query_params.get("tail", "100"))
+    tail_str = websocket.query_params.get("tail", "500")
+    try:
+        tail = int(tail_str)
+    except (TypeError, ValueError):
+        tail = 500
+    tail = max(0, min(5000, tail))
+    since_seq_str = websocket.query_params.get("since_seq", "")
+    since_seq = int(since_seq_str) if since_seq_str and since_seq_str.isdigit() else None
     since = _parse_log_since(websocket.query_params.get("since"))
+
+    # Cursor dedup set with proper LRU trimming
     seen_cursors: set[str] = set()
+    # Ordered list for LRU trimming (append new, trim from front)
+    cursor_order: list[str] = []
+    _MAX_CURSORS = 4000
+    _TRIM_TO = 3000  # Keep most recent 3000 when trimming
+
+    sub_id: Optional[int] = None
+    session = None
+
+    logger.info(
+        "ws_console.connected server=%s user=%s tail=%d since_seq=%s",
+        server_id, user.get("id"), tail, since_seq,
+    )
 
     try:
+        # 1. Send connected status
         await websocket.send_json({
             "type": "status",
             "state": "connected",
             "server_id": server_id,
         })
 
-        initial_entries = await get_recent_server_log_entries(server, tail=tail, since=since)
-        for entry in initial_entries:
-            seen_cursors.add(entry["cursor"])
-            await websocket.send_json({
-                "type": "log",
-                "cursor": entry["cursor"],
-                "timestamp": entry["timestamp"],
-                "line": entry["line"],
-                "raw": entry["raw"],
-                "source": entry.get("source", "docker"),
-                "stream": entry.get("stream", entry.get("source", "docker")),
-            })
-            since = max(since or 0, _parse_log_since(entry["timestamp"]) or 0)
+        # 2. Get or create the shared stream session
+        session = await log_streamer.get_or_create(server)
 
-        async for entry in stream_server_log_entries(server, tail=0, since=since):
-            if entry["cursor"] in seen_cursors:
-                continue
-            seen_cursors.add(entry["cursor"])
-            if len(seen_cursors) > 4000:
-                seen_cursors.clear()
-                seen_cursors.add(entry["cursor"])
+        # 3. Send backfill from ring buffer (or initial history)
+        is_reconnect = since_seq is not None
+        if is_reconnect:
+            backfill = session.get_backfill(since_seq=since_seq)
+        else:
+            backfill = session.get_backfill(count=tail)
+
+        # If ring buffer doesn't have enough history, fall back to REST-style fetch
+        if not is_reconnect and len(backfill) < tail:
+            initial_entries = await get_recent_server_log_entries(
+                server, tail=tail, since=since,
+            )
+            backfill = initial_entries
+
+        backfill_count = len(backfill)
+        await websocket.send_json({
+            "type": "status",
+            "state": "backfilling",
+            "count": backfill_count,
+        })
+
+        for entry in backfill:
+            cursor = entry.get("cursor", "")
+            if cursor:
+                seen_cursors.add(cursor)
+                cursor_order.append(cursor)
             await websocket.send_json({
                 "type": "log",
-                "cursor": entry["cursor"],
-                "timestamp": entry["timestamp"],
-                "line": entry["line"],
-                "raw": entry["raw"],
+                "cursor": cursor,
+                "seq": entry.get("seq", 0),
+                "timestamp": entry.get("timestamp", ""),
+                "line": entry.get("line", ""),
+                "raw": entry.get("raw", ""),
                 "source": entry.get("source", "docker"),
                 "stream": entry.get("stream", entry.get("source", "docker")),
             })
-            since = max(since or 0, _parse_log_since(entry["timestamp"]) or 0)
+
+        logger.info(
+            "ws_console.backfill_sent server=%s count=%d is_reconnect=%s",
+            server_id, backfill_count, is_reconnect,
+        )
+
+        # 4. Subscribe before signalling live to avoid missing entries produced
+        #    between the backfill snapshot and the subscription.
+        sub_id, queue = session.subscribe()
+
+        # 5. Transition to live streaming
+        await websocket.send_json({
+            "type": "status",
+            "state": "live",
+            "backfill_count": backfill_count,
+            "last_seq": session.last_seq,
+        })
+
+        while True:
+            try:
+                entry = await asyncio.wait_for(queue.get(), timeout=30.0)
+            except asyncio.TimeoutError:
+                # Send heartbeat to keep connection alive and detect dead clients
+                try:
+                    await websocket.send_json({
+                        "type": "heartbeat",
+                        "seq": session.last_seq,
+                        "subscriber_count": session.subscriber_count,
+                    })
+                except Exception:
+                    break
+                continue
+
+            # Handle heartbeat passthrough from stream session
+            if entry.get("type") == "heartbeat":
+                await websocket.send_json(entry)
+                continue
+
+            cursor = entry.get("cursor", "")
+            if cursor:
+                # Dedup check
+                if cursor in seen_cursors:
+                    continue
+
+                seen_cursors.add(cursor)
+                cursor_order.append(cursor)
+
+                # LRU trim: keep most recent _TRIM_TO entries
+                if len(seen_cursors) > _MAX_CURSORS:
+                    remove_count = len(cursor_order) - _TRIM_TO
+                    removed = cursor_order[:remove_count]
+                    cursor_order = cursor_order[remove_count:]
+                    for old_cursor in removed:
+                        seen_cursors.discard(old_cursor)
+
+            await websocket.send_json({
+                "type": "log",
+                "cursor": cursor,
+                "seq": entry.get("seq", 0),
+                "timestamp": entry.get("timestamp", ""),
+                "line": entry.get("line", ""),
+                "raw": entry.get("raw", ""),
+                "source": entry.get("source", "docker"),
+                "stream": entry.get("stream", entry.get("source", "docker")),
+            })
 
     except WebSocketDisconnect:
-        logger.debug("Log stream disconnected for server %s", server_id)
+        logger.info("ws_console.disconnected server=%s user=%s", server_id, user.get("id"))
     except asyncio.CancelledError:
-        pass
+        logger.debug("ws_console.cancelled server=%s", server_id)
     except Exception as exc:
-        logger.error("Log stream error for %s: %s", server_id, exc)
+        logger.error(
+            "ws_console.error server=%s user=%s error=%s",
+            server_id, user.get("id"), exc,
+        )
+        try:
+            await websocket.send_json({
+                "type": "error",
+                "code": "stream_error",
+                "message": str(exc)[:200],
+            })
+        except Exception:
+            pass
         try:
             await websocket.close(code=1011, reason="Internal error")
         except Exception:
             pass
+    finally:
+        if session and sub_id is not None:
+            session.unsubscribe(sub_id)
 
+
+# ── WebSocket: ws_server_rcon ──────────────────────────────────────────────
 
 @router.websocket("/ws/servers/{server_id}/rcon")
 async def ws_server_rcon(websocket: WebSocket, server_id: str):
     """Interactive RCON console via WebSocket.
 
     Client sends JSON: {"command": "..."}
-    Server responds: {"type": "response", "command": "...", "response": "...", "success": true}
+    Server responds with typed messages:
+      {"type": "response", "command": "...", "response": "...", "success": true}
+      {"type": "error", "code": "auth_failed|timeout|disabled|execution_failed|rate_limited", "message": "..."}
+      {"type": "status", "state": "ready", "server_id": "..."}
     """
     from middleware.rbac import has_permission, Permission
     from services.audit_service import log_audit as ws_log_audit
@@ -2763,20 +2904,30 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
 
     user = await _authenticate_ws(websocket)
     if not user:
+        logger.info("ws_rcon.auth_failed server=%s reason=no_token", server_id)
         await _reject_ws(websocket, code=4001, reason="Authentication required")
         return
 
     if not has_permission(user.get("role", ""), Permission.MANAGE_SERVERS):
+        logger.info(
+            "ws_rcon.auth_failed server=%s user=%s reason=insufficient_permissions",
+            server_id, user.get("id"),
+        )
         await _reject_ws(websocket, code=4003, reason="Insufficient permissions")
         return
 
     server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     if not server:
+        logger.info("ws_rcon.rejected server=%s reason=not_found", server_id)
         await _reject_ws(websocket, code=4004, reason="Server not found")
         return
 
     if server.get("status") != "running":
-        await _reject_ws(websocket, code=4000, reason="Server is not running")
+        logger.info(
+            "ws_rcon.rejected server=%s reason=not_running status=%s",
+            server_id, server.get("status"),
+        )
+        await _reject_ws(websocket, code=4006, reason="Server is not running")
         return
 
     await websocket.accept()
@@ -2784,6 +2935,29 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
     ports = server.get("ports", {})
     rcon_port = int(ports.get("rcon", 19999))
     rcon_password = str(((server.get("config") or {}).get("rcon") or {}).get("password") or "")
+
+    # Check if RCON is configured
+    if not rcon_password:
+        logger.info("ws_rcon.no_password server=%s", server_id)
+        await websocket.send_json({
+            "type": "error",
+            "code": "disabled",
+            "message": "RCON is not configured — set an RCON password in Server Settings",
+        })
+        await websocket.close(code=4007, reason="RCON not configured")
+        return
+
+    # Send ready status
+    await websocket.send_json({
+        "type": "status",
+        "state": "ready",
+        "server_id": server_id,
+    })
+
+    logger.info(
+        "ws_rcon.connected server=%s user=%s port=%d",
+        server_id, user.get("id"), rcon_port,
+    )
 
     try:
         while True:
@@ -2804,7 +2978,9 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
             except ValueError as ve:
                 await websocket.send_json({
                     "type": "error",
+                    "code": "invalid_command",
                     "message": str(ve),
+                    "command": command,
                 })
                 continue
 
@@ -2813,7 +2989,10 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
             if not allowed:
                 await websocket.send_json({
                     "type": "error",
+                    "code": "rate_limited",
                     "message": "Rate limit exceeded — please wait before sending more commands",
+                    "command": command,
+                    "remaining": remaining,
                 })
                 continue
 
@@ -2826,7 +3005,10 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
                 metadata={"command": command[:500], "via": "websocket"},
             )
 
+            cmd_start = time.monotonic()
             success, response = False, "RCON execution failed unexpectedly"
+            error_code = "execution_failed"
+
             try:
                 success, response = await asyncio.wait_for(
                     bercon_client.execute(
@@ -2837,13 +3019,39 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
                     ),
                     timeout=15,
                 )
+                error_code = None  # Success
+
+                # Classify failures from the response text
+                if not success:
+                    resp_lower = (response or "").lower()
+                    if "auth" in resp_lower or "password" in resp_lower or "login" in resp_lower:
+                        error_code = "auth_failed"
+                    elif "timed out" in resp_lower or "timeout" in resp_lower:
+                        error_code = "timeout"
+                    else:
+                        error_code = "execution_failed"
+
             except asyncio.TimeoutError:
                 success, response = False, "RCON command timed out after 15 seconds"
-            except Exception:
-                logger.exception("WS RCON execution error for %s", server_id)
+                error_code = "timeout"
+            except ConnectionRefusedError:
+                success, response = False, "RCON port unreachable — check firewall settings"
+                error_code = "unreachable"
+            except OSError as os_err:
+                success, response = False, f"Network error: {os_err}"
+                error_code = "unreachable"
+            except Exception as exc:
+                logger.exception("ws_rcon.execution_error server=%s command=%s", server_id, command[:100])
                 success, response = False, "RCON execution failed"
+                error_code = "execution_failed"
             finally:
                 rcon_rate_limiter.record(user["id"], server_id)
+
+            cmd_duration_ms = round((time.monotonic() - cmd_start) * 1000)
+            logger.info(
+                "ws_rcon.command server=%s command=%s success=%s duration_ms=%d error_code=%s",
+                server_id, command[:100], success, cmd_duration_ms, error_code,
+            )
 
             await record_server_log_event(
                 server_id,
@@ -2860,23 +3068,66 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
                     metadata={"success": success, "command": command[:500], "via": "websocket"},
                 )
 
-            await websocket.send_json({
-                "type": "response",
-                "command": command,
-                "response": response,
-                "success": success,
-            })
+            if success:
+                await websocket.send_json({
+                    "type": "response",
+                    "command": command,
+                    "response": response,
+                    "success": True,
+                    "duration_ms": cmd_duration_ms,
+                })
+            else:
+                await websocket.send_json({
+                    "type": "error",
+                    "code": error_code,
+                    "command": command,
+                    "message": response,
+                    "success": False,
+                    "duration_ms": cmd_duration_ms,
+                })
 
     except WebSocketDisconnect:
-        logger.debug("RCON console disconnected for server %s", server_id)
+        logger.info("ws_rcon.disconnected server=%s user=%s", server_id, user.get("id"))
     except asyncio.CancelledError:
-        pass
+        logger.debug("ws_rcon.cancelled server=%s", server_id)
     except Exception as exc:
-        logger.error("RCON console error for %s: %s", server_id, exc)
+        logger.error(
+            "ws_rcon.error server=%s user=%s error=%s",
+            server_id, user.get("id"), exc,
+        )
         try:
             await websocket.close(code=1011, reason="Internal error")
         except Exception:
             pass
+
+
+# ── NEW: Health/Diagnostics Endpoints ────────────────────────────────────────
+
+@router.get("/servers/{server_id}/console/health")
+async def get_console_health(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Return health/diagnostics for the console log stream."""
+    from services.log_streamer import log_streamer
+    return log_streamer.diagnostics(server_id)
+
+
+@router.get("/servers/{server_id}/rcon/health")
+async def get_rcon_health(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Return health/diagnostics for the RCON bridge."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    ports = server.get("ports", {})
+    rcon_port = int(ports.get("rcon", 19999))
+    rcon_password = str(((server.get("config") or {}).get("rcon") or {}).get("password") or "")
+
+    return {
+        "server_id": server_id,
+        "server_status": server.get("status", "unknown"),
+        "rcon_port": rcon_port,
+        "rcon_configured": bool(rcon_password),
+        "runtime_host": get_server_runtime_host(),
+    }
 
 
 # ── Integration Settings ─────────────────────────────────────────────────────

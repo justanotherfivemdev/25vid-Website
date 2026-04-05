@@ -9,6 +9,7 @@ import { buildServerWsUrl } from '@/utils/serverRealtime';
 import {
   AlertTriangle,
   BookOpen,
+  CheckCircle,
   ChevronRight,
   Clock,
   Loader2,
@@ -30,11 +31,29 @@ const QUICK_COMMANDS = [
 
 const SAVED_SNIPPETS_KEY = 'rcon_saved_snippets';
 
+// Map backend error codes to user-friendly messages
+const ERROR_MESSAGES = {
+  auth_failed: 'Wrong RCON password — update it in Server Settings → RCON, then restart the server.',
+  timeout: 'RCON command timed out — the server may be unresponsive or the RCON port is blocked.',
+  disabled: 'RCON is not configured — set an RCON password in Server Settings → RCON.',
+  unreachable: 'RCON port unreachable — check that the firewall allows UDP on the RCON port.',
+  rate_limited: 'Too many commands — please wait a moment before sending more.',
+  invalid_command: 'Invalid command format.',
+  execution_failed: 'RCON command execution failed unexpectedly.',
+};
+
+function classifyError(payload) {
+  if (!payload) return 'RCON command failed';
+  const code = payload.code || '';
+  const message = payload.message || payload.response || '';
+  return ERROR_MESSAGES[code] || message || 'RCON command failed';
+}
+
 const STATUS_TEXT = {
   offline: 'Server is offline.',
   disabled: 'RCON is disabled because no password is configured. Set one in Server Settings → RCON, then restart.',
   auth_failed: 'RCON rejected the configured credentials. Restart the server after changing the password in Server Settings.',
-  unavailable: 'RCON is not reachable. Check that the firewall allows UDP on the RCON port and the container published it (see docs/rcon-setup.md).',
+  unavailable: 'RCON is not reachable. Check that the firewall allows UDP on the RCON port and the container published it.',
   error: 'RCON returned an unexpected error.',
   connected: 'BattlEye RCON is connected.',
 };
@@ -61,10 +80,21 @@ function RconModule() {
   const reconnectTimerRef = useRef(null);
   const pendingEntryIdRef = useRef(null);
   const [wsState, setWsState] = useState('idle');
+  const wsStateRef = useRef('idle');
+
+  // Keep wsStateRef in sync
+  useEffect(() => {
+    wsStateRef.current = wsState;
+  }, [wsState]);
 
   const fetchStatus = useCallback(async () => {
     if (server?.status !== 'running') {
       setRconStatus({ state: 'offline', detail: STATUS_TEXT.offline });
+      setStatusLoading(false);
+      return;
+    }
+    // Don't re-probe while WS is connected and working
+    if (wsStateRef.current === 'live') {
       setStatusLoading(false);
       return;
     }
@@ -86,10 +116,10 @@ function RconModule() {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Periodically re-probe RCON status every 30 seconds to detect disconnects
+  // Probe every 60s (was 30s), skip while WS is connected
   useEffect(() => {
     if (server?.status !== 'running') return undefined;
-    const interval = setInterval(fetchStatus, 30_000);
+    const interval = setInterval(fetchStatus, 60_000);
     return () => clearInterval(interval);
   }, [server?.status, fetchStatus]);
 
@@ -98,15 +128,17 @@ function RconModule() {
     if (wsRef.current) wsRef.current.close();
   }, []);
 
+  // WebSocket connection — opens when server is running, NOT gated on probe
   useEffect(() => {
-    if (server?.status !== 'running' || rconStatus?.state !== 'connected') {
-      setWsState(server?.status !== 'running' ? 'offline' : 'idle');
+    if (server?.status !== 'running') {
+      setWsState('offline');
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       if (wsRef.current) wsRef.current.close();
       return undefined;
     }
 
     let disposed = false;
+    let reconnectAttempt = 0;
 
     const connect = () => {
       if (disposed) return;
@@ -118,7 +150,8 @@ function RconModule() {
         wsRef.current = ws;
 
         ws.onopen = () => {
-          setWsState('live');
+          reconnectAttempt = 0;
+          // Don't set 'live' yet — wait for backend {type: "status", state: "ready"}
         };
 
         ws.onmessage = (event) => {
@@ -128,47 +161,130 @@ function RconModule() {
           } catch {
             payload = null;
           }
+          if (!payload) return;
 
-          if (!payload || payload.type !== 'response') return;
+          // Handle status messages
+          if (payload.type === 'status') {
+            if (payload.state === 'ready') {
+              setWsState('live');
+              setRconStatus({ state: 'connected', detail: STATUS_TEXT.connected });
+            }
+            return;
+          }
 
-          const pendingId = pendingEntryIdRef.current;
-          if (pendingId != null) {
-            setHistory((prev) => prev.map((item) => (
-              item.id === pendingId
-                ? {
-                    ...item,
-                    response: payload.response || 'OK',
-                    error: payload.success ? null : (payload.response || 'RCON command failed'),
-                  }
-                : item
-            )));
-            pendingEntryIdRef.current = null;
-            setLoading(false);
-            setTimeout(() => {
-              if (historyRef.current) historyRef.current.scrollTop = historyRef.current.scrollHeight;
-            }, 50);
+          // Handle error messages (can come unprompted or as command responses)
+          if (payload.type === 'error') {
+            const friendlyMessage = classifyError(payload);
+
+            // Resolve any pending command entry — use pendingEntryIdRef regardless of
+            // whether payload.command is present (e.g. invalid_command / rate_limited
+            // now include it, but we fall back to the ref so the UI never stays stuck).
+            const pendingId = pendingEntryIdRef.current;
+            if (pendingId != null) {
+              setHistory((prev) => prev.map((item) => (
+                item.id === pendingId
+                  ? { ...item, error: friendlyMessage, duration_ms: payload.duration_ms }
+                  : item
+              )));
+              pendingEntryIdRef.current = null;
+              setLoading(false);
+              setTimeout(() => {
+                if (historyRef.current) historyRef.current.scrollTop = historyRef.current.scrollHeight;
+              }, 50);
+            } else if (payload.code === 'disabled') {
+              // RCON not configured — update status
+              setRconStatus({ state: 'disabled', detail: friendlyMessage });
+              setWsState('error');
+            } else {
+              // Non-command error — show as status
+              setRconStatus((prev) => ({ ...prev, detail: friendlyMessage }));
+            }
+            return;
+          }
+
+          // Handle command responses
+          if (payload.type === 'response') {
+            const pendingId = pendingEntryIdRef.current;
+            if (pendingId != null) {
+              setHistory((prev) => prev.map((item) => (
+                item.id === pendingId
+                  ? {
+                      ...item,
+                      response: payload.response || 'OK',
+                      error: payload.success ? null : (payload.response || 'RCON command failed'),
+                      duration_ms: payload.duration_ms,
+                    }
+                  : item
+              )));
+              pendingEntryIdRef.current = null;
+              setLoading(false);
+              setTimeout(() => {
+                if (historyRef.current) historyRef.current.scrollTop = historyRef.current.scrollHeight;
+              }, 50);
+            }
+            return;
           }
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
+          // Resolve any pending command
           if (pendingEntryIdRef.current != null) {
             const pendingId = pendingEntryIdRef.current;
             setHistory((prev) => prev.map((item) => (
-              item.id === pendingId ? { ...item, error: 'Live RCON socket disconnected before the command completed.' } : item
+              item.id === pendingId ? { ...item, error: 'RCON connection closed before command completed.' } : item
             )));
             pendingEntryIdRef.current = null;
             setLoading(false);
           }
-          if (disposed || server?.status !== 'running' || rconStatus?.state !== 'connected') return;
+
+          if (disposed) return;
+
+          // Non-retriable close codes
+          switch (event.code) {
+            case 4001:
+              setWsState('auth_failed');
+              setRconStatus({ state: 'auth_failed', detail: 'WebSocket authentication failed — please refresh and log in.' });
+              return;
+            case 4003:
+              setWsState('no_permission');
+              setRconStatus({ state: 'error', detail: 'Insufficient permissions for RCON.' });
+              return;
+            case 4004:
+              setWsState('error');
+              setRconStatus({ state: 'error', detail: 'Server not found.' });
+              return;
+            case 4006:
+              setWsState('offline');
+              setRconStatus({ state: 'offline', detail: 'Server is not running.' });
+              return;
+            case 4007:
+              setWsState('error');
+              setRconStatus({ state: 'disabled', detail: STATUS_TEXT.disabled });
+              return;
+            default:
+              break;
+          }
+
+          if (server?.status !== 'running') {
+            setWsState('offline');
+            return;
+          }
+
+          // Retriable — reconnect with backoff
+          reconnectAttempt += 1;
+          const nextDelay = Math.min(10_000, 1500 * 2 ** Math.min(reconnectAttempt - 1, 3));
           setWsState('reconnecting');
-          reconnectTimerRef.current = setTimeout(connect, 1500);
+          reconnectTimerRef.current = setTimeout(connect, nextDelay);
         };
 
         ws.onerror = () => {
-          setWsState('reconnecting');
+          // Let onclose handle state
         };
       } catch {
+        reconnectAttempt += 1;
+        const nextDelay = Math.min(10_000, 1500 * 2 ** Math.min(reconnectAttempt, 3));
         setWsState('reconnecting');
+        reconnectTimerRef.current = setTimeout(connect, nextDelay);
       }
     };
 
@@ -179,9 +295,10 @@ function RconModule() {
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       if (wsRef.current) wsRef.current.close();
     };
-  }, [rconStatus?.state, server?.status, serverId]);
+  }, [server?.status, serverId]);
 
-  const canExecute = server?.status === 'running' && rconStatus?.state === 'connected';
+  // canExecute: WS must be live (not gated on probe anymore)
+  const canExecute = wsState === 'live';
 
   const sendCommand = useCallback(async (cmd) => {
     const trimmed = (cmd || command).trim();
@@ -198,6 +315,7 @@ function RconModule() {
         pendingEntryIdRef.current = entry.id;
         wsRef.current.send(JSON.stringify({ command: trimmed }));
       } else {
+        // HTTP fallback
         const res = await axios.post(`${API}/servers/${serverId}/rcon`, { command: trimmed });
         if (res.data?.executed) {
           setHistory((prev) => prev.map((item) => (
@@ -225,7 +343,7 @@ function RconModule() {
         if (historyRef.current) historyRef.current.scrollTop = historyRef.current.scrollHeight;
       }, 50);
     }
-  }, [canExecute, command, serverId]);
+  }, [canExecute, command, loading, serverId]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter') {
@@ -265,22 +383,35 @@ function RconModule() {
     localStorage.setItem(SAVED_SNIPPETS_KEY, JSON.stringify(updated));
   }, [savedSnippets]);
 
-  const statusDetail = rconStatus?.detail || STATUS_TEXT[rconStatus?.state] || 'Unknown RCON state.';
   const socketDetail = {
-    idle: 'Socket idle.',
-    offline: 'Socket offline.',
-    connecting: 'Opening live console socket...',
-    live: 'Live console socket connected.',
-    reconnecting: 'Reconnecting live console socket...',
-  }[wsState];
+    idle: 'Connecting...',
+    offline: 'Server offline.',
+    connecting: 'Opening RCON connection...',
+    live: 'RCON connected and ready.',
+    reconnecting: 'Reconnecting RCON...',
+    auth_failed: 'WebSocket authentication failed.',
+    no_permission: 'Insufficient permissions.',
+    error: rconStatus?.detail || 'RCON error.',
+  }[wsState] || '';
+
+  const statusIcon = wsState === 'live'
+    ? <CheckCircle className="h-4 w-4 text-green-400" />
+    : statusLoading
+      ? <Loader2 className="h-4 w-4 animate-spin" />
+      : <AlertTriangle className="h-4 w-4" />;
+
+  const statusBarClass = wsState === 'live'
+    ? 'border-green-600/30 bg-green-600/10 text-green-300'
+    : 'border-amber-600/30 bg-amber-600/10 text-amber-400';
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className={`flex items-center gap-2 rounded border px-3 py-2 text-xs ${
-        canExecute ? 'border-[rgba(201,162,39,0.3)] bg-[rgba(201,162,39,0.08)] text-[#e8c547]' : 'border-amber-600/30 bg-amber-600/10 text-amber-400'
-      }`}>
-        {statusLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
-        <span>{statusLoading ? 'Checking RCON availability...' : `${statusDetail} ${socketDetail || ''}`.trim()}</span>
+      <div className={`flex items-center gap-2 rounded border px-3 py-2 text-xs ${statusBarClass}`}>
+        {statusIcon}
+        <span>{statusLoading ? 'Checking RCON availability...' : socketDetail}</span>
+        {wsState !== 'live' && rconStatus?.detail && wsState !== 'error' && (
+          <span className="ml-1 text-[#4a6070]">({rconStatus.detail})</span>
+        )}
         <Button size="sm" variant="ghost" onClick={fetchStatus} className="ml-auto h-6 px-2 text-[10px] text-inherit hover:bg-white/5">
           <RefreshCw className="mr-1 h-3 w-3" /> Retry
         </Button>
@@ -295,7 +426,11 @@ function RconModule() {
                   <div className="flex flex-col items-center justify-center py-16 text-[#4a6070]">
                     <Monitor className="mb-3 h-8 w-8 text-[#4a6070]" />
                     <p>RCON console ready.</p>
-                    <p className="mt-1 text-[10px]">Use quick commands or send a manual command when RCON is connected.</p>
+                    <p className="mt-1 text-[10px]">
+                      {wsState === 'live'
+                        ? 'RCON is connected. Send a command to get started.'
+                        : 'Waiting for RCON connection...'}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3 p-3">
@@ -304,9 +439,14 @@ function RconModule() {
                         <div className="flex items-center gap-2 text-tropic-gold">
                           <ChevronRight className="h-3 w-3" />
                           <span className="font-semibold">{entry.command}</span>
-                          <span className="ml-auto text-[10px] text-[#4a6070]">{entry.ts.toLocaleTimeString()}</span>
+                          <span className="ml-auto text-[10px] text-[#4a6070]">
+                            {entry.ts.toLocaleTimeString()}
+                            {entry.duration_ms != null && ` (${entry.duration_ms}ms)`}
+                          </span>
                         </div>
-                        {entry.response && <div className="mt-1 whitespace-pre-wrap text-[#8a9aa8]">{entry.response}</div>}
+                        {entry.response && !entry.error && (
+                          <div className="mt-1 whitespace-pre-wrap text-[#8a9aa8]">{entry.response}</div>
+                        )}
                         {entry.error && <div className="mt-1 text-red-400">{entry.error}</div>}
                         {!entry.response && !entry.error && (
                           <div className="mt-1 text-[#4a6070]">
@@ -330,7 +470,7 @@ function RconModule() {
                 onChange={(e) => setCommand(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={!canExecute || loading}
-                placeholder={canExecute ? 'Enter BattlEye RCON command...' : 'RCON unavailable'}
+                placeholder={canExecute ? 'Enter BattlEye RCON command...' : 'Waiting for RCON connection...'}
                 className="h-10 border-zinc-800 bg-[#050a0e]/80 pl-9 font-mono text-sm text-white placeholder:text-[#4a6070]"
               />
             </div>
