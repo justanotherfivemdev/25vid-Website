@@ -15,7 +15,9 @@ import {
   CalendarClock,
   CheckCircle,
   Circle,
+  Globe,
   Info,
+  Key,
   Loader2,
   Monitor,
   Puzzle,
@@ -77,6 +79,7 @@ const NAV_SECTIONS = [
       { to: 'config/server', label: 'Server Settings', icon: Settings },
       { to: 'config/system', label: 'Infrastructure', icon: Settings },
       { to: 'config/admin-tools', label: 'Admin Tools', icon: ShieldAlert },
+      { to: 'config/integrations', label: 'Integrations', icon: Key },
     ],
   },
   {
@@ -88,6 +91,7 @@ const NAV_SECTIONS = [
       { to: 'tools/reports', label: 'Reports', icon: Wrench },
       { to: 'tools/todos', label: 'ToDo List', icon: Wrench },
       { to: 'tools/watchers', label: 'Watchers', icon: Wrench },
+      { to: 'tools/compare', label: 'Compare Servers', icon: Globe },
     ],
   },
   {

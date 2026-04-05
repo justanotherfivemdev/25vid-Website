@@ -9,6 +9,7 @@ webhooks, and admin notes.  All endpoints require MANAGE_SERVERS permission
 import json
 import logging
 import asyncio
+import os
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -2777,3 +2778,318 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
             await websocket.close(code=1011, reason="Internal error")
         except Exception:
             pass
+
+
+# ── Integration Settings ─────────────────────────────────────────────────────
+
+_INTEGRATION_SETTINGS_ID = "integration_settings"
+
+# Allowlist of keys that can be stored via the integrations API.
+# This prevents callers from injecting arbitrary fields.
+_ALLOWED_INTEGRATION_KEYS = frozenset({
+    "battlemetrics_api_key",
+})
+
+
+class IntegrationSettingsUpdate(BaseModel):
+    """Payload for updating integration settings."""
+    battlemetrics_api_key: Optional[str] = None
+
+    @field_validator("battlemetrics_api_key", mode="before")
+    @classmethod
+    def strip_key(cls, v):
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
+
+@router.get("/servers/integrations")
+async def get_integration_settings(
+    current_user: dict = Depends(_require_servers),
+):
+    """Return integration settings, masking sensitive values."""
+    doc = await db.integration_settings.find_one(
+        {"id": _INTEGRATION_SETTINGS_ID}, {"_id": 0}
+    )
+    if not doc:
+        doc = {"id": _INTEGRATION_SETTINGS_ID}
+
+    # Mask API keys — only show last 4 chars
+    _MASK = "••••"
+    _VISIBLE_TAIL = 4
+    raw_key = doc.get("battlemetrics_api_key") or ""
+    doc["battlemetrics_api_key_masked"] = (
+        f"{_MASK}{raw_key[-_VISIBLE_TAIL:]}" if len(raw_key) > _VISIBLE_TAIL else (_MASK if raw_key else "")
+    )
+    doc["battlemetrics_api_key_set"] = bool(raw_key)
+    # Never return the raw key to the frontend
+    doc.pop("battlemetrics_api_key", None)
+
+    return doc
+
+
+@router.put("/servers/integrations")
+async def update_integration_settings(
+    body: IntegrationSettingsUpdate,
+    current_user: dict = Depends(_require_servers),
+):
+    """Update integration settings.  Empty strings clear a key."""
+    updates: dict = {}
+    for field_name in _ALLOWED_INTEGRATION_KEYS:
+        value = getattr(body, field_name, None)
+        if value is not None:
+            updates[field_name] = value
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    updates["updated_by"] = current_user.get("username") or current_user.get("id", "")
+
+    await db.integration_settings.update_one(
+        {"id": _INTEGRATION_SETTINGS_ID},
+        {"$set": updates},
+        upsert=True,
+    )
+
+    await log_audit(
+        current_user,
+        "update_integration_settings",
+        {"fields": list(updates.keys())},
+    )
+
+    return {"message": "Integration settings updated"}
+
+
+@router.post("/servers/integrations/test-battlemetrics")
+async def test_battlemetrics_connection(
+    current_user: dict = Depends(_require_servers),
+):
+    """Test the BattleMetrics API connection with the stored key."""
+    import httpx
+
+    api_key = await _get_bm_api_key()
+    headers = {"Accept": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    try:
+        async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
+            resp = await client.get(
+                f"{_BM_API_BASE}/servers",
+                params={"filter[game]": _BM_GAME_FILTER, "page[size]": "1"},
+                headers=headers,
+            )
+            resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        return {
+            "success": False,
+            "status": exc.response.status_code,
+            "message": f"BattleMetrics returned HTTP {exc.response.status_code}",
+            "api_key_configured": bool(api_key),
+        }
+    except httpx.RequestError:
+        return {
+            "success": False,
+            "status": 0,
+            "message": "Connection failed — unable to reach BattleMetrics API",
+            "api_key_configured": bool(api_key),
+        }
+
+    data = resp.json()
+    server_count = len(data.get("data", []))
+
+    return {
+        "success": True,
+        "status": resp.status_code,
+        "message": f"Connected successfully — found {server_count} server(s) in test query",
+        "api_key_configured": bool(api_key),
+    }
+
+
+# ── BattleMetrics Proxy Endpoints ────────────────────────────────────────────
+
+_BM_API_BASE = "https://api.battlemetrics.com"
+# Fallback: env var is used when no key is stored in the database.
+_BM_API_KEY_ENV = os.environ.get("BATTLEMETRICS_API_KEY", "")
+_BM_TIMEOUT = 15
+_BM_GAME_FILTER = "reforger"
+_BM_DEFAULT_SORT = "-players"
+# Query-string keys that may be forwarded from a BattleMetrics pagination URL.
+_BM_ALLOWED_PAGINATION_PARAMS = frozenset({
+    "page[key]", "page[rel]", "page[size]",
+    "filter[game]", "filter[search]", "filter[countries][]",
+    "sort",
+})
+
+
+async def _get_bm_api_key() -> str:
+    """Return the BattleMetrics API key — DB value takes priority over env var."""
+    doc = await db.integration_settings.find_one(
+        {"id": _INTEGRATION_SETTINGS_ID}, {"_id": 0, "battlemetrics_api_key": 1}
+    )
+    key = (doc or {}).get("battlemetrics_api_key", "")
+    return key if key else _BM_API_KEY_ENV
+
+
+async def _bm_headers() -> dict:
+    """Build request headers for BattleMetrics API calls."""
+    headers = {"Accept": "application/json"}
+    api_key = await _get_bm_api_key()
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    return headers
+
+
+def _sanitize_bm_server(server_data: dict) -> dict:
+    """Extract safe fields from a BattleMetrics server JSON:API resource.
+
+    The Arma Reforger details live under ``attributes.details.reforger``
+    and mods are objects ``{modId, name, version}`` rather than flat arrays.
+    """
+    attrs = server_data.get("attributes", {})
+    details = attrs.get("details", {})
+    reforger = details.get("reforger", {})
+
+    # Mods come as [{modId, name, version}, ...]
+    raw_mods = reforger.get("mods") or []
+    mods = [
+        {
+            "mod_id": m.get("modId", ""),
+            "name": m.get("name", ""),
+            "version": m.get("version", ""),
+        }
+        for m in raw_mods
+        if isinstance(m, dict)
+    ]
+
+    return {
+        "bm_id": server_data.get("id", ""),
+        "name": attrs.get("name", ""),
+        "ip": attrs.get("ip", ""),
+        "port": attrs.get("port"),
+        "players": attrs.get("players", 0),
+        "max_players": attrs.get("maxPlayers", 0),
+        "status": attrs.get("status", "unknown"),
+        "country": attrs.get("country", ""),
+        "rank": attrs.get("rank"),
+        "scenario": reforger.get("scenarioName", ""),
+        "version": details.get("version", ""),
+        "password": details.get("password", False),
+        "official": details.get("official", False),
+        "battleye": reforger.get("battlEye", False),
+        "mods": mods,
+    }
+
+
+@router.get("/servers/battlemetrics/search")
+async def battlemetrics_search(
+    q: str = Query("", description="Search query for server name"),
+    page_key: Optional[str] = Query(None, alias="pageKey", description="Cursor for next page"),
+    per_page: int = Query(25, ge=1, le=100, description="Results per page"),
+    country: Optional[str] = Query(None, description="Country code filter"),
+    current_user: dict = Depends(_require_servers),
+):
+    """Search BattleMetrics for Arma Reforger servers.
+
+    Proxied to avoid CORS issues and to keep any API key server-side.
+    Uses cursor-based pagination via ``pageKey`` (forward from ``links.next``).
+    """
+    import httpx
+
+    if page_key:
+        # Instead of forwarding the raw URL (SSRF risk), extract only the
+        # pagination cursor parameters and rebuild the URL server-side.
+        from urllib.parse import urlparse, parse_qs
+
+        parsed = urlparse(page_key)
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "api.battlemetrics.com"
+            or not parsed.path.startswith("/servers")
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid pagination cursor",
+            )
+        qs = parse_qs(parsed.query)
+        url = f"{_BM_API_BASE}/servers"
+        params = {}
+        for key in _BM_ALLOWED_PAGINATION_PARAMS:
+            values = qs.get(key)
+            if values:
+                params[key] = values[0]
+    else:
+        url = f"{_BM_API_BASE}/servers"
+        params: dict = {
+            "filter[game]": _BM_GAME_FILTER,
+            "page[size]": str(per_page),
+            "sort": _BM_DEFAULT_SORT,
+        }
+        if q:
+            params["filter[search]"] = q
+        if country:
+            params["filter[countries][]"] = country
+
+    try:
+        async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
+            resp = await client.get(
+                url,
+                params=params,
+                headers=await _bm_headers(),
+            )
+            resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=exc.response.status_code,
+            detail=f"BattleMetrics API error: {exc.response.status_code}",
+        )
+    except httpx.RequestError:
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to reach BattleMetrics API",
+        )
+
+    data = resp.json()
+    servers = [_sanitize_bm_server(s) for s in data.get("data", [])]
+    links = data.get("links", {})
+
+    return {
+        "servers": servers,
+        "next_page_key": links.get("next"),
+        "has_next": "next" in links,
+    }
+
+
+@router.get("/servers/battlemetrics/{bm_server_id}")
+async def battlemetrics_server_detail(
+    bm_server_id: str,
+    current_user: dict = Depends(_require_servers),
+):
+    """Get detailed info about a BattleMetrics Arma Reforger server."""
+    import httpx
+
+    if not re.fullmatch(r"\d{1,20}", bm_server_id):
+        raise HTTPException(status_code=400, detail="Invalid BattleMetrics server ID")
+
+    try:
+        async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:
+            server_resp = await client.get(
+                f"{_BM_API_BASE}/servers/{bm_server_id}",
+                headers=await _bm_headers(),
+            )
+            server_resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=exc.response.status_code,
+            detail=f"BattleMetrics API error: {exc.response.status_code}",
+        )
+    except httpx.RequestError:
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to reach BattleMetrics API",
+        )
+
+    payload = server_resp.json()
+    server_data = payload.get("data", {})
+    return _sanitize_bm_server(server_data)

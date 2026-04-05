@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,6 +54,12 @@ function sourceTone(source) {
   return 'border-zinc-700 text-zinc-300';
 }
 
+const MAX_LOG_BUFFER = 2000;
+/** Distance in pixels from scroll bottom to consider user "at bottom". */
+const SCROLL_THRESHOLD = 60;
+const MAX_CURSOR_CACHE = 5000;
+const TRIMMED_CURSOR_CACHE = 3000;
+
 function ConsoleModule() {
   const { server: rawServer, serverId } = useOutletContext();
   const server = normalizeServer(rawServer);
@@ -69,18 +75,58 @@ function ConsoleModule() {
   const reconnectAttemptRef = useRef(0);
   const seenCursorsRef = useRef(new Set());
   const lastSeenTimestampRef = useRef(null);
+  const pendingEntriesRef = useRef([]);
+  const flushRafRef = useRef(null);
+  const isNearBottomRef = useRef(true);
+  const pausedRef = useRef(paused);
 
+  // Keep paused ref in sync
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+
+  // Detect user scrolling to auto-pause/resume
+  const handleScroll = useCallback(() => {
+    const el = logRef.current;
+    if (!el) return;
+    const atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < SCROLL_THRESHOLD;
+    isNearBottomRef.current = atBottom;
+    // Auto-resume if user scrolls back to bottom
+    if (atBottom && pausedRef.current) {
+      setPaused(false);
+    }
+  }, []);
+
+  // Flush pending log entries in batches using rAF for smooth rendering
+  const scheduleFlush = useCallback(() => {
+    if (flushRafRef.current) return;
+    flushRafRef.current = requestAnimationFrame(() => {
+      flushRafRef.current = null;
+      const batch = pendingEntriesRef.current;
+      if (batch.length === 0) return;
+      pendingEntriesRef.current = [];
+      setLogs((prev) => {
+        const merged = [...prev, ...batch];
+        return merged.length > MAX_LOG_BUFFER ? merged.slice(-MAX_LOG_BUFFER) : merged;
+      });
+    });
+  }, []);
+
+  // Cleanup on unmount
   useEffect(() => () => {
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     if (wsRef.current) wsRef.current.close();
+    if (flushRafRef.current) cancelAnimationFrame(flushRafRef.current);
   }, []);
 
+  // Load initial history
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setLogs([]);
     seenCursorsRef.current = new Set();
     lastSeenTimestampRef.current = null;
+    pendingEntriesRef.current = [];
 
     axios.get(`${API}/servers/${serverId}/logs/recent?tail=500`)
       .then((res) => {
@@ -104,6 +150,7 @@ function ConsoleModule() {
     };
   }, [serverId]);
 
+  // WebSocket connection for live streaming
   useEffect(() => {
     if (server?.status !== 'running') {
       setConnectionState('offline');
@@ -143,13 +190,20 @@ function ConsoleModule() {
             setConnectionState(payload.state === 'connected' ? 'live' : payload.state || 'live');
             return;
           }
+          if (payload.type === 'pong' || payload.type === 'heartbeat') return;
           if (payload.type !== 'log') return;
 
           const entry = normalizeEntry(payload, Date.now());
           if (seenCursorsRef.current.has(entry.cursor)) return;
           seenCursorsRef.current.add(entry.cursor);
+          // Trim cursor cache to prevent memory leak
+          if (seenCursorsRef.current.size > MAX_CURSOR_CACHE) {
+            const arr = [...seenCursorsRef.current];
+            seenCursorsRef.current = new Set(arr.slice(-TRIMMED_CURSOR_CACHE));
+          }
           lastSeenTimestampRef.current = entry.ts;
-          setLogs((prev) => [...prev.slice(-1999), entry]);
+          pendingEntriesRef.current.push(entry);
+          scheduleFlush();
         };
 
         ws.onclose = () => {
@@ -175,12 +229,19 @@ function ConsoleModule() {
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       if (wsRef.current) wsRef.current.close();
     };
-  }, [server?.status, serverId]);
+  }, [server?.status, serverId, scheduleFlush]);
 
+  // Auto-scroll to bottom when new logs arrive (unless paused or user scrolled up)
   useEffect(() => {
-    if (!paused && logRef.current) {
-      logRef.current.scrollTop = logRef.current.scrollHeight;
-    }
+    if (paused) return;
+    const el = logRef.current;
+    if (!el) return;
+    // Use rAF for smooth scroll anchoring
+    requestAnimationFrame(() => {
+      if (isNearBottomRef.current) {
+        el.scrollTop = el.scrollHeight;
+      }
+    });
   }, [logs, paused]);
 
   const filteredLogs = useMemo(() => (
@@ -235,6 +296,20 @@ function ConsoleModule() {
     reconnecting: 'text-amber-300',
   }[connectionState] || 'text-zinc-500';
 
+  const handleTogglePause = useCallback(() => {
+    setPaused((current) => {
+      const next = !current;
+      if (!next && logRef.current) {
+        // Resuming — jump to bottom
+        isNearBottomRef.current = true;
+        requestAnimationFrame(() => {
+          if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+        });
+      }
+      return next;
+    });
+  }, []);
+
   return (
     <div className="flex h-full flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -250,7 +325,7 @@ function ConsoleModule() {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => setPaused((current) => !current)}
+          onClick={handleTogglePause}
           className={`h-8 border-zinc-800 text-xs ${paused ? 'text-amber-300' : 'text-[#8a9aa8]'}`}
         >
           {paused ? <Play className="mr-1 h-3.5 w-3.5" /> : <Pause className="mr-1 h-3.5 w-3.5" />}
@@ -268,11 +343,16 @@ function ConsoleModule() {
       </div>
 
       <div className="flex items-center gap-2 text-xs">
-        <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+        <span className={`h-2 w-2 rounded-full ${dotColor} ${connectionState === 'live' ? 'animate-pulse' : ''}`} />
         <span className={textColor}>{connectionLabel}</span>
         {paused && (
           <Badge variant="outline" className="ml-2 border-amber-500/30 text-[10px] text-amber-300">
             AUTO-SCROLL PAUSED
+          </Badge>
+        )}
+        {!paused && !isNearBottomRef.current && connectionState === 'live' && (
+          <Badge variant="outline" className="ml-2 border-zinc-600 text-[10px] text-zinc-400">
+            SCROLLED UP
           </Badge>
         )}
         <span className="ml-auto text-[#4a6070]">{filteredLogs.length} entries in view</span>
@@ -282,6 +362,7 @@ function ConsoleModule() {
         <CardContent className="p-0">
           <div
             ref={logRef}
+            onScroll={handleScroll}
             className="h-[60vh] overflow-y-auto font-mono text-xs leading-relaxed"
             style={{ scrollBehavior: 'auto' }}
           >
