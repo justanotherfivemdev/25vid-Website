@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,31 +30,246 @@ import {
   ShieldAlert,
   RefreshCw,
   Lock,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  FileText,
+  X,
 } from 'lucide-react';
 import { API } from '@/utils/api';
 import { canRestartServer, canStartServer, canStopServer, isServerDegraded, normalizeServer } from '@/utils/serverStatus';
+
+/* ── Human-friendly severity helpers ──────────────────────────────────── */
+
+const SEVERITY_CONFIG = {
+  critical: { cls: 'border-red-600/30 bg-red-600/5', dot: 'bg-red-500', text: 'text-red-300' },
+  high: { cls: 'border-orange-600/30 bg-orange-600/5', dot: 'bg-orange-500', text: 'text-orange-300' },
+  medium: { cls: 'border-amber-600/30 bg-amber-600/5', dot: 'bg-amber-500', text: 'text-amber-300' },
+  low: { cls: 'border-zinc-600/30 bg-zinc-600/5', dot: 'bg-zinc-500', text: 'text-zinc-400' },
+};
+
+/* ── Collapsible section ──────────────────────────────────────────────── */
+
+function CollapsibleSection({ title, icon: Icon, count, open, onToggle, badge, children }) {
+  return (
+    <div className="border border-zinc-800/60 rounded bg-[#050a0e]/40">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-zinc-900/40 transition-colors"
+      >
+        {open ? <ChevronDown className="h-3 w-3 text-[#4a6070]" /> : <ChevronRight className="h-3 w-3 text-[#4a6070]" />}
+        {Icon && <Icon className="h-3.5 w-3.5 text-tropic-gold" />}
+        <span className="font-semibold tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Share Tech', sans-serif" }}>{title}</span>
+        {count != null && count > 0 && (
+          <Badge variant="outline" className="ml-1 border-zinc-700 text-[9px] text-[#8a9aa8]">{count}</Badge>
+        )}
+        {badge}
+        <span className="ml-auto text-[10px] text-[#4a6070]">{open ? 'collapse' : 'expand'}</span>
+      </button>
+      {open && <div className="border-t border-zinc-800/40 px-3 py-2">{children}</div>}
+    </div>
+  );
+}
+
+/* ── Evidence Viewer (log snapshot) ───────────────────────────────────── */
+
+function EvidenceViewer({ snapshot, onClose }) {
+  if (!snapshot || snapshot.length === 0) {
+    return (
+      <div className="rounded border border-zinc-800 bg-[#050a0e] p-3 text-xs text-[#4a6070]">
+        No log evidence captured for this event.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded border border-zinc-800 bg-[#050a0e] overflow-hidden">
+      <div className="flex items-center justify-between border-b border-zinc-800/60 px-3 py-1.5">
+        <span className="text-[10px] font-semibold tracking-wider text-[#4a6070]">LOG EVIDENCE</span>
+        {onClose && (
+          <button type="button" onClick={onClose} className="text-[#4a6070] hover:text-[#8a9aa8]">
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      <div className="max-h-48 overflow-y-auto p-2 font-mono text-[11px] leading-relaxed">
+        {snapshot.map((entry, idx) => (
+          <div
+            key={idx}
+            className={`flex gap-2 px-1 py-0.5 rounded ${
+              entry.is_trigger
+                ? 'bg-amber-500/10 border-l-2 border-amber-500'
+                : 'hover:bg-zinc-900/40'
+            }`}
+          >
+            <span className="shrink-0 w-[60px] text-[10px] text-zinc-600 tabular-nums">
+              {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+            </span>
+            <span className="shrink-0 text-[10px] text-zinc-500 w-[50px] truncate">{entry.source || ''}</span>
+            <span className={entry.is_trigger ? 'text-amber-200 font-medium' : 'text-[#8a9aa8]'}>
+              {entry.line}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Single Diagnostic Item ───────────────────────────────────────────── */
+
+function DiagnosticItem({ item, onMarkSafe, onReactivate, busy }) {
+  const [expanded, setExpanded] = useState(false);
+  const sev = SEVERITY_CONFIG[item.severity] || SEVERITY_CONFIG.medium;
+  const isIgnored = item.status === 'ignored' || item.status === 'false_positive';
+
+  return (
+    <div className={`rounded border ${isIgnored ? 'border-zinc-800/40 opacity-60' : sev.cls} transition-all`}>
+      <div className="flex items-start gap-2 px-3 py-2">
+        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${sev.dot}`} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-[#d0d8e0]">{item.title}</span>
+            <Badge variant="outline" className="border-white/10 text-[9px] uppercase tracking-wider text-[#8a9aa8]">
+              {item.severity}
+            </Badge>
+            {isIgnored && (
+              <Badge variant="outline" className="border-zinc-700 text-[9px] text-zinc-500">
+                safe / known
+              </Badge>
+            )}
+          </div>
+          {/* Human-friendly summary */}
+          {item.human_summary && (
+            <p className="mt-1 text-xs text-[#8a9aa8] leading-relaxed">{item.human_summary}</p>
+          )}
+          {!item.human_summary && item.summary && (
+            <p className="mt-1 text-xs text-[#8a9aa8]">{item.summary}</p>
+          )}
+          {/* What this means + what to do */}
+          {(item.human_impact || item.human_action) && (
+            <div className="mt-1.5 space-y-1">
+              {item.human_impact && (
+                <div className="flex gap-1.5 text-[11px]">
+                  <span className="shrink-0 font-semibold text-[#4a6070]">Impact:</span>
+                  <span className="text-[#8a9aa8]">{item.human_impact}</span>
+                </div>
+              )}
+              {item.human_action && (
+                <div className="flex gap-1.5 text-[11px]">
+                  <span className="shrink-0 font-semibold text-[#4a6070]">Action:</span>
+                  <span className="text-[#8a9aa8]">{item.human_action}</span>
+                </div>
+              )}
+            </div>
+          )}
+          {/* Recommended actions */}
+          {!item.human_action && item.recommended_actions?.length > 0 && (
+            <div className="mt-1.5 space-y-0.5">
+              {item.recommended_actions.map((action, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-[11px] text-[#4a6070]">
+                  <span className="mt-0.5">→</span>
+                  <span>{action}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Meta row */}
+          <div className="mt-1.5 flex items-center gap-3 text-[10px] text-[#4a6070]">
+            {item.source_type && <span>{item.source_type}</span>}
+            {item.last_seen && <span>{new Date(item.last_seen).toLocaleString()}</span>}
+            {item.occurrence_count > 1 && <span>×{item.occurrence_count}</span>}
+            {(item.log_snapshot?.length > 0 || item.evidence?.length > 0) && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="flex items-center gap-1 text-tropic-gold hover:text-tropic-gold-light transition-colors"
+              >
+                <FileText className="h-3 w-3" />
+                {expanded ? 'Hide evidence' : 'View evidence'}
+              </button>
+            )}
+          </div>
+        </div>
+        {/* Actions */}
+        <div className="shrink-0 flex items-center gap-1 pt-0.5">
+          {!isIgnored ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onMarkSafe?.(item.id)}
+              disabled={busy}
+              className="h-6 px-2 text-[10px] border-zinc-800 text-[#8a9aa8] hover:text-green-400 hover:border-green-600/30"
+              title="Mark as safe / known issue"
+            >
+              <ShieldCheck className="h-3 w-3 mr-1" /> Safe
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onReactivate?.(item.id)}
+              disabled={busy}
+              className="h-6 px-2 text-[10px] border-zinc-800 text-[#4a6070]"
+              title="Return to active diagnostics"
+            >
+              <Eye className="h-3 w-3 mr-1" /> Reactivate
+            </Button>
+          )}
+        </div>
+      </div>
+      {/* Evidence viewer */}
+      {expanded && (
+        <div className="border-t border-zinc-800/40 px-3 py-2">
+          <EvidenceViewer
+            snapshot={item.log_snapshot?.length > 0 ? item.log_snapshot : null}
+            onClose={() => setExpanded(false)}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function OverviewModule() {
   const { server: rawServer, serverId, fetchServer, handleServerAction, actionLoading } = useOutletContext();
   const server = normalizeServer(rawServer);
   const [metricsSummary, setMetricsSummary] = useState(null);
   const [incidents, setIncidents] = useState([]);
+  const [detections, setDetections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [showIgnored, setShowIgnored] = useState(false);
+  const [verdictBusy, setVerdictBusy] = useState(false);
+
+  /* ── Collapsible state ──────────────────────────────────────────── */
+  const [diagOpen, setDiagOpen] = useState(true);
+  const [stagesOpen, setStagesOpen] = useState(false);
+  const [ignoredOpen, setIgnoredOpen] = useState(false);
 
   const fetchOverviewData = useCallback(async () => {
     try {
-      const [metricsRes, incidentsRes] = await Promise.allSettled([
+      const [metricsRes, incidentsRes, detectionsRes] = await Promise.allSettled([
         axios.get(`${API}/servers/${serverId}/metrics/summary`),
         axios.get(`${API}/servers/${serverId}/incidents?status=open`),
+        axios.get(`${API}/servers/${serverId}/detections`, {
+          params: { include_ignored: showIgnored },
+        }),
       ]);
       if (metricsRes.status === 'fulfilled') setMetricsSummary(metricsRes.value.data);
       if (incidentsRes.status === 'fulfilled') setIncidents(incidentsRes.value.data?.incidents || incidentsRes.value.data || []);
+      if (detectionsRes.status === 'fulfilled') {
+        const data = detectionsRes.value.data;
+        setDetections(Array.isArray(data) ? data : data?.detections || []);
+      }
     } finally {
       setLoading(false);
     }
-  }, [serverId]);
+  }, [serverId, showIgnored]);
 
   useEffect(() => { fetchOverviewData(); }, [fetchOverviewData]);
 
@@ -103,6 +318,43 @@ function OverviewModule() {
       setResetting(false);
     }
   }, [fetchOverviewData, fetchServer, serverId]);
+
+  const handleMarkSafe = useCallback(async (detectionId) => {
+    setVerdictBusy(true);
+    try {
+      await axios.post(`${API}/servers/detections/${detectionId}/verdict`, {
+        status: 'ignored',
+        verdict_notes: 'Marked safe by operator',
+      });
+      await fetchOverviewData();
+    } finally {
+      setVerdictBusy(false);
+    }
+  }, [fetchOverviewData]);
+
+  const handleReactivate = useCallback(async (detectionId) => {
+    setVerdictBusy(true);
+    try {
+      await axios.post(`${API}/servers/detections/${detectionId}/verdict`, {
+        status: 'active',
+        verdict_notes: 'Reactivated by operator',
+      });
+      await fetchOverviewData();
+    } finally {
+      setVerdictBusy(false);
+    }
+  }, [fetchOverviewData]);
+
+  const activeDetections = useMemo(
+    () => detections.filter((d) => d.status === 'active' || d.status === 'monitoring'),
+    [detections],
+  );
+  const ignoredDetections = useMemo(
+    () => detections.filter((d) => d.status === 'ignored' || d.status === 'false_positive'),
+    [detections],
+  );
+  const hasProvisioningStages = server?.provisioning_stages && Object.keys(server.provisioning_stages).length > 0;
+  const showDiagnostics = activeDetections.length > 0 || ignoredDetections.length > 0 || isServerDegraded(server) || server?.status === 'error' || hasProvisioningStages;
 
   const formatUptime = (seconds) => {
     if (!seconds) return '—';
@@ -172,64 +424,111 @@ function OverviewModule() {
         })}
       </div>
 
-      {/* Provisioning Stages */}
-      {(isServerDegraded(server) || server?.status === 'error') &&
-        server?.provisioning_stages && Object.keys(server.provisioning_stages).length > 0 && (
-        <Card className={`border ${
-          isServerDegraded(server)
-            ? 'border-amber-600/30 bg-amber-600/5'
-            : 'border-red-600/30 bg-red-600/5'
-        }`}>
-          <CardContent className="p-4">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <AlertTriangle className={`h-4 w-4 ${
-                isServerDegraded(server) ? 'text-amber-300' : 'text-red-400'
-              }`} />
-              <span className={isServerDegraded(server) ? 'text-amber-300' : 'text-red-400'}>
-                {isServerDegraded(server)
-                  ? 'Provisioning Stages — Created With Follow-up Work'
-                  : 'Provisioning Stages — Failed Before Runtime'}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {Object.values(server.provisioning_stages).map((stage) => (
-                <div key={stage.name} className="flex items-center gap-3 text-xs">
-                  <div className={`flex h-5 w-5 items-center justify-center rounded-full ${
-                    stage.status === 'success' ? 'bg-green-600/20' :
-                    stage.status === 'failed' ? 'bg-red-600/20' :
-                    'bg-zinc-600/20'
-                  }`}>
+      {/* ── Diagnostics Panel (compact, collapsible) ────────────────────── */}
+      {showDiagnostics && (
+        <div className="space-y-2">
+          {/* Active diagnostics */}
+          {activeDetections.length > 0 && (
+            <CollapsibleSection
+              title="ACTIVE DIAGNOSTICS"
+              icon={AlertTriangle}
+              count={activeDetections.length}
+              open={diagOpen}
+              onToggle={() => setDiagOpen((v) => !v)}
+            >
+              <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                {activeDetections.map((item) => (
+                  <DiagnosticItem
+                    key={item.id}
+                    item={item}
+                    onMarkSafe={handleMarkSafe}
+                    onReactivate={handleReactivate}
+                    busy={verdictBusy}
+                  />
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Provisioning stages (collapsed by default when no issues) */}
+          {hasProvisioningStages && (isServerDegraded(server) || server?.status === 'error') && (
+            <CollapsibleSection
+              title="PROVISIONING STAGES"
+              icon={Activity}
+              count={Object.keys(server.provisioning_stages).length}
+              open={stagesOpen}
+              onToggle={() => setStagesOpen((v) => !v)}
+              badge={
+                isServerDegraded(server)
+                  ? <Badge variant="outline" className="ml-1 border-amber-600/30 text-[9px] text-amber-300">needs review</Badge>
+                  : server?.status === 'error'
+                    ? <Badge variant="outline" className="ml-1 border-red-600/30 text-[9px] text-red-300">failed</Badge>
+                    : null
+              }
+            >
+              <div className="space-y-1.5 max-h-[30vh] overflow-y-auto">
+                {Object.values(server.provisioning_stages).map((stage) => (
+                  <div key={stage.name} className="flex items-center gap-2 text-xs py-0.5">
                     {stage.status === 'success' ? (
-                      <CheckCircle className="h-3 w-3 text-green-400" />
+                      <CheckCircle className="h-3 w-3 shrink-0 text-green-400" />
                     ) : stage.status === 'failed' ? (
-                      <AlertTriangle className="h-3 w-3 text-red-400" />
+                      <AlertTriangle className="h-3 w-3 shrink-0 text-red-400" />
                     ) : (
-                      <Activity className="h-3 w-3 text-[#4a6070]" />
+                      <Activity className="h-3 w-3 shrink-0 text-[#4a6070]" />
                     )}
-                  </div>
-                  <div className="flex-1">
-                    <span className={`font-medium capitalize ${
+                    <span className={`capitalize ${
                       stage.status === 'success' ? 'text-green-400' :
                       stage.status === 'failed' ? 'text-red-400' :
                       'text-[#4a6070]'
                     }`}>
                       {stage.name.replace(/_/g, ' ')}
                     </span>
-                    {stage.message && (
-                      <span className="ml-2 text-[#4a6070]">{stage.message}</span>
-                    )}
+                    {stage.message && <span className="text-[#4a6070] truncate">{stage.message}</span>}
+                    {stage.error && <span className="ml-auto text-red-400/80 text-[11px] truncate max-w-[40%]">{stage.error}</span>}
                   </div>
-                  {stage.error && (
-                    <span className="text-red-400/80">{stage.error}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-            {(server.summary_message || server.last_docker_error) && (
-              <p className="mt-3 border-t border-zinc-800 pt-2 text-xs text-[#4a6070]">{server.summary_message || server.last_docker_error}</p>
-            )}
-          </CardContent>
-        </Card>
+                ))}
+                {(server.summary_message || server.last_docker_error) && (
+                  <p className="mt-1 border-t border-zinc-800 pt-1 text-[11px] text-[#4a6070]">{server.summary_message || server.last_docker_error}</p>
+                )}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Ignored / archived diagnostics */}
+          {showIgnored && ignoredDetections.length > 0 && (
+            <CollapsibleSection
+              title="RESOLVED / KNOWN SAFE"
+              icon={EyeOff}
+              count={ignoredDetections.length}
+              open={ignoredOpen}
+              onToggle={() => setIgnoredOpen((v) => !v)}
+            >
+              <div className="space-y-2 max-h-[30vh] overflow-y-auto">
+                {ignoredDetections.map((item) => (
+                  <DiagnosticItem
+                    key={item.id}
+                    item={item}
+                    onMarkSafe={handleMarkSafe}
+                    onReactivate={handleReactivate}
+                    busy={verdictBusy}
+                  />
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Toggle for showing ignored items */}
+          <div className="flex items-center gap-2 text-[10px] text-[#4a6070]">
+            <button
+              type="button"
+              onClick={() => setShowIgnored((v) => !v)}
+              className="flex items-center gap-1 hover:text-[#8a9aa8] transition-colors"
+            >
+              {showIgnored ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+              {showIgnored ? 'Hide archived' : `Show archived${ignoredDetections.length > 0 ? ` (${ignoredDetections.length})` : ''}`}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Open Incidents Alert */}
