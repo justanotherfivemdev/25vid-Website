@@ -3197,7 +3197,7 @@ _FM_EDITABLE_EXTENSIONS = {
 }
 
 
-def _resolve_server_root(server: dict, root_key: str) -> str:
+def _resolve_server_root(server: dict, root_key: str, *, details: dict | None = None) -> str:
     """Return the validated host-side directory for a root_key.
 
     Supported root_key values:
@@ -3205,10 +3205,20 @@ def _resolve_server_root(server: dict, root_key: str) -> str:
       - profile → profile_path
       - workshop → workshop_path
 
-    Raises HTTPException(400) when the root_key is unknown or the path is not
-    configured.
+    Raises HTTPException(400) when the root_key is unknown, the path is not
+    configured, or neither the stored nor the derived path is an existing
+    directory.
+
+    Parameters
+    ----------
+    details:
+        Pre-computed troubleshooting details from ``_derive_troubleshooting(server)``.
+        Pass this when calling ``_resolve_server_root`` multiple times for the same
+        server to avoid redundant filesystem scans.  When *None* it is computed
+        internally.
     """
-    details = _derive_troubleshooting(server)
+    if details is None:
+        details = _derive_troubleshooting(server)
 
     if root_key == "config":
         stored = _normalize_host_path(Path(server["config_path"]).parent.as_posix()) if server.get("config_path") else ""
@@ -3224,9 +3234,6 @@ def _resolve_server_root(server: dict, root_key: str) -> str:
 
     for candidate in (stored, derived):
         if candidate and Path(candidate).is_dir():
-            return candidate
-    for candidate in (stored, derived):
-        if candidate:
             return candidate
 
     raise HTTPException(status_code=400, detail=f"Server has no {root_key} path configured")
@@ -3289,10 +3296,14 @@ async def list_file_roots(server_id: str, current_user: dict = Depends(_require_
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
+    # Compute troubleshooting details once and share across all three root lookups
+    # to avoid redundant filesystem scans and mount/volume checks per request.
+    details = _derive_troubleshooting(server)
+
     roots = []
     for key, label in [("config", "Configs"), ("profile", "Profile"), ("workshop", "Workshop")]:
         try:
-            path = _resolve_server_root(server, key)
+            path = _resolve_server_root(server, key, details=details)
             exists = Path(path).is_dir()
         except HTTPException:
             exists = False
