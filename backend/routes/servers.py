@@ -2809,6 +2809,7 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
             "state": "live",
             "backfill_count": backfill_count,
             "last_seq": session.last_seq,
+            "sources": session.source_status,
         })
 
         while True:

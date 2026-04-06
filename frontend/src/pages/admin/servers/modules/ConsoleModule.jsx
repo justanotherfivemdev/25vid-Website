@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  AlertTriangle,
   Copy,
   Download,
   Loader2,
@@ -58,6 +59,35 @@ const SCROLL_THRESHOLD = 60;
 const MAX_CURSOR_CACHE = 5000;
 const TRIMMED_CURSOR_CACHE = 3000;
 
+const SOURCE_LABELS = { docker: 'Docker', profile: 'Files', rcon: 'RCON' };
+
+function SourceIndicators({ sourceStatus }) {
+  if (!sourceStatus || Object.keys(sourceStatus).length === 0) return null;
+
+  const allUnavailable = Object.values(sourceStatus).every((s) => !s.available);
+
+  return (
+    <span className="ml-2 inline-flex items-center gap-1.5 text-[10px]">
+      {allUnavailable && (
+        <AlertTriangle className="h-3 w-3 text-red-400" />
+      )}
+      {Object.entries(sourceStatus).map(([name, info]) => (
+        <span
+          key={name}
+          className={info.available ? 'text-zinc-500' : 'text-red-400/70'}
+          title={
+            info.available
+              ? `${SOURCE_LABELS[name] || name}: connected`
+              : `${SOURCE_LABELS[name] || name}: ${info.reason || 'unavailable'}`
+          }
+        >
+          {SOURCE_LABELS[name] || name}: {info.available ? '✓' : '✗'}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function ConsoleModule() {
   const { server: rawServer, serverId } = useOutletContext();
   const server = normalizeServer(rawServer);
@@ -67,6 +97,8 @@ function ConsoleModule() {
   const [filter, setFilter] = useState('');
   const [connectionState, setConnectionState] = useState('idle');
   const [backfillInfo, setBackfillInfo] = useState(null);
+  const [sourceStatus, setSourceStatus] = useState(null);
+  const [closeReason, setCloseReason] = useState('');
 
   const logRef = useRef(null);
   const wsRef = useRef(null);
@@ -182,6 +214,10 @@ function ConsoleModule() {
               setConnectionState('live');
               setLoading(false);
               setBackfillInfo(null);
+              setCloseReason('');
+              if (payload.sources) {
+                setSourceStatus(payload.sources);
+              }
             }
             return;
           }
@@ -239,10 +275,6 @@ function ConsoleModule() {
               setConnectionState('server_not_found');
               setLoading(false);
               return;
-            case 4005:
-              setConnectionState('container_not_found');
-              setLoading(false);
-              return;
             case 4006:
               setConnectionState('server_not_running');
               setLoading(false);
@@ -264,6 +296,11 @@ function ConsoleModule() {
           // 1s, 2s, 4s, 8s, 10s cap
           const nextDelay = Math.min(10_000, 1000 * 2 ** Math.min(attempt - 1, 3));
           setConnectionState('reconnecting');
+          setCloseReason(
+            event.reason
+              ? `Close ${event.code}: ${event.reason}`
+              : `Close code ${event.code || 'unknown'}`,
+          );
           reconnectTimerRef.current = setTimeout(connect, nextDelay);
         };
 
@@ -342,7 +379,6 @@ function ConsoleModule() {
     auth_failed: 'Authentication failed — please refresh and log in',
     no_permission: 'Insufficient permissions for live console',
     server_not_found: 'Server not found',
-    container_not_found: 'Server container not found — it may have been removed',
     server_not_running: 'Server is not running',
   }[connectionState] || 'Waiting to connect';
 
@@ -356,7 +392,6 @@ function ConsoleModule() {
     auth_failed: 'bg-red-500',
     no_permission: 'bg-red-500',
     server_not_found: 'bg-red-500',
-    container_not_found: 'bg-red-500',
     server_not_running: 'bg-zinc-600',
   }[connectionState] || 'bg-zinc-600';
 
@@ -370,7 +405,6 @@ function ConsoleModule() {
     auth_failed: 'text-red-400',
     no_permission: 'text-red-400',
     server_not_found: 'text-red-400',
-    container_not_found: 'text-red-400',
     server_not_running: 'text-zinc-500',
   }[connectionState] || 'text-zinc-500';
 
@@ -421,7 +455,15 @@ function ConsoleModule() {
 
       <div className="flex items-center gap-2 text-xs">
         <span className={`h-2 w-2 rounded-full ${dotColor} ${connectionState === 'live' ? 'animate-pulse' : ''} ${connectionState === 'backfilling' ? 'animate-pulse' : ''}`} />
-        <span className={textColor}>{connectionLabel}</span>
+        <span className={textColor}>
+          {connectionLabel}
+          {connectionState === 'reconnecting' && closeReason && (
+            <span className="ml-1 text-zinc-600">({closeReason})</span>
+          )}
+        </span>
+        {(connectionState === 'live' || connectionState === 'reconnecting') && sourceStatus && (
+          <SourceIndicators sourceStatus={sourceStatus} />
+        )}
         {paused && (
           <Badge variant="outline" className="ml-2 border-amber-500/30 text-[10px] text-amber-300">
             AUTO-SCROLL PAUSED
@@ -451,6 +493,18 @@ function ConsoleModule() {
               <div className="flex flex-col items-center justify-center py-12 text-[#4a6070]">
                 <Terminal className="mb-2 h-8 w-8 text-[#4a6070]" />
                 <p>{filter ? 'No matching log lines' : 'No merged logs available yet'}</p>
+                {!filter && sourceStatus && Object.values(sourceStatus).some((s) => !s.available) && (
+                  <div className="mt-3 max-w-md space-y-1 text-center text-[11px] text-zinc-600">
+                    {Object.entries(sourceStatus).map(([name, info]) => (
+                      !info.available && (
+                        <p key={name} className="text-red-400/60">
+                          <AlertTriangle className="mr-1 inline h-3 w-3" />
+                          {name}: {info.reason?.replace(/_/g, ' ') || 'unavailable'}
+                        </p>
+                      )
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-3">

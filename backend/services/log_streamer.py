@@ -13,7 +13,7 @@ import time
 from collections import deque
 from typing import Any, Dict, Optional
 
-from services.server_logs import stream_server_log_entries
+from services.server_logs import probe_source_availability, stream_server_log_entries
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,8 @@ class _StreamSession:
         self.entries_total: int = 0
         self.entries_dropped: int = 0
         self.created_at: float = time.monotonic()
+        # Source availability probed at start
+        self.source_status: Dict[str, Any] = {}
 
     @property
     def subscriber_count(self) -> int:
@@ -69,11 +71,33 @@ class _StreamSession:
                 return
             self._started = True
             self._stop_event.clear()
+
+            # Probe source availability before starting the pump
+            try:
+                self.source_status = await probe_source_availability(self.server)
+            except Exception as exc:
+                logger.warning(
+                    "log_streamer.probe_failed server=%s error=%s",
+                    self.server_id, exc,
+                )
+                self.source_status = {}
+
+            unavailable = [
+                name for name, info in self.source_status.items()
+                if not info.get("available", False)
+            ]
+            if unavailable:
+                logger.warning(
+                    "log_streamer.sources_unavailable server=%s unavailable=%s",
+                    self.server_id, ",".join(unavailable),
+                )
+
             self._task = asyncio.create_task(self._pump())
             logger.info(
-                "log_streamer.stream_start server=%s container=%s",
+                "log_streamer.stream_start server=%s container=%s sources=%s",
                 self.server_id,
                 self.container_name,
+                {k: v.get("available", False) for k, v in self.source_status.items()},
             )
 
     async def stop(self) -> None:
@@ -185,6 +209,7 @@ class _StreamSession:
             "entries_total": self.entries_total,
             "entries_dropped": self.entries_dropped,
             "uptime_seconds": round(time.monotonic() - self.created_at, 1),
+            "sources": self.source_status,
         }
 
 
