@@ -66,20 +66,23 @@ ws[s]://<host>/api/ws/servers/<server_id>/logs?tail=500
 
 | Type | Fields | Description |
 |------|--------|-------------|
-| `status` | `state`, `server_id`, `count`, `backfill_count`, `last_seq`, `sources` | Connection lifecycle |
+| `status` | `state` (+ additional fields depending on lifecycle state; `live` includes `backfill_count`, `last_seq`, `sources`) | Connection lifecycle |
 | `log` | `cursor`, `seq`, `timestamp`, `line`, `raw`, `source`, `stream` | Log entry |
 | `heartbeat` | `seq`, `subscriber_count` | Keep-alive (every 30s) |
 | `error` | `code`, `message` | Error notification |
 
 **Status lifecycle:** `connected` → `backfilling` → `live`
 
-The `live` status message includes a `sources` object showing which log sources
-are available:
+All `status` messages include a `state` field. The `live` status message also
+includes `backfill_count`, `last_seq`, and a `sources` object showing which log
+sources are available:
 
 ```json
 {
   "type": "status",
   "state": "live",
+  "backfill_count": 500,
+  "last_seq": 1842,
   "sources": {
     "docker":  {"available": true},
     "profile": {"available": false, "reason": "path_not_found"},
@@ -95,7 +98,6 @@ are available:
 | `4001` | Authentication required | No |
 | `4003` | Insufficient permissions | No |
 | `4004` | Server not found | No |
-| `4005` | Container not found | No |
 | `4006` | Server not running | No |
 | `1011` | Internal server error | Yes |
 | Other | Transient failure | Yes |

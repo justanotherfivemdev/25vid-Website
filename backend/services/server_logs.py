@@ -370,7 +370,9 @@ async def probe_source_availability(
     else:
         docker_available, err = await docker_agent.ping()
         if not docker_available:
-            sources["docker"] = {"available": False, "reason": "docker_unavailable", "detail": err or ""}
+            if err:
+                logger.warning("Docker ping failed during source availability probe: %s", err)
+            sources["docker"] = {"available": False, "reason": "docker_unavailable"}
         else:
             container = await docker_agent.get_container(container_name)
             if container is None:
@@ -386,6 +388,8 @@ async def probe_source_availability(
         p = Path(str(profile_path))
         if not p.exists():
             sources["profile"] = {"available": False, "reason": "path_not_found"}
+        elif not p.is_dir():
+            sources["profile"] = {"available": False, "reason": "not_a_directory"}
         else:
             files = await asyncio.to_thread(discover_log_files, server)
             if files:
@@ -398,8 +402,9 @@ async def probe_source_availability(
     try:
         count = await db.server_log_events.count_documents({"server_id": server_id}, limit=1)
         sources["rcon"] = {"available": True, "has_events": count > 0}
-    except Exception:
-        sources["rcon"] = {"available": True, "has_events": False}
+    except Exception as exc:
+        logger.warning("Failed to probe RCON event availability for server %s", server_id, exc_info=exc)
+        sources["rcon"] = {"available": False, "has_events": False, "reason": "db_error"}
 
     return sources
 

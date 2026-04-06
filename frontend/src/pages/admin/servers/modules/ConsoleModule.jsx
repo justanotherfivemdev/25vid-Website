@@ -275,10 +275,6 @@ function ConsoleModule() {
               setConnectionState('server_not_found');
               setLoading(false);
               return;
-            case 4005:
-              setConnectionState('container_not_found');
-              setLoading(false);
-              return;
             case 4006:
               setConnectionState('server_not_running');
               setLoading(false);
@@ -383,7 +379,6 @@ function ConsoleModule() {
     auth_failed: 'Authentication failed — please refresh and log in',
     no_permission: 'Insufficient permissions for live console',
     server_not_found: 'Server not found',
-    container_not_found: 'Server container not found — it may have been removed',
     server_not_running: 'Server is not running',
   }[connectionState] || 'Waiting to connect';
 
@@ -397,7 +392,6 @@ function ConsoleModule() {
     auth_failed: 'bg-red-500',
     no_permission: 'bg-red-500',
     server_not_found: 'bg-red-500',
-    container_not_found: 'bg-red-500',
     server_not_running: 'bg-zinc-600',
   }[connectionState] || 'bg-zinc-600';
 
@@ -411,7 +405,6 @@ function ConsoleModule() {
     auth_failed: 'text-red-400',
     no_permission: 'text-red-400',
     server_not_found: 'text-red-400',
-    container_not_found: 'text-red-400',
     server_not_running: 'text-zinc-500',
   }[connectionState] || 'text-zinc-500';
 
