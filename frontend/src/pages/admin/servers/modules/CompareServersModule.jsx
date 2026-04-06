@@ -48,9 +48,6 @@ function CompareServersModule() {
   const [sortBy, setSortBy] = useState('-players');
   const [statusFilter, setStatusFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
-  const [sortBy, setSortBy] = useState('-players');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [countryFilter, setCountryFilter] = useState('');
 
   /* selected server state */
   const [selected, setSelected] = useState(null);
