@@ -226,24 +226,24 @@ function ServerWorkspace() {
     <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-[#050a0e]">
       <div className="border-b border-[rgba(201,162,39,0.1)] bg-[#0c1117] px-4 py-3 backdrop-blur-sm lg:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/admin/servers" className="text-[#4a6070] transition-colors hover:text-[#e8c547]">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link to="/admin/servers" className="shrink-0 text-[#4a6070] transition-colors hover:text-[#e8c547]">
               <ArrowLeft className="h-5 w-5" />
             </Link>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-[rgba(201,162,39,0.2)] bg-[rgba(201,162,39,0.05)]">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center border border-[rgba(201,162,39,0.2)] bg-[rgba(201,162,39,0.05)]">
                 <Server className="h-5 w-5 text-[#e8c547]" />
               </div>
-              <div>
-                <h1 className="text-lg font-black uppercase tracking-[0.08em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
+              <div className="min-w-0">
+                <h1 className="truncate text-lg font-black uppercase tracking-[0.08em] text-[#e8c547]" style={{ fontFamily: "'Share Tech', sans-serif" }}>
                   {server.name}
                 </h1>
-                <div className="flex items-center gap-2 text-xs text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  <span>{server.docker_image || 'Managed container'}</span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0 text-xs text-[#4a6070]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <span className="truncate max-w-[200px] sm:max-w-none">{server.docker_image || 'Managed container'}</span>
                   {server.container_name && (
                     <>
-                      <span>|</span>
-                      <span>{server.container_name}</span>
+                      <span className="hidden sm:inline">|</span>
+                      <span className="truncate max-w-[140px] sm:max-w-none">{server.container_name}</span>
                     </>
                   )}
                 </div>
@@ -251,7 +251,7 @@ function ServerWorkspace() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-xs font-semibold tracking-wider ${cfg.cls}`} style={{ fontFamily: "'Oswald', sans-serif" }}>
               <span className={cfg.dotCls} />
               <StatusIcon className={`h-3.5 w-3.5 ${cfg.spin ? 'animate-spin' : ''}`} />
@@ -388,7 +388,7 @@ function ServerWorkspace() {
         )}
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
         <nav className={`hidden flex-col border-r border-[rgba(201,162,39,0.1)] bg-[#050a0e] transition-all lg:flex ${sidebarCollapsed ? 'w-14' : 'w-52'}`}>
           <div className="flex-1 overflow-y-auto py-2">
             {NAV_SECTIONS.map((section) => (
@@ -432,7 +432,7 @@ function ServerWorkspace() {
           </button>
         </nav>
 
-        <div className="flex overflow-x-auto border-b border-[rgba(201,162,39,0.1)] bg-[#050a0e] lg:hidden">
+        <div className="flex w-full shrink-0 overflow-x-auto border-b border-[rgba(201,162,39,0.1)] bg-[#050a0e] lg:hidden">
           {NAV_SECTIONS.flatMap((section) => section.items).map((item) => {
             const Icon = item.icon;
             return (
@@ -456,7 +456,7 @@ function ServerWorkspace() {
           })}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <div className="min-w-0 flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
           <Outlet context={{ server, serverId: id, fetchServer, canManage, handleServerAction: handleAction, actionLoading }} />
         </div>
       </div>
