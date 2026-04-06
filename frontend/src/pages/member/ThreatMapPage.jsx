@@ -1,15 +1,18 @@
-import React, { useEffect, useLayoutEffect, useCallback, useState, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useCallback, useState, useRef, lazy } from 'react';
 import axios from 'axios';
 import { useEventsStore, useMapStore } from '@/stores/threatMapStore';
 import { useAuth } from '@/context/AuthContext';
-import GlobalThreatMap from '@/components/threatmap/GlobalThreatMap';
 import ThreatMapHeader from '@/components/threatmap/ThreatMapHeader';
 import ThreatMapSidebar from '@/components/threatmap/ThreatMapSidebar';
 import ThreatMapControls from '@/components/threatmap/ThreatMapControls';
 import TimelineScrubber from '@/components/threatmap/TimelineScrubber';
 import IntelLayerPanel from '@/components/threatmap/IntelLayerPanel';
+import GlobeFallback from '@/components/threatmap/GlobeFallback';
+import AdaptiveLoader from '@/components/AdaptiveLoader';
 import '@/components/threatmap/threatmap.css';
 import { TerminalTransition, buildThreatMapLines } from '@/components/tactical/TerminalTransition';
+
+const GlobalThreatMap = lazy(() => import('@/components/threatmap/GlobalThreatMap'));
 
 import { API } from '@/utils/api';
 const REFRESH_INTERVAL = 300000; // 5 minutes
@@ -122,7 +125,10 @@ export default function ThreatMapPage() {
       <ThreatMapHeader onRefresh={fetchEvents} isLoading={isLoading} mapStatus={mapStatus} isAdmin={isAdmin} />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <div className="relative min-h-0 flex-1">
-          <GlobalThreatMap
+          <AdaptiveLoader
+            heavy={GlobalThreatMap}
+            fallback={<GlobeFallback />}
+            requires="webgl"
             operations={operations}
             intelEvents={intelEvents}
             campaignEvents={campaignEvents}

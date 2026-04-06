@@ -278,7 +278,10 @@ export default defineConfig(({ mode }) => {
     plugins: [apiProxyPlugin(env)],
     resolve: {
       alias: {
-        '@': resolve(__dirname, 'src'),
+        // Single source of truth: all World Monitor source lives in the
+        // frontend feature directory.  The standalone entry point
+        // (worldmonitor/src/main.ts) bootstraps the same code.
+        '@': resolve(__dirname, '..', 'frontend', 'src', 'features', 'worldmonitor'),
       },
     },
     build: {

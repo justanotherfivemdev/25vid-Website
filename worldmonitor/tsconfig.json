@@ -20,8 +20,8 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["../frontend/src/features/worldmonitor/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../frontend/src/features/worldmonitor"]
 }

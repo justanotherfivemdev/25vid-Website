@@ -1,0 +1,31 @@
+{
+  "name": "25th Infantry Division — Tropic Lightning",
+  "short_name": "25th ID",
+  "description": "Official command platform of the 25th Infantry Division. Ready to Strike, Anywhere, Anytime.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050a0e",
+  "theme_color": "#050a0e",
+  "categories": ["utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

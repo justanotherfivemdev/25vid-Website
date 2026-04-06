@@ -77,7 +77,7 @@ const SidebarGroup = ({ group, collapsed, location, onNavigate, open, onToggle }
           opacity: collapsed || open ? 1 : 0,
         }}
       >
-        <nav className="space-y-0.5 px-2">
+        <nav className="space-y-0.5 px-2" aria-label={group.label}>
           {items.map((item) => {
             const Icon = item.icon;
             const isActive = item.exact
@@ -196,6 +196,13 @@ const MemberLayout = ({ children }) => {
   return (
     <MemberLayoutContext.Provider value={true}>
     <div className="min-h-screen bg-[#050a0e] text-[#d0d8e0]">
+      {/* Skip-to-content for keyboard / screen-reader users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[#e8c547] focus:text-[#050a0e] focus:rounded focus:font-bold"
+      >
+        Skip to content
+      </a>
       {/* ── Top Bar ─────────────────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#050a0e]/95 backdrop-blur-xl border-b border-[rgba(201,162,39,0.1)]">
         <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 h-14">
@@ -322,6 +329,7 @@ const MemberLayout = ({ children }) => {
 
       {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
       <aside
+        aria-label="Sidebar navigation"
         className={`hidden md:flex flex-col fixed left-0 top-14 bottom-0 ${sidebarWidth} bg-[#0c1117] border-r border-[rgba(201,162,39,0.1)] overflow-y-auto transition-all duration-200 z-40`}
       >
         {/* Collapse toggle */}
@@ -368,6 +376,7 @@ const MemberLayout = ({ children }) => {
 
       {/* ── Main Content ────────────────────────────────────────────────── */}
       <main
+        id="main-content"
         className={`pt-14 transition-all duration-200 ${
           collapsed ? 'md:ml-16' : 'md:ml-60'
         }`}

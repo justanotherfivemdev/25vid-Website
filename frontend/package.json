@@ -75,7 +75,8 @@
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
     "test:routes": "node scripts/route-smoke.mjs",
-    "test:devices": "node scripts/device-matrix-smoke.mjs"
+    "test:devices": "node scripts/device-matrix-smoke.mjs",
+    "test:a11y": "node scripts/a11y-audit.mjs"
   },
   "browserslist": {
     "production": [
@@ -95,6 +96,7 @@
     ]
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
     "@types/d3": "^7.4.3",
     "@types/three": "^0.182.0",
     "@types/topojson-client": "^3.1.5",
