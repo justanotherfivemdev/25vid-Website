@@ -214,6 +214,8 @@ function ConsoleModule() {
               setBackfillInfo({ count: payload.count || 0 });
               if (payload.reconnect_gap) {
                 setReconnectWarning('Some older lines were not retained during reconnect; showing the latest available history.');
+              } else {
+                setReconnectWarning('');
               }
             } else if (payload.state === 'live') {
               setConnectionState('live');
@@ -222,6 +224,8 @@ function ConsoleModule() {
               setCloseReason('');
               if (payload.reconnect_gap) {
                 setReconnectWarning('Reconnect resumed from the latest retained logs after a sequence gap.');
+              } else {
+                setReconnectWarning('');
               }
               if (payload.sources) {
                 setSourceStatus(payload.sources);

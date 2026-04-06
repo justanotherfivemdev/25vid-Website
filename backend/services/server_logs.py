@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import logging
 import re
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional
@@ -548,6 +549,7 @@ async def stream_server_log_entries(
     async def pump_rcon_events() -> None:
         last_seen = since
         seen_cursors: set[str] = set()
+        seen_order: deque[str] = deque(maxlen=2000)
         while not stop_event.is_set():
             try:
                 entries = await _read_rcon_log_entries(server_id, last_seen, 200)
@@ -561,8 +563,12 @@ async def stream_server_log_entries(
                     await _queue_put_safe(entry)
                     if cursor:
                         seen_cursors.add(cursor)
-                        if len(seen_cursors) > 2000:
-                            seen_cursors = set(list(seen_cursors)[-1000:])
+                        seen_order.append(cursor)
+                        # Trim deterministically by insertion order to avoid
+                        # unbounded growth and non-deterministic set slicing.
+                        while len(seen_order) > 1500:
+                            old_cursor = seen_order.popleft()
+                            seen_cursors.discard(old_cursor)
                     last_seen = max(last_seen or 0, ts)
             except Exception as exc:
                 logger.debug("RCON log pump error for %s: %s", server_id, exc)
