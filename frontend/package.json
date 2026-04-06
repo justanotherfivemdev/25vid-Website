@@ -74,13 +74,19 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
-    "test:routes": "node scripts/route-smoke.mjs"
+    "test:routes": "node scripts/route-smoke.mjs",
+    "test:devices": "node scripts/device-matrix-smoke.mjs"
   },
   "browserslist": {
     "production": [
       ">0.2%",
       "not dead",
-      "not op_mini all"
+      "not op_mini all",
+      "iOS >= 14",
+      "Android >= 5",
+      "Samsung >= 14",
+      "ChromeAndroid >= 80",
+      "FirefoxAndroid >= 100"
     ],
     "development": [
       "last 1 chrome version",

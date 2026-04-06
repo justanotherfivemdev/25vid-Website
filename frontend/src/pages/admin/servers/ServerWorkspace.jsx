@@ -223,7 +223,7 @@ function ServerWorkspace() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-[#050a0e]">
+    <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-[#050a0e]">
       <div className="border-b border-[rgba(201,162,39,0.1)] bg-[#0c1117] px-4 py-3 backdrop-blur-sm lg:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">

@@ -5,6 +5,7 @@
 
 .App {
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: #050a0e;
 }
 

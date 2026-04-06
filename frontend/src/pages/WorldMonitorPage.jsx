@@ -49,7 +49,7 @@ export default function WorldMonitorPage() {
   }, []);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#050a0e', position: 'relative' }}>
+    <div style={{ width: '100vw', height: '100dvh', background: '#050a0e', position: 'relative' }}>
       {status === 'loading' && (
         <div style={{
           position: 'absolute',

@@ -940,7 +940,7 @@ export default function OperationsPlanner() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-[#080e1c] text-white overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-64px)] bg-[#080e1c] text-white overflow-hidden">
       {/* ── Top Bar ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-4 py-2 bg-[#0c1322] border-b border-[#C9A227]/20 shrink-0 flex-wrap">
         <Link to="/hub" className="text-[#8a9aa8] hover:text-[#C9A227] transition">

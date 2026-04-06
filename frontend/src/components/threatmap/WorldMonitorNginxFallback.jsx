@@ -8,7 +8,7 @@ import React from 'react';
 export default function WorldMonitorNginxFallback() {
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: '#050a14',
       display: 'flex',
       alignItems: 'center',

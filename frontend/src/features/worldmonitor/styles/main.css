@@ -49,6 +49,7 @@
   color: var(--text);
   overflow: hidden;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -4930,6 +4931,53 @@ body.playback-mode .status-dot {
   .copy-link-btn,
   .time-display {
     display: none;
+  }
+}
+
+/* ── Mobile scroll unlock & layout fix (768px) ───────────────────────────── */
+@media (max-width: 768px) {
+  #worldmonitor-root {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .main-content {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .layout-main {
+    overflow: visible;
+    height: auto;
+  }
+
+  .top-area {
+    height: 55vh;
+    height: 55dvh;
+    min-height: 300px;
+    max-height: none;
+    flex-direction: column;
+  }
+
+  .main-content.black-swan-active .black-swan-section {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .bottom-panel {
+    max-height: 40vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Safe area padding for notch/pill devices */
+  .header {
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
   }
 }
 

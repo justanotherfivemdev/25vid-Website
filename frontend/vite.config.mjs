@@ -358,6 +358,11 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: "build",
       emptyOutDir: true,
+      // Target ES2020 for broad device compatibility (iOS 14+, Android 5+,
+      // Samsung Internet 14+, Chrome 80+, Firefox 100+). This ensures
+      // optional chaining, nullish coalescing, Promise.allSettled, and
+      // BigInt are available natively while still generating compact output.
+      target: "es2020",
       // Mapbox GL ships a large compiled WebGL runtime. After route splitting and
       // vendor isolation, the remaining core chunk is still expected to exceed
       // Vite's raw-byte warning threshold even though its compressed size is in

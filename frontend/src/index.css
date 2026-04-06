@@ -80,6 +80,7 @@
 .hero-section {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -158,4 +159,85 @@
 .command-center-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(201, 162, 39, 0.2) transparent;
+}
+
+/* ============================================================================
+   CROSS-DEVICE COMPATIBILITY LAYER
+   Reduced motion, touch targets, safe areas, and universal input support
+   ============================================================================ */
+
+/* ── Reduced Motion ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Touch Targets ─────────────────────────────────────────────────────────── */
+/* WCAG 2.2 Level AA requires 24×24px minimum; we target 44×44 for comfort */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  select,
+  summary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Ensure inputs aren't too small to tap */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Prevents iOS auto-zoom on focus */
+  }
+}
+
+/* ── Safe Area Insets (notch / pill devices) ────────────────────────────────── */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* ── Minimum Readable Width ────────────────────────────────────────────────── */
+/* Prevent horizontal scroll at 320px (iPhone SE / smallest supported width) */
+@layer base {
+  html {
+    overflow-x: hidden;
+  }
+  .tactical-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  }
+}
+
+/* ── Focus Visible ─────────────────────────────────────────────────────────── */
+/* High-contrast keyboard focus indicator for accessibility */
+:focus-visible {
+  outline: 2px solid var(--brand-gold, #c9a227);
+  outline-offset: 2px;
+}
+
+/* ── Print Friendliness ────────────────────────────────────────────────────── */
+@media print {
+  .scanline-overlay,
+  .crt-vignette,
+  nav,
+  footer {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
 }
