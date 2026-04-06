@@ -103,7 +103,7 @@ _ENV_AFFECTING_CONFIG_PATHS = frozenset({
 })
 
 
-def _needs_reconfigure(before_server: Dict[str, Any], updates: Dict[str, Any]) -> bool:
+def _needs_reconfigure(before_server: dict, updates: dict) -> bool:
     """Return True if any update touches a value that requires container recreation."""
     for key in _ENV_AFFECTING_KEYS:
         if key in updates and updates[key] != before_server.get(key):
