@@ -152,6 +152,7 @@ async def fetch_mod_metadata(mod_id: str) -> Optional[dict]:
     """Fetch mod metadata with cache-first strategy and upsert into DB.
 
     1. Check the ``workshop_cache`` collection (24-hour TTL).
+       If the cached record lacks enriched fields, treat as a cache miss.
     2. On cache miss, fetch from the Arma Reforger Workshop.
     3. Cache the result and upsert into ``workshop_mods``.
     """
@@ -159,7 +160,11 @@ async def fetch_mod_metadata(mod_id: str) -> Optional[dict]:
 
     cached = await _ws_get_cached(cache_key)
     if cached:
-        return cached
+        # Invalidate cache entries that lack enriched fields (pre-upgrade data)
+        has_enriched = cached.get("versions") or cached.get("subscribers")
+        if has_enriched:
+            return cached
+        logger.debug("Cache hit for %s lacks enriched fields — refetching", mod_id)
 
     metadata = await _fetch_from_workshop(mod_id)
     if metadata is None:

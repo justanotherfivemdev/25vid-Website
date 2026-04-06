@@ -47,8 +47,10 @@ function formatDate(dateStr) {
 }
 
 function formatRating(rating) {
-  if (rating === null || rating === undefined) return '—';
-  const pct = typeof rating === 'number' && rating <= 1 ? rating * 100 : rating;
+  if (rating === null || rating === undefined || rating === 0) return '—';
+  const num = Number(rating);
+  if (Number.isNaN(num)) return '—';
+  const pct = num <= 1 ? num * 100 : num;
   return `${Math.round(pct)}%`;
 }
 
@@ -359,8 +361,8 @@ export default function ModDetailPanel({
           setEnrichedMod((prev) => ({ ...prev, ...res.data }));
         }
       })
-      .catch(() => {
-        // Keep existing data on error
+      .catch((err) => {
+        console.warn('ModDetailPanel: failed to fetch enriched details', err?.response?.status, err?.message);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

@@ -1817,11 +1817,11 @@ async def get_workshop_mod_details(
     """Get enriched metadata for a mod including versions, scenarios, deps, changelog.
 
     Returns the full detail data scraped from the workshop page.  If the
-    cached data is stale (>24h) or missing enriched fields, a background
-    refresh is triggered.  Pass ``?refresh=true`` to force a fresh fetch.
+    cached data is stale (>24h) or missing enriched fields, a fresh fetch
+    is triggered.  Pass ``?refresh=true`` to force a fresh fetch.
     """
     from services.workshop_proxy import fetch_mod_details
-    from services.workshop_ingest import fetch_and_store_mod
+    from services.workshop_ingest import _normalize_metadata
 
     mod = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
 
@@ -1830,17 +1830,23 @@ async def get_workshop_mod_details(
     if mod and not refresh:
         # Check if the record is missing enriched fields (old-style record)
         has_enriched = (
-            mod.get("scenarios") or mod.get("versions") or mod.get("subscribers")
+            mod.get("versions") or mod.get("subscribers")
         )
         if not has_enriched:
             needs_refresh = True
 
     if needs_refresh:
-        # Fetch fresh details from the workshop
+        # Fetch fresh details directly from the workshop page
         details = await fetch_mod_details(mod_id)
         if details:
-            # Store the enriched data
-            await fetch_and_store_mod(mod_id)
+            # Normalize and store directly, bypassing the ingest cache
+            # which may hold stale data without enriched fields
+            normalized = _normalize_metadata(details, mod_id)
+            await db.workshop_mods.update_one(
+                {"mod_id": mod_id},
+                {"$set": normalized, "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}},
+                upsert=True,
+            )
             mod = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
         elif not mod:
             raise HTTPException(status_code=404, detail="Mod not found and workshop fetch failed")
