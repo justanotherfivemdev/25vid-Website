@@ -1248,12 +1248,25 @@ async def _sync_workshop_mod_metadata(server_id: str, mods: list[dict], current_
             "name": mod.get("name") or (stored or {}).get("name") or mod_id,
             "author": mod.get("author") or (stored or {}).get("author") or "",
             "version": mod.get("version") or (stored or {}).get("version") or "",
+            "summary": mod.get("summary") or (stored or {}).get("summary") or "",
             "description": mod.get("description") or (stored or {}).get("description") or "",
+            "license": mod.get("license") or (stored or {}).get("license") or "",
             "tags": mod.get("tags") or (stored or {}).get("tags") or [],
             "dependencies": mod.get("dependencies") or (stored or {}).get("dependencies") or [],
             "scenario_ids": mod.get("scenario_ids") or (stored or {}).get("scenario_ids") or [],
+            "scenarios": mod.get("scenarios") or (stored or {}).get("scenarios") or [],
+            "versions": mod.get("versions") or (stored or {}).get("versions") or [],
+            "changelog": mod.get("changelog") or (stored or {}).get("changelog") or "",
             "thumbnail_url": mod.get("thumbnail_url") or (stored or {}).get("thumbnail_url") or "",
             "workshop_url": mod.get("workshop_url") or (stored or {}).get("workshop_url") or f"https://reforger.armaplatform.com/workshop/{mod_id}",
+            "game_version": mod.get("game_version") or (stored or {}).get("game_version") or "",
+            "current_version_size": mod.get("current_version_size") or (stored or {}).get("current_version_size") or 0,
+            "rating": mod.get("rating") or (stored or {}).get("rating") or 0,
+            "rating_count": mod.get("rating_count") or (stored or {}).get("rating_count") or 0,
+            "subscribers": mod.get("subscribers") or (stored or {}).get("subscribers") or 0,
+            "downloads": mod.get("downloads") or (stored or {}).get("downloads") or 0,
+            "created_at": mod.get("created_at") or (stored or {}).get("created_at") or "",
+            "updated_at": mod.get("updated_at") or (stored or {}).get("updated_at") or "",
             "metadata_source": mod.get("metadata_source") or (stored or {}).get("metadata_source") or "server_assignment",
             "last_fetched": (stored or {}).get("last_fetched") or now,
             "last_used_by_server_id": server_id,
@@ -1795,6 +1808,46 @@ async def get_workshop_mod(mod_id: str, current_user: dict = Depends(_require_se
     return mod
 
 
+@router.get("/servers/workshop/mod/{mod_id}/details")
+async def get_workshop_mod_details(
+    mod_id: str,
+    refresh: bool = False,
+    current_user: dict = Depends(_require_servers),
+):
+    """Get enriched metadata for a mod including versions, scenarios, deps, changelog.
+
+    Returns the full detail data scraped from the workshop page.  If the
+    cached data is stale (>24h) or missing enriched fields, a background
+    refresh is triggered.  Pass ``?refresh=true`` to force a fresh fetch.
+    """
+    from services.workshop_proxy import fetch_mod_details
+    from services.workshop_ingest import fetch_and_store_mod
+
+    mod = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
+
+    # Determine if we need a refresh
+    needs_refresh = refresh or not mod
+    if mod and not refresh:
+        # Check if the record is missing enriched fields (old-style record)
+        has_enriched = (
+            mod.get("scenarios") or mod.get("versions") or mod.get("subscribers")
+        )
+        if not has_enriched:
+            needs_refresh = True
+
+    if needs_refresh:
+        # Fetch fresh details from the workshop
+        details = await fetch_mod_details(mod_id)
+        if details:
+            # Store the enriched data
+            await fetch_and_store_mod(mod_id)
+            mod = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
+        elif not mod:
+            raise HTTPException(status_code=404, detail="Mod not found and workshop fetch failed")
+
+    return mod
+
+
 @router.post("/servers/workshop/mod", status_code=201)
 async def add_workshop_mod(
     body: WorkshopModCreate,
@@ -1911,19 +1964,38 @@ async def get_server_scenarios(
 
     if mod_ids:
         ws_mods = await db.workshop_mods.find(
-            {"mod_id": {"$in": mod_ids}, "scenario_ids": {"$exists": True, "$ne": []}},
-            {"_id": 0, "mod_id": 1, "name": 1, "scenario_ids": 1},
+            {"mod_id": {"$in": mod_ids}},
+            {"_id": 0, "mod_id": 1, "name": 1, "scenario_ids": 1, "scenarios": 1},
         ).to_list(500)
 
         for ws_mod in ws_mods:
-            for sid in ws_mod.get("scenario_ids", []):
-                mod_scenarios.append({
-                    "id": sid,
-                    "name": sid,
-                    "source": "mod",
-                    "mod_id": ws_mod.get("mod_id", ""),
-                    "mod_name": ws_mod.get("name", ""),
-                })
+            rich_scenarios = ws_mod.get("scenarios") or []
+            flat_ids = ws_mod.get("scenario_ids") or []
+
+            if rich_scenarios:
+                for sc in rich_scenarios:
+                    sid = sc.get("scenario_id") or sc.get("gameId") or ""
+                    if not sid:
+                        continue
+                    mod_scenarios.append({
+                        "id": sid,
+                        "name": sc.get("name") or sid,
+                        "source": "mod",
+                        "mod_id": ws_mod.get("mod_id", ""),
+                        "mod_name": ws_mod.get("name", ""),
+                        "game_mode": sc.get("game_mode") or "",
+                        "player_count": sc.get("player_count") or 0,
+                        "description": sc.get("description") or "",
+                    })
+            elif flat_ids:
+                for sid in flat_ids:
+                    mod_scenarios.append({
+                        "id": sid,
+                        "name": sid,
+                        "source": "mod",
+                        "mod_id": ws_mod.get("mod_id", ""),
+                        "mod_name": ws_mod.get("name", ""),
+                    })
 
     # 3. Custom user-added scenarios
     custom_scenarios = server.get("custom_scenarios", [])
@@ -2014,9 +2086,16 @@ async def resolve_mod_dependencies(
                 mod_data = None
 
         if not mod_data:
+            # Try to find name from the server's mod list
+            server_mod_name = current_id
+            for sm in server.get("mods", []):
+                sm_id = (sm.get("mod_id") or sm.get("modId") or "").strip()
+                if sm_id == current_id and sm.get("name"):
+                    server_mod_name = sm["name"]
+                    break
             resolved.append({
                 "mod_id": current_id,
-                "name": current_id,
+                "name": server_mod_name,
                 "already_present": current_id in existing_set,
                 "metadata_available": False,
             })
@@ -2030,9 +2109,20 @@ async def resolve_mod_dependencies(
                 dep_ids.append(dep_id)
                 queue.append(dep_id)
 
+        # Resolve a display name: prefer workshop name, fall back to server mod list, then ID
+        display_name = mod_data.get("name") or ""
+        if not display_name or display_name == current_id:
+            for sm in server.get("mods", []):
+                sm_id = (sm.get("mod_id") or sm.get("modId") or "").strip()
+                if sm_id == current_id and sm.get("name") and sm["name"] != current_id:
+                    display_name = sm["name"]
+                    break
+        if not display_name:
+            display_name = current_id
+
         resolved.append({
             "mod_id": current_id,
-            "name": mod_data.get("name", current_id),
+            "name": display_name,
             "author": mod_data.get("author", ""),
             "version": mod_data.get("version", ""),
             "thumbnail_url": mod_data.get("thumbnail_url", ""),

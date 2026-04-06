@@ -68,7 +68,11 @@ export default function ScenarioSelector({ value, onChange, serverId }) {
     const match = allScenarios.find((s) => s.id === value);
     if (match) {
       if (match.source === 'vanilla') return `${match.name} (${match.map || 'Vanilla'})`;
-      if (match.source === 'mod') return `${match.mod_name || 'Mod'} – ${match.name}`;
+      if (match.source === 'mod') {
+        const scenarioName = match.name && match.name !== match.id ? match.name : '';
+        const modLabel = match.mod_name || 'Mod';
+        return scenarioName ? `${modLabel} – ${scenarioName}` : `${modLabel} – ${match.id}`;
+      }
       return match.name;
     }
     return value || 'Select a scenario…';
@@ -188,8 +192,19 @@ export default function ScenarioSelector({ value, onChange, serverId }) {
                     onClick={() => handleSelect(s.id)}
                     className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-900 ${value === s.id ? 'bg-zinc-900/80 text-tropic-gold' : 'text-[#d0d8e0]'}`}
                   >
-                    <span className="min-w-0 flex-1 truncate font-mono text-xs">{s.id}</span>
-                    <Badge variant="outline" className={`text-[9px] ${sourceColor('mod')}`}>{s.mod_name || s.mod_id}</Badge>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm">{s.name !== s.id ? s.name : ''}</span>
+                      <span className="block truncate font-mono text-[10px] text-[#4a6070]">{s.id}</span>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {s.game_mode && (
+                        <Badge variant="outline" className="text-[8px] border-zinc-700 text-[#8a9aa8]">{s.game_mode}</Badge>
+                      )}
+                      {s.player_count > 0 && (
+                        <Badge variant="outline" className="text-[8px] border-zinc-700 text-[#8a9aa8]">{s.player_count}P</Badge>
+                      )}
+                      <Badge variant="outline" className={`text-[9px] ${sourceColor('mod')}`}>{s.mod_name || s.mod_id}</Badge>
+                    </div>
                   </button>
                 ))}
               </div>

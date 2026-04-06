@@ -11,8 +11,6 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Any
 
-import httpx
-
 from database import db
 
 logger = logging.getLogger(__name__)
@@ -64,11 +62,25 @@ def _normalize_metadata(raw: dict, mod_id: str) -> dict:
         "name": raw.get("name", ""),
         "author": raw.get("author", ""),
         "version": raw.get("version", ""),
+        "summary": raw.get("summary", ""),
         "description": raw.get("description", ""),
+        "license": raw.get("license", ""),
+        "tags": raw.get("tags", []),
         "dependencies": raw.get("dependencies", []),
-        "thumbnail_url": raw.get("thumbnail_url") or raw.get("thumbnailUrl", ""),
         "scenario_ids": raw.get("scenario_ids") or raw.get("scenarioIds", []),
-        "workshop_url": f"{WORKSHOP_BASE_URL}/{mod_id}",
+        "scenarios": raw.get("scenarios", []),
+        "versions": raw.get("versions", []),
+        "changelog": raw.get("changelog", ""),
+        "thumbnail_url": raw.get("thumbnail_url") or raw.get("thumbnailUrl", ""),
+        "workshop_url": raw.get("workshop_url", "") or f"{WORKSHOP_BASE_URL}/{mod_id}",
+        "game_version": raw.get("game_version", ""),
+        "current_version_size": raw.get("current_version_size", 0),
+        "rating": raw.get("rating", 0),
+        "rating_count": raw.get("rating_count", 0),
+        "subscribers": raw.get("subscribers", 0),
+        "downloads": raw.get("downloads", 0),
+        "created_at": raw.get("created_at", ""),
+        "updated_at": raw.get("updated_at", ""),
         "metadata_source": "workshop",
         "metadata_completeness": "full",
         "metadata_locked": False,
@@ -83,11 +95,25 @@ def _partial_record(mod_id: str) -> dict:
         "name": "",
         "author": "",
         "version": "",
+        "summary": "",
         "description": "",
+        "license": "",
+        "tags": [],
         "dependencies": [],
-        "thumbnail_url": "",
         "scenario_ids": [],
+        "scenarios": [],
+        "versions": [],
+        "changelog": "",
+        "thumbnail_url": "",
         "workshop_url": f"{WORKSHOP_BASE_URL}/{mod_id}",
+        "game_version": "",
+        "current_version_size": 0,
+        "rating": 0,
+        "rating_count": 0,
+        "subscribers": 0,
+        "downloads": 0,
+        "created_at": "",
+        "updated_at": "",
         "metadata_source": "workshop",
         "metadata_completeness": "minimal",
         "metadata_incomplete": True,
@@ -97,46 +123,25 @@ def _partial_record(mod_id: str) -> dict:
 
 
 async def _fetch_from_workshop(mod_id: str) -> dict:
-    """Try the JSON API first, then fall back to a partial record.
+    """Fetch mod metadata by scraping the detail page's __NEXT_DATA__ JSON.
 
-    The Arma Reforger Workshop does not publish a stable public API, so we
-    attempt a JSON endpoint and, if that fails, return a partial record
-    flagged with ``metadata_incomplete: True``.
+    The Arma Reforger Workshop detail page embeds comprehensive mod data
+    (dependencies with names, scenarios, version history, stats, changelog)
+    in a ``<script id="__NEXT_DATA__">`` JSON blob.  This is far richer than
+    any JSON API endpoint.
 
-    Also fetches scenario IDs from the mod's /scenarios page when the
-    mod has Scenarios_MP or Scenarios_SP tags.
+    Falls back to a partial record when the page is unreachable.
     """
-    json_url = f"{WORKSHOP_BASE_URL}/{mod_id}"
-    metadata = None
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(
-                json_url,
-                headers={"Accept": "application/json"},
-            )
-            resp.raise_for_status()
-            content_type = resp.headers.get("content-type", "")
-            if "json" in content_type:
-                data = resp.json()
-                metadata = _normalize_metadata(data, mod_id)
+        from services.workshop_proxy import fetch_mod_details
+        details = await fetch_mod_details(mod_id)
+        if details:
+            return _normalize_metadata(details, mod_id)
     except Exception as exc:
-        logger.debug("Workshop JSON fetch for %s failed: %s", mod_id, exc)
+        logger.debug("Workshop detail fetch for %s failed: %s", mod_id, exc)
 
-    if metadata is None:
-        logger.info("Returning partial record for mod %s (metadata unavailable)", mod_id)
-        metadata = _partial_record(mod_id)
-
-    # Enrich with scenario IDs if not already populated
-    if not metadata.get("scenario_ids"):
-        try:
-            from services.workshop_proxy import fetch_mod_scenarios
-            scenarios = await fetch_mod_scenarios(mod_id)
-            if scenarios:
-                metadata["scenario_ids"] = scenarios
-        except Exception as exc:
-            logger.debug("Failed to fetch scenarios for mod %s: %s", mod_id, exc)
-
-    return metadata
+    logger.info("Returning partial record for mod %s (metadata unavailable)", mod_id)
+    return _partial_record(mod_id)
 
 
 # ---------------------------------------------------------------------------

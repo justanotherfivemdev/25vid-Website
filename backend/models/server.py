@@ -160,13 +160,25 @@ class WorkshopMod(BaseModel):
     name: str
     author: str = ""
     version: str = ""
+    summary: str = ""
     description: str = ""
     license: str = ""
     tags: List[str] = Field(default_factory=list)
     dependencies: List[Dict[str, Any]] = Field(default_factory=list)
     scenario_ids: List[str] = Field(default_factory=list)
+    scenarios: List[Dict[str, Any]] = Field(default_factory=list)
+    versions: List[Dict[str, Any]] = Field(default_factory=list)
+    changelog: str = ""
     thumbnail_url: str = ""
     workshop_url: str = ""
+    game_version: str = ""
+    current_version_size: int = 0
+    rating: float = 0.0
+    rating_count: int = 0
+    subscribers: int = 0
+    downloads: int = 0
+    created_at: str = ""
+    updated_at: str = ""
     last_fetched: datetime = Field(default_factory=_utc_now)
     manually_entered: bool = False
     metadata_source: str = "manual"

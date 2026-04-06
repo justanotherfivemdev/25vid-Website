@@ -29,6 +29,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { API } from '@/utils/api';
+import ModDetailPanel from '@/components/ModDetailPanel';
 
 const WORKSHOP_CATEGORY_MAP = {
   popularity: 'popular',
@@ -316,15 +317,9 @@ function ModsModule() {
     }
   }, [enabledMods, serverId]);
 
-  const openModDetail = useCallback(async (mod) => {
+  const openModDetail = useCallback((mod) => {
     setSelectedMod(normalizeModEntry(mod));
     setDetailOpen(true);
-    try {
-      const res = await axios.get(`${API}/servers/workshop/mod/${mod.mod_id || mod.modId}`);
-      setSelectedMod((current) => ({ ...current, ...normalizeModEntry(res.data) }));
-    } catch {
-      // Keep current metadata when enrichment is unavailable.
-    }
   }, []);
 
   const exportMods = useCallback(async () => {
@@ -633,69 +628,26 @@ function ModsModule() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-lg border-zinc-800 bg-zinc-950 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-tropic-gold">
-              <Puzzle className="h-5 w-5" />
-              {selectedMod?.name || selectedMod?.mod_id || 'Mod details'}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedMod && (
-            <div className="space-y-4">
-              {selectedMod.thumbnail_url && (
-                <img src={selectedMod.thumbnail_url} alt="" className="h-36 w-full rounded-xl object-cover" />
-              )}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <DetailItem label="Mod ID" value={selectedMod.mod_id} mono />
-                <DetailItem label="Author" value={selectedMod.author || 'Unknown'} />
-                <DetailItem label="Version" value={selectedMod.version || 'Latest'} />
-                <DetailItem label="Source" value={selectedMod.metadata_source || 'Unknown'} />
-              </div>
-              {selectedMod.description && (
-                <div>
-                  <div className="text-xs font-medium text-[#4a6070]">Description</div>
-                  <p className="mt-1 text-sm text-[#8a9aa8]">{selectedMod.description}</p>
-                </div>
-              )}
-              {!!selectedMod.dependencies?.length && (
-                <div>
-                  <div className="text-xs font-medium text-[#4a6070]">Dependencies</div>
-                  <div className="mt-1 space-y-1">
-                    {selectedMod.dependencies.map((dependency, index) => {
-                      const depId = dependency.mod_id || dependency.modId || '';
-                      const isPresent = [...systemManagedMods, ...enabledMods].some((m) => m.mod_id === depId);
-                      return (
-                        <div key={`${selectedMod.mod_id}-dep-${index}`} className="flex items-center gap-2 text-xs">
-                          <span className={isPresent ? 'text-emerald-400' : 'text-amber-300'}>
-                            {depId || dependency.name || JSON.stringify(dependency)}
-                          </span>
-                          {isPresent ? (
-                            <Badge variant="outline" className="border-emerald-600/30 text-[9px] text-emerald-300">In config</Badge>
-                          ) : (
-                            <Badge variant="outline" className="border-amber-500/30 text-[9px] text-amber-300">Missing</Badge>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => addMod(selectedMod)} className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
-                  <Plus className="mr-1 h-3.5 w-3.5" /> Add to load order
-                </Button>
-                {!!selectedMod.dependencies?.length && (
-                  <Button size="sm" variant="outline" onClick={() => { setDetailOpen(false); handleResolveDepsForExisting(selectedMod); }} className="border-zinc-700 text-[#8a9aa8] hover:bg-zinc-900 hover:text-white">
-                    {depLoading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <GitBranch className="mr-1 h-3.5 w-3.5" />}
-                    Resolve Dependencies
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ModDetailPanel
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        mod={selectedMod}
+        serverId={serverId}
+        enabledModIds={new Set([...systemManagedMods, ...enabledMods].map((m) => m.mod_id))}
+        activeScenarioId={server?.config?.scenarioId || ''}
+        onAddMod={(m) => addMod(m)}
+        onAddDependency={(dep) => addModDirect(normalizeModEntry({ mod_id: dep.mod_id, name: dep.name || dep.mod_id, version: dep.version || '', enabled: true }))}
+        onResolveAll={() => { setDetailOpen(false); if (selectedMod) handleResolveDepsForExisting(selectedMod); }}
+        onUseScenario={async (scenarioId) => {
+          try {
+            const currentConfig = server?.config || {};
+            await axios.put(`${API}/servers/${serverId}`, {
+              config: { ...currentConfig, scenarioId },
+            });
+            if (fetchServer) await fetchServer();
+          } catch { /* ignored */ }
+        }}
+      />
 
       {/* Dependency Resolution Dialog */}
       <Dialog open={depDialogOpen} onOpenChange={(open) => { if (!open) { setDepDialogOpen(false); setDepResolved(null); setDepSourceMod(null); } }}>
@@ -724,11 +676,18 @@ function ModsModule() {
                 <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-lg border border-zinc-800 bg-[#050a0e]/40 p-3">
                   {depResolved.resolved.map((dep, idx) => {
                     const isRoot = dep.mod_id === depResolved.mod_id;
+                    const hasRealName = dep.name && dep.name !== dep.mod_id;
                     return (
                       <div key={dep.mod_id || idx} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${isRoot ? 'bg-tropic-gold/5 border border-tropic-gold/20' : ''}`}>
-                        <span className="flex-1 text-sm">
-                          <span className={isRoot ? 'font-medium text-tropic-gold' : 'text-[#d0d8e0]'}>{dep.name || dep.mod_id}</span>
-                          <span className="ml-2 font-mono text-[10px] text-[#4a6070]">{dep.mod_id}</span>
+                        <span className="min-w-0 flex-1 text-sm">
+                          {hasRealName ? (
+                            <>
+                              <span className={isRoot ? 'font-medium text-tropic-gold' : 'text-[#d0d8e0]'}>{dep.name}</span>
+                              <span className="ml-2 font-mono text-[10px] text-[#4a6070]">{dep.mod_id}</span>
+                            </>
+                          ) : (
+                            <span className={`font-mono text-xs ${isRoot ? 'font-medium text-tropic-gold' : 'text-[#d0d8e0]'}`}>{dep.mod_id}</span>
+                          )}
                         </span>
                         {dep.already_present ? (
                           <Badge variant="outline" className="border-emerald-600/30 text-[9px] text-emerald-300">Already in config</Badge>
@@ -784,15 +743,6 @@ function ModsModule() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function DetailItem({ label, value, mono }) {
-  return (
-    <div>
-      <div className="text-[11px] font-medium text-[#4a6070]">{label}</div>
-      <div className={`text-sm text-[#d0d8e0] ${mono ? 'font-mono' : ''}`}>{value}</div>
     </div>
   );
 }

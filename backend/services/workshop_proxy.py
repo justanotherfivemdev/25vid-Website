@@ -655,3 +655,260 @@ async def fetch_mod_scenarios(mod_id: str) -> List[str]:
     logger.debug("Found %d scenarios for mod %s", len(scenario_ids), mod_id)
     await _set_cached(cache_key, scenario_ids)
     return scenario_ids
+
+
+# ---------------------------------------------------------------------------
+# Full mod detail scraping (single page → everything)
+# ---------------------------------------------------------------------------
+
+def _parse_mod_details_from_json(data: dict) -> Optional[Dict[str, Any]]:
+    """Extract comprehensive mod metadata from a detail page __NEXT_DATA__ JSON.
+
+    The workshop detail page at /workshop/{ModID} embeds ALL mod data in the
+    ``pageProps.asset`` object, including dependencies (with names), scenarios
+    (with game mode & player count), version history, stats, and changelog.
+    """
+    page_props = data.get("props", {}).get("pageProps", {})
+    asset = page_props.get("asset")
+    if not asset or not isinstance(asset, dict):
+        return None
+
+    mod_id = asset.get("id", "")
+    if not mod_id:
+        return None
+
+    # Author
+    author_raw = asset.get("author") or asset.get("creator") or {}
+    if isinstance(author_raw, dict):
+        author = author_raw.get("username", "") or author_raw.get("name", "")
+    else:
+        author = str(author_raw)
+
+    # Tags
+    tags: List[str] = []
+    for t in (asset.get("tags") or []):
+        tag_name = t.get("name", "") if isinstance(t, dict) else str(t)
+        if tag_name:
+            tags.append(tag_name)
+
+    # Dependencies — these contain asset.id + asset.name!
+    dependencies: List[Dict[str, Any]] = []
+    for dep in (asset.get("dependencies") or []):
+        if not isinstance(dep, dict):
+            continue
+        dep_asset = dep.get("asset") or {}
+        dependencies.append({
+            "mod_id": dep_asset.get("id", ""),
+            "name": dep_asset.get("name", ""),
+            "version": dep.get("version", ""),
+        })
+
+    # Scenarios — full objects with game mode, player count, etc.
+    scenarios: List[Dict[str, Any]] = []
+    for sc in (asset.get("scenarios") or []):
+        if not isinstance(sc, dict):
+            continue
+        sc_image = sc.get("image") or {}
+        sc_thumb = ""
+        if isinstance(sc_image, dict):
+            thumbs = sc_image.get("thumbnails", {})
+            for _mime, variants in (thumbs.items() if isinstance(thumbs, dict) else []):
+                if isinstance(variants, list) and variants:
+                    sc_thumb = variants[0].get("url", "") if isinstance(variants[0], dict) else ""
+                    break
+            if not sc_thumb:
+                sc_thumb = sc_image.get("url", "")
+        scenarios.append({
+            "scenario_id": sc.get("gameId", ""),
+            "name": sc.get("name", ""),
+            "game_mode": sc.get("gameMode", ""),
+            "player_count": sc.get("playerCount", 0),
+            "description": sc.get("description", ""),
+            "author": sc.get("authorName", ""),
+            "thumbnail_url": sc_thumb,
+        })
+
+    # Also extract flat scenario_ids for backward compatibility
+    scenario_ids = [s["scenario_id"] for s in scenarios if s.get("scenario_id")]
+
+    # Versions
+    versions: List[Dict[str, Any]] = []
+    for v in (asset.get("versions") or []):
+        if not isinstance(v, dict):
+            continue
+        versions.append({
+            "version": v.get("version", ""),
+            "game_version": v.get("gameVersion", ""),
+            "file_size": v.get("totalFileSize", 0),
+            "created_at": v.get("createdAt", ""),
+            "updated_at": v.get("updatedAt", ""),
+            "scenarios_count": v.get("scenariosCount", 0),
+            "dependencies_count": v.get("dependenciesCount", 0),
+        })
+
+    # Changelog from assetVersionDetail
+    version_detail = page_props.get("assetVersionDetail") or {}
+    changelog = version_detail.get("changelog", "")
+
+    # Downloads total
+    download_info = page_props.get("getAssetDownloadTotal") or {}
+    downloads = download_info.get("total", 0)
+
+    # Thumbnail
+    thumbnail_url = _thumbnail_from_asset(asset)
+
+    return {
+        "mod_id": mod_id,
+        "name": asset.get("name", ""),
+        "author": author,
+        "summary": asset.get("summary", ""),
+        "description": asset.get("description", ""),
+        "version": asset.get("currentVersionNumber", ""),
+        "game_version": asset.get("gameVersion", ""),
+        "current_version_size": asset.get("currentVersionSize", 0),
+        "license": asset.get("license", ""),
+        "tags": tags,
+        "thumbnail_url": thumbnail_url,
+        "workshop_url": f"{WORKSHOP_BASE}/workshop/{mod_id}",
+
+        # Stats
+        "rating": asset.get("averageRating", 0),
+        "rating_count": asset.get("ratingCount", 0),
+        "subscribers": asset.get("subscriberCount", 0),
+        "downloads": downloads,
+
+        # Dates
+        "created_at": asset.get("createdAt", ""),
+        "updated_at": asset.get("updatedAt", ""),
+
+        # Rich structured data
+        "dependencies": dependencies,
+        "scenarios": scenarios,
+        "scenario_ids": scenario_ids,
+        "versions": versions,
+        "changelog": changelog,
+    }
+
+
+def _parse_mod_details_from_html(soup: BeautifulSoup, mod_id: str) -> Dict[str, Any]:
+    """Fallback: extract mod details from rendered HTML on a mod detail page."""
+    result: Dict[str, Any] = {"mod_id": mod_id}
+
+    # Name
+    h1 = soup.select_one("h1")
+    result["name"] = h1.get_text(strip=True) if h1 else ""
+
+    # Author
+    author_el = soup.select_one("span.text-xl.text-primary")
+    if author_el:
+        txt = author_el.get_text(strip=True)
+        result["author"] = txt[3:].strip() if txt.lower().startswith("by ") else txt
+
+    # Description
+    desc_el = soup.select_one("article.prose pre")
+    result["description"] = desc_el.get_text(strip=True) if desc_el else ""
+
+    # Stats from the sidebar dl
+    for dt_el in soup.select("dl dt"):
+        label = dt_el.get_text(strip=True).lower()
+        dd_el = dt_el.find_next_sibling("dd") if dt_el else None
+        if not dd_el:
+            continue
+        val = dd_el.get_text(strip=True)
+        if label == "version":
+            result["version"] = val
+        elif label == "game version":
+            result["game_version"] = val
+        elif label == "subscribers":
+            result["subscribers"] = int(val.replace(",", "")) if val else 0
+        elif label == "downloads":
+            result["downloads"] = int(val.replace(",", "")) if val else 0
+        elif label == "rating":
+            try:
+                result["rating"] = float(val.replace("%", "")) / 100
+            except ValueError:
+                pass
+
+    # Dependencies from sidebar links
+    deps: List[Dict[str, Any]] = []
+    dep_section = soup.find("h2", string=re.compile(r"Dependencies", re.I))
+    if dep_section:
+        for link in dep_section.find_next("div").select("a[href*='/workshop/']") if dep_section.find_next("div") else []:
+            href = link.get("href", "")
+            dep_name = link.get_text(strip=True)
+            dep_id_match = re.search(r'/workshop/([0-9A-Fa-f]{16})', href)
+            if dep_id_match:
+                deps.append({
+                    "mod_id": dep_id_match.group(1),
+                    "name": dep_name,
+                    "version": "",
+                })
+    result["dependencies"] = deps
+
+    # Tags
+    tags: List[str] = []
+    for tag_link in soup.select("a[href*='tags=']"):
+        tag_text = tag_link.get_text(strip=True)
+        if tag_text:
+            tags.append(tag_text)
+    result["tags"] = tags
+
+    # Thumbnail
+    hero_img = soup.select_one("figure img[src*='bistudio.com']")
+    result["thumbnail_url"] = hero_img.get("src", "") if hero_img else ""
+
+    result["workshop_url"] = f"{WORKSHOP_BASE}/workshop/{mod_id}"
+    return result
+
+
+async def fetch_mod_details(mod_id: str) -> Optional[Dict[str, Any]]:
+    """Fetch comprehensive metadata for a single mod from its workshop page.
+
+    Extracts everything from the ``__NEXT_DATA__`` JSON: dependencies (with
+    names), scenarios (with game mode & player count), version history,
+    changelog, stats (subscribers, downloads, rating), dates, and more.
+
+    Falls back to HTML scraping for basic metadata when JSON is unavailable.
+    Results are cached for the standard browse TTL.
+    """
+    cache_key = f"mod_details:{mod_id}"
+    cached = await _get_cached(cache_key)
+    if cached is not None:
+        return cached if isinstance(cached, dict) else None
+
+    url = f"{WORKSHOP_URL}/{mod_id}"
+    html = await _fetch_html(url)
+    if html is None:
+        logger.warning("Failed to fetch mod detail page for %s", mod_id)
+        return None
+
+    details: Optional[Dict[str, Any]] = None
+
+    # Strategy 1: __NEXT_DATA__ JSON (rich data)
+    next_data = _extract_next_data(html)
+    if next_data:
+        try:
+            details = _parse_mod_details_from_json(next_data)
+        except Exception as exc:
+            logger.warning("Failed to parse mod detail JSON for %s: %s", mod_id, exc)
+
+    # Strategy 2: HTML fallback (basic data)
+    if not details:
+        try:
+            soup = BeautifulSoup(html, "lxml")
+            details = _parse_mod_details_from_html(soup, mod_id)
+        except Exception as exc:
+            logger.warning("Failed to parse mod detail HTML for %s: %s", mod_id, exc)
+
+    if details:
+        logger.debug(
+            "Fetched mod details for %s: %s (deps=%d, scenarios=%d, versions=%d)",
+            mod_id,
+            details.get("name", ""),
+            len(details.get("dependencies", [])),
+            len(details.get("scenarios", [])),
+            len(details.get("versions", [])),
+        )
+        await _set_cached(cache_key, details)
+
+    return details
