@@ -1816,9 +1816,11 @@ async def get_workshop_mod_details(
 ):
     """Get enriched metadata for a mod including versions, scenarios, deps, changelog.
 
-    Returns the full detail data scraped from the workshop page.  If the
-    cached data is stale (>24h) or missing enriched fields, a fresh fetch
-    is triggered.  Pass ``?refresh=true`` to force a fresh fetch.
+    Always fetches fresh data from the workshop detail page and merges it
+    with any existing DB record.  The result is both stored to the DB and
+    returned directly, bypassing the ingest cache entirely.
+
+    Pass ``?refresh=true`` to force a refetch even if enriched data exists.
     """
     from services.workshop_proxy import fetch_mod_details
     from services.workshop_ingest import _normalize_metadata
@@ -1828,28 +1830,37 @@ async def get_workshop_mod_details(
     # Determine if we need a refresh
     needs_refresh = refresh or not mod
     if mod and not refresh:
-        # Check if the record is missing enriched fields (old-style record)
-        has_enriched = (
-            mod.get("versions") or mod.get("subscribers")
-        )
+        has_enriched = bool(mod.get("versions")) or bool(mod.get("subscribers"))
         if not has_enriched:
             needs_refresh = True
 
     if needs_refresh:
-        # Fetch fresh details directly from the workshop page
         details = await fetch_mod_details(mod_id)
         if details:
-            # Normalize and store directly, bypassing the ingest cache
-            # which may hold stale data without enriched fields
             normalized = _normalize_metadata(details, mod_id)
-            await db.workshop_mods.update_one(
-                {"mod_id": mod_id},
-                {"$set": normalized, "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}},
-                upsert=True,
+            logger.info(
+                "Enriched mod %s: deps=%d, versions=%d, scenarios=%d, subscribers=%s",
+                mod_id,
+                len(normalized.get("dependencies", [])),
+                len(normalized.get("versions", [])),
+                len(normalized.get("scenarios", [])),
+                normalized.get("subscribers"),
             )
-            mod = await db.workshop_mods.find_one({"mod_id": mod_id}, {"_id": 0})
-        elif not mod:
-            raise HTTPException(status_code=404, detail="Mod not found and workshop fetch failed")
+            # Persist to DB for future lookups
+            try:
+                await db.workshop_mods.update_one(
+                    {"mod_id": mod_id},
+                    {"$set": normalized, "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}},
+                    upsert=True,
+                )
+            except Exception as exc:
+                logger.warning("Failed to persist enriched mod %s: %s", mod_id, exc)
+            # Return normalized data directly — don't rely on DB round-trip
+            return normalized
+        else:
+            logger.warning("fetch_mod_details returned None for %s", mod_id)
+            if not mod:
+                raise HTTPException(status_code=404, detail="Mod not found and workshop fetch failed")
 
     return mod
 

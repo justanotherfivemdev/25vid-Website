@@ -869,12 +869,14 @@ async def fetch_mod_details(mod_id: str) -> Optional[Dict[str, Any]]:
     changelog, stats (subscribers, downloads, rating), dates, and more.
 
     Falls back to HTML scraping for basic metadata when JSON is unavailable.
-    Results are cached for the standard browse TTL.
+    Results are cached for the standard browse TTL only if data is rich.
     """
     cache_key = f"mod_details:{mod_id}"
     cached = await _get_cached(cache_key)
-    if cached is not None:
-        return cached if isinstance(cached, dict) else None
+    if cached is not None and isinstance(cached, dict):
+        # Only use cache if it has meaningful enriched data
+        if cached.get("name") and (cached.get("subscribers") or cached.get("versions")):
+            return cached
 
     url = f"{WORKSHOP_URL}/{mod_id}"
     html = await _fetch_html(url)
@@ -900,15 +902,18 @@ async def fetch_mod_details(mod_id: str) -> Optional[Dict[str, Any]]:
         except Exception as exc:
             logger.warning("Failed to parse mod detail HTML for %s: %s", mod_id, exc)
 
-    if details:
-        logger.debug(
-            "Fetched mod details for %s: %s (deps=%d, scenarios=%d, versions=%d)",
+    if details and details.get("name"):
+        logger.info(
+            "Fetched mod details for %s: %s (deps=%d, scenarios=%d, versions=%d, subscribers=%s)",
             mod_id,
             details.get("name", ""),
             len(details.get("dependencies", [])),
             len(details.get("scenarios", [])),
             len(details.get("versions", [])),
+            details.get("subscribers"),
         )
         await _set_cached(cache_key, details)
+    elif details:
+        logger.warning("Fetched mod details for %s but result is minimal (no name), not caching", mod_id)
 
     return details

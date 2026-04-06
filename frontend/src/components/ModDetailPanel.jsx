@@ -48,6 +48,13 @@ function formatDate(dateStr) {
 
 function formatRating(rating) {
   if (rating === null || rating === undefined || rating === 0) return '—';
+  // Handle string format from browse results like "89%"
+  if (typeof rating === 'string') {
+    if (rating.endsWith('%')) return rating;
+    const parsed = parseFloat(rating);
+    if (Number.isNaN(parsed)) return '—';
+    return parsed <= 1 ? `${Math.round(parsed * 100)}%` : `${Math.round(parsed)}%`;
+  }
   const num = Number(rating);
   if (Number.isNaN(num)) return '—';
   const pct = num <= 1 ? num * 100 : num;
@@ -58,7 +65,7 @@ function StatBox({ icon: Icon, label, value }) {
   return (
     <div className="flex flex-col items-center rounded-lg border border-zinc-800 bg-[#050a0e]/40 px-3 py-2">
       <Icon className="mb-1 h-3.5 w-3.5 text-[#4a6070]" />
-      <span className="text-sm font-medium text-[#d0d8e0]">{value || '—'}</span>
+      <span className="text-sm font-medium text-[#d0d8e0]">{value != null && value !== '' ? value : '—'}</span>
       <span className="text-[10px] text-[#4a6070]">{label}</span>
     </div>
   );
@@ -68,7 +75,7 @@ function InfoRow({ label, value, mono }) {
   return (
     <div className="flex items-center justify-between border-b border-zinc-800/50 py-1.5">
       <span className="text-[11px] font-medium text-[#4a6070]">{label}</span>
-      <span className={`text-sm text-[#d0d8e0] ${mono ? 'font-mono text-xs' : ''}`}>{value || '—'}</span>
+      <span className={`text-sm text-[#d0d8e0] ${mono ? 'font-mono text-xs' : ''}`}>{value != null && value !== '' ? value : '—'}</span>
     </div>
   );
 }
@@ -358,7 +365,17 @@ export default function ModDetailPanel({
     axios.get(`${API}/servers/workshop/mod/${modId}/details`)
       .then((res) => {
         if (!cancelled) {
-          setEnrichedMod((prev) => ({ ...prev, ...res.data }));
+          const data = res.data;
+          console.log('[ModDetailPanel] API response keys:', Object.keys(data));
+          console.log('[ModDetailPanel] API response summary:', {
+            mod_id: data.mod_id, name: data.name,
+            subscribers: data.subscribers, downloads: data.downloads,
+            rating: data.rating, rating_count: data.rating_count,
+            deps: data.dependencies?.length, versions: data.versions?.length,
+            scenarios: data.scenarios?.length, tags: data.tags?.length,
+            changelog: data.changelog ? 'yes' : 'no',
+          });
+          setEnrichedMod((prev) => ({ ...prev, ...data }));
         }
       })
       .catch((err) => {
