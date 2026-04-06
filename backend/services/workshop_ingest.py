@@ -102,8 +102,12 @@ async def _fetch_from_workshop(mod_id: str) -> dict:
     The Arma Reforger Workshop does not publish a stable public API, so we
     attempt a JSON endpoint and, if that fails, return a partial record
     flagged with ``metadata_incomplete: True``.
+
+    Also fetches scenario IDs from the mod's /scenarios page when the
+    mod has Scenarios_MP or Scenarios_SP tags.
     """
     json_url = f"{WORKSHOP_BASE_URL}/{mod_id}"
+    metadata = None
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(
@@ -114,13 +118,25 @@ async def _fetch_from_workshop(mod_id: str) -> dict:
             content_type = resp.headers.get("content-type", "")
             if "json" in content_type:
                 data = resp.json()
-                return _normalize_metadata(data, mod_id)
+                metadata = _normalize_metadata(data, mod_id)
     except Exception as exc:
         logger.debug("Workshop JSON fetch for %s failed: %s", mod_id, exc)
 
-    # Fallback – return partial record
-    logger.info("Returning partial record for mod %s (metadata unavailable)", mod_id)
-    return _partial_record(mod_id)
+    if metadata is None:
+        logger.info("Returning partial record for mod %s (metadata unavailable)", mod_id)
+        metadata = _partial_record(mod_id)
+
+    # Enrich with scenario IDs if not already populated
+    if not metadata.get("scenario_ids"):
+        try:
+            from services.workshop_proxy import fetch_mod_scenarios
+            scenarios = await fetch_mod_scenarios(mod_id)
+            if scenarios:
+                metadata["scenario_ids"] = scenarios
+        except Exception as exc:
+            logger.debug("Failed to fetch scenarios for mod %s: %s", mod_id, exc)
+
+    return metadata
 
 
 # ---------------------------------------------------------------------------

@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Download,
   FileJson,
+  GitBranch,
   History,
   Loader2,
   Package,
@@ -98,6 +99,12 @@ function ModsModule() {
   const [importError, setImportError] = useState('');
   const [exportPayload, setExportPayload] = useState('');
   const [exporting, setExporting] = useState(false);
+
+  // Dependency resolution state
+  const [depDialogOpen, setDepDialogOpen] = useState(false);
+  const [depResolved, setDepResolved] = useState(null);
+  const [depLoading, setDepLoading] = useState(false);
+  const [depSourceMod, setDepSourceMod] = useState(null);
   const systemManagedMods = useMemo(
     () => (server?.mods || []).map(normalizeModEntry).filter((mod) => mod.system_managed),
     [server?.mods],
@@ -155,7 +162,7 @@ function ModsModule() {
     fetchDownloadHistory();
   }, [fetchDownloadHistory]);
 
-  const addMod = useCallback((mod) => {
+  const addModDirect = useCallback((mod) => {
     const normalized = normalizeModEntry(mod);
     if (!normalized.mod_id) return;
     setEnabledMods((prev) => (
@@ -165,6 +172,98 @@ function ModsModule() {
     ));
     setDirty(true);
   }, [systemManagedMods]);
+
+  const resolveDependencies = useCallback(async (mod) => {
+    const modId = mod.mod_id || mod.modId || '';
+    if (!modId) return null;
+
+    setDepLoading(true);
+    try {
+      const existingIds = [...systemManagedMods, ...enabledMods].map((m) => m.mod_id);
+      const res = await axios.post(`${API}/servers/${serverId}/mods/resolve-dependencies`, {
+        mod_id: modId,
+        existing_mod_ids: existingIds,
+      });
+      return res.data;
+    } catch {
+      return null;
+    } finally {
+      setDepLoading(false);
+    }
+  }, [enabledMods, serverId, systemManagedMods]);
+
+  const addModWithDependencies = useCallback((resolvedData) => {
+    if (!resolvedData?.resolved) return;
+
+    setEnabledMods((prev) => {
+      const allExisting = [...systemManagedMods, ...prev];
+      const existingIds = new Set(allExisting.map((m) => m.mod_id));
+      const toInsert = [];
+
+      // Add items in resolved order (deps first, root mod last)
+      for (const dep of resolvedData.resolved) {
+        if (!existingIds.has(dep.mod_id)) {
+          toInsert.push(normalizeModEntry({
+            mod_id: dep.mod_id,
+            name: dep.name || dep.mod_id,
+            author: dep.author || '',
+            version: dep.version || '',
+            thumbnail_url: dep.thumbnail_url || '',
+            dependencies: dep.dependencies || [],
+            scenario_ids: dep.scenario_ids || [],
+            enabled: true,
+          }));
+        }
+      }
+
+      if (toInsert.length === 0) return prev;
+      return [...prev, ...toInsert];
+    });
+    setDirty(true);
+    setDepDialogOpen(false);
+    setDepResolved(null);
+    setDepSourceMod(null);
+  }, [systemManagedMods]);
+
+  const addMod = useCallback(async (mod) => {
+    const normalized = normalizeModEntry(mod);
+    if (!normalized.mod_id) return;
+
+    // Check if already added
+    const allMods = [...systemManagedMods, ...enabledMods];
+    if (allMods.some((entry) => entry.mod_id === normalized.mod_id)) return;
+
+    // Check if mod has known dependencies
+    const deps = normalized.dependencies || [];
+    const existingIds = new Set(allMods.map((m) => m.mod_id));
+    const hasUnresolvedDeps = deps.some((d) => {
+      const depId = d.mod_id || d.modId || '';
+      return depId && !existingIds.has(depId);
+    });
+
+    if (hasUnresolvedDeps) {
+      // Auto-prompt: resolve dependencies
+      setDepSourceMod(normalized);
+      const resolved = await resolveDependencies(normalized);
+      if (resolved && resolved.new_count > 0) {
+        setDepResolved(resolved);
+        setDepDialogOpen(true);
+        return; // Wait for user action in the dialog
+      }
+    }
+
+    // No unresolved deps or resolution failed — add directly
+    addModDirect(normalized);
+  }, [addModDirect, enabledMods, resolveDependencies, systemManagedMods]);
+
+  const handleResolveDepsForExisting = useCallback(async (mod) => {
+    setDepSourceMod(mod);
+    const resolved = await resolveDependencies(mod);
+    if (resolved) {
+      setDepResolved(resolved);
+      setDepDialogOpen(true);
+    }
+  }, [resolveDependencies]);
 
   const moveMod = useCallback((index, delta) => {
     setEnabledMods((prev) => {
@@ -471,6 +570,9 @@ function ModsModule() {
                       <div className="mt-1 text-[11px] font-mono text-[#4a6070]">{mod.mod_id}</div>
                     </button>
                     <Switch checked={mod.enabled} onCheckedChange={() => toggleMod(index)} className="h-5 w-9" />
+                    <Button size="icon" variant="ghost" onClick={() => handleResolveDepsForExisting(mod)} className="h-8 w-8 text-[#4a6070] hover:text-blue-400" title="Resolve dependencies">
+                      <GitBranch className="h-4 w-4" />
+                    </Button>
                     <Button size="icon" variant="ghost" onClick={() => removeMod(index)} className="h-8 w-8 text-[#4a6070] hover:text-red-400">
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -560,18 +662,125 @@ function ModsModule() {
                 <div>
                   <div className="text-xs font-medium text-[#4a6070]">Dependencies</div>
                   <div className="mt-1 space-y-1">
-                    {selectedMod.dependencies.map((dependency, index) => (
-                      <div key={`${selectedMod.mod_id}-dep-${index}`} className="text-xs text-[#8a9aa8]">
-                        {dependency.mod_id || dependency.modId || dependency.name || JSON.stringify(dependency)}
-                      </div>
-                    ))}
+                    {selectedMod.dependencies.map((dependency, index) => {
+                      const depId = dependency.mod_id || dependency.modId || '';
+                      const isPresent = [...systemManagedMods, ...enabledMods].some((m) => m.mod_id === depId);
+                      return (
+                        <div key={`${selectedMod.mod_id}-dep-${index}`} className="flex items-center gap-2 text-xs">
+                          <span className={isPresent ? 'text-emerald-400' : 'text-amber-300'}>
+                            {depId || dependency.name || JSON.stringify(dependency)}
+                          </span>
+                          {isPresent ? (
+                            <Badge variant="outline" className="border-emerald-600/30 text-[9px] text-emerald-300">In config</Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-amber-500/30 text-[9px] text-amber-300">Missing</Badge>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
-              <Button size="sm" onClick={() => addMod(selectedMod)} className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
-                <Plus className="mr-1 h-3.5 w-3.5" /> Add to load order
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => addMod(selectedMod)} className="bg-tropic-gold text-black hover:bg-tropic-gold-light">
+                  <Plus className="mr-1 h-3.5 w-3.5" /> Add to load order
+                </Button>
+                {!!selectedMod.dependencies?.length && (
+                  <Button size="sm" variant="outline" onClick={() => { setDetailOpen(false); handleResolveDepsForExisting(selectedMod); }} className="border-zinc-700 text-[#8a9aa8] hover:bg-zinc-900 hover:text-white">
+                    {depLoading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <GitBranch className="mr-1 h-3.5 w-3.5" />}
+                    Resolve Dependencies
+                  </Button>
+                )}
+              </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dependency Resolution Dialog */}
+      <Dialog open={depDialogOpen} onOpenChange={(open) => { if (!open) { setDepDialogOpen(false); setDepResolved(null); setDepSourceMod(null); } }}>
+        <DialogContent className="max-w-lg border-zinc-800 bg-zinc-950 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-tropic-gold">
+              <GitBranch className="h-5 w-5" />
+              Dependency Resolution
+            </DialogTitle>
+          </DialogHeader>
+          {depLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-tropic-gold" />
+              <span className="ml-3 text-sm text-[#8a9aa8]">Resolving dependency tree…</span>
+            </div>
+          ) : depResolved ? (
+            <div className="space-y-4">
+              <p className="text-sm text-[#8a9aa8]">
+                <span className="font-medium text-white">{depSourceMod?.name || depSourceMod?.mod_id}</span>
+                {depResolved.new_count > 0
+                  ? ` requires ${depResolved.new_count} additional mod${depResolved.new_count > 1 ? 's' : ''} not yet in your config.`
+                  : ' — all dependencies are already in your config.'}
+              </p>
+
+              {depResolved.resolved?.length > 0 && (
+                <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-lg border border-zinc-800 bg-[#050a0e]/40 p-3">
+                  {depResolved.resolved.map((dep, idx) => {
+                    const isRoot = dep.mod_id === depResolved.mod_id;
+                    return (
+                      <div key={dep.mod_id || idx} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${isRoot ? 'bg-tropic-gold/5 border border-tropic-gold/20' : ''}`}>
+                        <span className="flex-1 text-sm">
+                          <span className={isRoot ? 'font-medium text-tropic-gold' : 'text-[#d0d8e0]'}>{dep.name || dep.mod_id}</span>
+                          <span className="ml-2 font-mono text-[10px] text-[#4a6070]">{dep.mod_id}</span>
+                        </span>
+                        {dep.already_present ? (
+                          <Badge variant="outline" className="border-emerald-600/30 text-[9px] text-emerald-300">Already in config</Badge>
+                        ) : isRoot ? (
+                          <Badge variant="outline" className="border-tropic-gold/30 text-[9px] text-tropic-gold">Target mod</Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-blue-600/30 text-[9px] text-blue-300">Will be added</Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <p className="text-[11px] text-[#4a6070]">
+                Dependencies will be placed before the mod in the load order to ensure correct initialization.
+              </p>
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => addModWithDependencies(depResolved)}
+                  disabled={depResolved.new_count === 0 && [...systemManagedMods, ...enabledMods].some((m) => m.mod_id === depResolved.mod_id)}
+                  className="bg-tropic-gold text-black hover:bg-tropic-gold-light"
+                >
+                  <GitBranch className="mr-1 h-3.5 w-3.5" />
+                  {depResolved.new_count > 0
+                    ? `Add ${depResolved.new_count + 1} mod${depResolved.new_count > 0 ? 's' : ''} (deps + mod)`
+                    : 'Add mod only'}
+                </Button>
+                {depResolved.new_count > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => { addModDirect(depSourceMod); setDepDialogOpen(false); setDepResolved(null); setDepSourceMod(null); }}
+                    className="border-zinc-700 text-[#8a9aa8] hover:bg-zinc-900 hover:text-white"
+                  >
+                    Skip dependencies
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setDepDialogOpen(false); setDepResolved(null); setDepSourceMod(null); }}
+                  className="text-[#4a6070] hover:text-white"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="py-4 text-sm text-[#4a6070]">No dependency data available for this mod.</p>
           )}
         </DialogContent>
       </Dialog>

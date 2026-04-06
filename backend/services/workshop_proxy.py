@@ -544,3 +544,114 @@ def _error_response(message: str, page: int) -> Dict[str, Any]:
         "error": message,
         "source": "error",
     }
+
+
+# ---------------------------------------------------------------------------
+# Mod-specific scenario scraping
+# ---------------------------------------------------------------------------
+
+def _parse_scenario_ids_from_json(data: dict) -> List[str]:
+    """Extract scenario IDs from a mod's /scenarios __NEXT_DATA__ JSON."""
+    page_props = data.get("props", {}).get("pageProps", {})
+    scenarios_raw = (
+        page_props.get("scenarios")
+        or page_props.get("assets")
+        or page_props.get("data")
+        or {}
+    )
+
+    rows: list = []
+    if isinstance(scenarios_raw, dict):
+        rows = scenarios_raw.get("rows") or scenarios_raw.get("items") or []
+    elif isinstance(scenarios_raw, list):
+        rows = scenarios_raw
+
+    scenario_ids: List[str] = []
+    for item in rows:
+        if not isinstance(item, dict):
+            continue
+        # Scenario ID is typically the "guid" or "scenarioId" field
+        sid = (
+            item.get("scenarioId")
+            or item.get("scenario_id")
+            or item.get("guid")
+            or item.get("id")
+            or ""
+        )
+        if sid:
+            scenario_ids.append(sid)
+        # Also check nested scenarioId patterns like "{GUID}Missions/..."
+        name = item.get("name", "")
+        if name and name.startswith("{") and "}" in name and "/" in name:
+            scenario_ids.append(name)
+
+    return list(dict.fromkeys(scenario_ids))  # dedupe preserving order
+
+
+def _parse_scenario_ids_from_html(soup: BeautifulSoup) -> List[str]:
+    """Fallback: extract scenario IDs from rendered HTML on a mod's /scenarios page."""
+    scenario_ids: List[str] = []
+
+    # Look for scenario ID patterns in any visible text on the page
+    # Arma scenario IDs follow the pattern: {HEX_GUID}Path/To/Mission.conf
+    scenario_pattern = re.compile(r'\{[0-9A-Fa-f]{16}\}[^\s"<>]+\.conf')
+
+    for text_el in soup.find_all(string=True):
+        text = str(text_el).strip()
+        if not text:
+            continue
+        for match in scenario_pattern.finditer(text):
+            scenario_ids.append(match.group(0))
+
+    # Also look in code/pre tags and data attributes
+    for el in soup.select("code, pre, [data-scenario-id], [data-id]"):
+        text = el.get_text(strip=True) if el.string is None else el.string.strip()
+        for match in scenario_pattern.finditer(text):
+            scenario_ids.append(match.group(0))
+        for attr in ("data-scenario-id", "data-id"):
+            val = el.get(attr, "")
+            if scenario_pattern.match(val):
+                scenario_ids.append(val)
+
+    return list(dict.fromkeys(scenario_ids))
+
+
+async def fetch_mod_scenarios(mod_id: str) -> List[str]:
+    """Fetch scenarios from a mod's /scenarios workshop page.
+
+    Returns a list of scenario ID strings (resource paths).
+    Results are cached for the standard browse TTL.
+    """
+    cache_key = f"mod_scenarios:{mod_id}"
+    cached = await _get_cached(cache_key)
+    if cached is not None:
+        return cached if isinstance(cached, list) else []
+
+    url = f"{WORKSHOP_URL}/{mod_id}/scenarios"
+    html = await _fetch_html(url)
+    if html is None:
+        logger.debug("No scenarios page found for mod %s", mod_id)
+        await _set_cached(cache_key, [])
+        return []
+
+    scenario_ids: List[str] = []
+
+    # Strategy 1: __NEXT_DATA__ JSON
+    next_data = _extract_next_data(html)
+    if next_data:
+        try:
+            scenario_ids = _parse_scenario_ids_from_json(next_data)
+        except Exception as exc:
+            logger.debug("Failed to parse scenario JSON for mod %s: %s", mod_id, exc)
+
+    # Strategy 2: HTML fallback
+    if not scenario_ids:
+        try:
+            soup = BeautifulSoup(html, "lxml")
+            scenario_ids = _parse_scenario_ids_from_html(soup)
+        except Exception as exc:
+            logger.debug("Failed to parse scenario HTML for mod %s: %s", mod_id, exc)
+
+    logger.debug("Found %d scenarios for mod %s", len(scenario_ids), mod_id)
+    await _set_cached(cache_key, scenario_ids)
+    return scenario_ids

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertTriangle, BookOpen, Code, Eye, History, Loader2, RotateCcw, Save, Search, Wrench } from 'lucide-react';
 import { API } from '@/utils/api';
 import { SERVER_CONFIG_REFERENCE } from '@/config/serverConfigReference';
+import ScenarioSelector from '@/components/ScenarioSelector';
 
 const PLATFORM_OPTIONS = ['PLATFORM_PC', 'PLATFORM_XBL', 'PLATFORM_PSN'];
 
@@ -388,8 +389,8 @@ function ServerSettingsModule() {
                 <FieldShell label="Admin Password" help="This password must not contain spaces.">
                   <Input type="password" value={game.passwordAdmin || ''} onChange={(e) => updateField('game.passwordAdmin', e.target.value)} className="border-zinc-800 bg-[#050a0e]/60 text-white" />
                 </FieldShell>
-                <FieldShell label="Scenario ID">
-                  <Input value={game.scenarioId || ''} onChange={(e) => updateField('game.scenarioId', e.target.value)} className="border-zinc-800 bg-[#050a0e]/60 font-mono text-white" />
+                <FieldShell label="Scenario ID" help="Select a vanilla or mod-provided scenario, or add a custom one below.">
+                  <ScenarioSelector value={game.scenarioId || ''} onChange={(val) => updateField('game.scenarioId', val)} serverId={serverId} />
                 </FieldShell>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldShell label="Max Players">

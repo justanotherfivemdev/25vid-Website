@@ -1869,6 +1869,198 @@ async def refresh_workshop_mod(
         return {"mod_id": mod_id, "refreshed": False, "message": "Could not refresh metadata"}
 
 
+# ── Vanilla Scenarios ────────────────────────────────────────────────────────
+
+VANILLA_SCENARIOS = [
+    {"id": "{ECC61978EDCC2B5A}Missions/23_Campaign.conf", "name": "Game Master – Everon", "map": "Everon"},
+    {"id": "{59AD59368755F41A}Missions/21_GM_Eden.conf", "name": "Game Master – Eden", "map": "Eden"},
+    {"id": "{DAA03C6E6099D50F}Missions/22_GM_Arland.conf", "name": "Game Master – Arland", "map": "Arland"},
+    {"id": "{2BBBE828037C6F4B}Missions/24_GM_Montignac.conf", "name": "Game Master – Montignac", "map": "Montignac"},
+    {"id": "{C700DB41A0C5CB58}Missions/25_Tutorial.conf", "name": "Tutorial", "map": "Everon"},
+    {"id": "{90F086789073C963}Missions/26_CombatOps_Everon.conf", "name": "Combat Ops – Everon", "map": "Everon"},
+    {"id": "{28802845ADA2796A}Missions/27_CombatOps_Arland.conf", "name": "Combat Ops – Arland", "map": "Arland"},
+    {"id": "{F1A1BEA67132113E}Missions/28_Conflict_Everon.conf", "name": "Conflict – Everon", "map": "Everon"},
+    {"id": "{589945FB9FA7B97D}Missions/29_Conflict_Arland.conf", "name": "Conflict – Arland", "map": "Arland"},
+    {"id": "{E3FF37E9B1743B8F}Missions/30_Conflict_Eden.conf", "name": "Conflict – Eden", "map": "Eden"},
+]
+
+
+# ── Scenario Aggregation ────────────────────────────────────────────────────
+
+
+@router.get("/servers/{server_id}/scenarios")
+async def get_server_scenarios(
+    server_id: str,
+    current_user: dict = Depends(_require_servers),
+):
+    """Aggregate available scenarios: vanilla + mod-provided + custom user entries."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    # 1. Vanilla scenarios
+    vanilla = [{"source": "vanilla", **s} for s in VANILLA_SCENARIOS]
+
+    # 2. Scenarios from enabled mods
+    mod_scenarios: list[dict] = []
+    mod_ids = []
+    for mod in server.get("mods", []):
+        mid = (mod.get("mod_id") or mod.get("modId") or "").strip()
+        if mid:
+            mod_ids.append(mid)
+
+    if mod_ids:
+        ws_mods = await db.workshop_mods.find(
+            {"mod_id": {"$in": mod_ids}, "scenario_ids": {"$exists": True, "$ne": []}},
+            {"_id": 0, "mod_id": 1, "name": 1, "scenario_ids": 1},
+        ).to_list(500)
+
+        for ws_mod in ws_mods:
+            for sid in ws_mod.get("scenario_ids", []):
+                mod_scenarios.append({
+                    "id": sid,
+                    "name": sid,
+                    "source": "mod",
+                    "mod_id": ws_mod.get("mod_id", ""),
+                    "mod_name": ws_mod.get("name", ""),
+                })
+
+    # 3. Custom user-added scenarios
+    custom_scenarios = server.get("custom_scenarios", [])
+    custom = [{"id": s, "name": s, "source": "custom"} for s in custom_scenarios]
+
+    return {
+        "vanilla": vanilla,
+        "mod": mod_scenarios,
+        "custom": custom,
+    }
+
+
+class CustomScenariosUpdate(BaseModel):
+    custom_scenarios: list[str] = []
+
+
+@router.put("/servers/{server_id}/scenarios")
+async def update_custom_scenarios(
+    server_id: str,
+    body: CustomScenariosUpdate,
+    current_user: dict = Depends(_require_servers),
+):
+    """Save custom user-added scenarios for a server."""
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    # Deduplicate while preserving order
+    seen = set()
+    deduped = []
+    for s in body.custom_scenarios:
+        stripped = s.strip()
+        if stripped and stripped not in seen:
+            seen.add(stripped)
+            deduped.append(stripped)
+
+    await db.managed_servers.update_one(
+        {"id": server_id},
+        {"$set": {"custom_scenarios": deduped, "updated_at": datetime.now(timezone.utc)}},
+    )
+    return {"custom_scenarios": deduped}
+
+
+# ── Mod Dependency Resolution ────────────────────────────────────────────────
+
+
+class ResolveDependenciesRequest(BaseModel):
+    mod_id: str
+    existing_mod_ids: list[str] = []
+
+
+@router.post("/servers/{server_id}/mods/resolve-dependencies")
+async def resolve_mod_dependencies(
+    server_id: str,
+    body: ResolveDependenciesRequest,
+    current_user: dict = Depends(_require_servers),
+):
+    """Recursively resolve all dependencies for a mod.
+
+    Returns an ordered list: dependencies first, then the mod itself.
+    Dependencies already in ``existing_mod_ids`` are flagged as ``already_present``.
+    """
+    from services.workshop_ingest import fetch_and_store_mod
+
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    existing_set = set(body.existing_mod_ids)
+
+    # Breadth-first dependency resolution with cycle protection
+    resolved: list[dict] = []
+    visited: set[str] = set()
+    queue: list[str] = [body.mod_id]
+
+    while queue:
+        current_id = queue.pop(0)
+        if current_id in visited:
+            continue
+        visited.add(current_id)
+
+        # Fetch mod metadata (cache-first, with live fallback)
+        mod_data = await db.workshop_mods.find_one({"mod_id": current_id}, {"_id": 0})
+        if not mod_data:
+            try:
+                mod_data = await fetch_and_store_mod(current_id)
+            except Exception:
+                mod_data = None
+
+        if not mod_data:
+            resolved.append({
+                "mod_id": current_id,
+                "name": current_id,
+                "already_present": current_id in existing_set,
+                "metadata_available": False,
+            })
+            continue
+
+        deps = mod_data.get("dependencies", [])
+        dep_ids = []
+        for dep in deps:
+            dep_id = (dep.get("mod_id") or dep.get("modId") or "").strip()
+            if dep_id and dep_id not in visited:
+                dep_ids.append(dep_id)
+                queue.append(dep_id)
+
+        resolved.append({
+            "mod_id": current_id,
+            "name": mod_data.get("name", current_id),
+            "author": mod_data.get("author", ""),
+            "version": mod_data.get("version", ""),
+            "thumbnail_url": mod_data.get("thumbnail_url", ""),
+            "dependencies": deps,
+            "scenario_ids": mod_data.get("scenario_ids", []),
+            "already_present": current_id in existing_set,
+            "metadata_available": True,
+        })
+
+    # Topological order: dependencies first, the requested mod last
+    # The BFS naturally gives us dependency-first order, but the root mod
+    # was inserted first. Move it to the end.
+    root_entry = next((r for r in resolved if r["mod_id"] == body.mod_id), None)
+    if root_entry:
+        resolved.remove(root_entry)
+        resolved.append(root_entry)
+
+    new_deps = [r for r in resolved if not r["already_present"] and r["mod_id"] != body.mod_id]
+
+    return {
+        "mod_id": body.mod_id,
+        "resolved": resolved,
+        "new_dependencies": new_deps,
+        "total": len(resolved),
+        "new_count": len(new_deps),
+    }
+
+
 # ── Mod Presets ──────────────────────────────────────────────────────────────
 
 @router.get("/servers/presets")
