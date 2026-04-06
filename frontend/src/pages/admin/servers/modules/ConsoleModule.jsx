@@ -99,6 +99,7 @@ function ConsoleModule() {
   const [backfillInfo, setBackfillInfo] = useState(null);
   const [sourceStatus, setSourceStatus] = useState(null);
   const [closeReason, setCloseReason] = useState('');
+  const [reconnectWarning, setReconnectWarning] = useState('');
 
   const logRef = useRef(null);
   const wsRef = useRef(null);
@@ -184,6 +185,7 @@ function ConsoleModule() {
         lastSeqRef.current = 0;
         pendingEntriesRef.current = [];
         setBackfillInfo(null);
+        setReconnectWarning('');
       }
 
       try {
@@ -210,11 +212,17 @@ function ConsoleModule() {
             } else if (payload.state === 'backfilling') {
               setConnectionState('backfilling');
               setBackfillInfo({ count: payload.count || 0 });
+              if (payload.reconnect_gap) {
+                setReconnectWarning('Some older lines were not retained during reconnect; showing the latest available history.');
+              }
             } else if (payload.state === 'live') {
               setConnectionState('live');
               setLoading(false);
               setBackfillInfo(null);
               setCloseReason('');
+              if (payload.reconnect_gap) {
+                setReconnectWarning('Reconnect resumed from the latest retained logs after a sequence gap.');
+              }
               if (payload.sources) {
                 setSourceStatus(payload.sources);
               }
@@ -461,6 +469,12 @@ function ConsoleModule() {
             <span className="ml-1 text-zinc-600">({closeReason})</span>
           )}
         </span>
+        {!!reconnectWarning && (
+          <Badge variant="outline" className="ml-2 border-amber-500/40 text-[10px] text-amber-300">
+            <AlertTriangle className="mr-1 h-3 w-3" />
+            {reconnectWarning}
+          </Badge>
+        )}
         {(connectionState === 'live' || connectionState === 'reconnecting') && sourceStatus && (
           <SourceIndicators sourceStatus={sourceStatus} />
         )}

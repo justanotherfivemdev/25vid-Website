@@ -60,6 +60,18 @@ class _StreamSession:
     def last_seq(self) -> int:
         return self._seq
 
+    @property
+    def earliest_seq(self) -> int:
+        if not self._ring:
+            return 0
+        return int(self._ring[0].get("seq", 0))
+
+    def has_reconnect_gap(self, since_seq: int) -> bool:
+        """Return True when a reconnect cursor predates our retained buffer."""
+        if since_seq <= 0 or not self._ring:
+            return False
+        return self.earliest_seq > since_seq + 1
+
     def _next_seq(self) -> int:
         self._seq += 1
         return self._seq
@@ -116,50 +128,71 @@ class _StreamSession:
             logger.info("log_streamer.stream_stop server=%s", self.server_id)
 
     async def _pump(self) -> None:
-        """Background task: read from stream_server_log_entries and fan out."""
-        try:
-            async for entry in stream_server_log_entries(self.server, tail=0):
-                if self._stop_event.is_set():
-                    break
+        """Background task: read from stream_server_log_entries and fan out.
 
-                seq = self._next_seq()
-                entry["seq"] = seq
-                self._ring.append(entry)
-                self.entries_total += 1
+        Restarts automatically if the generator exits or raises, so transient
+        Docker or I/O errors never permanently kill the stream.
+        """
+        backoff = 1.0
+        while not self._stop_event.is_set():
+            _started_at = time.monotonic()
+            try:
+                async for entry in stream_server_log_entries(self.server, tail=0):
+                    if self._stop_event.is_set():
+                        return
 
-                # Fan out to all subscribers. Iterate over a snapshot so
-                # subscribe()/unsubscribe() can safely mutate the dict without
-                # invalidating this loop.
-                dead_subs: list[int] = []
-                for sub_id, queue in list(self._subscribers.items()):
-                    try:
-                        queue.put_nowait(entry)
-                    except asyncio.QueueFull:
-                        self.entries_dropped += 1
-                        # Drop oldest entry in subscriber's queue to make room
-                        try:
-                            queue.get_nowait()
-                        except asyncio.QueueEmpty:
-                            pass
+                    seq = self._next_seq()
+                    entry["seq"] = seq
+                    self._ring.append(entry)
+                    self.entries_total += 1
+
+                    # Fan out to all subscribers. Iterate over a snapshot so
+                    # subscribe()/unsubscribe() can safely mutate the dict without
+                    # invalidating this loop.
+                    dead_subs: list[int] = []
+                    for sub_id, queue in list(self._subscribers.items()):
                         try:
                             queue.put_nowait(entry)
                         except asyncio.QueueFull:
-                            dead_subs.append(sub_id)
+                            self.entries_dropped += 1
+                            # Drop oldest entry in subscriber's queue to make room
+                            try:
+                                queue.get_nowait()
+                            except asyncio.QueueEmpty:
+                                pass
+                            try:
+                                queue.put_nowait(entry)
+                            except asyncio.QueueFull:
+                                dead_subs.append(sub_id)
 
-                for sub_id in dead_subs:
-                    self._subscribers.pop(sub_id, None)
-                    logger.warning(
-                        "log_streamer.subscriber_dropped sub=%d server=%s reason=queue_full",
-                        sub_id, self.server_id,
+                    for sub_id in dead_subs:
+                        self._subscribers.pop(sub_id, None)
+                        logger.warning(
+                            "log_streamer.subscriber_dropped sub=%d server=%s reason=queue_full",
+                            sub_id, self.server_id,
+                        )
+
+                # Generator exited — reset backoff if it ran successfully for a while.
+                if time.monotonic() - _started_at > 30:
+                    backoff = 1.0
+                if not self._stop_event.is_set():
+                    logger.info(
+                        "log_streamer.stream_restarting server=%s backoff=%.1f",
+                        self.server_id, backoff,
                     )
+                    await asyncio.sleep(backoff)
+                    backoff = min(60.0, backoff * 2)
 
-        except asyncio.CancelledError:
-            raise
-        except Exception as exc:
-            logger.error(
-                "log_streamer.pump_error server=%s error=%s",
-                self.server_id, exc,
-            )
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.error(
+                    "log_streamer.pump_error server=%s error=%s",
+                    self.server_id, exc,
+                )
+                if not self._stop_event.is_set():
+                    await asyncio.sleep(backoff)
+                    backoff = min(60.0, backoff * 2)
 
     def get_backfill(
         self,
@@ -205,6 +238,7 @@ class _StreamSession:
             "started": self._started,
             "subscriber_count": self.subscriber_count,
             "buffer_size": self.buffer_size,
+            "earliest_seq": self.earliest_seq,
             "last_seq": self._seq,
             "entries_total": self.entries_total,
             "entries_dropped": self.entries_dropped,
@@ -225,20 +259,24 @@ class LogStreamerManager:
         self._cleanup_task: Optional[asyncio.Task] = None
 
     async def get_or_create(self, server: Dict[str, Any]) -> _StreamSession:
-        """Get existing stream session or create a new one."""
+        """Get existing stream session or create a new one.
+
+        The manager lock is released before calling session.start() so that
+        a slow Docker probe does not block other concurrent callers.
+        session.start() is idempotent (guarded by its own lock).
+        """
         server_id = str(server.get("id", ""))
         async with self._lock:
             session = self._sessions.get(server_id)
             if session is None:
                 session = _StreamSession(server)
                 self._sessions[server_id] = session
-                await session.start()
-
                 # Ensure cleanup task is running
                 if self._cleanup_task is None or self._cleanup_task.done():
                     self._cleanup_task = asyncio.create_task(self._cleanup_loop())
-
-            return session
+        # Start outside the lock — session.start() has its own idempotency guard.
+        await session.start()
+        return session
 
     async def remove(self, server_id: str) -> None:
         """Stop and remove a stream session."""

@@ -172,6 +172,10 @@ function RconModule() {
             return;
           }
 
+          if (payload.type === 'heartbeat') {
+            return;
+          }
+
           // Handle error messages (can come unprompted or as command responses)
           if (payload.type === 'error') {
             const friendlyMessage = classifyError(payload);

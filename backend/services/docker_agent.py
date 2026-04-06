@@ -278,7 +278,10 @@ class DockerAgent:
                     text = chunk.decode("utf-8", errors="replace") if isinstance(chunk, bytes) else str(chunk)
                     future = asyncio.run_coroutine_threadsafe(queue.put(text), loop)
                     try:
-                        future.result()
+                        future.result(timeout=10.0)
+                    except TimeoutError:
+                        logger.warning("Log stream queue put timed out for %s, stopping producer", container_name)
+                        break
                     except Exception as put_exc:
                         logger.warning("Log stream queue put failed for %s, stopping producer: %s", container_name, put_exc)
                         break

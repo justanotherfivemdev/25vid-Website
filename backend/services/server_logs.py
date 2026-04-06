@@ -431,49 +431,66 @@ async def stream_server_log_entries(
         except asyncio.TimeoutError:
             logger.debug("Queue put timeout for server %s – dropping entry", server_id)
 
-    _DOCKER_MAX_RETRIES = 10
     _DOCKER_MAX_BACKOFF = 30.0
     _DOCKER_BACKOFF_BASE = 1.0
     _DOCKER_BACKOFF_CAP_EXP = 5
+    # Delay between restarts after Docker container stops/restarts (seconds).
+    _DOCKER_RESTART_DELAY = 3.0
 
     async def pump_docker() -> None:
-        """Stream Docker container logs with retry on transient failures."""
-        # Early exit if Docker is not reachable at all
-        docker_available, err = await docker_agent.ping()
-        if not docker_available:
-            logger.warning(
-                "Docker unavailable for server %s – skipping docker log pump: %s",
-                server_id, err,
-            )
-            return
-
-        container = await docker_agent.get_container(container_name)
-        if container is None:
-            logger.warning(
-                "Container '%s' not found for server %s – skipping docker log pump",
-                container_name, server_id,
-            )
-            return
-
-        retry_count = 0
-        while not stop_event.is_set() and retry_count < _DOCKER_MAX_RETRIES:
+        """Stream Docker container logs. Restarts automatically when the container
+        stops/restarts so Docker logs resume after a server reboot without
+        recreating the entire stream session."""
+        error_count = 0
+        while not stop_event.is_set():
             try:
+                # Re-probe on each attempt so Docker/container restarts are handled.
+                docker_available, err = await docker_agent.ping()
+                if not docker_available:
+                    logger.warning(
+                        "Docker unavailable for server %s (will retry): %s",
+                        server_id, err,
+                    )
+                    error_count += 1
+                    await asyncio.sleep(min(_DOCKER_MAX_BACKOFF, _DOCKER_BACKOFF_BASE * (2 ** min(error_count, _DOCKER_BACKOFF_CAP_EXP))))
+                    continue
+
+                container = await docker_agent.get_container(container_name)
+                if container is None:
+                    logger.warning(
+                        "Container '%s' not found for server %s (will retry)",
+                        container_name, server_id,
+                    )
+                    error_count += 1
+                    await asyncio.sleep(min(30.0, _DOCKER_BACKOFF_BASE * (2 ** min(error_count, 4))))
+                    continue
+
+                # Connection re-established — reset error back-off.
+                error_count = 0
                 async for chunk in docker_agent.stream_container_logs(container_name, tail=0, since=since):
                     for entry in build_log_entries(chunk, source="docker"):
                         await _queue_put_safe(entry)
-                # Stream ended normally (container stopped) — no retry needed
-                break
+
+                # Stream ended normally (container stopped/restarted).
+                # Wait a moment and loop back to reconnect.
+                if not stop_event.is_set():
+                    logger.info(
+                        "Docker log stream ended for server %s container=%s — reconnecting in %.1fs",
+                        server_id, container_name, _DOCKER_RESTART_DELAY,
+                    )
+                    await asyncio.sleep(_DOCKER_RESTART_DELAY)
+
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
-                retry_count += 1
+                error_count += 1
                 backoff = min(
                     _DOCKER_MAX_BACKOFF,
-                    _DOCKER_BACKOFF_BASE * (2 ** min(retry_count, _DOCKER_BACKOFF_CAP_EXP)),
+                    _DOCKER_BACKOFF_BASE * (2 ** min(error_count, _DOCKER_BACKOFF_CAP_EXP)),
                 )
                 logger.warning(
-                    "Docker log pump error for %s (attempt %d/%d): %s – retrying in %.1fs",
-                    server_id, retry_count, _DOCKER_MAX_RETRIES, exc, backoff,
+                    "Docker log pump error for %s (attempt %d): %s – retrying in %.1fs",
+                    server_id, error_count, exc, backoff,
                 )
                 await asyncio.sleep(backoff)
 

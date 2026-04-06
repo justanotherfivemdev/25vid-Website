@@ -2740,6 +2740,7 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
 
     sub_id: Optional[int] = None
     session = None
+    _receive_task: Optional[asyncio.Task] = None
 
     logger.info(
         "ws_console.connected server=%s user=%s tail=%d since_seq=%s",
@@ -2752,6 +2753,7 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
             "type": "status",
             "state": "connected",
             "server_id": server_id,
+            "protocol": "25vid.ws.logs.v1",
         })
 
         # 2. Get or create the shared stream session
@@ -2759,8 +2761,10 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
 
         # 3. Send backfill from ring buffer (or initial history)
         is_reconnect = since_seq is not None
+        reconnect_gap = False
         if is_reconnect:
             backfill = session.get_backfill(since_seq=since_seq)
+            reconnect_gap = session.has_reconnect_gap(int(since_seq or 0))
         else:
             backfill = session.get_backfill(count=tail)
 
@@ -2776,6 +2780,10 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
             "type": "status",
             "state": "backfilling",
             "count": backfill_count,
+            "reconnect": is_reconnect,
+            "reconnect_gap": reconnect_gap,
+            "earliest_seq": session.earliest_seq,
+            "last_seq": session.last_seq,
         })
 
         for entry in backfill:
@@ -2803,25 +2811,50 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
         #    between the backfill snapshot and the subscription.
         sub_id, queue = session.subscribe()
 
+        # Concurrent receive task: detect client disconnect immediately rather than
+        # waiting up to 20 s for the next heartbeat send to fail.  Starlette's
+        # websocket.receive() returns {"type": "websocket.disconnect"} on close.
+        _client_gone = asyncio.Event()
+
+        async def _watch_disconnect() -> None:
+            try:
+                while True:
+                    msg = await websocket.receive()
+                    if msg.get("type") == "websocket.disconnect":
+                        break
+            except Exception:
+                pass
+            finally:
+                _client_gone.set()
+
+        _receive_task = asyncio.create_task(_watch_disconnect())
+
         # 5. Transition to live streaming
         await websocket.send_json({
             "type": "status",
             "state": "live",
             "backfill_count": backfill_count,
             "last_seq": session.last_seq,
+            "earliest_seq": session.earliest_seq,
+            "reconnect_gap": reconnect_gap,
             "sources": session.source_status,
+            "protocol": "25vid.ws.logs.v1",
         })
 
-        while True:
+        while not _client_gone.is_set():
             try:
-                entry = await asyncio.wait_for(queue.get(), timeout=30.0)
+                entry = await asyncio.wait_for(queue.get(), timeout=20.0)
             except asyncio.TimeoutError:
+                if _client_gone.is_set():
+                    break
                 # Send heartbeat to keep connection alive and detect dead clients
                 try:
                     await websocket.send_json({
                         "type": "heartbeat",
                         "seq": session.last_seq,
+                        "earliest_seq": session.earliest_seq,
                         "subscriber_count": session.subscriber_count,
+                        "protocol": "25vid.ws.logs.v1",
                     })
                 except Exception:
                     break
@@ -2882,6 +2915,12 @@ async def ws_server_logs(websocket: WebSocket, server_id: str):
         except Exception:
             pass
     finally:
+        if _receive_task is not None:
+            _receive_task.cancel()
+            try:
+                await _receive_task
+            except (asyncio.CancelledError, Exception):
+                pass
         if session and sub_id is not None:
             session.unsubscribe(sub_id)
 
@@ -2953,6 +2992,7 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
         "type": "status",
         "state": "ready",
         "server_id": server_id,
+        "protocol": "25vid.ws.rcon.v1",
     })
 
     logger.info(
@@ -2962,7 +3002,16 @@ async def ws_server_rcon(websocket: WebSocket, server_id: str):
 
     try:
         while True:
-            raw = await websocket.receive_text()
+            try:
+                raw = await asyncio.wait_for(websocket.receive_text(), timeout=20.0)
+            except asyncio.TimeoutError:
+                await websocket.send_json({
+                    "type": "heartbeat",
+                    "state": "alive",
+                    "server_id": server_id,
+                    "protocol": "25vid.ws.rcon.v1",
+                })
+                continue
             try:
                 import json
                 msg = json.loads(raw)
