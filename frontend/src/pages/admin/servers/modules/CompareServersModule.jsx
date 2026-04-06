@@ -45,6 +45,12 @@ function CompareServersModule() {
   const [searchError, setSearchError] = useState(null);
   const [nextPageKey, setNextPageKey] = useState(null);
   const [pageHistory, setPageHistory] = useState([]);
+  const [sortBy, setSortBy] = useState('-players');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+  const [sortBy, setSortBy] = useState('-players');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
 
   /* selected server state */
   const [selected, setSelected] = useState(null);
@@ -72,6 +78,15 @@ function CompareServersModule() {
       if (searchQuery) {
         params.q = searchQuery;
       }
+      if (sortBy) {
+        params.sort = sortBy;
+      }
+      if (statusFilter) {
+        params.status = statusFilter;
+      }
+      if (countryFilter) {
+        params.country = countryFilter;
+      }
       const res = await axios.get(`${API}/servers/battlemetrics/search`, { params });
       setResults(res.data.servers || []);
       setNextPageKey(res.data.next_page_key || null);
@@ -82,7 +97,7 @@ function CompareServersModule() {
     } finally {
       setSearching(false);
     }
-  }, []);
+  }, [sortBy, statusFilter, countryFilter]);
 
   const handleSearch = useCallback((e) => {
     e?.preventDefault?.();
@@ -201,6 +216,46 @@ function CompareServersModule() {
           Search
         </Button>
       </form>
+
+      {/* ── Filters ─────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-3 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[#4a6070]">Sort:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="h-7 rounded border border-zinc-800 bg-[#050a0e]/60 px-2 text-xs text-[#8a9aa8]"
+          >
+            <option value="-players">Players (High → Low)</option>
+            <option value="players">Players (Low → High)</option>
+            <option value="-name">Name (Z → A)</option>
+            <option value="name">Name (A → Z)</option>
+            <option value="-rank">Rank</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[#4a6070]">Status:</span>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-7 rounded border border-zinc-800 bg-[#050a0e]/60 px-2 text-xs text-[#8a9aa8]"
+          >
+            <option value="">Any</option>
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[#4a6070]">Country:</span>
+          <Input
+            value={countryFilter}
+            onChange={(e) => setCountryFilter(e.target.value.toUpperCase().slice(0, 2))}
+            placeholder="US"
+            className="h-7 w-14 border-zinc-800 bg-[#050a0e]/60 px-2 text-center text-xs text-[#8a9aa8] placeholder:text-[#4a6070]"
+            maxLength={2}
+          />
+        </div>
+      </div>
 
       {searchError && (
         <p className="text-sm text-red-400">{searchError}</p>

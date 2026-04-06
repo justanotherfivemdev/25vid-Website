@@ -99,6 +99,7 @@ class ManagedServer(BaseModel):
     diagnostics_path: str = ""
     sat_config_path: str = ""
     sat_status: str = "pending"
+    sat_enabled: bool = True
     ports: Dict[str, int] = Field(default_factory=_default_ports)
     port_allocations: Dict[str, int] = Field(default_factory=_default_ports)
     config: Dict[str, Any] = Field(default_factory=dict)
@@ -133,6 +134,7 @@ class ServerCreate(BaseModel):
     log_stats_enabled: bool = True
     max_fps: int = 120
     startup_parameters: List[str] = Field(default_factory=list)
+    sat_enabled: bool = True
 
 
 class ServerUpdate(BaseModel):
@@ -148,6 +150,7 @@ class ServerUpdate(BaseModel):
     log_stats_enabled: Optional[bool] = None
     max_fps: Optional[int] = None
     startup_parameters: Optional[List[str]] = None
+    sat_enabled: Optional[bool] = None
 
 
 class WorkshopMod(BaseModel):

@@ -307,6 +307,41 @@ function OverviewModule() {
     }
   }, [serverId]);
 
+  /* ── Maintenance tasks (folded from Trigger/Exec) ─────────────── */
+  const [taskRunning, setTaskRunning] = useState(null);
+  const [taskResult, setTaskResult] = useState(null);
+
+  const runTask = useCallback(async (taskId) => {
+    setTaskRunning(taskId);
+    setTaskResult(null);
+    try {
+      if (taskId === 'backup') {
+        await axios.post(`${API}/servers/${serverId}/backups`);
+        setTaskResult({ ok: true, msg: 'Backup created' });
+      } else if (taskId === 'validate') {
+        const mods = server?.mods || [];
+        const res = await axios.post(`${API}/servers/${serverId}/mods/validate`, { mods });
+        const issues = res.data?.issues || [];
+        setTaskResult({ ok: true, msg: issues.length === 0 ? 'Config valid — no issues' : `${issues.length} issue(s) found` });
+      } else if (taskId === 'refresh_mods') {
+        const mods = server?.mods || [];
+        let ok = 0, fail = 0;
+        for (const mod of mods) {
+          const modId = mod.mod_id || mod.modId;
+          if (modId) {
+            try { await axios.post(`${API}/servers/workshop/mod/${modId}/refresh`); ok++; } catch { fail++; }
+          }
+        }
+        setTaskResult({ ok: fail === 0, msg: fail > 0 ? `Refreshed ${ok}, ${fail} failed` : `Refreshed ${ok} mod(s)` });
+      }
+      await fetchServer(true);
+    } catch (err) {
+      setTaskResult({ ok: false, msg: err.response?.data?.detail || 'Task failed' });
+    } finally {
+      setTaskRunning(null);
+    }
+  }, [serverId, server?.mods, fetchServer]);
+
   const handleReset = useCallback(async () => {
     setResetting(true);
     try {
@@ -691,6 +726,36 @@ function OverviewModule() {
                 </Button>
               </Link>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Maintenance */}
+        <Card className="border-zinc-800 bg-[#050a0e]/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wider text-[#8a9aa8]">
+              <HardDrive className="h-4 w-4 text-tropic-gold" /> MAINTENANCE
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Button variant="outline" size="sm" onClick={() => runTask('backup')} disabled={!!taskRunning}
+                className="justify-start border-blue-700/30 text-blue-400 hover:bg-blue-700/10">
+                {taskRunning === 'backup' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <HardDrive className="mr-2 h-4 w-4" />} Backup
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => runTask('validate')} disabled={!!taskRunning}
+                className="justify-start border-green-700/30 text-green-400 hover:bg-green-700/10">
+                {taskRunning === 'validate' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />} Validate
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => runTask('refresh_mods')} disabled={!!taskRunning}
+                className="justify-start border-purple-700/30 text-purple-400 hover:bg-purple-700/10">
+                {taskRunning === 'refresh_mods' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Puzzle className="mr-2 h-4 w-4" />} Re-ingest Mods
+              </Button>
+            </div>
+            {taskResult && (
+              <div className={`rounded border px-3 py-1.5 text-xs ${taskResult.ok ? 'border-green-700/30 text-green-400' : 'border-red-700/30 text-red-400'}`}>
+                {taskResult.msg}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

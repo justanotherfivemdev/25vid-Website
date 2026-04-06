@@ -75,7 +75,6 @@ const NotesModule = lazy(() => import('@/pages/admin/servers/modules/NotesModule
 const NotificationsModule = lazy(() => import('@/pages/admin/servers/modules/NotificationsModule'));
 const IncidentsModule = lazy(() => import('@/pages/admin/servers/modules/IncidentsModule'));
 const FileManagerModule = lazy(() => import('@/pages/admin/servers/modules/FileManagerModule'));
-const TriggerExecModule = lazy(() => import('@/pages/admin/servers/modules/TriggerExecModule'));
 const ReportsModule = lazy(() => import('@/pages/admin/servers/modules/ReportsModule'));
 const TodoModule = lazy(() => import('@/pages/admin/servers/modules/TodoModule'));
 const WatchersModule = lazy(() => import('@/pages/admin/servers/modules/WatchersModule'));
@@ -1468,7 +1467,6 @@ function App() {
             <Route path="config/admin-tools" element={<SatConfigModule />} />
             <Route path="config/integrations" element={<IntegrationsModule />} />
             <Route path="tools/files" element={<FileManagerModule />} />
-            <Route path="tools/exec" element={<TriggerExecModule />} />
             <Route path="tools/reports" element={<ReportsModule />} />
             <Route path="tools/todos" element={<TodoModule />} />
             <Route path="tools/watchers" element={<WatchersModule />} />

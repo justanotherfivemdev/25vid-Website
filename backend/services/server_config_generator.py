@@ -14,7 +14,7 @@ from config import SERVER_CONFIG_FILENAME, SERVER_SAT_REQUIRED_MOD_ID
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SCENARIO = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
+DEFAULT_SCENARIO = "{59AD59368755F41A}Missions/21_GM_Eden.conf"
 DEFAULT_SUPPORTED_PLATFORMS = ["PLATFORM_PC", "PLATFORM_XBL", "PLATFORM_PSN"]
 DEFAULT_MOD_NAME = "Server Admin Tools"
 
@@ -188,7 +188,7 @@ def format_mod_for_config(mod: Dict[str, Any]) -> Dict[str, Any]:
     return config_entry
 
 
-def ensure_required_mods(mods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def ensure_required_mods(mods: List[Dict[str, Any]], sat_enabled: bool = True) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
     seen: set[str] = set()
 
@@ -202,7 +202,7 @@ def ensure_required_mods(mods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         normalized.append(entry)
         seen.add(mod_id)
 
-    if SERVER_SAT_REQUIRED_MOD_ID not in seen:
+    if sat_enabled and SERVER_SAT_REQUIRED_MOD_ID not in seen:
         normalized.append(
             {
                 "modId": SERVER_SAT_REQUIRED_MOD_ID,
@@ -332,7 +332,7 @@ def build_default_config(server: Dict[str, Any]) -> Dict[str, Any]:
             "maxPlayers": _normalize_int(game.get("maxPlayers"), 32),
             "visible": _normalize_bool(game.get("visible"), True),
             "crossPlatform": _normalize_bool(game.get("crossPlatform"), True),
-            "mods": mods_for_config(ensure_required_mods(server.get("mods") or [])),
+            "mods": mods_for_config(ensure_required_mods(server.get("mods") or [], sat_enabled=server.get("sat_enabled", True))),
         },
     }
     if "password" in game:
@@ -555,7 +555,7 @@ def generate_reforger_config(server: Dict[str, Any]) -> Dict[str, Any]:
     config["rcon"]["port"] = _normalize_int((server.get("ports") or {}).get("rcon"), config["rcon"].get("port", 19999))
     config["rcon"]["address"] = config["rcon"].get("address") or "0.0.0.0"
     config["game"]["name"] = config["game"].get("name") or server.get("name", "Arma Reforger Server")
-    config["game"]["mods"] = mods_for_config(ensure_required_mods(server.get("mods") or []))
+    config["game"]["mods"] = mods_for_config(ensure_required_mods(server.get("mods") or [], sat_enabled=server.get("sat_enabled", True)))
     if not config["game"]["mods"]:
         config["game"].pop("mods", None)
     if not config.get("operating"):

@@ -857,7 +857,11 @@ async def provision_server(server: Dict[str, Any]) -> Dict[str, Any]:
 
     sat_stage = StageResult(name="sat_discovery")
     result.stages.append(sat_stage)
-    if profile_stage.status != "success":
+    if not server.get("sat_enabled", True):
+        sat_stage.status = "skipped"
+        sat_stage.message = "Server Admin Tools provisioning is disabled for this server"
+        result.updates["sat_status"] = "not_applicable"
+    elif profile_stage.status != "success":
         sat_stage.status = "skipped"
         sat_stage.message = "Skipped until the server profile is available"
     else:
@@ -1019,6 +1023,43 @@ async def restart_server(server: Dict[str, Any]) -> Dict[str, Any]:
         "status": "running",
         "provisioning_state": "completed",
         "provisioning_step": "ready",
+        "last_known_container_status": (details or {}).get("status", "running"),
+        "sat_config_path": sat_path or "",
+        "sat_status": sat_state,
+        "readiness_state": "ready",
+    }
+
+
+async def reconfigure_server(server: Dict[str, Any]) -> Dict[str, Any]:
+    """Recreate the container with fresh environment and restart.
+
+    Use this instead of ``restart_server`` when config changes affect
+    container-level environment variables (RCON password/port, max_fps,
+    startup parameters) that Docker only picks up at container creation.
+    """
+    server = apply_runtime_defaults(server)
+
+    ok, config_result = await write_config_file(server)
+    if not ok:
+        raise ProvisioningError("writing_config", config_result)
+
+    # Stop and remove the existing container, then recreate with fresh env.
+    await docker_agent.remove_container(server["container_name"], force=True)
+
+    runtime_updates = await ensure_container(server)
+    ok, error = await docker_agent.start_existing_container(server["container_name"])
+    if not ok:
+        raise ProvisioningError("starting_container", error or "Failed to start container after reconfigure")
+
+    details = await docker_agent.inspect_container(server["container_name"])
+    sat_path, sat_state = discover_sat_config(server["profile_path"])
+    return {
+        **runtime_updates,
+        "deployment_state": server.get("deployment_state", "created"),
+        "status": "running",
+        "provisioning_state": "completed",
+        "provisioning_step": "ready",
+        "config_path": config_result,
         "last_known_container_status": (details or {}).get("status", "running"),
         "sat_config_path": sat_path or "",
         "sat_status": sat_state,

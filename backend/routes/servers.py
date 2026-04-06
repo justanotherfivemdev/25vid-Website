@@ -39,6 +39,7 @@ from services.reforger_orchestrator import (
     get_diagnostics as orchestrator_get_diagnostics,
     prepare_server_deployment as orchestrator_prepare_server,
     provision_server as orchestrator_provision_server,
+    reconfigure_server as orchestrator_reconfigure_server,
     restart_server as orchestrator_restart_server,
     start_server as orchestrator_start_server,
     stop_server as orchestrator_stop_server,
@@ -93,6 +94,34 @@ _require_servers = require_permission(Permission.MANAGE_SERVERS)
 
 # Sensitive keys that should be redacted in API responses
 _SENSITIVE_ENV_KEYS = {"rcon_password", "password", "admin_password", "steam_password"}
+
+# Config paths whose changes affect container environment variables and thus
+# require a full container reconfigure (not just a restart) to take effect.
+_ENV_AFFECTING_KEYS = frozenset({"max_fps", "startup_parameters"})
+_ENV_AFFECTING_CONFIG_PATHS = frozenset({
+    "rcon.password", "rcon.port", "rcon.permission",
+})
+
+
+def _needs_reconfigure(before_server: Dict[str, Any], updates: Dict[str, Any]) -> bool:
+    """Return True if any update touches a value that requires container recreation."""
+    for key in _ENV_AFFECTING_KEYS:
+        if key in updates and updates[key] != before_server.get(key):
+            return True
+    if "config" not in updates:
+        return False
+    old_config = before_server.get("config") or {}
+    new_config = updates["config"]
+    for path in _ENV_AFFECTING_CONFIG_PATHS:
+        parts = path.split(".")
+        old_val = old_config
+        new_val = new_config
+        for part in parts:
+            old_val = old_val.get(part) if isinstance(old_val, dict) else None
+            new_val = new_val.get(part) if isinstance(new_val, dict) else None
+        if old_val != new_val:
+            return True
+    return False
 
 
 def _redact_env(env: dict) -> dict:
@@ -483,7 +512,7 @@ async def create_server(
             name=body.name,
             description=body.description,
             config=body.config,
-            mods=ensure_required_mods(body.mods),
+            mods=ensure_required_mods(body.mods, sat_enabled=body.sat_enabled),
             ports=ports,
             port_allocations=ports,
             tags=body.tags,
@@ -500,6 +529,8 @@ async def create_server(
             provisioning_step="queued",
             readiness_state="pending",
             summary_message="Reserving deployment resources.",
+            sat_enabled=body.sat_enabled,
+            sat_status="pending" if body.sat_enabled else "not_applicable",
         )
         doc = apply_runtime_defaults(server.model_dump())
         doc["config"] = generate_reforger_config(doc)
@@ -605,6 +636,11 @@ async def update_server(
     if "log_stats_enabled" in updates:
         updates["log_stats_enabled"] = bool(updates["log_stats_enabled"])
 
+    if "sat_enabled" in updates:
+        updates["sat_enabled"] = bool(updates["sat_enabled"])
+        if not updates["sat_enabled"]:
+            updates["sat_status"] = "not_applicable"
+
     if "config" in updates:
         if not isinstance(updates["config"], dict):
             raise HTTPException(status_code=400, detail="config must be a JSON object")
@@ -627,8 +663,9 @@ async def update_server(
         )
 
     next_mods = updates.get("mods", server.get("mods", []))
-    if "mods" in updates:
-        updates["mods"] = ensure_required_mods(next_mods)
+    sat_on = updates.get("sat_enabled", server.get("sat_enabled", True))
+    if "mods" in updates or "sat_enabled" in updates:
+        updates["mods"] = ensure_required_mods(next_mods, sat_enabled=sat_on)
         next_mods = updates["mods"]
 
     if "config" in updates:
@@ -663,7 +700,13 @@ async def update_server(
     )
     updated = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
     await sync_server_notifications(updated or {})
-    return _server_response(updated)
+
+    response = _server_response(updated)
+    # Signal the frontend when the saved changes will only take effect
+    # after a full container reconfigure (not just a file-level restart).
+    if _needs_reconfigure(server, updates):
+        response["needs_reconfigure"] = True
+    return response
 
 
 @router.delete("/servers/{server_id}")
@@ -856,6 +899,62 @@ async def restart_server(server_id: str, current_user: dict = Depends(_require_s
             action="restart",
             status=str(updates.get("status") or "starting"),
             message="Server restart requested. Runtime readiness checks are still in progress.",
+        )
+    except ProvisioningError as exc:
+        await db.managed_servers.update_one(
+            {"id": server_id},
+            {"$set": {"status": "error", "last_docker_error": exc.message, "startup_grace_until": None, "updated_at": datetime.now(timezone.utc)}},
+        )
+        await sync_server_notifications({**server, "status": "error", "last_docker_error": exc.message, "startup_grace_until": None})
+        raise HTTPException(status_code=500, detail=exc.message)
+
+
+@router.post("/servers/{server_id}/reconfigure")
+async def reconfigure_server(server_id: str, current_user: dict = Depends(_require_servers)):
+    """Recreate the container with fresh environment and restart.
+
+    Use this after config changes that affect container-level environment
+    variables (RCON password/port, max_fps, startup parameters) which a
+    simple ``restart`` would not pick up.
+    """
+    server = await db.managed_servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    now = datetime.now(timezone.utc)
+    await db.managed_servers.update_one(
+        {"id": server_id},
+        {"$set": {
+            "status": "starting",
+            "readiness_state": "initializing",
+            "startup_grace_until": _startup_grace_until(),
+            "last_started": now,
+            "updated_at": now,
+        }},
+    )
+    await log_audit(
+        user_id=current_user["id"],
+        action_type="server_reconfigure",
+        resource_type="server",
+        resource_id=server_id,
+    )
+
+    try:
+        updates = await orchestrator_reconfigure_server(server)
+        updates["last_started"] = now
+        updates["status"] = "starting"
+        updates["provisioning_state"] = "starting_container"
+        updates["provisioning_step"] = "starting_container"
+        updates["readiness_state"] = "initializing"
+        updates["startup_grace_until"] = _startup_grace_until()
+        updates["updated_at"] = datetime.now(timezone.utc)
+        await db.managed_servers.update_one({"id": server_id}, {"$set": updates})
+        await sync_server_notifications({**server, **updates})
+        return ServerActionResponse(
+            server_id=server_id,
+            action="reconfigure",
+            status=str(updates.get("status") or "starting"),
+            message="Server reconfigured and restarting. Container recreated with updated environment.",
         )
     except ProvisioningError as exc:
         await db.managed_servers.update_one(
@@ -1405,7 +1504,7 @@ async def update_server_mods(
 
     before_mods = server.get("mods", [])
     now = datetime.now(timezone.utc)
-    normalized_mods = ensure_required_mods(body.mods)
+    normalized_mods = ensure_required_mods(body.mods, sat_enabled=server.get("sat_enabled", True))
     next_config = generate_reforger_config({**server, "mods": normalized_mods})
     ok, result = await write_config_file({**server, "mods": normalized_mods, "config": next_config})
     if not ok:
@@ -3315,6 +3414,10 @@ _BM_API_KEY_ENV = os.environ.get("BATTLEMETRICS_API_KEY", "")
 _BM_TIMEOUT = 15
 _BM_GAME_FILTER = "reforger"
 _BM_DEFAULT_SORT = "-players"
+# Allowed BattleMetrics sort values — reject anything else to prevent abuse.
+_BM_ALLOWED_SORTS = frozenset({
+    "-players", "players", "-name", "name", "-rank", "rank",
+})
 # Query-string keys that may be forwarded from a BattleMetrics pagination URL.
 _BM_ALLOWED_FILTER_PARAMS = frozenset({
     "filter[game]", "filter[search]",
@@ -3389,6 +3492,8 @@ async def battlemetrics_search(
     page_key: Optional[str] = Query(None, alias="pageKey", description="Cursor for next page"),
     per_page: int = Query(25, ge=1, le=100, description="Results per page"),
     country: Optional[str] = Query(None, description="Country code filter"),
+    sort: Optional[str] = Query(None, description="Sort order (e.g. -players, name, -rank)"),
+    status: Optional[str] = Query(None, description="Server status filter (online/offline)"),
     current_user: dict = Depends(_require_servers),
 ):
     """Search BattleMetrics for Arma Reforger servers.
@@ -3426,23 +3531,29 @@ async def battlemetrics_search(
         # crafted page_key attempts to supply conflicting values.
         params["filter[game]"] = _BM_GAME_FILTER
         params["page[size]"] = str(per_page)
-        params["sort"] = _BM_DEFAULT_SORT
+        effective_sort = sort if sort and sort in _BM_ALLOWED_SORTS else _BM_DEFAULT_SORT
+        params["sort"] = effective_sort
         # Preserve the original search context if BattleMetrics did not
         # embed filter params in the pagination URL.
         if q and "filter[search]" not in params:
             params["filter[search]"] = q
         if country and "filter[countries][]" not in params and "filter[countries]" not in params:
             params["filter[countries][]"] = country
+        if status and status in ("online", "offline") and "filter[status]" not in params:
+            params["filter[status]"] = status
     else:
+        effective_sort = sort if sort and sort in _BM_ALLOWED_SORTS else _BM_DEFAULT_SORT
         params: dict = {
             "filter[game]": _BM_GAME_FILTER,
             "page[size]": str(per_page),
-            "sort": _BM_DEFAULT_SORT,
+            "sort": effective_sort,
         }
         if q:
             params["filter[search]"] = q
         if country:
             params["filter[countries][]"] = country
+        if status and status in ("online", "offline"):
+            params["filter[status]"] = status
 
     try:
         async with httpx.AsyncClient(timeout=_BM_TIMEOUT) as client:

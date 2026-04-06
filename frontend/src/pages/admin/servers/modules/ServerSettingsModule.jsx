@@ -130,6 +130,8 @@ function ServerSettingsModule() {
     persistenceDatabases: null,
     persistenceStorages: null,
   });
+  const [reconfigureNeeded, setReconfigureNeeded] = useState(false);
+  const [reconfiguring, setReconfiguring] = useState(false);
 
   const initializeEditors = useCallback((nextConfig, nextServer) => {
     const safe = ensureConfigShape(nextConfig);
@@ -231,6 +233,7 @@ function ServerSettingsModule() {
     }
     setSaving(true);
     setSaveError(null);
+    setReconfigureNeeded(false);
     try {
       if (createBackup) await axios.post(`${API}/servers/${serverId}/backups`).catch(() => {});
       const res = await axios.put(`${API}/servers/${serverId}`, {
@@ -243,13 +246,29 @@ function ServerSettingsModule() {
       const historyRes = await axios.get(`${API}/servers/${serverId}/config/history`).catch(() => null);
       setConfigHistory(historyRes?.data?.history || historyRes?.data || []);
       setDirty(false);
+      if (res.data?.needs_reconfigure) {
+        setReconfigureNeeded(true);
+      }
       await fetchServer(true);
     } catch (error) {
       setSaveError(error.response?.data?.detail || 'Failed to save server configuration.');
     } finally {
       setSaving(false);
     }
-  }, [config, createBackup, fetchServer, jsonFieldErrors, runtime.log_stats_enabled, runtime.max_fps, serverId, textEditors.startupParameters]);
+  }, [config, createBackup, fetchServer, initializeEditors, jsonFieldErrors, runtime.log_stats_enabled, runtime.max_fps, server, serverId, textEditors.startupParameters]);
+
+  const handleReconfigure = useCallback(async () => {
+    setReconfiguring(true);
+    try {
+      await axios.post(`${API}/servers/${serverId}/reconfigure`);
+      setReconfigureNeeded(false);
+      await fetchServer(true);
+    } catch (error) {
+      setSaveError(error.response?.data?.detail || 'Reconfigure failed.');
+    } finally {
+      setReconfiguring(false);
+    }
+  }, [serverId, fetchServer]);
 
   const safeConfig = ensureConfigShape(config || {});
   const game = safeConfig.game;
@@ -310,6 +329,19 @@ function ServerSettingsModule() {
       {saveError ? (
         <div className="rounded border border-red-600/30 bg-red-600/10 px-3 py-2 text-xs text-red-400">
           {saveError}
+        </div>
+      ) : null}
+
+      {reconfigureNeeded ? (
+        <div className="flex items-center justify-between gap-3 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+            <span>Changes to RCON, max FPS, or startup parameters require a container reconfigure to take effect at runtime.</span>
+          </div>
+          <Button size="sm" onClick={handleReconfigure} disabled={reconfiguring} className="h-6 whitespace-nowrap bg-amber-600 text-[10px] text-white hover:bg-amber-700">
+            {reconfiguring ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RotateCcw className="mr-1 h-3 w-3" />}
+            Reconfigure Now
+          </Button>
         </div>
       ) : null}
 
@@ -621,6 +653,9 @@ function ServerSettingsModule() {
         <TabsContent value="json">
           <Card className="border-zinc-800 bg-[#050a0e]/60">
             <CardContent className="p-4">
+              <div className="mb-3 rounded border border-zinc-700/50 bg-zinc-900/40 px-3 py-2 text-[11px] text-[#4a6070]">
+                <strong className="text-[#8a9aa8]">Backend-managed fields:</strong> Network bindings (<code className="text-[#4a6070]">bindAddress</code>, <code className="text-[#4a6070]">bindPort</code>, <code className="text-[#4a6070]">publicAddress</code>, <code className="text-[#4a6070]">publicPort</code>, <code className="text-[#4a6070]">a2s.address</code>, <code className="text-[#4a6070]">a2s.port</code>, <code className="text-[#4a6070]">rcon.address</code>, <code className="text-[#4a6070]">rcon.port</code>) are overwritten on config regeneration. Edit them via Infrastructure settings instead.
+              </div>
               <Textarea value={jsonText} onChange={(e) => { setJsonText(e.target.value); setJsonError(null); }} className="min-h-[65vh] border-zinc-800 bg-[#050a0e]/80 font-mono text-xs text-green-400 placeholder:text-[#4a6070]" />
               {jsonError ? <div className="mt-2 text-xs text-red-400"><AlertTriangle className="mr-1 inline h-3 w-3" /> {jsonError}</div> : null}
               <div className="mt-3 flex gap-2">

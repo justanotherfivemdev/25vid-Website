@@ -30,8 +30,12 @@ _DIAGNOSTICS_AI_MODEL: str = os.environ.get(
 
 _DIAGNOSTICS_SYSTEM_PROMPT = """\
 You are a concise game-server diagnostics assistant for Arma Reforger dedicated \
-servers.  Given an error pattern and its recent occurrences, produce a short, \
-plain-English analysis that a non-technical server administrator can understand.
+servers.  Given an error pattern, its metadata, and recent occurrences, produce a \
+short, plain-English analysis that a non-technical server administrator can understand.
+
+You will receive contextual metadata for the error including its current curation \
+state (review_status, attribution_type, actionability), any linked mod, occurrence \
+frequency, and source streams.  Use this to produce more precise guidance.
 
 Respond in **valid JSON** with exactly these keys (no markdown fences):
 {
@@ -40,10 +44,16 @@ Respond in **valid JSON** with exactly these keys (no markdown fences):
   "impact": "How this error affects the server or players.",
   "recommended_actions": ["action 1", "action 2"],
   "severity_assessment": "one of: harmless | low | moderate | high | critical",
-  "is_safe_to_ignore": true or false
+  "is_safe_to_ignore": true or false,
+  "suggested_review_status": "one of: active | monitoring | resolved | false_positive",
+  "suggested_actionability": "one of: actionable | monitor | known_safe",
+  "suggested_attribution": "one of: unknown | mod | backend | base_game | engine | rcon | battleye | config | network | performance"
 }
 
-Keep each field brief (1-3 sentences max).  Focus on practical guidance.
+Keep each field brief (1-3 sentences max).  Focus on practical guidance.  \
+The suggested_* fields should reflect your best judgement on how operators should \
+classify this error — for example, a benign engine-level warning should suggest \
+\"false_positive\" review_status and \"known_safe\" actionability.
 """
 
 
@@ -283,9 +293,17 @@ async def ai_analyze_error_pattern(
         f"Error label: {error_type.get('label', 'Unknown')}\n"
         f"Severity: {error_type.get('severity', 'unknown')}\n"
         f"Category: {error_type.get('category', 'unknown')}\n"
+        f"Attribution: {error_type.get('attribution_type', 'unknown')}\n"
+        f"Current review status: {error_type.get('review_status', 'active')}\n"
+        f"Current actionability: {error_type.get('actionability', 'actionable')}\n"
+        f"Source streams: {', '.join(error_type.get('source_streams', [])) or 'unknown'}\n"
+        f"Linked mod: {error_type.get('linked_mod_name', '') or 'none'}"
+        f"{' (' + error_type.get('linked_mod_guid', '') + ')' if error_type.get('linked_mod_guid') else ''}\n"
         f"Normalised pattern: {error_type.get('normalised_message', '')}\n"
         f"Example raw message: {(error_type.get('example_raw') or '')[:600]}\n"
         f"Total occurrences: {error_type.get('total_occurrences', 0)}\n"
+        f"First seen: {error_type.get('first_seen', 'unknown')}\n"
+        f"Last seen: {error_type.get('last_seen', 'unknown')}\n"
         f"Curation notes: {error_type.get('curation_notes', '')}\n"
         f"\nRecent occurrence samples:\n"
         + "\n---\n".join(sample_messages[:5])
@@ -302,7 +320,7 @@ async def ai_analyze_error_pattern(
             {"role": "user", "content": user_prompt},
         ],
         "temperature": 0.3,
-        "max_tokens": 600,
+        "max_tokens": 800,
     }
 
     try:

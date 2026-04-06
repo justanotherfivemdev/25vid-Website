@@ -1416,6 +1416,44 @@ function ServerDiagnostics() {
                     </div>
                   )}
 
+                  {/* AI Curation Suggestions */}
+                  {(aiAnalysis.suggested_review_status || aiAnalysis.suggested_actionability || aiAnalysis.suggested_attribution) && (
+                    <div className="rounded-lg border border-cyan-700/20 bg-cyan-950/10 p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-[10px] uppercase tracking-wider text-cyan-400/60">AI Curation Suggestions</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 border-cyan-700/30 px-2 text-[10px] text-cyan-400 hover:bg-cyan-700/10"
+                          onClick={() => {
+                            if (aiAnalysis.suggested_review_status) setTypeReviewStatus(aiAnalysis.suggested_review_status);
+                            if (aiAnalysis.suggested_actionability) setTypeActionability(aiAnalysis.suggested_actionability);
+                            if (aiAnalysis.suggested_attribution) setTypeAttribution(aiAnalysis.suggested_attribution);
+                          }}
+                        >
+                          Apply to curation
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {aiAnalysis.suggested_review_status && (
+                          <Badge variant="outline" className="border-cyan-700/30 text-[10px] text-cyan-300">
+                            Status: {aiAnalysis.suggested_review_status}
+                          </Badge>
+                        )}
+                        {aiAnalysis.suggested_actionability && (
+                          <Badge variant="outline" className="border-cyan-700/30 text-[10px] text-cyan-300">
+                            Actionability: {aiAnalysis.suggested_actionability}
+                          </Badge>
+                        )}
+                        {aiAnalysis.suggested_attribution && (
+                          <Badge variant="outline" className="border-cyan-700/30 text-[10px] text-cyan-300">
+                            Attribution: {aiAnalysis.suggested_attribution}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <Button onClick={runAiAnalysis} size="sm" variant="ghost" className="text-xs text-[#4a6070] hover:text-white">
                     <RefreshCw className="mr-1 h-3 w-3" /> Re-analyse
                   </Button>

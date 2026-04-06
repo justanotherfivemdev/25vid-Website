@@ -76,6 +76,7 @@ const EMPTY_FORM = {
   max_fps: 120,
   startup_parameters: '',
   tags: [],
+  sat_enabled: true,
 };
 
 function ServerDashboard() {
@@ -241,6 +242,7 @@ function ServerDashboard() {
           .split(/\r?\n|,/)
           .map((value) => value.trim())
           .filter(Boolean),
+        sat_enabled: form.sat_enabled,
       });
       const createdServer = normalizeServer(res.data);
       if (createdServer.deployment_state !== 'created') {
@@ -688,6 +690,21 @@ function ServerDashboard() {
                   onCheckedChange={(value) => setForm((prev) => ({ ...prev, log_stats_enabled: value }))}
                 />
               </div>
+              <div className="flex items-center justify-between border border-[rgba(201,162,39,0.1)] bg-[#050a0e] px-4 py-3">
+                <div>
+                  <Label htmlFor="srv-sat" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
+                    Server Admin Tools
+                  </Label>
+                  <p className="mt-0.5 text-[10px] text-[#4a6070]">Auto-inject the SAT mod for admin tooling</p>
+                </div>
+                <Switch
+                  id="srv-sat"
+                  checked={form.sat_enabled}
+                  onCheckedChange={(value) => setForm((prev) => ({ ...prev, sat_enabled: value }))}
+                />
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="srv-maxfps" className="text-xs uppercase tracking-wider text-[#8a9aa8]" style={{ fontFamily: "'Oswald', sans-serif" }}>
                   Max FPS

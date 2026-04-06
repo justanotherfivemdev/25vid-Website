@@ -87,7 +87,6 @@ const NAV_SECTIONS = [
     items: [
       { to: 'tools/files', label: 'File Manager', icon: Wrench },
       { to: 'schedules', label: 'Schedules', icon: CalendarClock },
-      { to: 'tools/exec', label: 'Trigger / Exec', icon: Wrench },
       { to: 'tools/reports', label: 'Reports', icon: Wrench },
       { to: 'tools/todos', label: 'ToDo List', icon: Wrench },
       { to: 'tools/watchers', label: 'Watchers', icon: Wrench },
