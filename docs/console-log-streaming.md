@@ -156,7 +156,7 @@ Check the source status indicators in the Console UI status bar. Common causes:
 **Profile files unavailable:**
 - No profile path: Set `profile_path` in server settings to the server's
   profile directory
-- Path doesn't exist: Verify the path exists on the filesystem
+- Path does not exist: Verify the path exists on the filesystem
 - No log files: The server may not have generated log files yet
 
 **RCON events unavailable:**

@@ -368,8 +368,8 @@ async def probe_source_availability(
     if not container_name:
         sources["docker"] = {"available": False, "reason": "no_container_name"}
     else:
-        ok, err = await docker_agent.ping()
-        if not ok:
+        docker_available, err = await docker_agent.ping()
+        if not docker_available:
             sources["docker"] = {"available": False, "reason": "docker_unavailable", "detail": err or ""}
         else:
             container = await docker_agent.get_container(container_name)
@@ -434,8 +434,8 @@ async def stream_server_log_entries(
     async def pump_docker() -> None:
         """Stream Docker container logs with retry on transient failures."""
         # Early exit if Docker is not reachable at all
-        ok, err = await docker_agent.ping()
-        if not ok:
+        docker_available, err = await docker_agent.ping()
+        if not docker_available:
             logger.warning(
                 "Docker unavailable for server %s – skipping docker log pump: %s",
                 server_id, err,

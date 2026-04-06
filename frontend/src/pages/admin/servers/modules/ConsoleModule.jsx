@@ -59,33 +59,31 @@ const SCROLL_THRESHOLD = 60;
 const MAX_CURSOR_CACHE = 5000;
 const TRIMMED_CURSOR_CACHE = 3000;
 
+const SOURCE_LABELS = { docker: 'Docker', profile: 'Files', rcon: 'RCON' };
+
 function SourceIndicators({ sourceStatus }) {
   if (!sourceStatus || Object.keys(sourceStatus).length === 0) return null;
 
   const allUnavailable = Object.values(sourceStatus).every((s) => !s.available);
-  const labels = { docker: 'Docker', profile: 'Files', rcon: 'RCON' };
 
   return (
     <span className="ml-2 inline-flex items-center gap-1.5 text-[10px]">
       {allUnavailable && (
         <AlertTriangle className="h-3 w-3 text-red-400" />
       )}
-      {Object.entries(sourceStatus).map(([name, info]) => {
-        const available = info.available;
-        return (
-          <span
-            key={name}
-            className={available ? 'text-zinc-500' : 'text-red-400/70'}
-            title={
-              available
-                ? `${labels[name] || name}: connected`
-                : `${labels[name] || name}: ${info.reason || 'unavailable'}`
-            }
-          >
-            {labels[name] || name}: {available ? '✓' : '✗'}
-          </span>
-        );
-      })}
+      {Object.entries(sourceStatus).map(([name, info]) => (
+        <span
+          key={name}
+          className={info.available ? 'text-zinc-500' : 'text-red-400/70'}
+          title={
+            info.available
+              ? `${SOURCE_LABELS[name] || name}: connected`
+              : `${SOURCE_LABELS[name] || name}: ${info.reason || 'unavailable'}`
+          }
+        >
+          {SOURCE_LABELS[name] || name}: {info.available ? '✓' : '✗'}
+        </span>
+      ))}
     </span>
   );
 }
