@@ -348,6 +348,62 @@ async def capture_log_snapshot(
     ]
 
 
+async def probe_source_availability(
+    server: Dict[str, Any],
+) -> Dict[str, Dict[str, Any]]:
+    """Check availability of each log source without actually streaming.
+
+    Returns a dict like::
+
+        {
+            "docker":  {"available": True},
+            "profile": {"available": False, "reason": "path_not_found"},
+            "rcon":    {"available": True},
+        }
+    """
+    sources: Dict[str, Dict[str, Any]] = {}
+
+    # --- Docker ---
+    container_name = server.get("container_name") or server.get("name", "")
+    if not container_name:
+        sources["docker"] = {"available": False, "reason": "no_container_name"}
+    else:
+        ok, err = await docker_agent.ping()
+        if not ok:
+            sources["docker"] = {"available": False, "reason": "docker_unavailable", "detail": err or ""}
+        else:
+            container = await docker_agent.get_container(container_name)
+            if container is None:
+                sources["docker"] = {"available": False, "reason": "container_not_found"}
+            else:
+                sources["docker"] = {"available": True}
+
+    # --- Profile files ---
+    profile_path = server.get("profile_path") or ""
+    if not profile_path:
+        sources["profile"] = {"available": False, "reason": "no_profile_path"}
+    else:
+        p = Path(str(profile_path))
+        if not p.exists():
+            sources["profile"] = {"available": False, "reason": "path_not_found"}
+        else:
+            files = await asyncio.to_thread(discover_log_files, server)
+            if files:
+                sources["profile"] = {"available": True, "file_count": len(files)}
+            else:
+                sources["profile"] = {"available": False, "reason": "no_log_files"}
+
+    # --- RCON events ---
+    server_id = str(server.get("id") or "")
+    try:
+        count = await db.server_log_events.count_documents({"server_id": server_id}, limit=1)
+        sources["rcon"] = {"available": True, "has_events": count > 0}
+    except Exception:
+        sources["rcon"] = {"available": True, "has_events": False}
+
+    return sources
+
+
 async def stream_server_log_entries(
     server: Dict[str, Any],
     *,
@@ -377,6 +433,23 @@ async def stream_server_log_entries(
 
     async def pump_docker() -> None:
         """Stream Docker container logs with retry on transient failures."""
+        # Early exit if Docker is not reachable at all
+        ok, err = await docker_agent.ping()
+        if not ok:
+            logger.warning(
+                "Docker unavailable for server %s – skipping docker log pump: %s",
+                server_id, err,
+            )
+            return
+
+        container = await docker_agent.get_container(container_name)
+        if container is None:
+            logger.warning(
+                "Container '%s' not found for server %s – skipping docker log pump",
+                container_name, server_id,
+            )
+            return
+
         retry_count = 0
         while not stop_event.is_set() and retry_count < _DOCKER_MAX_RETRIES:
             try:
@@ -393,7 +466,7 @@ async def stream_server_log_entries(
                     _DOCKER_MAX_BACKOFF,
                     _DOCKER_BACKOFF_BASE * (2 ** min(retry_count, _DOCKER_BACKOFF_CAP_EXP)),
                 )
-                logger.debug(
+                logger.warning(
                     "Docker log pump error for %s (attempt %d/%d): %s – retrying in %.1fs",
                     server_id, retry_count, _DOCKER_MAX_RETRIES, exc, backoff,
                 )
