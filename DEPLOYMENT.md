@@ -193,6 +193,12 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
+Use explicit WebSocket ping settings for live Arma Reforger console and RCON stability:
+
+```ini
+ExecStart=/opt/25th-id/backend/venv/bin/uvicorn server:app --host 127.0.0.1 --port 8001 --workers 2 --ws-ping-interval 20 --ws-ping-timeout 20
+```
+
 Apply service:
 
 ```bash
@@ -220,11 +226,15 @@ server {
     location /api {
         proxy_pass http://127.0.0.1:8001;
         proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 90;
+      proxy_read_timeout 86400;
+      proxy_send_timeout 86400;
+      proxy_buffering off;
         client_max_body_size 20M;
     }
 
@@ -278,6 +288,49 @@ Then validate and reload Nginx:
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+---
+
+## 7b) Protocol Update Rollout Checklist (Live Console / RCON)
+
+Whenever you change any of these files:
+
+- `backend/Dockerfile`
+- `backend/routes/servers.py`
+- `backend/services/log_streamer.py`
+- `backend/services/server_logs.py`
+- `frontend/nginx.conf`
+- `nginx-production.conf`
+
+run this rollout sequence:
+
+```bash
+cd /opt/25th-id
+git pull
+
+# backend dependencies/image/runtime
+source backend/venv/bin/activate
+pip install -r backend/requirements.txt
+
+# rebuild frontend assets when frontend/nginx-related files changed
+cd frontend
+yarn install
+yarn build
+
+# reload backend + nginx
+cd /opt/25th-id
+sudo systemctl daemon-reload
+sudo systemctl restart 25th-id-backend
+sudo nginx -t
+sudo systemctl reload nginx
+
+# quick health checks
+sudo systemctl status 25th-id-backend --no-pager
+curl -I https://yourdomain.com/api/
+```
+
+If operators report intermittent "Close code 1006" in the server console,
+first verify this section has been applied exactly.
 
 ## 8) Bootstrap Admin Account
 

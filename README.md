@@ -57,7 +57,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 cp .env.example .env
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+uvicorn server:app --host 0.0.0.0 --port 8001 --reload --ws-ping-interval 20 --ws-ping-timeout 20
 
 # Frontend
 cd ../frontend
@@ -67,6 +67,10 @@ yarn start
 ```
 
 For local HTTP development, set `COOKIE_SECURE=false` in `backend/.env`.
+
+For live Arma Reforger console/RCON stability during local testing, keep the
+WebSocket ping flags above enabled. They are required by our reconnect and
+heartbeat protocol.
 
 ### Local Validation Commands
 

@@ -38,7 +38,7 @@ docker compose ps
 docker compose logs backend --tail 20
 ```
 
-The application will be available at **http://localhost** (or your configured `FRONTEND_URL`).
+The application will be available at **[http://localhost](http://localhost)** (or your configured `FRONTEND_URL`).
 
 ---
 
@@ -75,7 +75,7 @@ Copy `backend/.env.example` to `.env` in the project root and configure:
 
 ## Architecture
 
-```
+```text
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │   Frontend   │────▶│   Backend    │────▶│   MongoDB    │
 │  (Nginx:80)  │     │ (Uvicorn:8k) │     │   (:27017)   │
@@ -112,6 +112,25 @@ docker compose restart backend
 docker compose up -d --build
 ```
 
+### Rebuild Required For Live Console / RCON Protocol Changes
+
+The live Arma Reforger console and RCON WebSocket protocol depends on both:
+
+- backend image flags (Uvicorn `--ws-ping-interval` / `--ws-ping-timeout`)
+- frontend Nginx proxy settings (`proxy_send_timeout`, `proxy_buffering off`)
+
+After pulling changes that touch `backend/Dockerfile`, `frontend/nginx.conf`,
+or `nginx-production.conf`, always rebuild both services:
+
+```bash
+docker compose up -d --build backend frontend
+docker compose ps
+docker compose logs backend --tail 80
+docker compose logs frontend --tail 80
+```
+
+If you skip the rebuild, old containers continue running old protocol behavior.
+
 ### Stop everything
 
 ```bash
@@ -147,16 +166,18 @@ docker compose exec mongo mongosh 25th_infantry_division --eval '
 
 The included Docker setup runs on plain HTTP (port 80). For production HTTPS:
 
-1. **Option A: Reverse proxy** — Put Nginx, Caddy, or Traefik in front:
-   ```bash
-   # Example with Caddy (auto-TLS)
-   caddy reverse-proxy --from yourdomain.com --to localhost:80
-   ```
+- **Option A: Reverse proxy** — Put Nginx, Caddy, or Traefik in front.
 
-2. **Option B: Modify `docker-compose.yml`** — Add a Caddy/Traefik service with automatic certificates.
+```bash
+# Example with Caddy (auto-TLS)
+caddy reverse-proxy --from yourdomain.com --to localhost:80
+```
+
+- **Option B: Modify `docker-compose.yml`** — Add a Caddy/Traefik service with automatic certificates.
 
 When using HTTPS, set these in `.env`:
-```
+
+```env
 COOKIE_SECURE=true
 FRONTEND_URL=https://yourdomain.com
 ```
@@ -178,6 +199,7 @@ docker compose cp mongo:/tmp/backup.gz ./backups/
 ### Scaling
 
 For higher traffic, consider:
+
 - Running multiple backend replicas behind a load balancer
 - Using MongoDB Atlas or a dedicated MongoDB cluster
 - Adding Redis for session caching
@@ -186,10 +208,9 @@ For higher traffic, consider:
 
 ## Troubleshooting
 
-| Symptom                        | Fix                                                       |
-|--------------------------------|------------------------------------------------------------|
-| Backend won't start            | Check `docker compose logs backend` — ensure `.env` is set |
-| Frontend shows blank page      | Check browser console; verify `REACT_APP_BACKEND_URL`      |
-| MongoDB connection refused     | Wait for healthcheck; run `docker compose ps`              |
-| CORS errors in browser         | Set `FRONTEND_URL` and/or `CORS_ORIGINS` in `.env`         |
-| File uploads not persisting    | Ensure `backend_uploads` volume is not removed              |
+- Backend won't start: Check `docker compose logs backend` and ensure `.env` is set.
+- Frontend shows blank page: Check browser console and verify `REACT_APP_BACKEND_URL`.
+- MongoDB connection refused: Wait for healthcheck and run `docker compose ps`.
+- CORS errors in browser: Set `FRONTEND_URL` and/or `CORS_ORIGINS` in `.env`.
+- File uploads not persisting: Ensure `backend_uploads` volume is not removed.
+- Console reconnects (Close 1006): Rebuild `backend` and `frontend`, then confirm frontend Nginx has `proxy_send_timeout 86400` and `proxy_buffering off`.
