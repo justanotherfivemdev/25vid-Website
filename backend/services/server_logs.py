@@ -404,7 +404,7 @@ async def probe_source_availability(
         sources["rcon"] = {"available": True, "has_events": count > 0}
     except Exception as exc:
         logger.warning("Failed to probe RCON event availability for server %s", server_id, exc_info=exc)
-        sources["rcon"] = {"available": False, "has_events": False, "reason": "db_error"}
+        sources["rcon"] = {"available": False, "reason": "db_error"}
 
     return sources
 

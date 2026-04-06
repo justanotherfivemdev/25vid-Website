@@ -206,3 +206,4 @@ def test_rcon_db_error(mock_db, mock_docker):
     result = _run(probe_source_availability(server))
     assert result["rcon"]["available"] is False
     assert result["rcon"]["reason"] == "db_error"
+    assert "has_events" not in result["rcon"]
