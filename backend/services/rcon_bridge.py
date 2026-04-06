@@ -6,7 +6,6 @@ import asyncio
 import binascii
 import logging
 import re
-import socket
 import struct
 from typing import Dict, Optional, Tuple
 
@@ -133,20 +132,45 @@ class BERConClient:
 
         return await future
 
-    async def _recv_payload(self, loop: asyncio.AbstractEventLoop, sock: socket.socket) -> Optional[bytes]:
-        data, _ = await asyncio.wait_for(loop.sock_recvfrom(sock, 65535), timeout=RCON_TIMEOUT_SECONDS)
+    class _DatagramProtocol(asyncio.DatagramProtocol):
+        def __init__(self) -> None:
+            self._queue: asyncio.Queue[object] = asyncio.Queue()
+
+        def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
+            self._queue.put_nowait(data)
+
+        def error_received(self, exc: Exception) -> None:
+            self._queue.put_nowait(exc)
+
+        async def recv_datagram(self) -> bytes:
+            item = await self._queue.get()
+            if isinstance(item, Exception):
+                raise item
+            return item
+
+    async def _open_datagram_endpoint(
+        self, host: str, port: int
+    ) -> Tuple[asyncio.DatagramTransport, "BERConClient._DatagramProtocol"]:
+        loop = asyncio.get_running_loop()
+        protocol = self._DatagramProtocol()
+        transport, _ = await loop.create_datagram_endpoint(
+            lambda: protocol,
+            remote_addr=(host, port),
+        )
+        return transport, protocol
+
+    async def _recv_payload(self, protocol: "BERConClient._DatagramProtocol") -> Optional[bytes]:
+        data = await asyncio.wait_for(protocol.recv_datagram(), timeout=RCON_TIMEOUT_SECONDS)
         return _parse_packet(data)
 
     async def _execute_impl(self, host: str, port: int, password: str, command: str) -> Tuple[bool, str]:
         """Low-level BattlEye UDP send/recv.  Called from the queue worker."""
-        loop = asyncio.get_running_loop()
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.setblocking(False)
+        transport, protocol = await self._open_datagram_endpoint(host, port)
 
         try:
             login_packet = _wrap_payload(b"\x00" + password.encode("ascii", errors="ignore"))
-            await loop.sock_sendto(sock, login_packet, (host, port))
-            login_response = await self._recv_payload(loop, sock)
+            transport.sendto(login_packet)
+            login_response = await self._recv_payload(protocol)
             if not login_response or len(login_response) < 2 or login_response[0] != 0x00:
                 return False, "No valid BattlEye login response received"
             if login_response[1] != 0x01:
@@ -156,14 +180,14 @@ class BERConClient:
             command_packet = _wrap_payload(
                 b"\x01" + bytes([sequence]) + command.encode("ascii", errors="ignore")
             )
-            await loop.sock_sendto(sock, command_packet, (host, port))
+            transport.sendto(command_packet)
 
             fragments: Dict[int, str] = {}
             expected_parts: Optional[int] = None
             single_response: Optional[str] = None
 
             while True:
-                payload = await self._recv_payload(loop, sock)
+                payload = await self._recv_payload(protocol)
                 if payload is None or len(payload) < 2:
                     continue
 
@@ -173,7 +197,7 @@ class BERConClient:
                 if packet_type == 0x02:
                     # Server console message; acknowledge and continue waiting.
                     ack = _wrap_payload(b"\x02" + bytes([packet_sequence]))
-                    await loop.sock_sendto(sock, ack, (host, port))
+                    transport.sendto(ack)
                     continue
 
                 if packet_type != 0x01 or packet_sequence != sequence:
@@ -202,7 +226,7 @@ class BERConClient:
             logger.error("BattlEye RCON socket error: %s", exc)
             return False, str(exc)
         finally:
-            sock.close()
+            transport.close()
 
     async def probe(self, host: str, port: int, password: str) -> Dict[str, str]:
         if not password:
